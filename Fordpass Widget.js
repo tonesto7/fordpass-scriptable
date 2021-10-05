@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: yellow; icon-glyph: magic;
+// icon-color: blue; icon-glyph: magic;
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
  *
@@ -18,21 +18,20 @@
  * Based off the work of others:
  *  - The original Fordpass Scriptable script by Damian Schablowsky  <dschablowsky.dev@gmail.com> (https://github.com/dschablowsky/FordPassWidget)
  *  - Api Logic based on ffpass from https://github.com/d4v3y0rk - thanks a lot for the work!
- *  - WidgetMarkup.js by by @rafaelgandi (https://github.com/rafaelgandi/WidgetMarkup-Scriptable)
+ *  - WidgetMarkup.js by @rafaelgandi (https://github.com/rafaelgandi/WidgetMarkup-Scriptable)
  *
  *
- * IMPORTANT NOTE: This widget is only working if your Ford car shows up in the FordPass app!
+ * IMPORTANT NOTE: This widget will only work with vehicles that show up in the FordPassFordPass app!
  */
 
 /**************
-Version 1.0.0
 Changelog:
     v1.0.0:
         - Newly Remastered version of Damians Scriptable widget with a new look and feel
 
 
 **************/
-
+const WIDGET_VERSION = "1.0.0";
 //****************************************************************************************************************
 //* Login data for account. It is only working with FordPass credentials and when your car has a FordPass modem!
 //* Check your car configuration. It is not sufficient if your FordPass app shows some data (odometer or oil).
@@ -43,6 +42,7 @@ const userData = {
     fpVin: "***REMOVED***",
     vehicleName: "Ford F-150", // Name of vehicle in Map
     useMetric: false, // This will define whether the widget uses us or non-US text and units
+    mapProvider: "apple", // or 'google'
 };
 
 //******************************************************************
@@ -51,19 +51,18 @@ const userData = {
 const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     refreshInterval: 5, // allow data to refresh every (xx) minutes
-    mapProvider: "apple", // or 'google'
     useIndicators: true, // indicators for fuel bar
     unitOfLength: userData.useMetric ? "km" : "mi", // unit of length
     distanceMultiplier: userData.useMetric ? 1 : 0.621371, // distance multiplier
     largeWidget: false, // uses large widget layout, if false, medium layout is used
+    storeCredentialsInKeychain: true, // securely store credentials in ios keychain
+    alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     /**
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
-    storeCredentialsInKeychain: true, // or true
-    alwaysFetch: true, // false or true
 };
 
 //******************************************************************
@@ -75,10 +74,8 @@ const textValues = {
         odometer: "Miles",
         odometerLease: "Mileage",
         oil: "Oil Life",
-        windowsSmall: "Windows",
-        windowsBig: "Windows",
-        doorsSmall: "Doors",
-        doorsBig: "Doors",
+        windows: "Windows",
+        doors: "Doors",
         position: "Location",
         tirePressure: "Tires (psi)",
         lockStatus: "Locks",
@@ -116,12 +113,13 @@ const textValues = {
     },
 };
 
-//******************************************************************
-//* Customize the Appearance of widget elements
-//******************************************************************
+//***************************************************************************
+//* Customize the Appearance of widget elements when in dark or light mode
+//***************************************************************************
 
 const isDarkMode = Device.isUsingDarkAppearance();
 const runtimeData = {
+    vehicleIcon: "F150_2021.png",
     textColor1: isDarkMode ? "EDEDED" : "000000", // Header Text Color
     textColor2: isDarkMode ? "EDEDED" : "000000", // Value Text Color
     backColor: isDarkMode ? "111111" : "FFFFFF", // Background Color'
@@ -132,9 +130,12 @@ const runtimeData = {
     tirePressure: isDarkMode ? "tire_dark.png" : "tire_light.png", // Image for tire pressure
     unlockIcon: isDarkMode ? "unlock_dark.png" : "unlock_light.png", // Image Used for UnLock Icon
     batteryStatus: isDarkMode ? "battery_dark.png" : "battery_light.png", // Image Used for Battery Icon
+    doors: isDarkMode ? "door_dark.png" : "door_light.png", // Image Used for Door Lock Icon
+    windows: isDarkMode ? "window_dark.png" : "window_light.png", // Image Used for Window Icon
+    oil: isDarkMode ? "oil_dark.png" : "oil_light.png", // Image Used for Oil Icon
     ignitionStatus: isDarkMode ? "key_dark.png" : "key_light.png", // Image Used for Ignition Icon
     keyIcon: isDarkMode ? "key_dark.png" : "key_light.png", // Image Used for Key Icon
-    position: isDarkMode ? "position_dark.png" : "position_light.png", // Image Used for Location Icon
+    position: isDarkMode ? "location_dark.png" : "location_light.png", // Image Used for Location Icon
 };
 
 const closedSymbol = "✓";
@@ -153,11 +154,11 @@ const sizes = {
 };
 
 //******************************************************************************
-//* Main code of widget - make only changes if you know what you are doing!!
+//* Main Widget Code - ONLY make changes if you know what you are doing!!
 //******************************************************************************
 console.log(`ScriptURL: ${URLScheme.forRunningScript()}`);
-console.log(`Script QueryParams: ${args.queryParameter}`);
-console.log(`Script WidgetParams: ${args.widgetParameter}`);
+// console.log(`Script QueryParams: ${args.queryParameter}`);
+// console.log(`Script WidgetParams: ${args.widgetParameter}`);
 let widget = await createWidget();
 widget.setPadding(10, 5, 5, 5);
 
@@ -202,8 +203,8 @@ async function createMenu() {
     alert.addAction("Lock Vehicle"); //1
     alert.addDestructiveAction("Unlock Vehicle"); //2
 
-    alert.addAction("Remote Start Stop"); //3
-    alert.addDestructiveAction("Remote Start Vehicle"); //4
+    alert.addAction("Remote Start (Stop)"); //3
+    alert.addDestructiveAction("Remote Start (Run)"); //4
 
     alert.addAction("Turn On All ZoneLighting"); //5
     alert.addAction("Turn Off All ZoneLighting"); //6
@@ -211,9 +212,11 @@ async function createMenu() {
     // alert.addDestructiveAction("Disable SecuriAlert"); //7
     // alert.addAction("Enable SecuriAlert"); //8
 
-    alert.addAction("Update Vehicle Status"); //9
+    alert.addAction("Update Vehicle Status"); //7
 
-    alert.addAction("Cancel"); //10
+    alert.addAction("Cancel"); //8
+
+    alert.addAction("Test Alerts"); //9
 
     const respIndex = await alert.presentSheet();
 
@@ -255,61 +258,65 @@ async function createMenu() {
             //     await sendGuardModeOnCmd();
             //     break;
         case 7:
-            console.log("Status was pressed");
+            console.log("Update Vehicle Status was pressed");
             await sendStatusCmd();
             break;
         case 8:
             console.log("Cancel was pressed");
             break;
+        case 9:
+            console.log("Test Alerts was pressed");
+            await showAlert(`TEST Command`, `Vehicle Received Command Successfully`);
+            break;
     }
 }
 
-function createTableMenu() {
-    let table = new UITable();
-    let data = [
-        ["foo", "bar", "baz"],
-        ["asdf", "quz", "42"],
-        [123, 567, "add"],
-    ];
+// function createTableMenu() {
+//     let table = new UITable();
+//     let data = [
+//         ["foo", "bar", "baz"],
+//         ["asdf", "quz", "42"],
+//         [123, 567, "add"],
+//     ];
 
-    let row, cell;
-    let first = true;
-    for (const drow of data) {
-        // drow = data row
-        // create a new row
-        row = new UITableRow();
-        // immediately add it to the table to not forget that part
-        table.addRow(row);
-        if (first) {
-            // set the first row to have bold text
-            row.isHeader = true;
-            first = false;
-        }
-        for (const [i, dcell] of drow.entries()) {
-            // the last cell should contain a button
-            if (i === 2) {
-                // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
-                cell = row.addButton("" + dcell);
-                // even though the next line is not needed because it is the default setting, I like to do it anyway to be more specific of what is going on
-                cell.dismissOnTap = false;
-                // register our callback function
-                cell.onTap = () => {
-                    // create a simple alert to have some user feedback on button tap
-                    // let alert = new Alert();
-                    // alert.message = dcell;
-                    // alert.present();
-                    // no need to add buttons, they will be added automatically
-                    // no need to await it, because we don't need anything from the user
-                };
-            } else {
-                // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
-                cell = row.addText("" + dcell);
-            }
-            cell.centerAligned();
-        }
-    }
-    table.present();
-}
+//     let row, cell;
+//     let first = true;
+//     for (const drow of data) {
+//         // drow = data row
+//         // create a new row
+//         row = new UITableRow();
+//         // immediately add it to the table to not forget that part
+//         table.addRow(row);
+//         if (first) {
+//             // set the first row to have bold text
+//             row.isHeader = true;
+//             first = false;
+//         }
+//         for (const [i, dcell] of drow.entries()) {
+//             // the last cell should contain a button
+//             if (i === 2) {
+//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
+//                 cell = row.addButton("" + dcell);
+//                 // even though the next line is not needed because it is the default setting, I like to do it anyway to be more specific of what is going on
+//                 cell.dismissOnTap = false;
+//                 // register our callback function
+//                 cell.onTap = () => {
+//                     // create a simple alert to have some user feedback on button tap
+//                     // let alert = new Alert();
+//                     // alert.message = dcell;
+//                     // alert.present();
+//                     // no need to add buttons, they will be added automatically
+//                     // no need to await it, because we don't need anything from the user
+//                 };
+//             } else {
+//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
+//                 cell = row.addText("" + dcell);
+//             }
+//             cell.centerAligned();
+//         }
+//     }
+//     table.present();
+// }
 
 async function createWidget() {
     if (widgetConfig.debugMode) {
@@ -343,10 +350,10 @@ async function createWidget() {
     //*****************
     let mainCol1 = await createColumn(contentStack, { "*setPadding": [0, 0, 0, 0] });
 
-    // Ford logo
-    let fordLogoRow = await createRow(mainCol1, { "*centerAlignContent": null });
-    fordLogoRow = await createImage(fordLogoRow, await getImage("ford_logo.png"), { imageSize: new Size(75, 27) });
-    mainCol1.addSpacer(10);
+    // Vehicle Logo
+    let vehicleLogoRow = await createRow(mainCol1, { "*centerAlignContent": null });
+    let vehicleLogo = await createImage(vehicleLogoRow, await getImage(runtimeData.vehicleIcon), { imageSize: new Size(85, 45), "*centerAlignImage": null });
+    mainCol1.addSpacer(5);
 
     // Creates the Fuel Info Elements
     await createFuelElement(mainCol1, carData);
@@ -429,16 +436,6 @@ async function createWidget() {
     let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes.detailFontSizeSmall), textColor: Color.red() });
 
     return widget;
-}
-
-async function createLockControlElement(srcField, carData) {
-    let titleFld = await createRow(srcField);
-    createTitle(titleFld, "position");
-
-    let dataFld = await createRow(srcField);
-    let url = URLScheme.forRunningScript() + "?widget=lock&action=getLockStatus";
-    let value = carData.position ? `${carData.position}` : textValues.errorMessages.noData;
-    let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
 }
 
 async function presentMenu(indies, issues) {
@@ -563,7 +560,7 @@ async function createFuelElement(srcField, carData) {
     let fuelHeaderRow = await createRow(srcField);
     let fuelHeadericon = await createImage(fuelHeaderRow, await getImage(runtimeData.fuelIcon), { imageSize: new Size(11, 11) });
     fuelHeaderRow.addSpacer(3);
-    console.log(`fuelLevel: ${carData.fuelLevel}`);
+    // console.log(`fuelLevel: ${carData.fuelLevel}`);
     let lvlTxt = carData.fuelLevel ? (carData.fuelLevel > 100 ? 100 : carData.fuelLevel) : 50;
     let fuelHeadertext = await createText(fuelHeaderRow, textValues.elemHeaders["fuelTank"], { font: Font.boldSystemFont(sizes.titleFontSize), textColor: new Color(runtimeData.textColor1) });
     let fuelHeadertext2 = await createText(fuelHeaderRow, " (" + lvlTxt + "%):", { font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
@@ -587,7 +584,7 @@ async function createMileageElement(srcField, carData) {
     await createTitle(elem, "odometer");
     elem.addSpacer(2);
     let value = carData.odometer ? `${Math.floor(carData.odometer * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength}` : textValues.errorMessages.noData;
-    console.log(`odometer: ${value}`);
+    // console.log(`odometer: ${value}`);
     let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
@@ -597,7 +594,7 @@ async function createBatteryElement(srcField, carData) {
     await createTitle(elem, "batteryStatus");
     elem.addSpacer(2);
     let value = carData.batteryLevel ? `${carData.batteryLevel}V` : "N/A";
-    console.log(`batteryLevel: ${value}`);
+    // console.log(`batteryLevel: ${value}`);
     let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
@@ -607,7 +604,7 @@ async function createOilElement(srcField, carData) {
     await createTitle(elem, "oil");
     elem.addSpacer(2);
     let value = carData.oilLife ? `${carData.oilLife}%` : textValues.errorMessages.noData;
-    console.log(`oilLife: ${value}`);
+    // console.log(`oilLife: ${value}`);
     let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
@@ -622,7 +619,7 @@ async function createDoorElement(srcField, carData, countOnly = false) {
 
     let offset = styles.offset;
     let titleFld = await createRow(srcField);
-    await createTitle(titleFld, "doorsBig");
+    await createTitle(titleFld, "doors");
 
     // Creates the first row of status elements for LF and RF
     let dataRow1Fld = await createRow(srcField);
@@ -674,7 +671,7 @@ async function createWindowElement(srcField, carData, countOnly = false) {
 
     let offset = styles.offset;
     let titleFld = await createRow(srcField);
-    createTitle(titleFld, "windowsBig");
+    await createTitle(titleFld, "windows");
 
     // Creates the first row of status elements for LF and RF
     let dataRow1Fld = await createRow(srcField);
@@ -713,7 +710,7 @@ async function createWindowElement(srcField, carData, countOnly = false) {
 async function createTireElement(srcField, carData) {
     let offset = 0;
     let titleFld = await createRow(srcField);
-    createTitle(titleFld, "tirePressure");
+    await createTitle(titleFld, "tirePressure");
 
     let dataFld = await createRow(srcField);
     let value = `${carData.tirePressure["leftFront"]} | ${carData.tirePressure["rightFront"]}\n${carData.tirePressure["leftRear"]} | ${carData.tirePressure["rightRear"]}`;
@@ -724,10 +721,10 @@ async function createTireElement(srcField, carData) {
 async function createPositionElement(srcField, carData) {
     let offset = 0;
     let titleFld = await createRow(srcField);
-    createTitle(titleFld, "position");
+    await createTitle(titleFld, "position");
 
     let dataFld = await createRow(srcField);
-    let url = widgetConfig.mapProvider == "google" ? `https://www.google.com/maps/search/?api=1&query=${carData.latitude},${carData.longitude}` : `http://maps.apple.com/?q=${encodeURI(userData.vehicleName)}&ll=${carData.latitude},${carData.longitude}`;
+    let url = userData.mapProvider == "google" ? `https://www.google.com/maps/search/?api=1&query=${carData.latitude},${carData.longitude}` : `http://maps.apple.com/?q=${encodeURI(userData.vehicleName)}&ll=${carData.latitude},${carData.longitude}`;
     let value = carData.position ? `${carData.position}` : textValues.errorMessages.noData;
     let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
@@ -740,7 +737,7 @@ async function createLockStatusElement(srcField, carData) {
     };
     let offset = 10;
     let titleFld = await createRow(srcField);
-    createTitle(titleFld, "lockStatus");
+    await createTitle(titleFld, "lockStatus");
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
     let value = carData.lockStatus ? carData.lockStatus : textValues.errorMessages.noData;
@@ -755,7 +752,7 @@ async function createIgnitionStatusElement(srcField, carData) {
     };
     let offset = 10;
     let titleFld = await createRow(srcField);
-    createTitle(titleFld, "ignitionStatus");
+    await createTitle(titleFld, "ignitionStatus");
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
     let value = carData.ignitionStatus ? carData.ignitionStatus.toUpperCase() : textValues.errorMessages.noData;
@@ -848,7 +845,7 @@ async function fetchRawData() {
             console.log(data);
         }
         if (data == "Access Denied") {
-            console.log("FP: Token expired. Fetching new token and fetch raw data again");
+            console.log("fetchRawData: Auth Token Expired. Fetching new token and fetch raw data again");
             let result = await fetchToken();
             if (result && result == textValues.errorMessages.invalidGrant) {
                 return result;
@@ -871,12 +868,18 @@ async function fetchRawData() {
     }
 }
 
-function showAlert(title, message) {
+async function showAlert(title, message) {
     let alert = new Alert();
     alert.title = title;
     alert.message = message;
     alert.addAction("OK");
-    alert.present();
+    const respIndex = await alert.presentAlert();
+    console.log(`showAlert Response: ${respIndex}`);
+    switch (respIndex) {
+        case 0:
+            console.log(`${title} alert was cleared...`);
+            return true;
+    }
 }
 
 const vehicleCmdConfigs = (vin) => {
@@ -973,10 +976,12 @@ async function sendVehicleCmd(cmd_type = "") {
         //Code is executed on first run
         let result = await fetchToken();
         if (result && result == textValues.errorMessages.invalidGrant) {
-            return result;
+            console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
+            return;
         }
         if (result && result == textValues.errorMessages.noCredentials) {
-            return result;
+            console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
+            return;
         }
     }
     let token = Keychain.get("fpToken");
@@ -984,9 +989,14 @@ async function sendVehicleCmd(cmd_type = "") {
     let cmdCfgs = vehicleCmdConfigs(vin);
     let cmds = cmdCfgs[cmd_type].cmds;
     let multiCmds = cmds.length > 1;
-    console.log(`multiCmds: ${multiCmds}`);
+    // console.log(`multipleCmds: ${multiCmds}`);
+    let wasError = false;
+    let errMsg = undefined;
+    let outMsg = { title: "", message: "" };
 
     for (const cmd in cmds) {
+        let isLastCmd = !multiCmds || (multiCmds && cmds.length == parseInt(cmd) + 1);
+        // console.log(`processing vehicle command (${cmd_type}) #${cmd} | Method: ${cmds[cmd].method} | URI: ${cmds[cmd].uri}`);
         let req = new Request(cmds[cmd].uri);
         req.headers = {
             Accept: "*/*",
@@ -1003,40 +1013,52 @@ async function sendVehicleCmd(cmd_type = "") {
             let data = await req.loadString();
             // console.log(data);
             if (data == "Access Denied") {
-                console.log("FP: Token expired. Fetching new token and fetch raw data again");
+                console.log("sendVehicleCmd: Auth Token Expired. Fetching new token and fetch raw data again");
                 let result = await fetchToken();
                 if (result && result == textValues.errorMessages.invalidGrant) {
-                    return result;
+                    console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
+                    return;
                 }
-                data = await sendVehicleCmd(cmd_type);
-            } else {
-                data = JSON.parse(data);
+                data = await req.loadString();
             }
+            data = JSON.parse(data);
 
             if (data.status) {
+                console.log(`sendVehicleCmd(${cmd_type}) Status Code (${data.status})`);
                 if (data.status != 200) {
+                    wasError = true;
                     if (widgetConfig.debugMode) {
                         console.log("Debug: Error while receiving vehicle data");
                         console.log(data);
                     }
                     if (data.status == 590) {
-                        showAlert(`${cmd_type.toUpperCase()} Command`, `Command Failed!\n\nPlease Start the Vehicle Before Running this Command Again`);
+                        outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: `Command Failed!\n\nPlease Start the Vehicle Before Running this Command Again` };
                     } else {
-                        console.log(`command Error: ${JSON.stringify(data)}`);
-                        showAlert(`${cmd_type.toUpperCase()} Command`, `There was an error sending the command to the vehicle!\n\Error: ${data.status}`);
+                        errMsg = `Command Error: ${JSON.stringify(data)}`;
+                        outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: `There was an error sending the command to the vehicle!\n\Error: ${data.status}` };
                     }
                 } else {
-                    if (!multiCmds || (multiCmds && cmds.length == cmd + 1)) {
-                        showAlert(`${cmd_type.toUpperCase()} Command`, `Vehicle Received Command Successfully`);
-                    }
+                    outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: `Vehicle Received Command Successfully` };
                 }
             }
-            return data;
+
+            if (wasError) {
+                if (errMsg) {
+                    console.log(`sendVehicleCmd(${cmd_type}) Error: ${errMsg}`);
+                }
+                return;
+            } else {
+                if (isLastCmd) {
+                    console.log(`sendVehicleCmd(${cmd_type}) Success`);
+                    await showAlert(outMsg.title, outMsg.message);
+                }
+            }
         } catch (e) {
-            console.log(`Error: ${e}`);
-            return textValues.errorMessages.unknownError;
+            console.log(`sendVehicleCmd Catch Error: ${e}`);
+            return;
         }
     }
+    return;
 }
 
 async function sendLockCmd() {
@@ -1097,7 +1119,7 @@ async function fetchCarData() {
     }
 
     //fetch data from server
-    console.log("FP: Fetch data from server");
+    console.log("fetchCarData: Fetching Vehicle Data from Ford Servers...");
     let rawData = await fetchRawData();
     // console.log(rawData);
     let carData = new Object();
@@ -1239,12 +1261,17 @@ async function getImage(image) {
 }
 
 async function loadImage(imgUrl) {
-    const req = new Request(imgUrl);
-    return await req.loadImage();
+    try {
+        const req = new Request(imgUrl);
+        return await req.loadImage();
+    } catch (e) {
+        console.log(`loadImage Error: Could Not Load Image from ${imgUrl}.`);
+        return undefined;
+    }
 }
 
 function saveDataToLocal(data) {
-    console.log("FM: save newly fetched data to local storage");
+    console.log("FileManager: Saving New Vehicle Data to Local Storage...");
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
     let path = fm.joinPath(dir, "fp_carData.json");
@@ -1255,7 +1282,7 @@ function saveDataToLocal(data) {
 }
 
 function readLocalData() {
-    console.log("FM: read local data");
+    console.log("FileManager: Retrieving Vehicle Data from Local Storage...");
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
     let path = fm.joinPath(dir, "fp_carData.json");
@@ -1285,7 +1312,7 @@ function isLocalDataFreshEnough() {
 }
 
 function clearKeychain() {
-    console.log("FP: Clear Keychain");
+    console.log("Info: Clearing Authentication from Keychain");
     if (Keychain.contains("fpToken")) {
         Keychain.remove("fpToken");
     }
@@ -1301,7 +1328,7 @@ function clearKeychain() {
 }
 
 function clearFileManager() {
-    console.log("FM: Clearing All Files from Local Directory");
+    console.log("Info: Clearing All Files from Local Directory");
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
     fm.listContents(dir).forEach((file) => {
