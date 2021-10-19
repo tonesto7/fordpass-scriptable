@@ -37,9 +37,9 @@ const WIDGET_VERSION = "1.0.0";
 //* Check your car configuration. It is not sufficient if your FordPass app shows some data (odometer or oil).
 //****************************************************************************************************************
 const userData = {
-    fpUsername: "***REMOVED***",
-    fpPassword: "***REMOVED***",
-    fpVin: "***REMOVED***",
+    fpUsername: "YOUR_FP_EMAIL_HERE",
+    fpPassword: "FP_PASSWORD_HERE",
+    fpVin: "VEHICLE_VIN",
     vehicleName: "Ford F-150", // Name of vehicle in Map
     useMetric: false, // This will define whether the widget uses us or non-US text and units
     mapProvider: "apple", // or 'google'
