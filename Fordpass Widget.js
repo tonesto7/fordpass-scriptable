@@ -1374,9 +1374,9 @@ function calculateDurationLeasing() {
 
 function pressureToFixed(pressure, digits) {
     if (userData.useMetric) {
-        return pressure ? pressure.toFixed(digits) : -1;
+        return pressure ? Number.parseFloat(pressure).toFixed(digits) : -1;
     } else {
-        return pressure ? (pressure * 0.15).toFixed(digits) : -1;
+        return pressure ? (Number.parseFloat(pressure) * 0.15).toFixed(digits) : -1;
     }
 }
 
