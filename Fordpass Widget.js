@@ -54,6 +54,7 @@ const widgetConfig = {
     useIndicators: true, // indicators for fuel bar
     unitOfLength: userData.useMetric ? 'km' : 'mi', // unit of length
     distanceMultiplier: userData.useMetric ? 1 : 0.621371, // distance multiplier
+    unitOfPressure: 'psi', // unit of pressure, default from ford is kpa
     largeWidget: false, // uses large widget layout, if false, medium layout is used
     storeCredentialsInKeychain: true, // securely store credentials in ios keychain
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
@@ -927,13 +928,25 @@ async function createTireElement(srcField, carData) {
     await createTitle(titleFld, 'tirePressure');
 
     let dataFld = await createRow(srcField);
-    let value = `${carData.tirePressure['leftFront']} | ${carData.tirePressure['rightFront']}\n${carData.tirePressure['leftRear']} | ${carData.tirePressure['rightRear']}`;
+    let value = `${getTirePressure(
+        carData.tirePressure['leftFront'],
+    )} | ${getTirePressure(
+        carData.tirePressure['rightFront'],
+    )}\n${getTirePressure(
+        carData.tirePressure['leftRear'],
+    )} | ${getTirePressure(carData.tirePressure['rightRear'])}`;
     let txt = await createText(dataFld, value, {
         font: new Font('Menlo-Regular', sizes.detailFontSizeMedium),
         textColor: new Color(runtimeData.textColor2),
         lineLimit: 2,
     });
     srcField.addSpacer(offset);
+}
+
+function getTirePressure(tirePressure) {
+    return widgetConfig.unitOfPressure == 'kpa'
+        ? tirePressure
+        : (tirePressure * 0.145).toFixed(0);
 }
 
 async function createPositionElement(srcField, carData) {
