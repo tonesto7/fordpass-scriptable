@@ -40,8 +40,8 @@ const userData = {
     fpUsername: 'YOUR_FP_EMAIL_HERE',
     fpPassword: 'FP_PASSWORD_HERE',
     fpVin: 'VEHICLE_VIN',
-    vehicleName: 'Ford F-150', // Name of vehicle in Map
-    useMetric: false, // This will define whether the widget uses us or non-US text and units
+    vehicleName: 'Ford Explorer', // Name of vehicle in Map
+    useMetric: true, // This will define whether the widget uses us or non-US text and units
     mapProvider: 'apple', // or 'google'
 };
 
@@ -71,13 +71,13 @@ const widgetConfig = {
 const textValues = {
     elemHeaders: {
         fuelTank: 'Fuel',
-        odometer: 'Miles',
+        odometer: 'Mileage',
         odometerLease: 'Mileage',
         oil: 'Oil Life',
         windows: 'Windows',
         doors: 'Doors',
         position: 'Location',
-        tirePressure: 'Tires (psi)',
+        tirePressure: 'Tires',
         lockStatus: 'Locks',
         lock: 'Lock',
         unlock: 'Unlock',
@@ -119,7 +119,7 @@ const textValues = {
 
 const isDarkMode = Device.isUsingDarkAppearance();
 const runtimeData = {
-    vehicleIcon: 'F150_2021.png',
+    vehicleIcon: '2020_Explorer.png',
     textColor1: isDarkMode ? 'EDEDED' : '000000', // Header Text Color
     textColor2: isDarkMode ? 'EDEDED' : '000000', // Value Text Color
     backColor: isDarkMode ? '111111' : 'FFFFFF', // Background Color'
@@ -1590,7 +1590,7 @@ async function getImage(image) {
     } else {
         // download once
         let repoPath =
-            'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/';
+            'https://raw.githubusercontent.com/yuxinli915/fordpass-scriptable/main/icons/';
         let imageUrl;
         switch (image) {
             case 'gas-station_light.png':
@@ -1601,7 +1601,7 @@ async function getImage(image) {
                 break;
             default:
                 imageUrl =
-                    'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/' +
+                    'https://raw.githubusercontent.com/yuxinli915/fordpass-scriptable/main/icons/' +
                     image;
             // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
         }
