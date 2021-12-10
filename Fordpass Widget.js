@@ -35,8 +35,9 @@ Changelog:
         - Added an vehicle selector to allow quick selection of vehicle icon and name
     v1.0.3:
         - Removed the need to store your login and vehicle info in the script. You will now be prompted for it when the script runs. and it will be stored securely in the apple keychain.
-            If you ever need to clear it then just tap on the widget and select settings from the menu and clear it from there. On the next run it prompt you to enter the info again.
+            If you ever need to clear it then just tap on the widget and select settings from the menu and select clear all data. On the next run it prompt you to enter the info again.
         - More code cleanup and added some comments
+        - dynamic menu items now show up based on the vehicle capabilities (only filters out zone lighting if it is not supported... for now)
         - Moved widget settings to a settings menu so you no longer need to edit the file
 
 
@@ -200,103 +201,127 @@ Script.complete();
 //*                                              START WIDGET UI ELEMENT FUNCTIONS
 //*****************************************************************************************************************************
 
-// const mainMenuItems = [{
-//         id: 'viewWidget',
-//         title: 'View Widget',
-//         action: () => {
-//             console.log('(Main Menu) View Widget was pressed');
-//             presentMedium();
-//         },
-//         show: true,
-//     },
-//     {
-//         id: 'lockVehicle',
-//         title: 'Lock Vehicle',
-//         action: () => {
-//             console.log('(Main Menu) Lock was pressed');
-//             sendLockCmd();
-//         },
-//         show: true,
-//     },
-// ];
+async function getMainMenuItems() {
+    const vehicleData = await fetchCarData();
+    return [{
+            title: 'View Widget',
+            action: async() => {
+                console.log('(Main Menu) View Widget was pressed');
+                await widget.presentMedium();
+            },
+            destructive: false,
+            show: true,
+        },
+        {
+            title: 'Lock Vehicle',
+            action: async() => {
+                console.log('(Main Menu) Lock was pressed');
+                await sendLockCmd();
+            },
+            destructive: false,
+            show: true,
+        },
+        {
+            title: 'Unlock Vehicle',
+            action: async() => {
+                console.log('(Main Menu) Unlock was pressed');
+                await sendUnlockCmd();
+            },
+            destructive: true,
+            show: true,
+        },
+        {
+            title: 'Remote Start (Stop)',
+            action: async() => {
+                console.log('(Main Menu) Stop was pressed');
+                await sendStopCmd();
+            },
+            destructive: false,
+            show: true,
+        },
+        {
+            title: 'Remote Start (Run)',
+            action: async() => {
+                console.log('(Main Menu) Start was pressed');
+                await sendStartCmd();
+            },
+            destructive: true,
+            show: true,
+        },
+        {
+            title: 'Turn On All ZoneLighting',
+            action: async() => {
+                console.log('(Main Menu) Zone Lighting On was pressed');
+                await sendZoneLightsAllOnCmd();
+            },
+            destructive: false,
+            show: vehicleData.zoneLightingSupported === true,
+        },
+        {
+            title: 'Turn Off All ZoneLighting',
+            action: async() => {
+                console.log('(Main Menu) Zone Lighting Off was pressed');
+                await sendZoneLightsAllOffCmd();
+            },
+            destructive: false,
+            show: vehicleData.zoneLightingSupported === true,
+        },
+        {
+            title: 'Disable SecuriAlert',
+            action: async() => {
+                console.log('(Main Menu) SecuriAlert Off was pressed');
+                await sendGuardModeOffCmd();
+            },
+            destructive: true,
+            show: vehicleData.securiAlertSupported === true,
+        },
+        {
+            title: 'Enable SecuriAlert',
+            action: async() => {
+                console.log('(Main Menu) SecuriAlert On was pressed');
+                await sendGuardModeOnCmd();
+            },
+            destructive: false,
+            show: vehicleData.securiAlertSupported === true,
+        },
+        {
+            title: 'Widget Settings',
+            action: async() => {
+                console.log('(Main Menu) Widget Settings was pressed');
+                CreateSettingMenu();
+            },
+            destructive: false,
+            show: true,
+        },
+        {
+            title: 'Done',
+            action: async() => {
+                console.log('(Main Menu) Done was pressed');
+            },
+            destructive: false,
+            show: true,
+        },
+    ];
+}
 
 async function createMainMenu() {
-    const vehicleData = await fetchCarData();
-
     const mainMenu = new Alert();
     mainMenu.title = `FordPass Actions`;
 
-    // let menuItems = mainMenuItems;
-    mainMenu.addAction('View Widget'); //0
-
-    mainMenu.addAction('Lock Vehicle'); //1
-    mainMenu.addDestructiveAction('Unlock Vehicle'); //2
-
-    mainMenu.addAction('Remote Start (Stop)'); //3
-    mainMenu.addDestructiveAction('Remote Start (Run)'); //4
-
-    mainMenu.addAction('Turn On All ZoneLighting'); //5
-    mainMenu.addAction('Turn Off All ZoneLighting'); //6
-
-    // alert.addDestructiveAction("Disable SecuriAlert"); //7
-    // alert.addAction("Enable SecuriAlert"); //8
-
-    mainMenu.addAction('Update Vehicle Status'); //7
-
-    mainMenu.addAction('Widget Settings'); //8
-
-    mainMenu.addAction('Cancel'); //9
-
+    let menuItems = (await getMainMenuItems()).filter((item) => item.show === true);
+    // console.log(`Menu Items: (${menuItems.length}) ${JSON.stringify(menuItems)}`);
+    menuItems.forEach((item, ind) => {
+        if (item.destructive) {
+            mainMenu.addDestructiveAction(item.title);
+        } else {
+            mainMenu.addAction(item.title);
+        }
+    });
     const respIndex = await mainMenu.presentSheet();
-
-    switch (respIndex) {
-        case 0:
-            console.log('(Main Menu) View Widget was pressed');
-            await widget.presentMedium();
-            break;
-        case 1:
-            console.log('(Main Menu) Lock was pressed');
-            await sendLockCmd();
-            break;
-        case 2:
-            console.log('(Main Menu) Unlock was pressed');
-            await sendUnlockCmd();
-            break;
-        case 3:
-            console.log('(Main Menu) Stop was pressed');
-            await sendStopCmd();
-            break;
-        case 4:
-            console.log('(Main Menu) Start was pressed');
-            await sendStartCmd();
-            break;
-        case 5:
-            console.log('(Main Menu) Zone Lighting On was pressed');
-            await sendZoneLightsAllOnCmd();
-            break;
-        case 6:
-            console.log('(Main Menu) Zone Lighting Off was pressed');
-            await sendZoneLightsAllOffCmd();
-            break;
-            // case 7:
-            //     console.log("(Main Menu) Disable SecuriAlert was pressed");
-            //     await sendGuardModeOffCmd();
-            //     break;
-            // case 8:
-            //     console.log("(Main Menu) Enable SecuriAlert was pressed");
-            //     await sendGuardModeOnCmd();
-            //     break;
-        case 7:
-            console.log('(Main Menu) Update Vehicle Status was pressed');
-            await sendStatusCmd();
-            break;
-        case 8:
-            console.log('(Main Menu) Widget Settings was pressed');
-            createSettingMenu();
-            break;
-        case 9:
-            console.log('(Main Menu) Cancel was pressed');
-            break;
+    if (respIndex !== null) {
+        const menuItem = menuItems[respIndex];
+        console.log(`(Main Menu) Selected: ${JSON.stringify(menuItem)}`);
+        menuItem.action();
     }
 }
 
@@ -1272,8 +1297,8 @@ async function prefsKeychainOk() {
 
 function clearKeychain() {
     console.log('Info: Clearing Authentication from Keychain');
-    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(function(key) {
-        removeKeychainValue(key);
+    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(async(key) => {
+        await removeKeychainValue(key);
     });
 }
 
@@ -1330,7 +1355,7 @@ async function fetchCarData() {
         running: vehicleStatus.remoteStartStatus ? (vehicleStatus.remoteStartStatus.value === 0 ? false : true) : false,
         duration: vehicleStatus.remoteStart && vehicleStatus.remoteStart.remoteStartDuration ? vehicleStatus.remoteStart.remoteStartDuration.value : 0,
     };
-    console.log(`Remote Start Status: ${vehicleStatus.remoteStart.toString()}`);
+    console.log(`Remote Start Status: ${JSON.stringify(vehicleStatus.remoteStart)}`);
 
     // Alarm status
     carData.alarmStatus = vehicleStatus.alarm ? (vehicleStatus.alarm.value === 'SET' ? 'On' : 'Off') : 'Off';
@@ -1497,12 +1522,12 @@ function readLocalData() {
     return null;
 }
 
-function removeLocalData(filename) {
+async function removeLocalData(filename) {
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
     let path = fm.joinPath(dir, filename);
     if (fm.fileExists(path)) {
-        fm.remove(path);
+        await fm.remove(path);
     }
 }
 
@@ -1515,12 +1540,12 @@ function isLocalDataFreshEnough() {
     }
 }
 
-function clearFileManager() {
+async function clearFileManager() {
     console.log('Info: Clearing All Files from Local Directory');
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    fm.listContents(dir).forEach((file) => {
-        removeLocalData(file);
+    fm.listContents(dir).forEach(async(file) => {
+        await removeLocalData(file);
     });
 }
 
