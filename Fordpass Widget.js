@@ -33,18 +33,18 @@ Changelog:
     v1.0.2:
         - Merged in changes from @yuxinli915 pull request
         - Added an vehicle selector to allow quick selection of vehicle icon and name
+    v1.0.3:
+        - Removed the need to store your login and vehicle info in the script. You will now be prompted for it when the script runs. and it will be stored securely in the apple keychain.
+            If you ever need to clear it then just tap on the widget and select settings from the menu and clear it from there. On the next run it prompt you to enter the info again.
+        - More code cleanup and added some comments
 
 
 **************/
-const WIDGET_VERSION = '1.0.2';
+const WIDGET_VERSION = '1.0.3';
 //****************************************************************************************************************
-//* Login data for account. It is only working with FordPass credentials and when your car has a FordPass modem!
-//* Check your car configuration. It is not sufficient if your FordPass app shows some data (odometer or oil).
+//* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
 const userData = {
-    fpUsername: 'YOUR_FP_EMAIL_HERE',
-    fpPassword: 'FP_PASSWORD_HERE',
-    fpVin: 'VEHICLE_VIN',
     vehicleType: 1, // 1 = 2021 F-150, 2 = 2020 Explorer
     useMetric: false, // This will define whether the widget uses us or non-US text and units
     mapProvider: 'apple', // or 'google'
@@ -124,11 +124,14 @@ const textValues = {
         noData: 'No Data',
         noCredentials: 'Missing Login Credentials',
         noVin: 'VIN Missing',
+        cmd_err_590: 'Command Failed!\n\nVehicle failed to start. You must start from inside your vehicle after two consecutive remote start events. ',
+        cmd_err: `There was an error sending the command to the vehicle!\n`,
     },
     successMessages: {
         locks_cmd_title: 'Lock Command',
         locked_msg: 'Vehicle Received Lock Command Successfully',
         unlocked_msg: 'Vehicle Received Unlock Command Successfully',
+        cmd_success: `Vehicle Received Command Successfully`,
     },
 };
 
@@ -175,6 +178,7 @@ const sizes = {
 //******************************************************************************
 //* Main Widget Code - ONLY make changes if you know what you are doing!!
 //******************************************************************************
+
 console.log(`ScriptURL: ${URLScheme.forRunningScript()}`);
 // console.log(`Script QueryParams: ${args.queryParameter}`);
 // console.log(`Script WidgetParams: ${args.widgetParameter}`);
@@ -195,18 +199,6 @@ else if (config.runsInApp || config.runsFromHomeScreen) {
         await widget.presentMedium();
     }
 }
-
-/*
-if (config.runsInWidget) {
-    Script.setWidget(widget);
-} else {
-    if (widgetConfig.largeWidget) {
-        await widget.presentLarge();
-    } else {
-        await widget.presentMedium();
-    }
-}
-*/
 Script.complete();
 
 //*****************************************************************************************************************************
@@ -331,6 +323,39 @@ async function createMenu() {
 //     table.present();
 // }
 
+function inputTest(val) {
+    return val !== '' && val !== null && val !== undefined;
+}
+
+async function getLoginAndVin() {
+    let user = await getKeychainValue('fpUser');
+    let pass = await getKeychainValue('fpPass');
+    let vin = await getKeychainValue('fpVin');
+    let prompt = new Alert();
+    prompt.title = 'Required Data Missing';
+    prompt.message = 'Please enter you FordPass Credentials and Vehicle VIN.';
+    prompt.addTextField('FordPass Email', user || '');
+    prompt.addSecureTextField('FordPass Password', pass || '');
+    prompt.addTextField('Vehicle VIN', vin || '');
+    prompt.addAction('Save');
+    prompt.addCancelAction('Cancel');
+    let result = await prompt.presentAlert();
+    if (0 == result) {
+        user = prompt.textFieldValue(0);
+        pass = prompt.textFieldValue(1);
+        vin = prompt.textFieldValue(2);
+        // console.log(`${user} ${pass} ${vin}`);
+        if (inputTest(user) && inputTest(pass) && inputTest(vin)) {
+            await setKeychainValue('fpUser', user);
+            await setKeychainValue('fpPass', pass);
+            await setKeychainValue('fpVin', vin);
+            return true;
+        }
+    } else {
+        return false;
+    }
+}
+
 async function createWidget() {
     if (widgetConfig.debugMode) {
         console.log('widgetConfig | DEBUG:');
@@ -343,6 +368,14 @@ async function createWidget() {
     }
     if (widgetConfig.clearFileManagerOnNextRun) {
         clearFileManager();
+    }
+    let kcOk = await userKeychainOk();
+    if (!kcOk) {
+        let prompt = await getLoginAndVin();
+        if (!prompt) {
+            console.log('Login and VIN not set... User cancelled!!!');
+            return;
+        }
     }
 
     let carData = await fetchCarData();
@@ -789,11 +822,11 @@ async function createIgnitionStatusElement(srcField, carData) {
 //*****************************************************************************************************************************
 
 async function fetchToken() {
-    let username = checkUserData('fpUsername');
+    let username = await getKeychainValue('fpUser');
     if (!username) {
         return textValues.errorMessages.noCredentials;
     }
-    let password = checkUserData('fpPassword');
+    let password = await getKeychainValue('fpPass');
     if (!password) {
         return textValues.errorMessages.noCredentials;
     }
@@ -822,7 +855,7 @@ async function fetchToken() {
             console.log('Debug: Received auth data from ford server');
             console.log(token);
         }
-        Keychain.set('fpToken', token.access_token);
+        await setKeychainValue('fpToken', token.access_token);
     } catch (e) {
         console.log(`Error: ${e}`);
         if (e.error && e.error == 'invalid_grant') {
@@ -833,7 +866,7 @@ async function fetchToken() {
 }
 
 async function fetchRawData() {
-    if (!Keychain.contains('fpToken')) {
+    if (!(await hasKeychainValue('fpToken'))) {
         //Code is executed on first run
         let result = await fetchToken();
         if (result && result == textValues.errorMessages.invalidGrant) {
@@ -843,8 +876,8 @@ async function fetchRawData() {
             return result;
         }
     }
-    let token = Keychain.get('fpToken');
-    let vin = checkUserData('fpVin');
+    let token = await getKeychainValue('fpToken');
+    let vin = await getKeychainValue('fpVin');
     if (!vin) {
         return textValues.errorMessages.noVin;
     }
@@ -993,7 +1026,7 @@ const vehicleCmdConfigs = (vin) => {
 };
 
 async function sendVehicleCmd(cmd_type = '') {
-    if (!Keychain.contains('fpToken')) {
+    if (!(await hasKeychainValue('fpToken'))) {
         //Code is executed on first run
         let result = await fetchToken();
         if (result && result == textValues.errorMessages.invalidGrant) {
@@ -1005,8 +1038,8 @@ async function sendVehicleCmd(cmd_type = '') {
             return;
         }
     }
-    let token = Keychain.get('fpToken');
-    let vin = checkUserData('fpVin');
+    let token = await getKeychainValue('fpToken');
+    let vin = await getKeychainValue('fpVin');
     let cmdCfgs = vehicleCmdConfigs(vin);
     let cmds = cmdCfgs[cmd_type].cmds;
     let multiCmds = cmds.length > 1;
@@ -1055,13 +1088,13 @@ async function sendVehicleCmd(cmd_type = '') {
                     if (data.status == 590) {
                         console.log('code 590');
                         console.log(`isLastCmd: ${isLastCmd}`);
-                        outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: `Command Failed!\n\nVehicle failed to start. You must start your vehicle from the inside after two consecutive remote start events. ` };
+                        outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: textValues.errorMessages.cmd_err_590 };
                     } else {
                         errMsg = `Command Error: ${JSON.stringify(data)}`;
-                        outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: `There was an error sending the command to the vehicle!\n\Error: ${data.status}` };
+                        outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: `${textValues.errorMessages.cmd_err}\n\Error: ${data.status}` };
                     }
                 } else {
-                    outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: `Vehicle Received Command Successfully` };
+                    outMsg = { title: `${cmd_type.toUpperCase()} Command`, message: textValues.successMessages.cmd_success };
                 }
             }
 
@@ -1123,18 +1156,43 @@ async function sendZoneLightsAllOffCmd() {
     await sendVehicleCmd('zone_lights_off');
 }
 
-function checkUserData(cred) {
-    if (widgetConfig.storeCredentialsInKeychain) {
-        if (userData[cred] != '') {
-            Keychain.set(cred, userData[cred]);
-        }
-        if (Keychain.contains(cred)) {
-            return Keychain.get(cred);
-        }
-    } else if (!widgetConfig.storeCredentialsInKeychain && userData[cred] != '') {
-        return userData[cred];
+async function getKeychainValue(cred) {
+    if (await Keychain.contains(cred)) {
+        return await Keychain.get(cred);
     }
     return null; //no stored credentials
+}
+
+async function setKeychainValue(key, value) {
+    await Keychain.set(key, value);
+}
+
+function hasKeychainValue(key) {
+    return Keychain.contains(key);
+}
+
+async function removeKeychainValue(key) {
+    if (await Keychain.contains(key)) {
+        await Keychain.remove(key);
+    }
+}
+
+async function userKeychainOk() {
+    let missing = [];
+    ['fpUser', 'fpPass', 'fpVin'].forEach(async(key) => {
+        if (!((await hasKeychainValue(key)) && (await getKeychainValue(key)) !== null && (await getKeychainValue(key)) !== undefined && (await getKeychainValue(key)) !== '')) {
+            missing.push(key);
+        }
+    });
+    console.log(`userKeychainOk: ${missing.toString()}`);
+    return missing.length === 0;
+}
+
+function clearKeychain() {
+    console.log('Info: Clearing Authentication from Keychain');
+    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin'].forEach(function(key) {
+        removeKeychainValue(key);
+    });
 }
 
 //from local store if last fetch is < x minutes, otherwise fetch from server
@@ -1147,7 +1205,7 @@ async function fetchCarData() {
     //fetch data from server
     console.log('fetchCarData: Fetching Vehicle Data from Ford Servers...');
     let rawData = await fetchRawData();
-    // console.log(rawData);
+    console.log(`rawData: ${JSON.stringify(rawData)}`);
     let carData = new Object();
     if (rawData == textValues.errorMessages.invalidGrant || rawData == textValues.errorMessages.connectionErrorOrVin || rawData == textValues.errorMessages.unknownError || rawData == textValues.errorMessages.noVin || rawData == textValues.errorMessages.noCredentials) {
         console.log('Error: ' + rawData);
@@ -1335,22 +1393,6 @@ function isLocalDataFreshEnough() {
         return true;
     } else {
         return false;
-    }
-}
-
-function clearKeychain() {
-    console.log('Info: Clearing Authentication from Keychain');
-    if (Keychain.contains('fpToken')) {
-        Keychain.remove('fpToken');
-    }
-    if (Keychain.contains('fpUsername')) {
-        Keychain.remove('fpUsername');
-    }
-    if (Keychain.contains('fpPassword')) {
-        Keychain.remove('fpPassword');
-    }
-    if (Keychain.contains('fpVin')) {
-        Keychain.remove('fpVin');
     }
 }
 
