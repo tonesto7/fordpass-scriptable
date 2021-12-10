@@ -37,6 +37,7 @@ Changelog:
         - Removed the need to store your login and vehicle info in the script. You will now be prompted for it when the script runs. and it will be stored securely in the apple keychain.
             If you ever need to clear it then just tap on the widget and select settings from the menu and clear it from there. On the next run it prompt you to enter the info again.
         - More code cleanup and added some comments
+        - Moved widget settings to a settings menu so you no longer need to edit the file
 
 
 **************/
@@ -44,11 +45,6 @@ const WIDGET_VERSION = '1.0.3';
 //****************************************************************************************************************
 //* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
-const userData = {
-    vehicleType: 1, // 1 = 2021 F-150, 2 = 2020 Explorer
-    useMetric: false, // This will define whether the widget uses us or non-US text and units
-    mapProvider: 'apple', // or 'google'
-};
 
 // name = Label of the vehicle shown in the Map
 // icon = vehicle Icon shown in the widget
@@ -71,8 +67,8 @@ const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     useIndicators: true, // indicators for fuel bar
-    unitOfLength: userData.useMetric ? 'km' : 'mi', // unit of length
-    distanceMultiplier: userData.useMetric ? 1 : 0.621371, // distance multiplier
+    unitOfLength: (await useMetricUnits()) ? 'km' : 'mi', // unit of length
+    distanceMultiplier: (await useMetricUnits()) ? 1 : 0.621371, // distance multiplier
     unitOfPressure: 'psi', // unit of pressure, default from ford is kpa
     largeWidget: false, // uses large widget layout, if false, medium layout is used
     storeCredentialsInKeychain: true, // securely store credentials in ios keychain
@@ -141,7 +137,7 @@ const textValues = {
 
 const isDarkMode = Device.isUsingDarkAppearance();
 const runtimeData = {
-    vehicleIcon: vehicleSelector[userData.vehicleType].icon,
+    vehicleIcon: vehicleSelector[await getVehicleType()].icon,
     textColor1: isDarkMode ? 'EDEDED' : '000000', // Header Text Color
     textColor2: isDarkMode ? 'EDEDED' : '000000', // Value Text Color
     backColor: isDarkMode ? '111111' : 'FFFFFF', // Background Color'
@@ -190,8 +186,7 @@ if (config.runsInWidget) {
 }
 // Show alert with current data (if running script in app)
 else if (config.runsInApp || config.runsFromHomeScreen) {
-    // createTableMenu();
-    createMenu();
+    createMainMenu();
 } else {
     if (widgetConfig.largeWidget) {
         await widget.presentLarge();
@@ -205,123 +200,195 @@ Script.complete();
 //*                                              START WIDGET UI ELEMENT FUNCTIONS
 //*****************************************************************************************************************************
 
-async function createMenu() {
-    const alert = new Alert();
-    alert.title = `FordPass Actions`;
+// const mainMenuItems = [{
+//         id: 'viewWidget',
+//         title: 'View Widget',
+//         action: () => {
+//             console.log('(Main Menu) View Widget was pressed');
+//             presentMedium();
+//         },
+//         show: true,
+//     },
+//     {
+//         id: 'lockVehicle',
+//         title: 'Lock Vehicle',
+//         action: () => {
+//             console.log('(Main Menu) Lock was pressed');
+//             sendLockCmd();
+//         },
+//         show: true,
+//     },
+// ];
 
-    alert.addAction('View Widget'); //0
+async function createMainMenu() {
+    const vehicleData = await fetchCarData();
 
-    alert.addAction('Lock Vehicle'); //1
-    alert.addDestructiveAction('Unlock Vehicle'); //2
+    const mainMenu = new Alert();
+    mainMenu.title = `FordPass Actions`;
 
-    alert.addAction('Remote Start (Stop)'); //3
-    alert.addDestructiveAction('Remote Start (Run)'); //4
+    // let menuItems = mainMenuItems;
+    mainMenu.addAction('View Widget'); //0
 
-    alert.addAction('Turn On All ZoneLighting'); //5
-    alert.addAction('Turn Off All ZoneLighting'); //6
+    mainMenu.addAction('Lock Vehicle'); //1
+    mainMenu.addDestructiveAction('Unlock Vehicle'); //2
+
+    mainMenu.addAction('Remote Start (Stop)'); //3
+    mainMenu.addDestructiveAction('Remote Start (Run)'); //4
+
+    mainMenu.addAction('Turn On All ZoneLighting'); //5
+    mainMenu.addAction('Turn Off All ZoneLighting'); //6
 
     // alert.addDestructiveAction("Disable SecuriAlert"); //7
     // alert.addAction("Enable SecuriAlert"); //8
 
-    alert.addAction('Update Vehicle Status'); //7
+    mainMenu.addAction('Update Vehicle Status'); //7
 
-    alert.addAction('Cancel'); //8
+    mainMenu.addAction('Widget Settings'); //8
 
-    const respIndex = await alert.presentSheet();
+    mainMenu.addAction('Cancel'); //9
+
+    const respIndex = await mainMenu.presentSheet();
 
     switch (respIndex) {
         case 0:
-            console.log('View Widget was pressed');
+            console.log('(Main Menu) View Widget was pressed');
             await widget.presentMedium();
             break;
         case 1:
-            console.log('Lock was pressed');
+            console.log('(Main Menu) Lock was pressed');
             await sendLockCmd();
             break;
         case 2:
-            console.log('Unlock was pressed');
+            console.log('(Main Menu) Unlock was pressed');
             await sendUnlockCmd();
             break;
         case 3:
-            console.log('Stop was pressed');
+            console.log('(Main Menu) Stop was pressed');
             await sendStopCmd();
             break;
         case 4:
-            console.log('Start was pressed');
+            console.log('(Main Menu) Start was pressed');
             await sendStartCmd();
             break;
         case 5:
-            console.log('Zone Lighting On was pressed');
+            console.log('(Main Menu) Zone Lighting On was pressed');
             await sendZoneLightsAllOnCmd();
             break;
         case 6:
-            console.log('Zone Lighting Off was pressed');
+            console.log('(Main Menu) Zone Lighting Off was pressed');
             await sendZoneLightsAllOffCmd();
             break;
             // case 7:
-            //     console.log("Disable SecuriAlert was pressed");
+            //     console.log("(Main Menu) Disable SecuriAlert was pressed");
             //     await sendGuardModeOffCmd();
             //     break;
             // case 8:
-            //     console.log("Enable SecuriAlert was pressed");
+            //     console.log("(Main Menu) Enable SecuriAlert was pressed");
             //     await sendGuardModeOnCmd();
             //     break;
         case 7:
-            console.log('Update Vehicle Status was pressed');
+            console.log('(Main Menu) Update Vehicle Status was pressed');
             await sendStatusCmd();
             break;
         case 8:
-            console.log('Cancel was pressed');
+            console.log('(Main Menu) Widget Settings was pressed');
+            createSettingMenu();
+            break;
+        case 9:
+            console.log('(Main Menu) Cancel was pressed');
             break;
     }
 }
 
-// function createTableMenu() {
-//     let table = new UITable();
-//     let data = [
-//         ["foo", "bar", "baz"],
-//         ["asdf", "quz", "42"],
-//         [123, 567, "add"],
-//     ];
+async function createSettingMenu() {
+    const settingMenu = new Alert();
+    settingMenu.title = `FordPass Widget Settings`;
+    // settingMenu.message = 'These settings allow you to configure FordPass Widget.';
 
-//     let row, cell;
-//     let first = true;
-//     for (const drow of data) {
-//         // drow = data row
-//         // create a new row
-//         row = new UITableRow();
-//         // immediately add it to the table to not forget that part
-//         table.addRow(row);
-//         if (first) {
-//             // set the first row to have bold text
-//             row.isHeader = true;
-//             first = false;
-//         }
-//         for (const [i, dcell] of drow.entries()) {
-//             // the last cell should contain a button
-//             if (i === 2) {
-//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
-//                 cell = row.addButton("" + dcell);
-//                 // even though the next line is not needed because it is the default setting, I like to do it anyway to be more specific of what is going on
-//                 cell.dismissOnTap = false;
-//                 // register our callback function
-//                 cell.onTap = () => {
-//                     // create a simple alert to have some user feedback on button tap
-//                     // let alert = new Alert();
-//                     // alert.message = dcell;
-//                     // alert.present();
-//                     // no need to add buttons, they will be added automatically
-//                     // no need to await it, because we don't need anything from the user
-//                 };
-//             } else {
-//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
-//                 cell = row.addText("" + dcell);
-//             }
-//             cell.centerAligned();
-//         }
-//     }
-//     table.present();
-// }
+    settingMenu.addAction(`Widget Version: ${WIDGET_VERSION}`); //0
+    let useMetric = (await useMetricUnits()) ? 'Metric' : 'Imperial';
+    settingMenu.addAction(`Measurement Units: ${useMetric.toUpperCase()}`); //1
+    let vehicleType = parseInt(await getVehicleType()) || 1;
+    settingMenu.addAction(`Vehicle Type: ${vehicleSelector[vehicleType].name}`); //2
+    let mapProvider = await getMapProvider();
+    settingMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //3
+
+    settingMenu.addDestructiveAction('Clear All Saved Data'); //4
+
+    settingMenu.addAction('Done'); //5
+
+    const respIndex = await settingMenu.presentSheet();
+
+    switch (respIndex) {
+        case 0:
+            console.log('(Setting Menu) Widget Version was pressed');
+            createSettingMenu();
+            break;
+        case 1:
+            console.log('(Setting Menu) Measurement Units pressed');
+            await toggleUseMetricUnits();
+            createSettingMenu();
+            break;
+        case 2:
+            console.log('(Setting Menu) Vehicle Types pressed');
+            // await toggleUseMetricUnits();
+            createSettingMenu();
+            break;
+        case 3:
+            console.log('(Setting Menu) Map Provider pressed');
+            await toggleMapProvider();
+            createSettingMenu();
+            break;
+        case 4:
+            console.log('(Setting Menu) Clear All Data was pressed');
+            await clearKeychain();
+            await clearFileManager();
+            createSettingMenu();
+            break;
+        case 5:
+            console.log('(Setting Menu) Done was pressed');
+            break;
+    }
+}
+
+async function newConfigMenu() {
+    const configMenu = new Alert();
+    configMenu.title = `FordPass Widget Settings`;
+    configMenu.message = 'Tap the setting to toggle a change.';
+    let useMetric = (await useMetricUnits()) ? 'Metric' : 'Imperial';
+    configMenu.addAction(`Measurement Units: ${useMetric.toUpperCase()}`); //0
+    let vehicleType = parseInt(await getVehicleType()) || 1;
+    configMenu.addAction(`Vehicle Type: ${vehicleSelector[vehicleType].name}`); //1
+    let mapProvider = await getMapProvider();
+    configMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //2
+    configMenu.addAction('Done'); //3
+
+    const respIndex = await configMenu.presentSheet();
+
+    switch (respIndex) {
+        case 0:
+            console.log('(Config Menu) Measurement Units pressed');
+            await toggleUseMetricUnits();
+            createSettingMenu();
+            break;
+        case 1:
+            console.log('(Config Menu) Vehicle Types pressed');
+            // await toggleUseMetricUnits();
+            createSettingMenu();
+            break;
+        case 2:
+            console.log('(Config Menu) Map Provider pressed');
+            await toggleMapProvider();
+            createSettingMenu();
+            break;
+        case 3:
+            console.log('(Config Menu) Done was pressed');
+            await setKeychainValue('fpUseMetricUnits', await useMetricUnits());
+            await setKeychainValue('fpVehicleType', vehicleType);
+            await setKeychainValue('fpMapProvider', mapProvider);
+            break;
+    }
+}
 
 function inputTest(val) {
     return val !== '' && val !== null && val !== undefined;
@@ -369,13 +436,17 @@ async function createWidget() {
     if (widgetConfig.clearFileManagerOnNextRun) {
         clearFileManager();
     }
-    let kcOk = await userKeychainOk();
-    if (!kcOk) {
+    let ukcOk = await userKeychainOk();
+    if (!ukcOk) {
         let prompt = await getLoginAndVin();
         if (!prompt) {
             console.log('Login and VIN not set... User cancelled!!!');
             return;
         }
+    }
+    // Shows the config options menu if any aren't defined
+    if (!(await prefsKeychainOk())) {
+        await newConfigMenu();
     }
 
     let carData = await fetchCarData();
@@ -770,7 +841,7 @@ async function createPositionElement(srcField, carData) {
     await createTitle(titleFld, 'position');
 
     let dataFld = await createRow(srcField);
-    let url = userData.mapProvider == 'google' ? `https://www.google.com/maps/search/?api=1&query=${carData.latitude},${carData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleSelector[userData.vehicleType].name)}&ll=${carData.latitude},${carData.longitude}`;
+    let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${carData.latitude},${carData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleSelector[await getVehicleType()].name)}&ll=${carData.latitude},${carData.longitude}`;
     let value = carData.position ? `${carData.position}` : textValues.errorMessages.noData;
     let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
@@ -1188,9 +1259,20 @@ async function userKeychainOk() {
     return missing.length === 0;
 }
 
+async function prefsKeychainOk() {
+    let missing = [];
+    ['fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(async(key) => {
+        if (!((await hasKeychainValue(key)) && (await getKeychainValue(key)) !== null && (await getKeychainValue(key)) !== undefined && (await getKeychainValue(key)) !== '')) {
+            missing.push(key);
+        }
+    });
+    console.log(`prefsKeychainOk: ${missing.toString()}`);
+    return missing.length === 0;
+}
+
 function clearKeychain() {
     console.log('Info: Clearing Authentication from Keychain');
-    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin'].forEach(function(key) {
+    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(function(key) {
         removeKeychainValue(key);
     });
 }
@@ -1205,7 +1287,7 @@ async function fetchCarData() {
     //fetch data from server
     console.log('fetchCarData: Fetching Vehicle Data from Ford Servers...');
     let rawData = await fetchRawData();
-    console.log(`rawData: ${JSON.stringify(rawData)}`);
+    // console.log(`rawData: ${JSON.stringify(rawData)}`);
     let carData = new Object();
     if (rawData == textValues.errorMessages.invalidGrant || rawData == textValues.errorMessages.connectionErrorOrVin || rawData == textValues.errorMessages.unknownError || rawData == textValues.errorMessages.noVin || rawData == textValues.errorMessages.noCredentials) {
         console.log('Error: ' + rawData);
@@ -1238,6 +1320,10 @@ async function fetchCarData() {
 
     //ignition status
     carData.ignitionStatus = vehicleStatus.ignitionStatus ? vehicleStatus.ignitionStatus.value : 'Off';
+
+    //zone-lighting status
+    carData.zoneLightingSupported = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value === undefined ? false : true;
+    carData.zoneLightsStatus = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value ? vehicleStatus.zoneLighting.activationData.value : 'Off';
 
     // Remote Start status
     carData.remoteStartStatus = {
@@ -1317,6 +1403,39 @@ async function fetchCarData() {
 //********************************************************************************************************************************
 //*                                             START FILE/KEYCHAIN MANAGEMENT FUNCTIONS
 //********************************************************************************************************************************
+
+async function useMetricUnits() {
+    return (await getKeychainValue('fpUseMetricUnits')) === 'true';
+}
+
+async function setUseMetricUnits(value) {
+    await setKeychainValue('fpUseMetricUnits', value.toString());
+}
+
+async function toggleUseMetricUnits() {
+    setUseMetricUnits((await useMetricUnits()) ? 'false' : 'true');
+}
+
+async function getVehicleType() {
+    return (await getKeychainValue('fpVehicleType')) || 1;
+}
+
+async function setVehicleType(value) {
+    await setKeychainValue('fpVehicleType', value);
+}
+
+async function getMapProvider() {
+    return (await getKeychainValue('fpMapProvider')) || 'apple';
+}
+
+async function setMapProvider(value) {
+    await setKeychainValue('fpMapProvider', value);
+}
+
+async function toggleMapProvider() {
+    await setMapProvider((await getMapProvider()) === 'google' ? 'apple' : 'google');
+}
+
 // get images from local filestore or download them once
 async function getImage(image) {
     let fm = FileManager.local();
@@ -1434,15 +1553,8 @@ function calculateTimeDifference(oldTime) {
     return textValues.UIValues.smallerOneMinute;
 }
 
-function calculateDurationLeasing() {
-    let lsd = new Date(userData.leaseStartDate);
-    let duration = lsb ? (Date.now() - dls.getTime()) / (1000 * 60 * 60 * 24) : null;
-    console.log((Date.now() - dls.getTime()) / (1000 * 60 * 60 * 24));
-    return duration;
-}
-
-function pressureToFixed(pressure, digits) {
-    if (widgetConfig.unitOfPressure != 'psi' || userData.useMetric) {
+async function pressureToFixed(pressure, digits) {
+    if (widgetConfig.unitOfPressure != 'psi' || (await useMetricUnits())) {
         return pressure || -1;
     } else {
         return pressure ? (pressure * 0.145).toFixed(digits) : -1;
