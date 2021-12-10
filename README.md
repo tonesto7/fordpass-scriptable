@@ -19,7 +19,8 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 
 - Will automatically fetch data from server (default every 5 minutes)
 - Tapping on the Vehicle location in the widget will open Apple Maps (or Google Maps) pin the position of your vehicle.
-- Tapping anywhere in the widget will open the scriptable app and provide a menu of quick actions for your vehicle
+- Tapping anywhere in the widget will open the scriptable app and provide a menu of quick actions for your vehicle.
+
   <img src="images/menu_example.png" alt="Menu example" width="300" />
   
 ## Todo
