@@ -6,7 +6,7 @@
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tonesto7/fordpass-scriptable?label=Latest%20Script%20Version&sort=semver&style=for-the-badge)
 
-<img src="images/widget_example.png" alt="Widget example" width="300" />
+<img src="images/widget_screenshot.png" alt="Widget example" width="300" />
 
 ## Intro
 
