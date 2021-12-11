@@ -34,6 +34,7 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
   
 ## Todo
 
+- Automatically fetch your vehicle image from ford (I just need to work out the kinks in the API) this will remove the need to define the vehicle type
 - Add customizable refresh intervals in the settings
 - Add more granular view of available vehicle controls based on capabilities (I only filter out zone-lighting at the moment)
 - Get SecuriAlert control working.
