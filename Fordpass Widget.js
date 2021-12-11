@@ -39,10 +39,13 @@ Changelog:
         - More code cleanup and added some comments
         - dynamic menu items now show up based on the vehicle capabilities (only filters out zone lighting if it is not supported... for now)
         - Moved widget settings to a settings menu so you no longer need to edit the file
+    v1.0.4: 
+        - Fixed bugs for the first time run
+        - Updated the list of selectable vehicle types.
 
 
 **************/
-const WIDGET_VERSION = '1.0.3';
+const WIDGET_VERSION = '1.0.4';
 //****************************************************************************************************************
 //* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
@@ -50,16 +53,51 @@ const WIDGET_VERSION = '1.0.3';
 // name = Label of the vehicle shown in the Map
 // icon = vehicle Icon shown in the widget
 // Create a new item to include your vehicle (Please submit a pull request if you want to add your vehicle officially.  Please include the icon so I can add it to the repository)
-const vehicleSelector = {
-    1: {
+const vehicleTypes = [{
         name: 'Ford F-150',
         icon: 'F150_2021.png',
     },
-    2: {
+    {
         name: 'Ford Explorer',
         icon: '2020_Explorer.png',
     },
-};
+    {
+        name: 'Ford Escape',
+        icon: '2021_Escape.png',
+    },
+    {
+        name: 'Ford Fusion',
+        icon: '2021_Fusion.png',
+    },
+    {
+        name: 'Ford Bronco',
+        icon: '2021_Bronco.png',
+    },
+    {
+        name: 'Ford Ranger',
+        icon: '2021_Ranger.png',
+    },
+    {
+        name: 'Ford Expedition',
+        icon: '2021_Expedition.png',
+    },
+    {
+        name: 'Ford Mustang',
+        icon: '2021_Mustang.png',
+    },
+    {
+        name: 'Ford Edge',
+        icon: '2021_Edge.png',
+    },
+    {
+        name: 'Ford Mach-E',
+        icon: '2021_Mache.png',
+    },
+    {
+        name: 'Ford EcoSport',
+        icon: '2021_Ecosport.png',
+    },
+];
 
 //******************************************************************
 //* Customize Widget Options
@@ -138,7 +176,7 @@ const textValues = {
 
 const isDarkMode = Device.isUsingDarkAppearance();
 const runtimeData = {
-    vehicleIcon: vehicleSelector[await getVehicleType()].icon,
+    vehicleIcon: vehicleTypes[parseInt(await getVehicleType())].icon,
     textColor1: isDarkMode ? 'EDEDED' : '000000', // Header Text Color
     textColor2: isDarkMode ? 'EDEDED' : '000000', // Value Text Color
     backColor: isDarkMode ? '111111' : 'FFFFFF', // Background Color'
@@ -180,6 +218,9 @@ console.log(`ScriptURL: ${URLScheme.forRunningScript()}`);
 // console.log(`Script QueryParams: ${args.queryParameter}`);
 // console.log(`Script WidgetParams: ${args.widgetParameter}`);
 let widget = await createWidget();
+if (widget === null) {
+    return;
+}
 widget.setPadding(10, 5, 5, 5);
 
 if (config.runsInWidget) {
@@ -288,7 +329,7 @@ async function getMainMenuItems() {
             title: 'Widget Settings',
             action: async() => {
                 console.log('(Main Menu) Widget Settings was pressed');
-                CreateSettingMenu();
+                createSettingMenu();
             },
             destructive: false,
             show: true,
@@ -333,8 +374,8 @@ async function createSettingMenu() {
     settingMenu.addAction(`Widget Version: ${WIDGET_VERSION}`); //0
     let useMetric = (await useMetricUnits()) ? 'Metric' : 'Imperial';
     settingMenu.addAction(`Measurement Units: ${useMetric.toUpperCase()}`); //1
-    let vehicleType = parseInt(await getVehicleType()) || 1;
-    settingMenu.addAction(`Vehicle Type: ${vehicleSelector[vehicleType].name}`); //2
+    let vehicleType = parseInt(await getVehicleType()) || 0;
+    settingMenu.addAction(`Vehicle Type: ${vehicleTypes[vehicleType].name}`); //2
     let mapProvider = await getMapProvider();
     settingMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //3
 
@@ -356,7 +397,7 @@ async function createSettingMenu() {
             break;
         case 2:
             console.log('(Setting Menu) Vehicle Types pressed');
-            // await toggleUseMetricUnits();
+            await vehicleTypeMenu();
             createSettingMenu();
             break;
         case 3:
@@ -378,12 +419,12 @@ async function createSettingMenu() {
 
 async function newConfigMenu() {
     const configMenu = new Alert();
-    configMenu.title = `FordPass Widget Settings`;
-    configMenu.message = 'Tap the setting to toggle a change.';
-    let useMetric = (await useMetricUnits()) ? 'Metric' : 'Imperial';
-    configMenu.addAction(`Measurement Units: ${useMetric.toUpperCase()}`); //0
-    let vehicleType = parseInt(await getVehicleType()) || 1;
-    configMenu.addAction(`Vehicle Type: ${vehicleSelector[vehicleType].name}`); //1
+    configMenu.title = `Widget Settings Missing`;
+    configMenu.message = 'Tap the setting to toggle a change and press Done.';
+    let useMetric = await useMetricUnits();
+    configMenu.addAction(`Measurement Units: ${(useMetric ? 'Metric' : 'Imperial').toUpperCase()}`); //0
+    let vehicleType = parseInt(await getVehicleType()) || 0;
+    configMenu.addAction(`Vehicle Type: ${vehicleTypes[vehicleType].name}`); //1
     let mapProvider = await getMapProvider();
     configMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //2
     configMenu.addAction('Done'); //3
@@ -398,7 +439,7 @@ async function newConfigMenu() {
             break;
         case 1:
             console.log('(Config Menu) Vehicle Types pressed');
-            // await toggleUseMetricUnits();
+            await vehicleTypeMenu();
             createSettingMenu();
             break;
         case 2:
@@ -408,10 +449,26 @@ async function newConfigMenu() {
             break;
         case 3:
             console.log('(Config Menu) Done was pressed');
-            await setKeychainValue('fpUseMetricUnits', await useMetricUnits());
-            await setKeychainValue('fpVehicleType', vehicleType);
+            console.log(`metric: ${useMetric ? 'true' : 'false'} | type: ${vehicleType} | map: ${mapProvider}`);
+            await setKeychainValue('fpUseMetricUnits', useMetric ? 'true' : 'false');
+            await setKeychainValue('fpVehicleType', vehicleType.toString());
             await setKeychainValue('fpMapProvider', mapProvider);
             break;
+    }
+}
+
+async function vehicleTypeMenu() {
+    const typesMenu = new Alert();
+    typesMenu.title = `Vehicle Types`;
+    for (const item in vehicleTypes) {
+        typesMenu.addAction(vehicleTypes[item].name);
+    }
+    typesMenu.addAction('Done');
+    const respIndex = await typesMenu.presentSheet();
+    if (respIndex !== null) {
+        if (respIndex !== Object.keys(vehicleTypes).length - 1) {
+            await setKeychainValue('fpVehicleType', respIndex.toString());
+        }
     }
 }
 
@@ -456,17 +513,18 @@ async function createWidget() {
         }
     }
     if (widgetConfig.clearKeychainOnNextRun) {
-        clearKeychain();
+        await clearKeychain();
     }
     if (widgetConfig.clearFileManagerOnNextRun) {
-        clearFileManager();
+        await clearFileManager();
     }
     let ukcOk = await userKeychainOk();
+    // console.log(`ukcOk: ${ukcOk}`);
     if (!ukcOk) {
         let prompt = await getLoginAndVin();
         if (!prompt) {
             console.log('Login and VIN not set... User cancelled!!!');
-            return;
+            return null;
         }
     }
     // Shows the config options menu if any aren't defined
@@ -578,30 +636,6 @@ async function createWidget() {
     let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes.detailFontSizeSmall), textColor: Color.red() });
 
     return widget;
-}
-
-async function presentMenu(indies, issues) {
-    let alert = new Alert();
-    alert.title = issues[0].title;
-    alert.message = '';
-    alert.addAction('View Small Widget');
-    alert.addAction('View Medium Widget');
-    alert.addAction('View Large Widget');
-    alert.addAction('Open Website');
-    alert.addCancelAction('Cancel');
-    let idx = await alert.presentSheet();
-    if (idx == 0) {
-        let widget = await createSmallWidget(indies, issues);
-        await widget.presentSmall();
-    } else if (idx == 1) {
-        let widget = await createMediumWidget(indies, issues);
-        await widget.presentMedium();
-    } else if (idx == 2) {
-        let widget = await createMediumWidget(indies, issues);
-        await widget.presentLarge();
-    } else if (idx == 3) {
-        Safari.open(issues[0].url);
-    }
 }
 
 function getBgGradient() {
@@ -866,7 +900,7 @@ async function createPositionElement(srcField, carData) {
     await createTitle(titleFld, 'position');
 
     let dataFld = await createRow(srcField);
-    let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${carData.latitude},${carData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleSelector[await getVehicleType()].name)}&ll=${carData.latitude},${carData.longitude}`;
+    let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${carData.latitude},${carData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleTypes[parseInt(await getVehicleType())].name)}&ll=${carData.latitude},${carData.longitude}`;
     let value = carData.position ? `${carData.position}` : textValues.errorMessages.noData;
     let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
@@ -996,6 +1030,7 @@ async function fetchRawData() {
         }
         if (data == 'Access Denied') {
             console.log('fetchRawData: Auth Token Expired. Fetching new token and fetch raw data again');
+            // await removeKeychainValue('fpToken');
             let result = await fetchToken();
             if (result && result == textValues.errorMessages.invalidGrant) {
                 return result;
@@ -1253,10 +1288,14 @@ async function sendZoneLightsAllOffCmd() {
 }
 
 async function getKeychainValue(cred) {
-    if (await Keychain.contains(cred)) {
-        return await Keychain.get(cred);
+    try {
+        if (await Keychain.contains(cred)) {
+            return await Keychain.get(cred);
+        }
+    } catch (e) {
+        console.log(`getKeychainValue(${cred}) Error: ${e}`);
     }
-    return null; //no stored credentials
+    return null;
 }
 
 async function setKeychainValue(key, value) {
@@ -1274,25 +1313,36 @@ async function removeKeychainValue(key) {
 }
 
 async function userKeychainOk() {
-    let missing = [];
-    ['fpUser', 'fpPass', 'fpVin'].forEach(async(key) => {
-        if (!((await hasKeychainValue(key)) && (await getKeychainValue(key)) !== null && (await getKeychainValue(key)) !== undefined && (await getKeychainValue(key)) !== '')) {
-            missing.push(key);
-        }
-    });
-    console.log(`userKeychainOk: ${missing.toString()}`);
-    return missing.length === 0;
+    let user = (await getKeychainValue('fpUser')) === null || (await getKeychainValue('fpUser')) === '' || (await getKeychainValue('fpUser')) === undefined;
+    let pass = (await getKeychainValue('fpPass')) === null || (await getKeychainValue('fpPass')) === '' || (await getKeychainValue('fpPass')) === undefined;
+    let vin = (await getKeychainValue('fpVin')) === null || (await getKeychainValue('fpVin')) === '' || (await getKeychainValue('fpVin')) === undefined;
+    let missing = user || pass || vin;
+    // console.log(`userKeychainOk: ${!missing}`);
+    return !missing;
+    // let missing = ["fpUser", "fpPass", "fpVin"].filter(async(key) => {
+    //     let value = await getKeychainValue(key);
+    //     console.log(`${key}: ${value}`);
+    //     return value === null || value !== undefined || value !== "";
+    // });
+    // console.log(`userKeychainOk: (${missing.length}) ${missing.toString()}`);
+    // return missing.length === 0;
 }
 
 async function prefsKeychainOk() {
-    let missing = [];
-    ['fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(async(key) => {
-        if (!((await hasKeychainValue(key)) && (await getKeychainValue(key)) !== null && (await getKeychainValue(key)) !== undefined && (await getKeychainValue(key)) !== '')) {
-            missing.push(key);
-        }
-    });
-    console.log(`prefsKeychainOk: ${missing.toString()}`);
-    return missing.length === 0;
+    let metric = (await getKeychainValue('fpUseMetricUnits')) === null || (await getKeychainValue('fpUseMetricUnits')) === '' || (await getKeychainValue('fpUseMetricUnits')) === undefined;
+    let vt = (await getKeychainValue('fpVehicleType')) === null || (await getKeychainValue('fpVehicleType')) === '' || (await getKeychainValue('fpVehicleType')) === undefined;
+    let map = (await getKeychainValue('fpMapProvider')) === null || (await getKeychainValue('fpMapProvider')) === '' || (await getKeychainValue('fpMapProvider')) === undefined;
+    let missing = metric || vt || map;
+    // console.log(`userKeychainOk: ${!missing}`);
+    return !missing;
+    // let missing = [];
+    // ["fpUseMetricUnits", "fpVehicleType", "fpMapProvider"].forEach(async(key) => {
+    //     if (!((await hasKeychainValue(key)) && (await getKeychainValue(key)) !== null && (await getKeychainValue(key)) !== undefined && (await getKeychainValue(key)) !== "")) {
+    //         missing.push(key);
+    //     }
+    // });
+    // console.log(`prefsKeychainOk: ${missing.toString()}`);
+    // return missing.length === 0;
 }
 
 function clearKeychain() {
@@ -1442,7 +1492,7 @@ async function toggleUseMetricUnits() {
 }
 
 async function getVehicleType() {
-    return (await getKeychainValue('fpVehicleType')) || 1;
+    return (await getKeychainValue('fpVehicleType')) || 0;
 }
 
 async function setVehicleType(value) {
