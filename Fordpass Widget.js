@@ -44,10 +44,11 @@ Changelog:
         - Updated the list of selectable vehicle types.
     v1.0.5: 
         - Fixed bugs with tire pressure showing as an object instead of a number
-
+    v1.0.6: 
+        - Fixes for invalid vehicle types
 
 **************/
-const WIDGET_VERSION = '1.0.5';
+const WIDGET_VERSION = '1.0.6';
 //****************************************************************************************************************
 //* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
@@ -177,6 +178,7 @@ const textValues = {
 //***************************************************************************
 
 const isDarkMode = Device.isUsingDarkAppearance();
+console.log(`vehicleType: ${parseInt(await getVehicleType())}`);
 const runtimeData = {
     vehicleIcon: vehicleTypes[parseInt(await getVehicleType())].icon,
     textColor1: isDarkMode ? 'EDEDED' : '000000', // Header Text Color
@@ -1494,7 +1496,12 @@ async function toggleUseMetricUnits() {
 }
 
 async function getVehicleType() {
-    return (await getKeychainValue('fpVehicleType')) || 0;
+    let t = (await getKeychainValue('fpVehicleType')) || 0;
+    if (vehicleTypes[parseInt(t)] === undefined) {
+        await removeKeychainValue('fpVehicleType');
+        return null;
+    }
+    return t;
 }
 
 async function setVehicleType(value) {
