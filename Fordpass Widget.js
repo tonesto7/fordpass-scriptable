@@ -42,10 +42,12 @@ Changelog:
     v1.0.4: 
         - Fixed bugs for the first time run
         - Updated the list of selectable vehicle types.
+    v1.0.5: 
+        - Fixed bugs with tire pressure showing as an object instead of a number
 
 
 **************/
-const WIDGET_VERSION = '1.0.4';
+const WIDGET_VERSION = '1.0.5';
 //****************************************************************************************************************
 //* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
@@ -1459,10 +1461,10 @@ async function fetchCarData() {
     //tire pressure
     let tpms = vehicleStatus.TPMS;
     carData.tirePressure = {
-        leftFront: pressureToFixed(tpms.leftFrontTirePressure.value, 1),
-        rightFront: pressureToFixed(tpms.rightFrontTirePressure.value, 1),
-        leftRear: pressureToFixed(tpms.outerLeftRearTirePressure.value, 1),
-        rightRear: pressureToFixed(tpms.outerRightRearTirePressure.value, 1),
+        leftFront: await pressureToFixed(tpms.leftFrontTirePressure.value, 1),
+        rightFront: await pressureToFixed(tpms.rightFrontTirePressure.value, 1),
+        leftRear: await pressureToFixed(tpms.outerLeftRearTirePressure.value, 1),
+        rightRear: await pressureToFixed(tpms.outerRightRearTirePressure.value, 1),
     };
     // console.log(JSON.stringify(carData))
 

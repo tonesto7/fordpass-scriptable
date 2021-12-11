@@ -1,11 +1,18 @@
 # FordPass widget for iOS Scriptable
 
+[![GitHub issues](https://img.shields.io/github/issues/tonesto7/fordpass-scriptable?style=for-the-badge)](https://github.com/tonesto7/fordpass-scriptable/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/tonesto7/fordpass-scriptable?style=for-the-badge)](https://github.com/tonesto7/fordpass-scriptable/pulls)
+[![Donate](https://img.shields.io/badge/donate-paypal-green.svg?style=for-the-badge)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url)
+
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tonesto7/fordpass-scriptable?label=Latest%20Script%20Version&sort=semver&style=for-the-badge)
+
 <img src="images/widget_example.png" alt="Widget example" width="300" />
 
 ## Intro
 
 This widget is based off the work of [](https://github.com/dschablowsky/FordPassWidget) by David Schablowsky.
 It's been significantly rewritten to add a new design, features, and much easier to maintain and improve.
+It no longer requires editing the script file to configure options and login information.
 This widget fetches information about your ford vehicle and displays them in a simple interactive widget.
 The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but should work on a majority of FordPass enabled devices (It doesn't support all electric features yet).
 
@@ -21,10 +28,15 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 - Tapping on the Vehicle location in the widget will open Apple Maps (or Google Maps) pin the position of your vehicle.
 - Tapping anywhere in the widget will open the scriptable app and provide a menu of quick actions for your vehicle
   
-  <img src="images/menu_example.png" alt="Menu example" width="300" />
+  <img src="images/main_menu_example.png" alt="Menu example" width="300" />
+  <img src="images/setting_menu.png" alt="Menu example" width="300" />
+  <img src="images/vehicle_types.png" alt="Menu example" width="300" />
   
 ## Todo
 
+- Add customizable refresh intervals in the settings
+- Add more granular view of available vehicle controls based on capabilities (I only filter out zone-lighting at the moment)
+- Get SecuriAlert control working.
 - Widget code updater mechanism (I don't have a way to do this yet)
 - Better support for electric vehicles (Don´t have one test with yet!!)
 
@@ -34,7 +46,9 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 - Press "raw" in the upper left corner and copy everything after opening the [Fordpass Widget.js](Fordpass%20Widget.js) script
 - Open Scriptable App
 - Press on "+" in the upper right corner and paste the code
-- Insert your username, password of your Ford account and the VIN of your vehicle, edit the vehicle type (add your own if it's missing).
+- Press "Done"
+- Tap on the widget and a menu will appear for you to enter your login information and VIN number.
+- Pressing "Done" will save the data and open another config page to allow you to change the settings.
 - Go to your iOS homescreen and make a long press to enter "homescreen edit mode"
 - Press "+" on the upper left corner and choose "Scriptable" as a medium sized widget
 - Still in "wiggle mode" tap on the newly created widget and choose the FordPass Widget from the list under "Script"
@@ -42,10 +56,8 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 For easy maintenance of the script I recommend just saving the Fordpass Widget.js file directly to the Scriptable folded inside the iCloud Drive it will make it easier to update it without having to copy and paste the code again. Any changes are reflected in the scriptable app.
 
 ## Notes
-
-Don´t set the refresh interval too low. Too much requests to the ford server can block you temporarily. Additionally the data stored on the ford server is only updated while the ignition is on. Therefore you´ll get the same old data until you turn on your car. Furthermore too much requests can slow down the servers performance and increase the chance that the api is changed.
-
-Use `clearKeychainOnNextRun` and `clearFileManagerOnNextRun` only if you are having trouble with the script. If both parameters are true, the auth_token and pictures are fetched everytime the script is executed. Once everything is working again, set both to `false`.
+ 
+I've added in 9-10 quick vehicle type options to select from.  These are only for quickly setting the vehicle name in the map and the vehicle icon shown in the widget
 
 ## Credits
 
