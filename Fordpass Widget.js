@@ -537,6 +537,7 @@ async function createWidget() {
     }
 
     let carData = await fetchCarData();
+    console.log(`carData: ${JSON.stringify(carData.vehicleInfo.vehicle)}`);
 
     // Defines the Widget Object
     const widget = new ListWidget();
@@ -556,7 +557,7 @@ async function createWidget() {
 
     // Vehicle Logo
     let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
-    let vehicleLogo = await createImage(vehicleLogoRow, await getImage(runtimeData.vehicleIcon), { imageSize: new Size(85, 45), '*centerAlignImage': null });
+    let vehicleLogo = await createImage(vehicleLogoRow, await getVehicleImage(carData.vehicleInfo.vehicle.modelYear), { imageSize: new Size(85, 45), '*centerAlignImage': null });
     mainCol1.addSpacer(5);
 
     // Creates the Fuel Info Elements
@@ -1057,6 +1058,64 @@ async function fetchRawData() {
     }
 }
 
+async function fetchVehicleInfo() {
+    if (!(await hasKeychainValue('fpToken'))) {
+        //Code is executed on first run
+        let result = await fetchToken();
+        if (result && result == textValues.errorMessages.invalidGrant) {
+            return result;
+        }
+        if (result && result == textValues.errorMessages.noCredentials) {
+            return result;
+        }
+    }
+    let token = await getKeychainValue('fpToken');
+    let vin = await getKeychainValue('fpVin');
+    if (!vin) {
+        return textValues.errorMessages.noVin;
+    }
+    let req = new Request(`https://usapi.cv.ford.com/api/users/vehicles/${vin}/detail?lrdt=01-01-1970%2000:00:00`);
+    req.headers = {
+        'Content-Type': 'application/json',
+        Accept: '*/*',
+        'Accept-Language': 'en-us',
+        'User-Agent': 'fordpass-na/353 CFNetwork/1121.2.2 Darwin/19.3.0',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Application-Id': '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
+        'auth-token': `${token}`,
+    };
+    req.method = 'GET';
+    try {
+        let data = await req.loadString();
+        if (widgetConfig.debugMode) {
+            console.log('Debug: Received vehicle data from ford server');
+            console.log(data);
+        }
+        if (data == 'Access Denied') {
+            console.log('fetchVehicleInfo: Auth Token Expired. Fetching new token and fetch raw data again');
+            // await removeKeychainValue('fpToken');
+            let result = await fetchToken();
+            if (result && result == textValues.errorMessages.invalidGrant) {
+                return result;
+            }
+            data = await fetchVehicleInfo();
+        } else {
+            data = JSON.parse(data);
+        }
+        if (data.status && data.status != 200) {
+            if (widgetConfig.debugMode) {
+                console.log('Debug: Error while receiving vehicle info');
+                console.log(data);
+            }
+            return textValues.errorMessages.connectionErrorOrVin;
+        }
+        return data;
+    } catch (e) {
+        console.log(`fetchVehicleInfo Error: ${e}`);
+        return textValues.errorMessages.unknownError;
+    }
+}
+
 async function showAlert(title, message) {
     let alert = new Alert();
     alert.title = title;
@@ -1366,7 +1425,9 @@ async function fetchCarData() {
     //fetch data from server
     console.log('fetchCarData: Fetching Vehicle Data from Ford Servers...');
     let rawData = await fetchRawData();
+    let vehInfo = await fetchVehicleInfo();
     // console.log(`rawData: ${JSON.stringify(rawData)}`);
+    console.log(`vehInfo: ${JSON.stringify(vehInfo)}`);
     let carData = new Object();
     if (rawData == textValues.errorMessages.invalidGrant || rawData == textValues.errorMessages.connectionErrorOrVin || rawData == textValues.errorMessages.unknownError || rawData == textValues.errorMessages.noVin || rawData == textValues.errorMessages.noCredentials) {
         console.log('Error: ' + rawData);
@@ -1382,6 +1443,7 @@ async function fetchCarData() {
         return carData;
     }
 
+    carData.vehicleInfo = vehInfo;
     // console.log(carData);
 
     let vehicleStatus = rawData.vehiclestatus;
@@ -1545,6 +1607,37 @@ async function getImage(image) {
         let iconImage = await loadImage(imageUrl);
         fm.writeImage(path, iconImage);
         return iconImage;
+    }
+}
+
+async function getVehicleImage(modelYear) {
+    let fm = FileManager.local();
+    let dir = fm.documentsDirectory();
+    let path = fm.joinPath(dir, 'vehicle.png');
+    if (fm.fileExists(path)) {
+        return fm.readImage(path);
+    } else {
+        let vin = await getKeychainValue('fpVin');
+        let token = await getKeychainValue('fpToken');
+        console.log(`modelYear: ${modelYear}`);
+        let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=USA&angle=4`);
+        req.headers = {
+            'Content-Type': 'application/json',
+            Accept: 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'fordpass-na/353 CFNetwork/1121.2.2 Darwin/19.3.0',
+            'Accept-Encoding': 'gzip, deflate, br',
+            // 'Application-Id': '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
+            'auth-token': `${token}`,
+        };
+        req.method = 'GET';
+        try {
+            let img = await req.loadImage();
+            fm.writeImage(path, img);
+            return img;
+        } catch (e) {
+            console.log(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
+        }
     }
 }
 
