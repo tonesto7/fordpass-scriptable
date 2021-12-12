@@ -53,55 +53,6 @@ const WIDGET_VERSION = '1.0.6';
 //* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
 
-// name = Label of the vehicle shown in the Map
-// icon = vehicle Icon shown in the widget
-// Create a new item to include your vehicle (Please submit a pull request if you want to add your vehicle officially.  Please include the icon so I can add it to the repository)
-const vehicleTypes = [{
-        name: 'Ford F-150',
-        icon: 'F150_2021.png',
-    },
-    {
-        name: 'Ford Explorer',
-        icon: '2020_Explorer.png',
-    },
-    {
-        name: 'Ford Escape',
-        icon: '2021_Escape.png',
-    },
-    {
-        name: 'Ford Fusion',
-        icon: '2021_Fusion.png',
-    },
-    {
-        name: 'Ford Bronco',
-        icon: '2021_Bronco.png',
-    },
-    {
-        name: 'Ford Ranger',
-        icon: '2021_Ranger.png',
-    },
-    {
-        name: 'Ford Expedition',
-        icon: '2021_Expedition.png',
-    },
-    {
-        name: 'Ford Mustang',
-        icon: '2021_Mustang.png',
-    },
-    {
-        name: 'Ford Edge',
-        icon: '2021_Edge.png',
-    },
-    {
-        name: 'Ford Mach-E',
-        icon: '2021_Mache.png',
-    },
-    {
-        name: 'Ford EcoSport',
-        icon: '2021_Ecosport.png',
-    },
-];
-
 //******************************************************************
 //* Customize Widget Options
 //******************************************************************
@@ -178,9 +129,7 @@ const textValues = {
 //***************************************************************************
 
 const isDarkMode = Device.isUsingDarkAppearance();
-console.log(`vehicleType: ${parseInt(await getVehicleType())}`);
 const runtimeData = {
-    vehicleIcon: vehicleTypes[parseInt(await getVehicleType())].icon,
     textColor1: isDarkMode ? 'EDEDED' : '000000', // Header Text Color
     textColor2: isDarkMode ? 'EDEDED' : '000000', // Value Text Color
     backColor: isDarkMode ? '111111' : 'FFFFFF', // Background Color'
@@ -248,9 +197,10 @@ Script.complete();
 
 async function getMainMenuItems() {
     const vehicleData = await fetchCarData();
-    return [{
+    return [
+        {
             title: 'View Widget',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) View Widget was pressed');
                 await widget.presentMedium();
             },
@@ -259,7 +209,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Lock Vehicle',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Lock was pressed');
                 await sendLockCmd();
             },
@@ -268,7 +218,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Unlock Vehicle',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Unlock was pressed');
                 await sendUnlockCmd();
             },
@@ -277,7 +227,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Remote Start (Stop)',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Stop was pressed');
                 await sendStopCmd();
             },
@@ -286,7 +236,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Remote Start (Run)',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Start was pressed');
                 await sendStartCmd();
             },
@@ -295,7 +245,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Turn On All ZoneLighting',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Zone Lighting On was pressed');
                 await sendZoneLightsAllOnCmd();
             },
@@ -304,7 +254,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Turn Off All ZoneLighting',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Zone Lighting Off was pressed');
                 await sendZoneLightsAllOffCmd();
             },
@@ -313,7 +263,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Disable SecuriAlert',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) SecuriAlert Off was pressed');
                 await sendGuardModeOffCmd();
             },
@@ -322,7 +272,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Enable SecuriAlert',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) SecuriAlert On was pressed');
                 await sendGuardModeOnCmd();
             },
@@ -331,7 +281,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Widget Settings',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Widget Settings was pressed');
                 createSettingMenu();
             },
@@ -340,7 +290,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Done',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Done was pressed');
             },
             destructive: false,
@@ -378,14 +328,13 @@ async function createSettingMenu() {
     settingMenu.addAction(`Widget Version: ${WIDGET_VERSION}`); //0
     let useMetric = (await useMetricUnits()) ? 'Metric' : 'Imperial';
     settingMenu.addAction(`Measurement Units: ${useMetric.toUpperCase()}`); //1
-    let vehicleType = parseInt(await getVehicleType()) || 0;
-    settingMenu.addAction(`Vehicle Type: ${vehicleTypes[vehicleType].name}`); //2
+
     let mapProvider = await getMapProvider();
-    settingMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //3
+    settingMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //2
 
-    settingMenu.addDestructiveAction('Clear All Saved Data'); //4
+    settingMenu.addDestructiveAction('Clear All Saved Data'); //3
 
-    settingMenu.addAction('Done'); //5
+    settingMenu.addAction('Done'); //4
 
     const respIndex = await settingMenu.presentSheet();
 
@@ -400,22 +349,17 @@ async function createSettingMenu() {
             createSettingMenu();
             break;
         case 2:
-            console.log('(Setting Menu) Vehicle Types pressed');
-            await vehicleTypeMenu();
-            createSettingMenu();
-            break;
-        case 3:
             console.log('(Setting Menu) Map Provider pressed');
             await toggleMapProvider();
             createSettingMenu();
             break;
-        case 4:
+        case 3:
             console.log('(Setting Menu) Clear All Data was pressed');
             await clearKeychain();
             await clearFileManager();
             createSettingMenu();
             break;
-        case 5:
+        case 4:
             console.log('(Setting Menu) Done was pressed');
             break;
     }
@@ -427,11 +371,9 @@ async function newConfigMenu() {
     configMenu.message = 'Tap the setting to toggle a change and press Done.';
     let useMetric = await useMetricUnits();
     configMenu.addAction(`Measurement Units: ${(useMetric ? 'Metric' : 'Imperial').toUpperCase()}`); //0
-    let vehicleType = parseInt(await getVehicleType()) || 0;
-    configMenu.addAction(`Vehicle Type: ${vehicleTypes[vehicleType].name}`); //1
     let mapProvider = await getMapProvider();
-    configMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //2
-    configMenu.addAction('Done'); //3
+    configMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //1
+    configMenu.addAction('Done'); //2
 
     const respIndex = await configMenu.presentSheet();
 
@@ -442,37 +384,16 @@ async function newConfigMenu() {
             createSettingMenu();
             break;
         case 1:
-            console.log('(Config Menu) Vehicle Types pressed');
-            await vehicleTypeMenu();
-            createSettingMenu();
-            break;
-        case 2:
             console.log('(Config Menu) Map Provider pressed');
             await toggleMapProvider();
             createSettingMenu();
             break;
-        case 3:
+        case 2:
             console.log('(Config Menu) Done was pressed');
-            console.log(`metric: ${useMetric ? 'true' : 'false'} | type: ${vehicleType} | map: ${mapProvider}`);
+            console.log(`metric: ${useMetric ? 'true' : 'false'} | map: ${mapProvider}`);
             await setKeychainValue('fpUseMetricUnits', useMetric ? 'true' : 'false');
-            await setKeychainValue('fpVehicleType', vehicleType.toString());
             await setKeychainValue('fpMapProvider', mapProvider);
             break;
-    }
-}
-
-async function vehicleTypeMenu() {
-    const typesMenu = new Alert();
-    typesMenu.title = `Vehicle Types`;
-    for (const item in vehicleTypes) {
-        typesMenu.addAction(vehicleTypes[item].name);
-    }
-    typesMenu.addAction('Done');
-    const respIndex = await typesMenu.presentSheet();
-    if (respIndex !== null) {
-        if (respIndex !== Object.keys(vehicleTypes).length - 1) {
-            await setKeychainValue('fpVehicleType', respIndex.toString());
-        }
     }
 }
 
@@ -537,7 +458,7 @@ async function createWidget() {
     }
 
     let carData = await fetchCarData();
-    console.log(`carData: ${JSON.stringify(carData.vehicleInfo.vehicle)}`);
+    // console.log(`carData: ${JSON.stringify(carData)}`);
 
     // Defines the Widget Object
     const widget = new ListWidget();
@@ -905,7 +826,7 @@ async function createPositionElement(srcField, carData) {
     await createTitle(titleFld, 'position');
 
     let dataFld = await createRow(srcField);
-    let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${carData.latitude},${carData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleTypes[parseInt(await getVehicleType())].name)}&ll=${carData.latitude},${carData.longitude}`;
+    let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${carData.latitude},${carData.longitude}` : `http://maps.apple.com/?q=${encodeURI(carData.vehicleInfo.vehicle.nickName)}&ll=${carData.latitude},${carData.longitude}`;
     let value = carData.position ? `${carData.position}` : textValues.errorMessages.noData;
     let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
@@ -1000,7 +921,7 @@ async function fetchToken() {
     }
 }
 
-async function fetchRawData() {
+async function getVehicleData() {
     if (!(await hasKeychainValue('fpToken'))) {
         //Code is executed on first run
         let result = await fetchToken();
@@ -1016,8 +937,7 @@ async function fetchRawData() {
     if (!vin) {
         return textValues.errorMessages.noVin;
     }
-    let req = new Request(`https://usapi.cv.ford.com/api/vehicles/v4/${vin}/status`);
-    req.headers = {
+    const headers = {
         'Content-Type': 'application/json',
         Accept: '*/*',
         'Accept-Language': 'en-us',
@@ -1026,7 +946,12 @@ async function fetchRawData() {
         'Application-Id': '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
         'auth-token': `${token}`,
     };
+    let req = new Request(`https://usapi.cv.ford.com/api/vehicles/v4/${vin}/status`);
+    req.headers = headers;
     req.method = 'GET';
+    let req2 = new Request(`https://usapi.cv.ford.com/api/users/vehicles/${vin}/detail?lrdt=01-01-1970%2000:00:00`);
+    req2.headers = headers;
+    req2.method = 'GET';
     try {
         let data = await req.loadString();
         if (widgetConfig.debugMode) {
@@ -1034,13 +959,13 @@ async function fetchRawData() {
             console.log(data);
         }
         if (data == 'Access Denied') {
-            console.log('fetchRawData: Auth Token Expired. Fetching new token and fetch raw data again');
+            console.log('getVehicleData: Auth Token Expired. Fetching new token and fetch raw data again');
             // await removeKeychainValue('fpToken');
             let result = await fetchToken();
             if (result && result == textValues.errorMessages.invalidGrant) {
                 return result;
             }
-            data = await fetchRawData();
+            data = await getVehicleData();
         } else {
             data = JSON.parse(data);
         }
@@ -1051,67 +976,12 @@ async function fetchRawData() {
             }
             return textValues.errorMessages.connectionErrorOrVin;
         }
+        let infoData = await req2.loadString();
+        // console.log(`info ${infoData.status}: ${JSON.stringify(JSON.parse(infoData))}`);
+        data.vehicleInfo = JSON.parse(infoData);
         return data;
     } catch (e) {
         console.log(`Error: ${e}`);
-        return textValues.errorMessages.unknownError;
-    }
-}
-
-async function fetchVehicleInfo() {
-    if (!(await hasKeychainValue('fpToken'))) {
-        //Code is executed on first run
-        let result = await fetchToken();
-        if (result && result == textValues.errorMessages.invalidGrant) {
-            return result;
-        }
-        if (result && result == textValues.errorMessages.noCredentials) {
-            return result;
-        }
-    }
-    let token = await getKeychainValue('fpToken');
-    let vin = await getKeychainValue('fpVin');
-    if (!vin) {
-        return textValues.errorMessages.noVin;
-    }
-    let req = new Request(`https://usapi.cv.ford.com/api/users/vehicles/${vin}/detail?lrdt=01-01-1970%2000:00:00`);
-    req.headers = {
-        'Content-Type': 'application/json',
-        Accept: '*/*',
-        'Accept-Language': 'en-us',
-        'User-Agent': 'fordpass-na/353 CFNetwork/1121.2.2 Darwin/19.3.0',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Application-Id': '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
-        'auth-token': `${token}`,
-    };
-    req.method = 'GET';
-    try {
-        let data = await req.loadString();
-        if (widgetConfig.debugMode) {
-            console.log('Debug: Received vehicle data from ford server');
-            console.log(data);
-        }
-        if (data == 'Access Denied') {
-            console.log('fetchVehicleInfo: Auth Token Expired. Fetching new token and fetch raw data again');
-            // await removeKeychainValue('fpToken');
-            let result = await fetchToken();
-            if (result && result == textValues.errorMessages.invalidGrant) {
-                return result;
-            }
-            data = await fetchVehicleInfo();
-        } else {
-            data = JSON.parse(data);
-        }
-        if (data.status && data.status != 200) {
-            if (widgetConfig.debugMode) {
-                console.log('Debug: Error while receiving vehicle info');
-                console.log(data);
-            }
-            return textValues.errorMessages.connectionErrorOrVin;
-        }
-        return data;
-    } catch (e) {
-        console.log(`fetchVehicleInfo Error: ${e}`);
         return textValues.errorMessages.unknownError;
     }
 }
@@ -1137,39 +1007,48 @@ const vehicleCmdConfigs = (vin) => {
         lock: {
             desc: 'Lock Vehicle',
             cmd: 'sendLockCmd',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                    method: 'PUT',
+                },
+            ],
         },
         unlock: {
             desc: 'Unlock Vehicle',
             cmd: 'sendUnlockCmd',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                    method: 'DELETE',
+                },
+            ],
         },
         start: {
             desc: 'Start Vehicle',
             cmd: 'sendStartCmd',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                    method: 'PUT',
+                },
+            ],
         },
         stop: {
             desc: 'Stop Vehicle',
             cmd: 'sendStopCmd',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                    method: 'DELETE',
+                },
+            ],
         },
         zone_lights_off: {
             desc: 'Zone Off Zone Lighting (All Lights)',
             cmd: 'sendZoneLightsOffCmd',
-            cmds: [{
+            cmds: [
+                {
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'DELETE',
                 },
@@ -1182,7 +1061,8 @@ const vehicleCmdConfigs = (vin) => {
         zone_lights_on: {
             desc: 'Turn On Zone Lighting (All Lights)',
             cmd: 'sendZoneLightsOnCmd',
-            cmds: [{
+            cmds: [
+                {
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'PUT',
                 },
@@ -1195,26 +1075,32 @@ const vehicleCmdConfigs = (vin) => {
         guard_mode_on: {
             desc: 'Turn On SecuriAlert',
             cmd: 'sendGuardModeOnCmd',
-            cmds: [{
-                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                    method: 'PUT',
+                },
+            ],
         },
         guard_mode_off: {
             desc: 'Turn Off SecuriAlert',
             cmd: 'sendGuardModeOffCmd',
-            cmds: [{
-                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                    method: 'DELETE',
+                },
+            ],
         },
         status: {
             desc: 'Refresh Vehicle Status',
             cmd: 'sendStatusCmd',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/status`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/status`,
+                    method: 'PUT',
+                },
+            ],
         },
     };
 };
@@ -1410,7 +1296,7 @@ async function prefsKeychainOk() {
 
 function clearKeychain() {
     console.log('Info: Clearing Authentication from Keychain');
-    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(async(key) => {
+    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(async (key) => {
         await removeKeychainValue(key);
     });
 }
@@ -1424,10 +1310,9 @@ async function fetchCarData() {
 
     //fetch data from server
     console.log('fetchCarData: Fetching Vehicle Data from Ford Servers...');
-    let rawData = await fetchRawData();
-    let vehInfo = await fetchVehicleInfo();
+    let rawData = await getVehicleData();
+
     // console.log(`rawData: ${JSON.stringify(rawData)}`);
-    console.log(`vehInfo: ${JSON.stringify(vehInfo)}`);
     let carData = new Object();
     if (rawData == textValues.errorMessages.invalidGrant || rawData == textValues.errorMessages.connectionErrorOrVin || rawData == textValues.errorMessages.unknownError || rawData == textValues.errorMessages.noVin || rawData == textValues.errorMessages.noCredentials) {
         console.log('Error: ' + rawData);
@@ -1443,7 +1328,7 @@ async function fetchCarData() {
         return carData;
     }
 
-    carData.vehicleInfo = vehInfo;
+    carData.vehicleInfo = rawData.vehicleInfo;
     // console.log(carData);
 
     let vehicleStatus = rawData.vehiclestatus;
@@ -1557,19 +1442,6 @@ async function toggleUseMetricUnits() {
     setUseMetricUnits((await useMetricUnits()) ? 'false' : 'true');
 }
 
-async function getVehicleType() {
-    let t = (await getKeychainValue('fpVehicleType')) || 0;
-    if (vehicleTypes[parseInt(t)] === undefined) {
-        await removeKeychainValue('fpVehicleType');
-        return null;
-    }
-    return t;
-}
-
-async function setVehicleType(value) {
-    await setKeychainValue('fpVehicleType', value);
-}
-
 async function getMapProvider() {
     return (await getKeychainValue('fpMapProvider')) || 'apple';
 }
@@ -1602,7 +1474,7 @@ async function getImage(image) {
                 break;
             default:
                 imageUrl = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/' + image;
-                // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
+            // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
         }
         let iconImage = await loadImage(imageUrl);
         fm.writeImage(path, iconImage);
@@ -1696,7 +1568,7 @@ async function clearFileManager() {
     console.log('Info: Clearing All Files from Local Directory');
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    fm.listContents(dir).forEach(async(file) => {
+    fm.listContents(dir).forEach(async (file) => {
         await removeLocalData(file);
     });
 }
