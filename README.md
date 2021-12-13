@@ -27,16 +27,17 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 - Will automatically fetch data from server (default every 5 minutes)
 - Tapping on the Vehicle location in the widget will open Apple Maps (or Google Maps) pin the position of your vehicle.
 - Tapping anywhere in the widget will open the scriptable app and provide a menu of quick actions for your vehicle
+- Automatically pulls in you vehicle image and displays it in the widget.
+  
   
   <img src="images/main_menu_example.png" alt="Menu example" width="300" />
+   <img src="images/advanced_control_menu.png" alt="Menu example" width="300" />
   <img src="images/setting_menu.png" alt="Menu example" width="300" />
-  <img src="images/vehicle_types.png" alt="Menu example" width="300" />
+ 
   
 ## Todo
 
-- Automatically fetch your vehicle image from ford (I just need to work out the kinks in the API) this will remove the need to define the vehicle type
 - Add customizable refresh intervals in the settings
-- Add more granular view of available vehicle controls based on capabilities (I only filter out zone-lighting at the moment)
 - Get SecuriAlert control working.
 - Widget code updater mechanism (I don't have a way to do this yet)
 - Better support for electric vehicles (Don´t have one test with yet!!)
@@ -58,7 +59,14 @@ For easy maintenance of the script I recommend just saving the Fordpass Widget.j
 
 ## Notes
  
-I've added in 9-10 quick vehicle type options to select from.  These are only for quickly setting the vehicle name in the map and the vehicle icon shown in the widget
+Sometimes the fuel data will be missing or incorrect. This is due to the fact that the fuel data is not always available in the Fordpass API.
+
+## Troubleshooting and Debugging
+
+The easiest way to edit the code and see the results in realtime is to use iCloud on your computer. On windows it requires installing the [iCloud Drive](https://www.icloud.com/drive/).
+
+If you browse to the iCloud Drive folder look for the Scriptable folder and you will see all the scripts you have in the app.  Just edit the Fordpass Widget.js file and save it and within a few seconds it will be updated in the Scriptable app which you will need to tap the 3 dots on the widget in the app.  You have to exit the editor view in the scripable app after each external code change.
+Then just hit the play symbol to run the code in the app.
 
 ## Credits
 
