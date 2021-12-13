@@ -34,7 +34,7 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
   
 ## Todo
 
-- Automatically fetch your vehicle image from ford (I just need to work out the kinks in the API) this will remove the need to define the vehicle type
+
 - Add customizable refresh intervals in the settings
 - Add more granular view of available vehicle controls based on capabilities (I only filter out zone-lighting at the moment)
 - Get SecuriAlert control working.
@@ -58,7 +58,7 @@ For easy maintenance of the script I recommend just saving the Fordpass Widget.j
 
 ## Notes
  
-I've added in 9-10 quick vehicle type options to select from.  These are only for quickly setting the vehicle name in the map and the vehicle icon shown in the widget
+Sometimes the fuel data will be missing or incorrect. This is due to the fact that the fuel data is not always available in the Fordpass API.
 
 ## Credits
 
