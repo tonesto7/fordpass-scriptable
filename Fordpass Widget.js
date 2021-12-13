@@ -197,10 +197,9 @@ Script.complete();
 
 async function getMainMenuItems() {
     const vehicleData = await fetchCarData();
-    return [
-        {
+    return [{
             title: 'View Widget',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) View Widget was pressed');
                 await widget.presentMedium();
             },
@@ -209,7 +208,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Lock Vehicle',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Lock was pressed');
                 await sendLockCmd();
             },
@@ -218,7 +217,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Unlock Vehicle',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Unlock was pressed');
                 await sendUnlockCmd();
             },
@@ -227,7 +226,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Remote Start (Stop)',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Stop was pressed');
                 await sendStopCmd();
             },
@@ -236,7 +235,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Remote Start (Run)',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Start was pressed');
                 await sendStartCmd();
             },
@@ -245,7 +244,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Turn On All ZoneLighting',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Zone Lighting On was pressed');
                 await sendZoneLightsAllOnCmd();
             },
@@ -254,7 +253,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Turn Off All ZoneLighting',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Zone Lighting Off was pressed');
                 await sendZoneLightsAllOffCmd();
             },
@@ -263,7 +262,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Disable SecuriAlert',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) SecuriAlert Off was pressed');
                 await sendGuardModeOffCmd();
             },
@@ -272,7 +271,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Enable SecuriAlert',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) SecuriAlert On was pressed');
                 await sendGuardModeOnCmd();
             },
@@ -281,7 +280,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Widget Settings',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Widget Settings was pressed');
                 createSettingMenu();
             },
@@ -290,7 +289,7 @@ async function getMainMenuItems() {
         },
         {
             title: 'Done',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Done was pressed');
             },
             destructive: false,
@@ -357,42 +356,10 @@ async function createSettingMenu() {
             console.log('(Setting Menu) Clear All Data was pressed');
             await clearKeychain();
             await clearFileManager();
-            createSettingMenu();
+            // createSettingMenu();
             break;
         case 4:
             console.log('(Setting Menu) Done was pressed');
-            break;
-    }
-}
-
-async function newConfigMenu() {
-    const configMenu = new Alert();
-    configMenu.title = `Widget Settings Missing`;
-    configMenu.message = 'Tap the setting to toggle a change and press Done.';
-    let useMetric = await useMetricUnits();
-    configMenu.addAction(`Measurement Units: ${(useMetric ? 'Metric' : 'Imperial').toUpperCase()}`); //0
-    let mapProvider = await getMapProvider();
-    configMenu.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //1
-    configMenu.addAction('Done'); //2
-
-    const respIndex = await configMenu.presentSheet();
-
-    switch (respIndex) {
-        case 0:
-            console.log('(Config Menu) Measurement Units pressed');
-            await toggleUseMetricUnits();
-            createSettingMenu();
-            break;
-        case 1:
-            console.log('(Config Menu) Map Provider pressed');
-            await toggleMapProvider();
-            createSettingMenu();
-            break;
-        case 2:
-            console.log('(Config Menu) Done was pressed');
-            console.log(`metric: ${useMetric ? 'true' : 'false'} | map: ${mapProvider}`);
-            await setKeychainValue('fpUseMetricUnits', useMetric ? 'true' : 'false');
-            await setKeychainValue('fpMapProvider', mapProvider);
             break;
     }
 }
@@ -401,32 +368,56 @@ function inputTest(val) {
     return val !== '' && val !== null && val !== undefined;
 }
 
-async function getLoginAndVin() {
+async function getRequiredPrefs() {
     let user = await getKeychainValue('fpUser');
     let pass = await getKeychainValue('fpPass');
     let vin = await getKeychainValue('fpVin');
     let prompt = new Alert();
     prompt.title = 'Required Data Missing';
-    prompt.message = 'Please enter you FordPass Credentials and Vehicle VIN.';
+    prompt.message = 'Please enter you FordPass Credentials and Vehicle VIN.\nTap the setting to toggle a change and press Done.';
     prompt.addTextField('FordPass Email', user || '');
     prompt.addSecureTextField('FordPass Password', pass || '');
     prompt.addTextField('Vehicle VIN', vin || '');
+
+    let useMetric = await useMetricUnits();
+    prompt.addAction(`Measurement Units: ${(useMetric ? 'Metric' : 'Imperial').toUpperCase()}`); //0
+    let mapProvider = await getMapProvider();
+    prompt.addAction(`Map Provider: ${mapProvider.toUpperCase()}`); //1
+
     prompt.addAction('Save');
     prompt.addCancelAction('Cancel');
-    let result = await prompt.presentAlert();
-    if (0 == result) {
-        user = prompt.textFieldValue(0);
-        pass = prompt.textFieldValue(1);
-        vin = prompt.textFieldValue(2);
-        // console.log(`${user} ${pass} ${vin}`);
-        if (inputTest(user) && inputTest(pass) && inputTest(vin)) {
-            await setKeychainValue('fpUser', user);
-            await setKeychainValue('fpPass', pass);
-            await setKeychainValue('fpVin', vin);
+    let respIndex = await prompt.presentAlert();
+    switch (respIndex) {
+        case 0:
+            console.log('(Config Menu) Measurement Units pressed');
+            await toggleUseMetricUnits();
+            getRequiredPrefs();
+            break;
+        case 1:
+            console.log('(Config Menu) Map Provider pressed');
+            await toggleMapProvider();
+            getRequiredPrefs();
+            break;
+        case 2:
+            console.log('(Config Menu) Done was pressed');
+            user = prompt.textFieldValue(0);
+            pass = prompt.textFieldValue(1);
+            vin = prompt.textFieldValue(2);
+            // console.log(`${user} ${pass} ${vin}`);
+            if (inputTest(user) && inputTest(pass) && inputTest(vin)) {
+                await setKeychainValue('fpUser', user);
+                await setKeychainValue('fpPass', pass);
+                await setKeychainValue('fpVin', vin);
+                return true;
+
+                console.log(`metric: ${useMetric ? 'true' : 'false'} | map: ${mapProvider}`);
+                await setKeychainValue('fpUseMetricUnits', useMetric ? 'true' : 'false');
+                await setKeychainValue('fpMapProvider', mapProvider);
+            }
             return true;
-        }
-    } else {
-        return false;
+            break;
+        case 3:
+            return false;
     }
 }
 
@@ -446,20 +437,15 @@ async function createWidget() {
     let ukcOk = await userKeychainOk();
     // console.log(`ukcOk: ${ukcOk}`);
     if (!ukcOk) {
-        let prompt = await getLoginAndVin();
+        let prompt = await getRequiredPrefs();
         if (!prompt) {
-            console.log('Login and VIN not set... User cancelled!!!');
+            console.log('Login, VIN, or Prefs not set... User cancelled!!!');
             return null;
         }
-    }
-    // Shows the config options menu if any aren't defined
-    if (!(await prefsKeychainOk())) {
-        await newConfigMenu();
     }
 
     let carData = await fetchCarData();
     // console.log(`carData: ${JSON.stringify(carData)}`);
-
     // Defines the Widget Object
     const widget = new ListWidget();
     widget.backgroundGradient = getBgGradient();
@@ -478,7 +464,7 @@ async function createWidget() {
 
     // Vehicle Logo
     let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
-    let vehicleLogo = await createImage(vehicleLogoRow, await getVehicleImage(carData.vehicleInfo.vehicle.modelYear), { imageSize: new Size(85, 45), '*centerAlignImage': null });
+    let vehicleLogo = carData.vehicleInfo !== undefined && carData.vehicleInfo.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(carData.vehicleInfo.vehicle.modelYear), { imageSize: new Size(85, 45), '*centerAlignImage': null }) : null;
     mainCol1.addSpacer(5);
 
     // Creates the Fuel Info Elements
@@ -891,8 +877,8 @@ async function fetchToken() {
     req.headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: '*/*',
-        'Accept-Language': 'en-us',
-        'User-Agent': 'fordpass-na/353 CFNetwork/1121.2.2 Darwin/19.3.0',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
         'Accept-Encoding': 'gzip, deflate, br',
     };
     req.method = 'POST';
@@ -940,20 +926,30 @@ async function getVehicleData() {
     const headers = {
         'Content-Type': 'application/json',
         Accept: '*/*',
-        'Accept-Language': 'en-us',
-        'User-Agent': 'fordpass-na/353 CFNetwork/1121.2.2 Darwin/19.3.0',
-        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
         'Application-Id': '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
         'auth-token': `${token}`,
     };
-    let req = new Request(`https://usapi.cv.ford.com/api/vehicles/v4/${vin}/status`);
-    req.headers = headers;
-    req.method = 'GET';
-    let req2 = new Request(`https://usapi.cv.ford.com/api/users/vehicles/${vin}/detail?lrdt=01-01-1970%2000:00:00`);
-    req2.headers = headers;
-    req2.method = 'GET';
+    let vehStatus = new Request(`https://usapi.cv.ford.com/api/vehicles/v4/${vin}/status`);
+    vehStatus.headers = headers;
+    vehStatus.method = 'GET';
+
+    let vehInfo = new Request(`https://usapi.cv.ford.com/api/users/vehicles/${vin}/detail?lrdt=01-01-1970%2000:00:00`);
+    vehInfo.headers = headers;
+    vehInfo.method = 'GET';
+
+    let vehCaps = new Request(`https://api.mps.ford.com/api/capability/v1/vehicles/${vin}`);
+    vehCaps.headers = headers;
+    vehCaps.method = 'GET';
+
+    let syncInfo = new Request(`https://api.mps.ford.com/api/appcatalog/v1/vehicle/syncinfo`);
+    syncInfo.headers = headers;
+    syncInfo.body = JSON.stringify({ vins: ['${vin}'] });
+    syncInfo.method = 'POST';
+
     try {
-        let data = await req.loadString();
+        let data = await vehStatus.loadString();
         if (widgetConfig.debugMode) {
             console.log('Debug: Received vehicle data from ford server');
             console.log(data);
@@ -976,9 +972,28 @@ async function getVehicleData() {
             }
             return textValues.errorMessages.connectionErrorOrVin;
         }
-        let infoData = await req2.loadString();
+        let infoData = await vehInfo.loadString();
         // console.log(`info ${infoData.status}: ${JSON.stringify(JSON.parse(infoData))}`);
         data.vehicleInfo = JSON.parse(infoData);
+
+        let capInfo = await vehCaps.loadString();
+        // console.log(`capInfo ${capInfo.status}: ${JSON.stringify(JSON.parse(capInfo))}`);
+        capInfo = JSON.parse(capInfo);
+        if (capInfo && capInfo.result && capInfo.result.features && capInfo.result.features.length > 0) {
+            let caps = capInfo.result.features
+                .filter((cap) => {
+                    return cap.state && cap.state.eligible === true;
+                })
+                .map((cap) => {
+                    return cap.feature;
+                });
+            console.log(`capInfo: ${caps}`);
+            data.vehicleCaps = caps;
+        }
+
+        // let syncData = await syncInfo.loadString();
+        // console.log(`syncData ${syncData.status}: ${JSON.stringify(JSON.parse(syncData))}`);
+        // data.vehicleCaps = JSON.parse(capInfo);
         return data;
     } catch (e) {
         console.log(`Error: ${e}`);
@@ -1007,48 +1022,39 @@ const vehicleCmdConfigs = (vin) => {
         lock: {
             desc: 'Lock Vehicle',
             cmd: 'sendLockCmd',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                method: 'PUT',
+            }, ],
         },
         unlock: {
             desc: 'Unlock Vehicle',
             cmd: 'sendUnlockCmd',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                    method: 'DELETE',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                method: 'DELETE',
+            }, ],
         },
         start: {
             desc: 'Start Vehicle',
             cmd: 'sendStartCmd',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                method: 'PUT',
+            }, ],
         },
         stop: {
             desc: 'Stop Vehicle',
             cmd: 'sendStopCmd',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                    method: 'DELETE',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                method: 'DELETE',
+            }, ],
         },
         zone_lights_off: {
             desc: 'Zone Off Zone Lighting (All Lights)',
             cmd: 'sendZoneLightsOffCmd',
-            cmds: [
-                {
+            cmds: [{
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'DELETE',
                 },
@@ -1061,8 +1067,7 @@ const vehicleCmdConfigs = (vin) => {
         zone_lights_on: {
             desc: 'Turn On Zone Lighting (All Lights)',
             cmd: 'sendZoneLightsOnCmd',
-            cmds: [
-                {
+            cmds: [{
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'PUT',
                 },
@@ -1075,32 +1080,26 @@ const vehicleCmdConfigs = (vin) => {
         guard_mode_on: {
             desc: 'Turn On SecuriAlert',
             cmd: 'sendGuardModeOnCmd',
-            cmds: [
-                {
-                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                method: 'PUT',
+            }, ],
         },
         guard_mode_off: {
             desc: 'Turn Off SecuriAlert',
             cmd: 'sendGuardModeOffCmd',
-            cmds: [
-                {
-                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                    method: 'DELETE',
-                },
-            ],
+            cmds: [{
+                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                method: 'DELETE',
+            }, ],
         },
         status: {
             desc: 'Refresh Vehicle Status',
             cmd: 'sendStatusCmd',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/status`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/status`,
+                method: 'PUT',
+            }, ],
         },
     };
 };
@@ -1265,7 +1264,9 @@ async function userKeychainOk() {
     let user = (await getKeychainValue('fpUser')) === null || (await getKeychainValue('fpUser')) === '' || (await getKeychainValue('fpUser')) === undefined;
     let pass = (await getKeychainValue('fpPass')) === null || (await getKeychainValue('fpPass')) === '' || (await getKeychainValue('fpPass')) === undefined;
     let vin = (await getKeychainValue('fpVin')) === null || (await getKeychainValue('fpVin')) === '' || (await getKeychainValue('fpVin')) === undefined;
-    let missing = user || pass || vin;
+    let metric = (await getKeychainValue('fpUseMetricUnits')) === null || (await getKeychainValue('fpUseMetricUnits')) === '' || (await getKeychainValue('fpUseMetricUnits')) === undefined;
+    let map = (await getKeychainValue('fpMapProvider')) === null || (await getKeychainValue('fpMapProvider')) === '' || (await getKeychainValue('fpMapProvider')) === undefined;
+    let missing = user || pass || vin || metric || map;
     // console.log(`userKeychainOk: ${!missing}`);
     return !missing;
     // let missing = ["fpUser", "fpPass", "fpVin"].filter(async(key) => {
@@ -1279,9 +1280,8 @@ async function userKeychainOk() {
 
 async function prefsKeychainOk() {
     let metric = (await getKeychainValue('fpUseMetricUnits')) === null || (await getKeychainValue('fpUseMetricUnits')) === '' || (await getKeychainValue('fpUseMetricUnits')) === undefined;
-    let vt = (await getKeychainValue('fpVehicleType')) === null || (await getKeychainValue('fpVehicleType')) === '' || (await getKeychainValue('fpVehicleType')) === undefined;
     let map = (await getKeychainValue('fpMapProvider')) === null || (await getKeychainValue('fpMapProvider')) === '' || (await getKeychainValue('fpMapProvider')) === undefined;
-    let missing = metric || vt || map;
+    let missing = metric || map;
     // console.log(`userKeychainOk: ${!missing}`);
     return !missing;
     // let missing = [];
@@ -1296,7 +1296,7 @@ async function prefsKeychainOk() {
 
 function clearKeychain() {
     console.log('Info: Clearing Authentication from Keychain');
-    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(async (key) => {
+    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpVehicleType', 'fpMapProvider'].forEach(async(key) => {
         await removeKeychainValue(key);
     });
 }
@@ -1315,14 +1315,15 @@ async function fetchCarData() {
     // console.log(`rawData: ${JSON.stringify(rawData)}`);
     let carData = new Object();
     if (rawData == textValues.errorMessages.invalidGrant || rawData == textValues.errorMessages.connectionErrorOrVin || rawData == textValues.errorMessages.unknownError || rawData == textValues.errorMessages.noVin || rawData == textValues.errorMessages.noCredentials) {
-        console.log('Error: ' + rawData);
+        console.log('fetchCarData | Error: ' + rawData);
         let localData = readLocalData();
-        if (widgetConfig.debugMode) {
-            console.log('Debug: Try to read local data after error');
-            console.log(localData);
-        }
         if (localData) {
             carData = localData;
+        }
+        if (rawData == textValues.errorMessages.invalidGrant) {
+            console.log(`fetchCarData | Error: ${rawData} | Clearing Authentication from Keychain`);
+            await removeKeychainValue('fpPass');
+            await removeLocalData();
         }
         carData.error = rawData;
         return carData;
@@ -1474,7 +1475,7 @@ async function getImage(image) {
                 break;
             default:
                 imageUrl = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/' + image;
-            // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
+                // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
         }
         let iconImage = await loadImage(imageUrl);
         fm.writeImage(path, iconImage);
@@ -1568,7 +1569,7 @@ async function clearFileManager() {
     console.log('Info: Clearing All Files from Local Directory');
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    fm.listContents(dir).forEach(async (file) => {
+    fm.listContents(dir).forEach(async(file) => {
         await removeLocalData(file);
     });
 }
