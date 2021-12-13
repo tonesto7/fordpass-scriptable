@@ -295,7 +295,7 @@ async function subControlMenu(type) {
                         await subControlMenu('securiAlert');
                     },
                     destructive: false,
-                    show: caps && caps.length && caps.includes('GUARD_MODE'),
+                    show: false, //caps && caps.length && caps.includes('GUARD_MODE'),
                 },
                 {
                     title: 'Trail Light Check Control',
@@ -415,10 +415,11 @@ async function subControlMenu(type) {
             break;
     }
     if (title.length > 0 && items.length > 0) {
+        let menuItems = items.filter((item) => item.show === true);
         const subMenu = new Alert();
         subMenu.title = title;
         subMenu.message = message;
-        items.forEach((item, ind) => {
+        menuItems.forEach((item, ind) => {
             if (item.destructive) {
                 subMenu.addDestructiveAction(item.title);
             } else {
@@ -1338,6 +1339,8 @@ async function sendVehicleCmd(cmd_type = '') {
                 data = await req.loadString();
             }
             data = JSON.parse(data);
+
+            // console.log(JSON.stringify(data));
 
             if (data.status) {
                 console.log(`sendVehicleCmd(${cmd_type}) Status Code (${data.status})`);
