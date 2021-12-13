@@ -51,9 +51,11 @@ Changelog:
         - Pulls in your vehicle image from ford.
         - pulls in vehicle capabilties from ford.
         - Many other improvements to support future features.
+    v1.1.1: 
+        - Added screen size detection to adjust the font size on smaller devices.
 
 **************/
-const WIDGET_VERSION = '1.1.0';
+const WIDGET_VERSION = '1.1.1';
 //****************************************************************************************************************
 //* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
@@ -61,6 +63,9 @@ const WIDGET_VERSION = '1.1.0';
 //******************************************************************
 //* Customize Widget Options
 //******************************************************************
+console.log(Device.screenResolution());
+const screenSize = Device.screenResolution().width < 1200 ? 'small' : 'default';
+
 const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     refreshInterval: 5, // allow data to refresh every (xx) minutes
@@ -158,12 +163,22 @@ const openSymbol = '✗';
  * Change titleFontSize to 9 and detailFontSizeMedium to 10 for smaller displays, e.g. iPhone SE 2
  */
 const sizes = {
-    titleFontSize: 10,
-    detailFontSizeSmall: 10,
-    detailFontSizeMedium: 11,
-    detailFontSizeBig: 19,
-    barWidth: 80,
-    barHeight: 10,
+    default: {
+        titleFontSize: 10,
+        detailFontSizeSmall: 10,
+        detailFontSizeMedium: 11,
+        detailFontSizeBig: 19,
+        barWidth: 80,
+        barHeight: 10,
+    },
+    small: {
+        titleFontSize: 9,
+        detailFontSizeSmall: 8,
+        detailFontSizeMedium: 9,
+        detailFontSizeBig: 19,
+        barWidth: 80,
+        barHeight: 10,
+    },
 };
 
 //******************************************************************************
@@ -708,12 +723,12 @@ async function createWidget() {
 
     // Creates the Refresh Label to show when the data was last updated from Ford
     let refreshTime = vehicleData.fetchTime ? calculateTimeDifference(vehicleData.fetchTime) : textValues.UIValues.unknown;
-    let refreshLabel = await createText(infoStack, refreshTime, { font: Font.mediumSystemFont(sizes.detailFontSizeSmall), textColor: Color.lightGray() });
+    let refreshLabel = await createText(infoStack, refreshTime, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.lightGray() });
 
     // Creates Elements to display any errors in red at the bottom of the widget
     infoStack.addSpacer(10);
     let errorMsg = vehicleData.error ? 'Error: ' + vehicleData.error : '';
-    let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes.detailFontSizeSmall), textColor: Color.red() });
+    let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.red() });
 
     return widget;
 }
@@ -769,41 +784,41 @@ async function createTitle(headerField, element, icon = undefined) {
         let titleImg = await createImage(headerField, imgFile, { imageSize: new Size(11, 11) });
         headerField.addSpacer(2);
     }
-    let txt = await createText(headerField, textValues.elemHeaders[element] + ':', { font: Font.boldSystemFont(sizes.titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let txt = await createText(headerField, textValues.elemHeaders[element] + ':', { font: Font.boldSystemFont(sizes[screenSize].titleFontSize), textColor: new Color(runtimeData.textColor1) });
     // return headerField;
 }
 
 async function createProgressBar(percent) {
     let fuelLevel = percent > 100 ? 100 : percent;
     const bar = new DrawContext();
-    bar.size = new Size(sizes.barWidth, sizes.barHeight + 3);
+    bar.size = new Size(sizes[screenSize].barWidth, sizes[screenSize].barHeight + 3);
     bar.opaque = false;
     bar.respectScreenScale = true;
     // Background
     const path = new Path();
-    path.addRoundedRect(new Rect(0, 0, sizes.barWidth, sizes.barHeight), 3, 2);
+    path.addRoundedRect(new Rect(0, 0, sizes[screenSize].barWidth, sizes[screenSize].barHeight), 3, 2);
     bar.addPath(path);
     bar.setFillColor(Color.lightGray());
     bar.fillPath();
     // Fuel
     const fuel = new Path();
-    fuel.addRoundedRect(new Rect(0, 0, (sizes.barWidth * fuelLevel) / 100, sizes.barHeight), 3, 2);
+    fuel.addRoundedRect(new Rect(0, 0, (sizes[screenSize].barWidth * fuelLevel) / 100, sizes[screenSize].barHeight), 3, 2);
     bar.addPath(fuel);
     bar.setFillColor(new Color('2f78dd'));
     bar.fillPath();
     if (widgetConfig.useIndicators) {
         const fuel25Indicator = new Path();
-        fuel25Indicator.addRoundedRect(new Rect(sizes.barWidth * 0.25, 1, 2, sizes.barHeight - 2), 3, 2);
+        fuel25Indicator.addRoundedRect(new Rect(sizes[screenSize].barWidth * 0.25, 1, 2, sizes[screenSize].barHeight - 2), 3, 2);
         bar.addPath(fuel25Indicator);
         bar.setFillColor(Color.black());
         bar.fillPath();
         const fuel50Indicator = new Path();
-        fuel50Indicator.addRoundedRect(new Rect(sizes.barWidth * 0.5, 1, 2, sizes.barHeight - 2), 3, 2);
+        fuel50Indicator.addRoundedRect(new Rect(sizes[screenSize].barWidth * 0.5, 1, 2, sizes[screenSize].barHeight - 2), 3, 2);
         bar.addPath(fuel50Indicator);
         bar.setFillColor(Color.black());
         bar.fillPath();
         const fuel75Indicator = new Path();
-        fuel75Indicator.addRoundedRect(new Rect(sizes.barWidth * 0.75, 1, 2, sizes.barHeight - 2), 3, 2);
+        fuel75Indicator.addRoundedRect(new Rect(sizes[screenSize].barWidth * 0.75, 1, 2, sizes[screenSize].barHeight - 2), 3, 2);
         bar.addPath(fuel75Indicator);
         bar.setFillColor(Color.black());
         bar.fillPath();
@@ -818,19 +833,19 @@ async function createFuelElement(srcField, vehicleData) {
     fuelHeaderRow.addSpacer(3);
     // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
     let lvlTxt = vehicleData.fuelLevel ? (vehicleData.fuelLevel > 100 ? 100 : vehicleData.fuelLevel) : 50;
-    let fuelHeadertext = await createText(fuelHeaderRow, textValues.elemHeaders['fuelTank'], { font: Font.boldSystemFont(sizes.titleFontSize), textColor: new Color(runtimeData.textColor1) });
-    let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
+    let fuelHeadertext = await createText(fuelHeaderRow, textValues.elemHeaders['fuelTank'], { font: Font.boldSystemFont(sizes[screenSize].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
     srcField.addSpacer(3);
 
     // Fuel Level Bar
     let fuelBarCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
     let fuelBarRow = await createRow(fuelBarCol, { '*setPadding': [0, 0, 0, 0] });
-    let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(vehicleData.fuelLevel ? vehicleData.fuelLevel : 50), { '*centerAlignImage': null, imageSize: new Size(sizes.barWidth, sizes.barHeight + 3) });
+    let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(vehicleData.fuelLevel ? vehicleData.fuelLevel : 50), { '*centerAlignImage': null, imageSize: new Size(sizes[screenSize].barWidth, sizes[screenSize].barHeight + 3) });
 
     // Fuel Distance to Empty
     let fuelBarTextRow = await createRow(fuelBarCol, { '*centerAlignContent': null, '*topAlignContent': null });
     let dteInfo = vehicleData.distanceToEmpty ? `    ${Math.floor(vehicleData.distanceToEmpty * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength} to E` : textValues.errorMessages.noData;
-    let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+    let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
 
     srcField.addSpacer(3);
 }
@@ -841,7 +856,7 @@ async function createMileageElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.odometer ? `${Math.floor(vehicleData.odometer * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength}` : textValues.errorMessages.noData;
     // console.log(`odometer: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
@@ -851,7 +866,7 @@ async function createBatteryElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
     // console.log(`batteryLevel: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
@@ -861,15 +876,15 @@ async function createOilElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.oilLife ? `${vehicleData.oilLife}%` : textValues.errorMessages.noData;
     // console.log(`oilLife: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes.detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
 async function createDoorElement(srcField, vehicleData, countOnly = false) {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
-        statOpen: { font: Font.heavySystemFont(sizes.detailFontSizeMedium), textColor: new Color('FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizes.detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        statOpen: { font: Font.heavySystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('FF5733') },
+        statClosed: { font: Font.heavySystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
@@ -919,9 +934,9 @@ async function createDoorElement(srcField, vehicleData, countOnly = false) {
 
 async function createWindowElement(srcField, vehicleData, countOnly = false) {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
-        statOpen: { font: Font.heavySystemFont(sizes.detailFontSizeMedium), textColor: new Color('FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizes.detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        statOpen: { font: Font.heavySystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('FF5733') },
+        statClosed: { font: Font.heavySystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
@@ -970,7 +985,7 @@ async function createTireElement(srcField, vehicleData) {
 
     let dataFld = await createRow(srcField);
     let value = `${vehicleData.tirePressure['leftFront']} | ${vehicleData.tirePressure['rightFront']}\n${vehicleData.tirePressure['leftRear']} | ${vehicleData.tirePressure['rightRear']}`;
-    let txt = await createText(dataFld, value, { font: new Font('Menlo-Regular', sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2 });
+    let txt = await createText(dataFld, value, { font: new Font('Menlo-Regular', sizes[screenSize].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2 });
     srcField.addSpacer(offset);
 }
 
@@ -982,14 +997,14 @@ async function createPositionElement(srcField, vehicleData) {
     let dataFld = await createRow(srcField);
     let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
     let value = vehicleData.position ? `${vehicleData.position}` : textValues.errorMessages.noData;
-    let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
+    let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
 }
 
 async function createLockStatusElement(srcField, vehicleData) {
     const styles = {
-        statOpen: { font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        statClosed: { font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        statOpen: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        statClosed: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
     };
     let offset = 10;
     let titleFld = await createRow(srcField);
@@ -1003,8 +1018,8 @@ async function createLockStatusElement(srcField, vehicleData) {
 
 async function createIgnitionStatusElement(srcField, vehicleData) {
     const styles = {
-        statOn: { font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color('#FF5733') },
-        statOff: { font: Font.mediumSystemFont(sizes.detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        statOn: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#FF5733') },
+        statOff: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#5A65C0') },
     };
     let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
     let status = '';
@@ -1519,7 +1534,7 @@ async function fetchVehicleData(loadLocal = false) {
     //     console.log(`otaData: ${JSON.stringify(otaData)}`);
     //     vehicleData.otaInfo = otaData;
     // }
-    // console.log(vehicleData);
+    // console.log(JSON.stringify(vehicleData));
 
     let vehicleStatus = statusData.vehiclestatus;
 
