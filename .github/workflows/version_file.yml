@@ -32,5 +32,19 @@ jobs:
           name: "latest.json"
           json: '{"version": "${{ steps.previoustag.outputs.tag }}"}'
           dir: '/'
+          
+      - name: Commit latest.json Files
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Action test"
+          git add ./latest.json -f -v
+          git commit -m "Updated Version File"
+      
+      - name: Push Version File Changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+#           force: true
     
 
