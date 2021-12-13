@@ -46,6 +46,11 @@ Changelog:
         - Fixed bugs with tire pressure showing as an object instead of a number
     v1.0.6: 
         - Fixes for invalid vehicle types
+    v1.1.0: 
+        - Fixes for login failures.
+        - Pulls in your vehicle image from ford.
+        - pulls in vehicle capabilties from ford.
+        - Many other improvements to support future features.
 
 **************/
 const WIDGET_VERSION = '1.1.0';
