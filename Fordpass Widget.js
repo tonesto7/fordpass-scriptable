@@ -120,6 +120,7 @@ const textValues = {
         unlock: 'Unlock',
         ignitionStatus: 'Ignition',
         batteryStatus: 'Battery',
+        evChargeStatus: 'Charger',
         remoteStart: 'Remote Start',
     },
     UIValues: {
@@ -175,7 +176,7 @@ const runtimeData = {
     keyIcon: usingDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
     position: usingDarkMode ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
     evBatteryStatus: usingDarkMode ? 'ev_battery_dark.png' : 'ev_battery_light.png', // Image Used for EV Battery Icon
-    evPlugStatus: usingDarkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
+    evChargeStatus: usingDarkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
 };
 
 const closedSymbol = '✓';
@@ -695,7 +696,12 @@ async function createWidget() {
     await createBatteryElement(mainCol1, vehicleData);
 
     // Creates Oil Life Elements
-    await createOilElement(mainCol1, vehicleData);
+    if (!vehicleData.evVehicle) {
+        await createOilElement(mainCol1, vehicleData);
+    } else {
+        // Creates EV Plug Elements
+        await createEvChargeElement(mainCol1, vehicleData);
+    }
 
     contentStack.addSpacer();
 
@@ -882,22 +888,24 @@ async function createProgressBar(percent) {
 async function createFuelElement(srcField, vehicleData) {
     // Fuel tank header
     let fuelHeaderRow = await createRow(srcField);
-    let fuelHeadericon = await createImage(fuelHeaderRow, await getImage(runtimeData.fuelIcon), { imageSize: new Size(11, 11) });
+    let fuelHeadericon = await createImage(fuelHeaderRow, await getImage(vehicleData.evVehicle ? runtimeData.evBatteryStatus : runtimeData.fuelIcon), { imageSize: new Size(11, 11) });
     fuelHeaderRow.addSpacer(3);
     // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
-    let lvlTxt = vehicleData.fuelLevel ? (vehicleData.fuelLevel > 100 ? 100 : vehicleData.fuelLevel) : 50;
-    let fuelHeadertext = await createText(fuelHeaderRow, textValues.elemHeaders['fuelTank'], { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let lvlVal = vehicleData.evBatteryLevel !== null ? vehicleData.evBatteryLevel : vehicleData.fuelLevel;
+    let lvlTxt = lvlVal ? (lvlVal > 100 ? 100 : lvlVal) : 50;
+    let fuelHeadertext = await createText(fuelHeaderRow, textValues.elemHeaders[vehicleData.evVehicle ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
     let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
     srcField.addSpacer(3);
 
     // Fuel Level Bar
     let fuelBarCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
     let fuelBarRow = await createRow(fuelBarCol, { '*setPadding': [0, 0, 0, 0] });
-    let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(vehicleData.fuelLevel ? vehicleData.fuelLevel : 50), { '*centerAlignImage': null, imageSize: new Size(sizes[screenType].barWidth, sizes[screenType].barHeight + 3) });
+    let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(lvlVal ? lvlVal : 50), { '*centerAlignImage': null, imageSize: new Size(sizes[screenType].barWidth, sizes[screenType].barHeight + 3) });
 
     // Fuel Distance to Empty
     let fuelBarTextRow = await createRow(fuelBarCol, { '*centerAlignContent': null, '*topAlignContent': null });
-    let dteInfo = vehicleData.distanceToEmpty ? `    ${Math.floor(vehicleData.distanceToEmpty * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength} to E` : textValues.errorMessages.noData;
+    let dteValue = vehicleData.evBatteryDte !== null ? vehicleData.evBatteryDte : vehicleData.distanceToEmpty;
+    let dteInfo = dteValue ? `    ${Math.floor(dteValue * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength} ${vehicleData.evVehicle ? 'Range' : 'to E'}` : textValues.errorMessages.noData;
     let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
 
     srcField.addSpacer(3);
@@ -929,6 +937,16 @@ async function createOilElement(srcField, vehicleData) {
     await createTitle(elem, 'oil');
     elem.addSpacer(2);
     let value = vehicleData.oilLife ? `${vehicleData.oilLife}%` : textValues.errorMessages.noData;
+    // console.log(`oilLife: ${value}`);
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    srcField.addSpacer(3);
+}
+
+async function createEvChargeElement(srcField, vehicleData) {
+    let elem = await createRow(srcField, { '*layoutHorizontally': null });
+    await createTitle(elem, 'evChargeStatus');
+    elem.addSpacer(2);
+    let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : textValues.errorMessages.noData;
     // console.log(`oilLife: ${value}`);
     let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
@@ -1600,6 +1618,16 @@ async function fetchVehicleData(loadLocal = false) {
     let vehicleStatus = statusData.vehiclestatus;
 
     vehicleData.fetchTime = Date.now();
+
+    vehicleData.evVehicle = vehicleData.capabilities.includes('EV_FUEL') || (vehicleStatus.batteryFillLevel && vehicleStatus.batteryFillLevel.value !== null);
+    if (vehicleData.evVehicle) {
+        vehicleData.evBatteryLevel = vehicleStatus.batteryFillLevel && vehicleStatus.batteryFillLevel.value ? Math.floor(vehicleStatus.batteryFillLevel.value) : null;
+        vehicleData.evBatteryDte = vehicleStatus.elVehDTE && vehicleStatus.elVehDTE.value ? vehicleStatus.elVehDTE.value : null;
+        vehicleData.evChargeStatus = vehicleStatus.chargingStatus && vehicleStatus.chargingStatus.value ? vehicleStatus.chargingStatus.value : null;
+        vehicleData.evPlugStatus = vehicleStatus.plugStatus && vehicleStatus.plugStatus.value ? vehicleStatus.plugStatus.value : null;
+        vehicleData.evChargeStartTime = vehicleStatus.chargeStartTime && vehicleStatus.chargeStartTime.value ? vehicleStatus.chargeStartTime.value : null;
+        vehicleData.evChargeStopTime = vehicleStatus.chargeEndTime && vehicleStatus.chargeEndTime.value ? vehicleStatus.chargeEndTime.value : null;
+    }
 
     //odometer
     vehicleData.odometer = vehicleStatus.odometer.value;
