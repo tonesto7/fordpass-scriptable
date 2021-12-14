@@ -44,6 +44,11 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 
 ## Installation
 
+### Automated Install
+
+[![Download with ScriptDude](https://scriptdu.de/download.svg)](https://scriptdu.de/?name=Fordpass+Widget&source=https%3A%2F%2Fraw.githubusercontent.com%2Ftonesto7%2Ffordpass-scriptable%2Fmain%2FFordpass%2520Widget.js&docs=https%3A%2F%2Fgithub.com%2Ftonesto7%2Ffordpass-scriptable)
+
+### Manual Install
 - Browse here to [view the latest code](Fordpass%20Widget.js)
 - Press "raw" in the upper left corner and copy everything after opening the [Fordpass Widget.js](Fordpass%20Widget.js) script
 - Open Scriptable App
