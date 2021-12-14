@@ -1,0 +1,50 @@
+# This is a basic workflow that is manually triggered
+
+name: Update Version File
+
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  create:
+  push:
+    tags:
+    - 'v*'
+  workflow_dispatch:
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+#     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: actions/checkout@v2.2.0
+        with:
+          fetch-depth: 0 # Required due to the weg Git works, without it this action won't be able to find any or the correct tags
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+      - name: create-json
+        id: create-json
+        uses: jsdaniell/create-json@1.1.2
+        with:
+          name: "latest.json"
+          json: '{"version": "${{ steps.previoustag.outputs.tag }}"}'
+          dir: '/'
+          
+      - name: Commit latest.json Files
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Action test"
+          git add ./latest.json -f -v
+          git commit -m "Updated Version File"
+      
+      - name: Push Version File Changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+#           force: true
+    
+
