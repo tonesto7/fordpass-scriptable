@@ -52,6 +52,7 @@ Changelog:
         - pulls in vehicle capabilties from ford.
         - Many other improvements to support future features.
     v1.1.1: 
+        - Initial support of Electric Vehicles (battery charge, and range)
         - Added screen size detection to adjust the font size on iphones with smaller displays. (Will be used later to fine tune the padding of the widget).
         - Added a version check to show you on the widget and main menu if there is a new version available.
         - Low Voltage Battery Text now shows up as a red when it is low.
