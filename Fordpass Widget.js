@@ -52,31 +52,45 @@ Changelog:
         - pulls in vehicle capabilties from ford.
         - Many other improvements to support future features.
     v1.1.1: 
-        - Added screen size detection to adjust the font size on iphones with smaller displays.
+        - Added screen size detection to adjust the font size on iphones with smaller displays. (Will be used later to fine tune the padding of the widget).
         - Added a version check to show you on the widget and main menu if there is a new version available.
         - Low Voltage Battery Text now shows up as a red when it is low.
         - Status Text is displays at the bottom of the widget. When vehicle is in deep sleep mode, firmware update is in progress, or the vehicle is in a low voltage battery state, the status text will be displayed.
         - Fixed bug in using metric and defining psi tire pressure
+        - Tweak the padding of the widget to make it more consistent.
+        - Fixed tire pressure font so it matches the rest of the widget.
 
 **************/
 const WIDGET_VERSION = '1.1.1';
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
+console.log('Script Update Available: ' + updateAvailable);
 //****************************************************************************************************************
 //* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
 
+//************************************************************************* */
+//*                  Device Detail Functions
+//************************************************************************* */
+const screenSize = Device.screenResolution();
+const screenType = screenSize.width < 1200 ? 'small' : 'default';
+const usingDarkMode = Device.isUsingDarkAppearance();
+const isPhone = Device.isPhone();
+const isPad = Device.isPad();
+console.log('---------------DEVICE INFO ----------------');
+console.log(`OSDarkMode: ${usingDarkMode}`);
+console.log(`ScreenType: ${screenType}`);
+console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.height}`);
+// console.log(`Device Info | Model: ${Device.model()} | OSVersion: ${Device.systemVersion()}`, Device.name());
+// console.log(`Locale: ${Device.locale()} | Language: ${Device.language()}`);
+
 //******************************************************************
 //* Customize Widget Options
 //******************************************************************
-console.log(Device.screenResolution());
-const screenSize = Device.screenResolution().width < 1200 ? 'small' : 'default';
-console.log('Update Available: ' + updateAvailable);
 const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console
     refreshInterval: 5, // allow data to refresh every (xx) minutes
-    useIndicators: true, // indicators for fuel bar
     unitOfLength: (await useMetricUnits()) ? 'km' : 'mi', // unit of length
     distanceMultiplier: (await useMetricUnits()) ? 1 : 0.621371, // distance multiplier
     largeWidget: false, // uses large widget layout, if false, medium layout is used
@@ -143,26 +157,25 @@ const textValues = {
 //* Customize the Appearance of widget elements when in dark or light mode
 //***************************************************************************
 
-const isDarkMode = Device.isUsingDarkAppearance();
 const runtimeData = {
-    textColor1: isDarkMode ? 'EDEDED' : '000000', // Header Text Color
-    textColor2: isDarkMode ? 'EDEDED' : '000000', // Value Text Color
-    backColor: isDarkMode ? '111111' : 'FFFFFF', // Background Color'
-    backColorGrad: isDarkMode ? ['141414', '13233F'] : ['BCBBBB', 'DDDDDD'], // Background Color Gradient
-    fuelIcon: isDarkMode ? 'gas-station_dark.png' : 'gas-station_light.png', // Image for gas station
-    lockStatus: isDarkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
-    lockIcon: isDarkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
-    tirePressure: isDarkMode ? 'tire_dark.png' : 'tire_light.png', // Image for tire pressure
-    unlockIcon: isDarkMode ? 'unlock_dark.png' : 'unlock_light.png', // Image Used for UnLock Icon
-    batteryStatus: isDarkMode ? 'battery_dark.png' : 'battery_light.png', // Image Used for Battery Icon
-    doors: isDarkMode ? 'door_dark.png' : 'door_light.png', // Image Used for Door Lock Icon
-    windows: isDarkMode ? 'window_dark.png' : 'window_light.png', // Image Used for Window Icon
-    oil: isDarkMode ? 'oil_dark.png' : 'oil_light.png', // Image Used for Oil Icon
-    ignitionStatus: isDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Ignition Icon
-    keyIcon: isDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
-    position: isDarkMode ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
-    evBatteryStatus: isDarkMode ? 'ev_battery_dark.png' : 'ev_battery_light.png', // Image Used for EV Battery Icon
-    evPlugStatus: isDarkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
+    textColor1: usingDarkMode ? 'EDEDED' : '000000', // Header Text Color
+    textColor2: usingDarkMode ? 'EDEDED' : '000000', // Value Text Color
+    backColor: usingDarkMode ? '111111' : 'FFFFFF', // Background Color'
+    backColorGrad: usingDarkMode ? ['141414', '13233F'] : ['BCBBBB', 'DDDDDD'], // Background Color Gradient
+    fuelIcon: usingDarkMode ? 'gas-station_dark.png' : 'gas-station_light.png', // Image for gas station
+    lockStatus: usingDarkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
+    lockIcon: usingDarkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
+    tirePressure: usingDarkMode ? 'tire_dark.png' : 'tire_light.png', // Image for tire pressure
+    unlockIcon: usingDarkMode ? 'unlock_dark.png' : 'unlock_light.png', // Image Used for UnLock Icon
+    batteryStatus: usingDarkMode ? 'battery_dark.png' : 'battery_light.png', // Image Used for Battery Icon
+    doors: usingDarkMode ? 'door_dark.png' : 'door_light.png', // Image Used for Door Lock Icon
+    windows: usingDarkMode ? 'window_dark.png' : 'window_light.png', // Image Used for Window Icon
+    oil: usingDarkMode ? 'oil_dark.png' : 'oil_light.png', // Image Used for Oil Icon
+    ignitionStatus: usingDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Ignition Icon
+    keyIcon: usingDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
+    position: usingDarkMode ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
+    evBatteryStatus: usingDarkMode ? 'ev_battery_dark.png' : 'ev_battery_light.png', // Image Used for EV Battery Icon
+    evPlugStatus: usingDarkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
 };
 
 const closedSymbol = '✓';
@@ -238,7 +251,11 @@ async function getMainMenuItems() {
             title: 'View Widget',
             action: async() => {
                 console.log('(Main Menu) View Widget was pressed');
-                await widget.presentMedium();
+                if (widgetConfig.largeWidget) {
+                    await widget.presentLarge();
+                } else {
+                    await widget.presentMedium();
+                }
             },
             destructive: false,
             show: true,
@@ -666,7 +683,7 @@ async function createWidget() {
     // Vehicle Logo
     let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
     let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(85, 45), '*centerAlignImage': null }) : null;
-    mainCol1.addSpacer(5);
+    mainCol1.addSpacer(0);
 
     // Creates the Fuel Info Elements
     await createFuelElement(mainCol1, vehicleData);
@@ -705,7 +722,7 @@ async function createWidget() {
     // Create Tire Pressure Elements
     await createTireElement(mainCol2, vehicleData);
 
-    mainCol2.addSpacer();
+    mainCol2.addSpacer(0);
 
     //*****************************
     //* Large Card Column 2 Row 1
@@ -741,31 +758,31 @@ async function createWidget() {
 
     // Creates the Refresh Label to show when the data was last updated from Ford
     let refreshTime = vehicleData.fetchTime ? calculateTimeDifference(vehicleData.fetchTime) : textValues.UIValues.unknown;
-    let refreshLabel = await createText(infoStack, refreshTime, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.lightGray() });
+    let refreshLabel = await createText(infoStack, refreshTime, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.lightGray() });
     if (updateAvailable) {
         infoStack.addSpacer(10);
-        await createText(infoStack, `New Version Available: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.orange() });
+        await createText(infoStack, `New Version Available: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.orange() });
     }
     if (vehicleData.batteryStatus === 'STATUS_LOW' ? true : false) {
         infoStack.addSpacer(10);
-        await createText(infoStack, `12V Battery Low`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.red() });
+        await createText(infoStack, `12V Battery Low`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.red() });
     }
 
     if (vehicleData.deepSleepMode) {
         infoStack.addSpacer(10);
-        await createText(infoStack, `Deep Sleep Mode Active`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.red() });
+        await createText(infoStack, `Deep Sleep Mode Active`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.red() });
     }
 
     if (vehicleData.firmwareUpdating) {
         infoStack.addSpacer(10);
-        await createText(infoStack, `Firmware Updating`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.orange() });
+        await createText(infoStack, `Firmware Updating`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.orange() });
     }
 
     // Creates Elements to display any errors in red at the bottom of the widget
     if (vehicleData.error) {
         infoStack.addSpacer(10);
         let errorMsg = vehicleData.error ? 'Error: ' + vehicleData.error : '';
-        let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.red() });
+        let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.red() });
     }
 
     return widget;
@@ -822,45 +839,43 @@ async function createTitle(headerField, element, icon = undefined) {
         let titleImg = await createImage(headerField, imgFile, { imageSize: new Size(11, 11) });
         headerField.addSpacer(2);
     }
-    let txt = await createText(headerField, textValues.elemHeaders[element] + ':', { font: Font.boldSystemFont(sizes[screenSize].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let txt = await createText(headerField, textValues.elemHeaders[element] + ':', { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
     // return headerField;
 }
 
 async function createProgressBar(percent) {
     let fuelLevel = percent > 100 ? 100 : percent;
     const bar = new DrawContext();
-    bar.size = new Size(sizes[screenSize].barWidth, sizes[screenSize].barHeight + 3);
+    bar.size = new Size(sizes[screenType].barWidth, sizes[screenType].barHeight + 3);
     bar.opaque = false;
     bar.respectScreenScale = true;
     // Background
     const path = new Path();
-    path.addRoundedRect(new Rect(0, 0, sizes[screenSize].barWidth, sizes[screenSize].barHeight), 3, 2);
+    path.addRoundedRect(new Rect(0, 0, sizes[screenType].barWidth, sizes[screenType].barHeight), 3, 2);
     bar.addPath(path);
     bar.setFillColor(Color.lightGray());
     bar.fillPath();
     // Fuel
     const fuel = new Path();
-    fuel.addRoundedRect(new Rect(0, 0, (sizes[screenSize].barWidth * fuelLevel) / 100, sizes[screenSize].barHeight), 3, 2);
+    fuel.addRoundedRect(new Rect(0, 0, (sizes[screenType].barWidth * fuelLevel) / 100, sizes[screenType].barHeight), 3, 2);
     bar.addPath(fuel);
     bar.setFillColor(new Color('2f78dd'));
     bar.fillPath();
-    if (widgetConfig.useIndicators) {
-        const fuel25Indicator = new Path();
-        fuel25Indicator.addRoundedRect(new Rect(sizes[screenSize].barWidth * 0.25, 1, 2, sizes[screenSize].barHeight - 2), 3, 2);
-        bar.addPath(fuel25Indicator);
-        bar.setFillColor(Color.black());
-        bar.fillPath();
-        const fuel50Indicator = new Path();
-        fuel50Indicator.addRoundedRect(new Rect(sizes[screenSize].barWidth * 0.5, 1, 2, sizes[screenSize].barHeight - 2), 3, 2);
-        bar.addPath(fuel50Indicator);
-        bar.setFillColor(Color.black());
-        bar.fillPath();
-        const fuel75Indicator = new Path();
-        fuel75Indicator.addRoundedRect(new Rect(sizes[screenSize].barWidth * 0.75, 1, 2, sizes[screenSize].barHeight - 2), 3, 2);
-        bar.addPath(fuel75Indicator);
-        bar.setFillColor(Color.black());
-        bar.fillPath();
-    }
+    const fuel25Indicator = new Path();
+    fuel25Indicator.addRoundedRect(new Rect(sizes[screenType].barWidth * 0.25, 1, 2, sizes[screenType].barHeight - 2), 3, 2);
+    bar.addPath(fuel25Indicator);
+    bar.setFillColor(Color.black());
+    bar.fillPath();
+    const fuel50Indicator = new Path();
+    fuel50Indicator.addRoundedRect(new Rect(sizes[screenType].barWidth * 0.5, 1, 2, sizes[screenType].barHeight - 2), 3, 2);
+    bar.addPath(fuel50Indicator);
+    bar.setFillColor(Color.black());
+    bar.fillPath();
+    const fuel75Indicator = new Path();
+    fuel75Indicator.addRoundedRect(new Rect(sizes[screenType].barWidth * 0.75, 1, 2, sizes[screenType].barHeight - 2), 3, 2);
+    bar.addPath(fuel75Indicator);
+    bar.setFillColor(Color.black());
+    bar.fillPath();
     return await bar.getImage();
 }
 
@@ -871,19 +886,19 @@ async function createFuelElement(srcField, vehicleData) {
     fuelHeaderRow.addSpacer(3);
     // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
     let lvlTxt = vehicleData.fuelLevel ? (vehicleData.fuelLevel > 100 ? 100 : vehicleData.fuelLevel) : 50;
-    let fuelHeadertext = await createText(fuelHeaderRow, textValues.elemHeaders['fuelTank'], { font: Font.boldSystemFont(sizes[screenSize].titleFontSize), textColor: new Color(runtimeData.textColor1) });
-    let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
+    let fuelHeadertext = await createText(fuelHeaderRow, textValues.elemHeaders['fuelTank'], { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
     srcField.addSpacer(3);
 
     // Fuel Level Bar
     let fuelBarCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
     let fuelBarRow = await createRow(fuelBarCol, { '*setPadding': [0, 0, 0, 0] });
-    let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(vehicleData.fuelLevel ? vehicleData.fuelLevel : 50), { '*centerAlignImage': null, imageSize: new Size(sizes[screenSize].barWidth, sizes[screenSize].barHeight + 3) });
+    let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(vehicleData.fuelLevel ? vehicleData.fuelLevel : 50), { '*centerAlignImage': null, imageSize: new Size(sizes[screenType].barWidth, sizes[screenType].barHeight + 3) });
 
     // Fuel Distance to Empty
     let fuelBarTextRow = await createRow(fuelBarCol, { '*centerAlignContent': null, '*topAlignContent': null });
     let dteInfo = vehicleData.distanceToEmpty ? `    ${Math.floor(vehicleData.distanceToEmpty * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength} to E` : textValues.errorMessages.noData;
-    let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+    let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
 
     srcField.addSpacer(3);
 }
@@ -894,7 +909,7 @@ async function createMileageElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.odometer ? `${Math.floor(vehicleData.odometer * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength}` : textValues.errorMessages.noData;
     // console.log(`odometer: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
@@ -905,7 +920,7 @@ async function createBatteryElement(srcField, vehicleData) {
     let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
     // console.log(`batteryLevel: ${value}`);
     let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
@@ -915,15 +930,15 @@ async function createOilElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.oilLife ? `${vehicleData.oilLife}%` : textValues.errorMessages.noData;
     // console.log(`oilLife: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
 async function createDoorElement(srcField, vehicleData, countOnly = false) {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
-        statOpen: { font: Font.heavySystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        statOpen: { font: Font.heavySystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('FF5733') },
+        statClosed: { font: Font.heavySystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
@@ -973,9 +988,9 @@ async function createDoorElement(srcField, vehicleData, countOnly = false) {
 
 async function createWindowElement(srcField, vehicleData, countOnly = false) {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
-        statOpen: { font: Font.heavySystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        statOpen: { font: Font.heavySystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('FF5733') },
+        statClosed: { font: Font.heavySystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
@@ -1024,7 +1039,7 @@ async function createTireElement(srcField, vehicleData) {
 
     let dataFld = await createRow(srcField);
     let value = `${vehicleData.tirePressure['leftFront']} | ${vehicleData.tirePressure['rightFront']}\n${vehicleData.tirePressure['leftRear']} | ${vehicleData.tirePressure['rightRear']}`;
-    let txt = await createText(dataFld, value, { font: new Font('Menlo-Regular', sizes[screenSize].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2 });
+    let txt = await createText(dataFld, value, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2 });
     srcField.addSpacer(offset);
 }
 
@@ -1036,16 +1051,16 @@ async function createPositionElement(srcField, vehicleData) {
     let dataFld = await createRow(srcField);
     let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
     let value = vehicleData.position ? `${vehicleData.position}` : textValues.errorMessages.noData;
-    let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
+    let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
 }
 
 async function createLockStatusElement(srcField, vehicleData) {
     const styles = {
-        statOpen: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        statClosed: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        statOpen: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        statClosed: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
     };
-    let offset = 10;
+    let offset = 5;
     let titleFld = await createRow(srcField);
     await createTitle(titleFld, 'lockStatus');
     titleFld.addSpacer(2);
@@ -1057,8 +1072,8 @@ async function createLockStatusElement(srcField, vehicleData) {
 
 async function createIgnitionStatusElement(srcField, vehicleData) {
     const styles = {
-        statOn: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#FF5733') },
-        statOff: { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        statOn: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#FF5733') },
+        statOff: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
     };
     let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
     let status = '';
@@ -1069,7 +1084,7 @@ async function createIgnitionStatusElement(srcField, vehicleData) {
     } else {
         textValues.errorMessages.noData;
     }
-    let offset = 10;
+    let offset = 5;
     let titleFld = await createRow(srcField);
     await createTitle(titleFld, 'ignitionStatus');
     titleFld.addSpacer(2);
@@ -1562,10 +1577,12 @@ async function fetchVehicleData(loadLocal = false) {
     if (widgetConfig.logVehicleData) {
         console.log(`statusData: ${JSON.stringify(statusData)}`);
     }
+
+    // Pulls in info about the vehicle like brand, model, year, etc. (Used to help with getting vehicle image and name for the map)
     let infoData = await getVehicleInfo();
     // console.log(`infoData: ${JSON.stringify(infoData)}`);
     vehicleData.info = infoData;
-
+    // Pulls in a list of the vehicles capabilities like zone lighting, remote start, etc.
     let capData = await getVehicleCapabilities();
     // console.log(`capData: ${JSON.stringify(capData)}`);
     vehicleData.capabilities = capData;
