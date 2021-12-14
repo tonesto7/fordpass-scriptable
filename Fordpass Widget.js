@@ -54,6 +54,9 @@ Changelog:
     v1.1.1: 
         - Added screen size detection to adjust the font size on iphones with smaller displays.
         - Added a version check to show you on the widget and main menu if there is a new version available.
+        - Low Voltage Battery Text now shows up as a red when it is low.
+        - Status Text is displays at the bottom of the widget. When vehicle is in deep sleep mode, firmware update is in progress, or the vehicle is in a low voltage battery state, the status text will be displayed.
+        - Fixed bug in using metric and defining psi tire pressure
 
 **************/
 const WIDGET_VERSION = '1.1.1';
@@ -71,7 +74,7 @@ const screenSize = Device.screenResolution().width < 1200 ? 'small' : 'default';
 console.log('Update Available: ' + updateAvailable);
 const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
-    logVehicleData: true, // Logs the vehicle data to the console
+    logVehicleData: false, // Logs the vehicle data to the console
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     useIndicators: true, // indicators for fuel bar
     unitOfLength: (await useMetricUnits()) ? 'km' : 'mi', // unit of length
@@ -158,6 +161,8 @@ const runtimeData = {
     ignitionStatus: isDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Ignition Icon
     keyIcon: isDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
     position: isDarkMode ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
+    evBatteryStatus: isDarkMode ? 'ev_battery_dark.png' : 'ev_battery_light.png', // Image Used for EV Battery Icon
+    evPlugStatus: isDarkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
 };
 
 const closedSymbol = '✓';
@@ -741,11 +746,27 @@ async function createWidget() {
         infoStack.addSpacer(10);
         await createText(infoStack, `New Version Available: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.orange() });
     }
+    if (vehicleData.batteryStatus === 'STATUS_LOW' ? true : false) {
+        infoStack.addSpacer(10);
+        await createText(infoStack, `12V Battery Low`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.red() });
+    }
+
+    if (vehicleData.deepSleepMode) {
+        infoStack.addSpacer(10);
+        await createText(infoStack, `Deep Sleep Mode Active`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.red() });
+    }
+
+    if (vehicleData.firmwareUpdating) {
+        infoStack.addSpacer(10);
+        await createText(infoStack, `Firmware Updating`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.orange() });
+    }
 
     // Creates Elements to display any errors in red at the bottom of the widget
-    infoStack.addSpacer(10);
-    let errorMsg = vehicleData.error ? 'Error: ' + vehicleData.error : '';
-    let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.red() });
+    if (vehicleData.error) {
+        infoStack.addSpacer(10);
+        let errorMsg = vehicleData.error ? 'Error: ' + vehicleData.error : '';
+        let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.red() });
+    }
 
     return widget;
 }
@@ -883,7 +904,8 @@ async function createBatteryElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
     // console.log(`batteryLevel: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
@@ -1537,7 +1559,9 @@ async function fetchVehicleData(loadLocal = false) {
         vehicleData.error = statusData;
         return vehicleData;
     }
-
+    if (widgetConfig.logVehicleData) {
+        console.log(`statusData: ${JSON.stringify(statusData)}`);
+    }
     let infoData = await getVehicleInfo();
     // console.log(`infoData: ${JSON.stringify(infoData)}`);
     vehicleData.info = infoData;
@@ -1856,7 +1880,7 @@ function calculateTimeDifference(oldTime) {
 }
 
 async function pressureToFixed(pressure, digits) {
-    if (!(await usePsiUnit()) || (await useMetricUnits())) {
+    if (!(await usePsiUnit()) && !(await useMetricUnits())) {
         return pressure || -1;
     } else {
         return pressure ? (pressure * 0.145).toFixed(digits) : -1;
