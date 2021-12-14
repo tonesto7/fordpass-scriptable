@@ -65,7 +65,7 @@ Changelog:
         - Updated navigation menus so that you can go back to previous menus instead of exiting each time
         - Updated the tire pressure so that values follow unit selection in widget settings
 **************/
-const WIDGET_VERSION = '1.1.1';
+const WIDGET_VERSION = '1.1.2';
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
 console.log('Script Update Available: ' + updateAvailable);
