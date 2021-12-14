@@ -52,10 +52,13 @@ Changelog:
         - pulls in vehicle capabilties from ford.
         - Many other improvements to support future features.
     v1.1.1: 
-        - Added screen size detection to adjust the font size on smaller devices.
+        - Added screen size detection to adjust the font size on iphones with smaller displays.
+        - Added a version check to show you on the widget and main menu if there is a new version available.
 
 **************/
 const WIDGET_VERSION = '1.1.1';
+const LATEST_VERSION = await getLatestScriptVersion();
+const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
 //****************************************************************************************************************
 //* This widget should work with most vehicles that are supported in the FordPass app!
 //****************************************************************************************************************
@@ -65,7 +68,7 @@ const WIDGET_VERSION = '1.1.1';
 //******************************************************************
 console.log(Device.screenResolution());
 const screenSize = Device.screenResolution().width < 1200 ? 'small' : 'default';
-
+console.log('Update Available: ' + updateAvailable);
 const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     refreshInterval: 5, // allow data to refresh every (xx) minutes
@@ -217,6 +220,15 @@ async function getMainMenuItems() {
     const vehicleData = await fetchVehicleData(true);
     const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
     return [{
+            title: `New Script Available: (v${LATEST_VERSION})`,
+            action: async() => {
+                console.log('(Main Menu) New Version was pressed');
+                createMainMenu();
+            },
+            destructive: true,
+            show: updateAvailable,
+        },
+        {
             title: 'View Widget',
             action: async() => {
                 console.log('(Main Menu) View Widget was pressed');
@@ -724,6 +736,10 @@ async function createWidget() {
     // Creates the Refresh Label to show when the data was last updated from Ford
     let refreshTime = vehicleData.fetchTime ? calculateTimeDifference(vehicleData.fetchTime) : textValues.UIValues.unknown;
     let refreshLabel = await createText(infoStack, refreshTime, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.lightGray() });
+    if (updateAvailable) {
+        infoStack.addSpacer(10);
+        await createText(infoStack, `New Version Available: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizes[screenSize].detailFontSizeSmall), textColor: Color.orange() });
+    }
 
     // Creates Elements to display any errors in red at the bottom of the widget
     infoStack.addSpacer(10);
@@ -1789,6 +1805,23 @@ async function clearFileManager() {
     });
 }
 
+async function getLatestScriptVersion() {
+    let req = new Request(`https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/latest.json`);
+    req.headers = {
+        'Content-Type': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+        'Accept-Encoding': 'gzip, deflate, br',
+    };
+    req.method = 'GET';
+    try {
+        let ver = await req.loadJSON();
+        return ver && ver.version ? ver.version.replace('v', '') : undefined;
+    } catch (e) {
+        console.log(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
+    }
+}
+
 //************************************************** END FILE MANAGEMENT FUNCTIONS************************************************
 //********************************************************************************************************************************
 
@@ -1858,6 +1891,18 @@ function _mapMethodsAndCall(inst, options) {
         }
     });
     return inst;
+}
+
+function isNewerVersion(oldVer, newVer) {
+    const oldParts = oldVer.split('.');
+    const newParts = newVer.split('.');
+    for (var i = 0; i < newParts.length; i++) {
+        const a = ~~newParts[i]; // parse int
+        const b = ~~oldParts[i]; // parse int
+        if (a > b) return true;
+        if (a < b) return false;
+    }
+    return false;
 }
 
 //************************************************* END UTILITY FUNCTIONS ********************************************************
