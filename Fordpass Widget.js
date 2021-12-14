@@ -71,6 +71,7 @@ const screenSize = Device.screenResolution().width < 1200 ? 'small' : 'default';
 console.log('Update Available: ' + updateAvailable);
 const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
+    logVehicleData: true, // Logs the vehicle data to the console
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     useIndicators: true, // indicators for fuel bar
     unitOfLength: (await useMetricUnits()) ? 'km' : 'mi', // unit of length
@@ -1550,7 +1551,10 @@ async function fetchVehicleData(loadLocal = false) {
     //     console.log(`otaData: ${JSON.stringify(otaData)}`);
     //     vehicleData.otaInfo = otaData;
     // }
-    // console.log(JSON.stringify(vehicleData));
+
+    if (widgetConfig.logVehicleData) {
+        console.log(JSON.stringify(vehicleData));
+    }
 
     let vehicleStatus = statusData.vehiclestatus;
 
