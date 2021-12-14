@@ -60,7 +60,10 @@ Changelog:
         - Fixed bug in using metric and defining psi tire pressure
         - Tweak the padding of the widget to make it more consistent.
         - Fixed tire pressure font so it matches the rest of the widget.
-
+    v1.1.2: 
+        - Updated navigation labels
+        - Updated navigation menus so that you can go back to previous menus instead of exiting each time
+        - Updated the tire pressure so that values follow unit selection in widget settings
 **************/
 const WIDGET_VERSION = '1.1.1';
 const LATEST_VERSION = await getLatestScriptVersion();
@@ -317,9 +320,9 @@ async function getMainMenuItems() {
             show: true,
         },
         {
-            title: 'Done',
+            title: 'Exit',
             action: async() => {
-                console.log('(Main Menu) Done was pressed');
+                console.log('(Main Menu) Exit was pressed');
             },
             destructive: false,
             show: true,
@@ -345,17 +348,17 @@ async function subControlMenu(type) {
                     destructive: false,
                     show: caps && caps.length && (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES')),
                 },
+//                 {
+//                     title: 'SecuriAlert Control',
+//                     action: async() => {
+//                         console.log('(Advanced Controls Menu) SecuriAlert was pressed');
+//                         await subControlMenu('securiAlert');
+//                     },
+//                     destructive: false,
+//                     show: caps && caps.length && caps.includes('GUARD_MODE'),
+//                 },
                 {
-                    title: 'SecuriAlert Control',
-                    action: async() => {
-                        console.log('(Advanced Controls Menu) SecuriAlert was pressed');
-                        await subControlMenu('securiAlert');
-                    },
-                    destructive: false,
-                    show: false, //caps && caps.length && caps.includes('GUARD_MODE'),
-                },
-                {
-                    title: 'Trail Light Check Control',
+                    title: 'Trailer Lighting Check Control',
                     action: async() => {
                         console.log('(Advanced Controls Menu) Trailer Light Check was pressed');
                         await subControlMenu('trailerLightCheck');
@@ -364,10 +367,10 @@ async function subControlMenu(type) {
                     show: caps && caps.length && caps.includes('TRAILER_LIGHT'),
                 },
                 {
-                    title: 'Abort',
+                    title: 'Back',
                     action: async() => {
-                        console.log('(Advanced Controls Menu) Done was pressed');
-                        getMainMenuItems();
+                        console.log('(Advanced Controls Menu) Back was pressed');
+                    	createMainMenu();
                     },
                     destructive: false,
                     show: true,
@@ -396,10 +399,10 @@ async function subControlMenu(type) {
                     show: true,
                 },
                 {
-                    title: 'Abort',
+                    title: 'Back',
                     action: async() => {
-                        console.log('(Zone Lighting Menu) Done was pressed');
-                        getMainMenuItems();
+                        console.log('(Zone Lighting Menu) Back was pressed');
+                        subControlMenu('advancedControl');
                     },
                     destructive: false,
                     show: true,
@@ -428,10 +431,10 @@ async function subControlMenu(type) {
                     show: true,
                 },
                 {
-                    title: 'Abort',
+                    title: 'Back',
                     action: async() => {
-                        console.log('(SecuriAlert Menu) SecuriAlert Done was pressed');
-                        getMainMenuItems();
+                        console.log('(SecuriAlert Menu) SecuriAlert back was pressed');
+                        subControlMenu('advancedControl');
                     },
                     destructive: false,
                     show: true,
@@ -460,10 +463,10 @@ async function subControlMenu(type) {
                     show: true,
                 },
                 {
-                    title: 'Abort',
+                    title: 'Back',
                     action: async() => {
-                        console.log('(Trailer Light Menu) Done was pressed');
-                        getMainMenuItems();
+                        console.log('(Trailer Light Menu) back was pressed');
+                        subControlMenu('advancedControl');
                     },
                     destructive: false,
                     show: true,
@@ -530,7 +533,7 @@ async function createSettingMenu() {
 
     settingMenu.addDestructiveAction('Clear All Saved Data'); //4
 
-    settingMenu.addAction('Done'); //5
+    settingMenu.addAction('Back'); //5
 
     const respInd = await settingMenu.presentSheet();
 
@@ -561,7 +564,9 @@ async function createSettingMenu() {
             // createSettingMenu();
             break;
         case 5:
-            console.log('(Setting Menu) Done was pressed');
+            console.log('(Setting Menu) Back was pressed');
+            getMainMenuItems()
+            createMainMenu();
             break;
     }
 }
@@ -1938,7 +1943,8 @@ function calculateTimeDifference(oldTime) {
 }
 
 async function pressureToFixed(pressure, digits) {
-    if (!(await usePsiUnit()) && !(await useMetricUnits())) {
+    if (!(await usePsiUnit()))
+      {
         return pressure || -1;
     } else {
         return pressure ? (pressure * 0.145).toFixed(digits) : -1;
