@@ -62,9 +62,10 @@ Changelog:
         - Fixed tire pressure font so it matches the rest of the widget.
     v1.2.0: 
         - Added support for advanced commands like securialert, and likely any future commands.
-        
         - Updated navigation labels and menus so that you can go back to previous menus instead of exiting each time
         - Refactored the entire authentication mechinism to get the new token required for more advanced commands and data
+        - Added a new info button to the main menu that shows securialert status and another for the raw OTA data in an HTML WebView
+        - Lot's of fixes
 
 **************/
 // await removeKeychainValue('fpToken2');
