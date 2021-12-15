@@ -843,7 +843,7 @@ async function createWidget() {
         infoStack.addSpacer(10);
         await createText(infoStack, `New Version Available: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.orange() });
     }
-    if (!vehicledData.evVehicle && vehicleData.batteryStatus === 'STATUS_LOW') {
+    if (!vehicleData.evVehicle && vehicleData.batteryStatus === 'STATUS_LOW') {
         infoStack.addSpacer(10);
         await createText(infoStack, `12V Battery Low`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.red() });
     }
