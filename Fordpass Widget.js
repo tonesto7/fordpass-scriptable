@@ -60,16 +60,17 @@ Changelog:
         - Fixed bug in using metric and defining psi tire pressure
         - Tweak the padding of the widget to make it more consistent.
         - Fixed tire pressure font so it matches the rest of the widget.
+    v1.2.0: 
+        - Updated navigation labels
+        - Updated navigation menus so that you can go back to previous menus instead of exiting each time
+        - Updated the tire pressure so that values follow unit selection in widget settings
+        - refactored the authentication mechinism to get the new token required for more advanced commands and data
 
 **************/
-const WIDGET_VERSION = '1.1.1';
+const WIDGET_VERSION = '1.2.0';
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
 console.log('Script Update Available: ' + updateAvailable);
-//****************************************************************************************************************
-//* This widget should work with most vehicles that are supported in the FordPass app!
-//****************************************************************************************************************
-
 //************************************************************************* */
 //*                  Device Detail Functions
 //************************************************************************* */
@@ -78,10 +79,10 @@ const screenType = screenSize.width < 1200 ? 'small' : 'default';
 const usingDarkMode = Device.isUsingDarkAppearance();
 const isPhone = Device.isPhone();
 const isPad = Device.isPad();
-console.log('---------------DEVICE INFO ----------------');
-console.log(`OSDarkMode: ${usingDarkMode}`);
-console.log(`ScreenType: ${screenType}`);
-console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.height}`);
+// console.log('---------------DEVICE INFO ----------------');
+// console.log(`OSDarkMode: ${usingDarkMode}`);
+// console.log(`ScreenType: ${screenType}`);
+// console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.height}`);
 // console.log(`Device Info | Model: ${Device.model()} | OSVersion: ${Device.systemVersion()}`, Device.name());
 // console.log(`Locale: ${Device.locale()} | Language: ${Device.language()}`);
 
@@ -89,8 +90,9 @@ console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.heigh
 //* Customize Widget Options
 //******************************************************************
 const widgetConfig = {
-    debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
-    logVehicleData: false, // Logs the vehicle data to the console
+    debugMode: true, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
+    debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
+    logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     unitOfLength: (await useMetricUnits()) ? 'km' : 'mi', // unit of length
     distanceMultiplier: (await useMetricUnits()) ? 1 : 0.621371, // distance multiplier
@@ -103,7 +105,7 @@ const widgetConfig = {
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
 };
-
+let fetchCnt = 0;
 //******************************************************************
 //* Edit these values to accomodate your langauge or prefrerences
 //******************************************************************
@@ -141,6 +143,7 @@ const textValues = {
         invalidGrant: 'Incorrect Login Data',
         connectionErrorOrVin: 'Incorrect VIN Number',
         unknownError: 'Unknown Error',
+        accessDenied: 'Access Denied',
         noData: 'No Data',
         noCredentials: 'Missing Login Credentials',
         noVin: 'VIN Missing',
@@ -317,9 +320,9 @@ async function getMainMenuItems() {
             show: true,
         },
         {
-            title: 'Done',
+            title: 'Exit',
             action: async() => {
-                console.log('(Main Menu) Done was pressed');
+                console.log('(Main Menu) Exit was pressed');
             },
             destructive: false,
             show: true,
@@ -352,10 +355,10 @@ async function subControlMenu(type) {
                         await subControlMenu('securiAlert');
                     },
                     destructive: false,
-                    show: false, //caps && caps.length && caps.includes('GUARD_MODE'),
+                    show: caps && caps.length && caps.includes('GUARD_MODE'),
                 },
                 {
-                    title: 'Trail Light Check Control',
+                    title: 'Trailer Lighting Check Control',
                     action: async() => {
                         console.log('(Advanced Controls Menu) Trailer Light Check was pressed');
                         await subControlMenu('trailerLightCheck');
@@ -364,10 +367,10 @@ async function subControlMenu(type) {
                     show: caps && caps.length && caps.includes('TRAILER_LIGHT'),
                 },
                 {
-                    title: 'Abort',
+                    title: 'Back',
                     action: async() => {
-                        console.log('(Advanced Controls Menu) Done was pressed');
-                        getMainMenuItems();
+                        console.log('(Advanced Controls Menu) Back was pressed');
+                        createMainMenu();
                     },
                     destructive: false,
                     show: true,
@@ -380,7 +383,7 @@ async function subControlMenu(type) {
             items = [{
                     title: 'Turn On All ZoneLighting',
                     action: async() => {
-                        console.log('(Zone Lighting Menu) Zone Lighting On was pressed');
+                        console.log('(Zone Lighting Menu) On was pressed');
                         await sendZoneLightsAllOnCmd();
                     },
                     destructive: false,
@@ -389,17 +392,17 @@ async function subControlMenu(type) {
                 {
                     title: 'Turn Off All ZoneLighting',
                     action: async() => {
-                        console.log('(Zone Lighting Menu) Zone Lighting Off was pressed');
+                        console.log('(Zone Lighting Menu) Off was pressed');
                         await sendZoneLightsAllOffCmd();
                     },
                     destructive: false,
                     show: true,
                 },
                 {
-                    title: 'Abort',
+                    title: 'Back',
                     action: async() => {
-                        console.log('(Zone Lighting Menu) Done was pressed');
-                        getMainMenuItems();
+                        console.log('(Zone Lighting Menu) Back was pressed');
+                        subControlMenu('advancedControl');
                     },
                     destructive: false,
                     show: true,
@@ -412,7 +415,7 @@ async function subControlMenu(type) {
             items = [{
                     title: 'Disable SecuriAlert',
                     action: async() => {
-                        console.log('(SecuriAlert Menu) SecuriAlert Off was pressed');
+                        console.log('(SecuriAlert Menu) Off was pressed');
                         await sendGuardModeOffCmd();
                     },
                     destructive: true,
@@ -421,17 +424,17 @@ async function subControlMenu(type) {
                 {
                     title: 'Enable SecuriAlert',
                     action: async() => {
-                        console.log('(SecuriAlert Menu) securiAlert On was pressed');
+                        console.log('(SecuriAlert Menu) On was pressed');
                         await sendGuardModeOnCmd();
                     },
                     destructive: false,
                     show: true,
                 },
                 {
-                    title: 'Abort',
+                    title: 'Back',
                     action: async() => {
-                        console.log('(SecuriAlert Menu) SecuriAlert Done was pressed');
-                        getMainMenuItems();
+                        console.log('(SecuriAlert Menu) Back was pressed');
+                        subControlMenu('advancedControl');
                     },
                     destructive: false,
                     show: true,
@@ -444,7 +447,7 @@ async function subControlMenu(type) {
             items = [{
                     title: 'Turn On Trailer Light Check',
                     action: async() => {
-                        console.log('(Trailer Light Menu) Trailer Light Check On was pressed');
+                        console.log('(Trailer Lighting Menu) On was pressed');
                         await sendTrailerLightCheckOnCmd();
                     },
                     destructive: true,
@@ -453,17 +456,17 @@ async function subControlMenu(type) {
                 {
                     title: 'Turn Off Trailer Light Check',
                     action: async() => {
-                        console.log('(Trailer Light Menu) Trailer Light Check Off was pressed');
+                        console.log('(Trailer Lighting Menu) Off was pressed');
                         await sendTrailerLightCheckOffCmd();
                     },
                     destructive: false,
                     show: true,
                 },
                 {
-                    title: 'Abort',
+                    title: 'Back',
                     action: async() => {
-                        console.log('(Trailer Light Menu) Done was pressed');
-                        getMainMenuItems();
+                        console.log('(Trailer Lighting Menu) Back was pressed');
+                        subControlMenu('advancedControl');
                     },
                     destructive: false,
                     show: true,
@@ -530,7 +533,7 @@ async function createSettingMenu() {
 
     settingMenu.addDestructiveAction('Clear All Saved Data'); //4
 
-    settingMenu.addAction('Done'); //5
+    settingMenu.addAction('Back'); //5
 
     const respInd = await settingMenu.presentSheet();
 
@@ -561,7 +564,8 @@ async function createSettingMenu() {
             // createSettingMenu();
             break;
         case 5:
-            console.log('(Setting Menu) Done was pressed');
+            console.log('(Setting Menu) Back was pressed');
+            createMainMenu();
             break;
     }
 }
@@ -642,12 +646,12 @@ async function requiredPrefsMenu() {
 }
 
 async function createWidget() {
-    if (widgetConfig.debugMode) {
-        console.log('widgetConfig | DEBUG:');
-        for (const k in widgetConfig) {
-            console.log(`${k}: ${widgetConfig[k]}`);
-        }
-    }
+    // if (widgetConfig.debugMode) {
+    //     console.log('widgetConfig | DEBUG:');
+    //     for (const k in widgetConfig) {
+    //         console.log(`${k}: ${widgetConfig[k]}`);
+    //     }
+    // }
     if (widgetConfig.clearKeychainOnNextRun) {
         await clearKeychain();
     }
@@ -1130,6 +1134,39 @@ async function createIgnitionStatusElement(srcField, vehicleData) {
 //*                                                  START FORDPASS API FUNCTIONS
 //*****************************************************************************************************************************
 
+function appIDs() {
+    return {
+        UK_Europe: '1E8C7794-FF5F-49BC-9596-A1E0C86C5B19',
+        Australia: '5C80A6BB-CF0D-4A30-BDBF-FC804B5C1A98',
+        NA: '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
+    };
+}
+
+async function checkAuth(src = undefined) {
+    let token = await getKeychainValue('fpToken2');
+    let expiresAt = await getKeychainValue('fpTokenExpiresAt');
+    let expired = expiresAt ? Date.now() >= Date.parse(expiresAt) : false;
+    if (widgetConfig.debugMode) {
+        console.log(`chechAuth(${src})`);
+        console.log(`checkAuth | Token: ${token}`);
+        console.log(`checkAuth | ExpiresAt: ${expiresAt}`);
+        console.log(`checkAuth | Expired: ${expired}`);
+    }
+    let tok;
+    let refresh;
+    if (expired) {
+        console.log('Token has expired... Refreshing Token...');
+        refresh = await refreshToken();
+    } else if (token === null || token === undefined || token === '' || expiresAt === null || expiresAt === undefined || expiresAt === '') {
+        console.log('Token or Expiration State is Missing... Fetching Token...');
+        tok = await fetchToken();
+    }
+    if ((tok || refresh) && (tok == textValues.errorMessages.invalidGrant || tok == textValues.errorMessages.noCredentials || refresh == textValues.errorMessages.invalidGrant || refresh == textValues.errorMessages.noCredentials)) {
+        return tok;
+    }
+    return;
+}
+
 async function fetchToken() {
     let username = await getKeychainValue('fpUser');
     if (!username) {
@@ -1139,34 +1176,113 @@ async function fetchToken() {
     if (!password) {
         return textValues.errorMessages.noCredentials;
     }
-
-    let req = new Request('https://fcis.ice.ibmcloud.com/v1.0/endpoint/default/token');
-    req.headers = {
+    let headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: '*/*',
         'Accept-Language': 'en-US,en;q=0.9',
         'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
         'Accept-Encoding': 'gzip, deflate, br',
+        authorization: 'Basic ZWFpLWNsaWVudDo=',
     };
-    req.method = 'POST';
-    req.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=password&username=${username}&password=${password}`;
 
     try {
+        let req1 = new Request('https://sso.ci.ford.com/oidc/endpoint/default/token');
+        req1.headers = headers;
+        req1.method = 'POST';
+        req1.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=password&username=${username}&password=${password}`;
+
+        let token1 = await req1.loadJSON();
+        let resp1 = req1.response;
+        if (widgetConfig.debugAuthMode) {
+            console.log(`Token1 Req | Status: ${resp1.statusCode}) | Resp: ${token1}`);
+        }
+        if (token1.error && token1.error == 'invalid_grant') {
+            if (widgetConfig.debugMode) {
+                console.log('Debug: Error while receiving token1 data');
+                console.log(token1);
+            }
+            return textValues.errorMessages.invalidGrant;
+        }
+        if (resp1.statusCode === 200) {
+            let req2 = new Request(`https://api.mps.ford.com/api/oauth2/v1/token`);
+            headers['content-type'] = 'application/json';
+            headers['application-id'] = appIDs().NA;
+            req2.headers = headers;
+            req2.method = 'PUT';
+            req2.body = JSON.stringify({ code: token1.access_token });
+
+            let token2 = await req2.loadJSON();
+            let resp2 = req2.response;
+            if (widgetConfig.debugAuthMode) {
+                console.log(`Token2 Req | Status: ${resp2.statusCode}) | Resp: ${token2}`);
+            }
+            if (token2.error && token2.error == 'invalid_grant') {
+                if (widgetConfig.debugMode) {
+                    console.log('Debug: Error while receiving token2 data');
+                    console.log(token2);
+                }
+                return textValues.errorMessages.invalidGrant;
+            }
+            if (resp2.statusCode === 200) {
+                await setKeychainValue('fpToken2', token2.access_token);
+                await setKeychainValue('fpCat1Token', token2.cat1_token);
+                await setKeychainValue('fpRefreshToken', token2.refresh_token);
+                await setKeychainValue('fpTokenExpiresAt', (Date.now() + token2.expires_in).toString());
+                let token = await getKeychainValue('fpToken2');
+                let expiresAt = await getKeychainValue('fpTokenExpiresAt');
+                console.log(`expiresAt: ${expiresAt}`);
+                return;
+            }
+        }
+    } catch (e) {
+        console.log(`fetchToken Error: ${e}`);
+        if (e.error && e.error == 'invalid_grant') {
+            return textValues.errorMessages.invalidGrant;
+        }
+        throw e;
+    }
+}
+
+async function refreshToken() {
+    try {
+        const refreshToken = await getKeychainValue('fpRefreshToken');
+
+        let req = new Request(`https://api.mps.ford.com/api/oauth2/v1/refresh`);
+        req.headers = {
+            Accept: '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Content-Type': 'application/json',
+            'Application-Id': appIDs().NA,
+        };
+        req.method = 'PUT';
+        req.body = JSON.stringify({ refresh_token: refreshToken });
+
         let token = await req.loadJSON();
+        let resp = req.response;
+        if (widgetConfig.debugAuthMode) {
+            console.log(`RefreshToken Req | Status: ${resp.statusCode}) | Resp: ${token}`);
+        }
         if (token.error && token.error == 'invalid_grant') {
             if (widgetConfig.debugMode) {
-                console.log('Debug: Error while receiving auth data');
+                console.log('Debug: Error while receiving refreshing token');
                 console.log(token);
             }
             return textValues.errorMessages.invalidGrant;
         }
-        if (widgetConfig.debugMode) {
-            console.log('Debug: Received auth data from ford server');
-            console.log(token);
+        if (resp.status === 200) {
+            await setKeychainValue('fpToken2', token.access_token);
+            await setKeychainValue('fpCat1Token', token2.cat1_token);
+            await setKeychainValue('fpRefreshToken', token.refresh_token);
+            await setKeychainValue('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
+            console.log(`expiresAt: ${expiresAt}`);
+            return;
+        } else if (resp.statusCode === 401) {
+            await fetchToken();
         }
-        await setKeychainValue('fpToken', token.access_token);
     } catch (e) {
-        console.log(`Error: ${e}`);
+        console.log(`refreshMpsToken Error: ${e}`);
         if (e.error && e.error == 'invalid_grant') {
             return textValues.errorMessages.invalidGrant;
         }
@@ -1210,26 +1326,19 @@ async function getVehicleCapabilities() {
 }
 
 async function getVehicleOtaInfo(brand, locale = 'en-US') {
-    let token = await getKeychainValue('fpToken');
     let vin = await getKeychainValue('fpVin');
     if (!vin) {
         return textValues.errorMessages.noVin;
     }
-    return await makeFordRequest('getVehicleOtaInfo', `https://www.digitalservices.ford.com/owner/api/v2/sync/firmware-update?vin=${vin}&locale=${locale.toLowerCase()}&brand=${brand.toLowerCase()}`, 'POST', false);
+    return await makeFordRequest('getVehicleOtaInfo', `https://www.digitalservices.ford.com/owner/api/v2/ota/status?country=usa&vin=${vin}`, 'GET', false);
 }
 
 async function makeFordRequest(desc, url, method, json = false, headerOverride = undefined, body = undefined) {
-    if (!(await hasKeychainValue('fpToken'))) {
-        //Code is executed on first run
-        let result = await fetchToken();
-        if (result && result == textValues.errorMessages.invalidGrant) {
-            return result;
-        }
-        if (result && result == textValues.errorMessages.noCredentials) {
-            return result;
-        }
+    let authMsg = await checkAuth('makeFordRequest(' + desc + ')');
+    if (authMsg) {
+        return authMsg;
     }
-    let token = await getKeychainValue('fpToken');
+    let token = await getKeychainValue('fpToken2');
     let vin = await getKeychainValue('fpVin');
     if (!vin) {
         return textValues.errorMessages.noVin;
@@ -1239,7 +1348,7 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
         Accept: '*/*',
         'Accept-Language': 'en-US,en;q=0.9',
         'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
-        'Application-Id': '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
+        'Application-Id': appIDs().NA,
         'auth-token': `${token}`,
     };
 
@@ -1251,9 +1360,12 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
     }
     try {
         let data = json ? await request.loadJSON() : await request.loadString();
-        if (data == 'Access Denied') {
+        let resp = request.response;
+        if (widgetConfig.debugAuthMode) {
+            console.log(`makeFordRequest Req | Status: ${resp.statusCode}) | Resp: ${data}`);
+        }
+        if (data == textValues.errorMessages.accessDenied) {
             console.log(`makeFordRequest(${desc}): Auth Token Expired. Fetching New Token and Requesting Data Again!`);
-            // await removeKeychainValue('fpToken');
             let result = await fetchToken();
             if (result && result == textValues.errorMessages.invalidGrant) {
                 return result;
@@ -1392,19 +1504,12 @@ const vehicleCmdConfigs = (vin) => {
 };
 
 async function sendVehicleCmd(cmd_type = '') {
-    if (!(await hasKeychainValue('fpToken'))) {
-        //Code is executed on first run
-        let result = await fetchToken();
-        if (result && result == textValues.errorMessages.invalidGrant) {
-            console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
-            return;
-        }
-        if (result && result == textValues.errorMessages.noCredentials) {
-            console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
-            return;
-        }
+    let authMsg = await checkAuth('sendVehicleCmd(' + cmd_type + ')');
+    if (authMsg) {
+        console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
+        return;
     }
-    let token = await getKeychainValue('fpToken');
+    let token = await getKeychainValue('fpToken2');
     let vin = await getKeychainValue('fpVin');
     let cmdCfgs = vehicleCmdConfigs(vin);
     let cmds = cmdCfgs[cmd_type].cmds;
@@ -1422,10 +1527,10 @@ async function sendVehicleCmd(cmd_type = '') {
         req.headers = {
             Accept: '*/*',
             'Accept-Language': 'en-us',
-            'User-Agent': 'FordPass/4 CFNetwork/1312 Darwin/21.0.0',
+            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
             'Accept-Encoding': 'gzip, deflate, br',
             'Content-Type': 'application/json',
-            'Application-Id': '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
+            'Application-Id': appIDs.NA,
             'auth-token': `${token}`,
         };
         req.method = cmds[cmd].method;
@@ -1437,22 +1542,22 @@ async function sendVehicleCmd(cmd_type = '') {
                 console.log('sendVehicleCmd: Auth Token Expired. Fetching new token and fetch raw data again');
                 let result = await fetchToken();
                 if (result && result == textValues.errorMessages.invalidGrant) {
-                    console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
-                    return;
+                    console.log(`sendVehicleCmd(${cmd_type}): ${authMsg}`);
+                    return result;
                 }
                 data = await req.loadString();
             }
             data = JSON.parse(data);
 
-            // console.log(JSON.stringify(data));
+            console.log('sendVehicleCmd status: ' + data.status);
 
             if (data.status) {
                 console.log(`sendVehicleCmd(${cmd_type}) Status Code (${data.status})`);
                 if (data.status !== 200) {
                     wasError = true;
                     if (widgetConfig.debugMode) {
-                        console.log('Debug: Error while receiving vehicle data');
-                        console.log(data);
+                        console.log('Debug: Error while sending vehicle cmd');
+                        console.log(JSON.stringify(data));
                     }
                     if (data.status === 590) {
                         console.log('code 590');
@@ -1572,7 +1677,7 @@ async function requiredPrefsOk() {
 
 function clearKeychain() {
     console.log('Info: Clearing Authentication from Keychain');
-    ['fpToken', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider'].forEach(async(key) => {
+    ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider'].forEach(async(key) => {
         await removeKeychainValue(key);
     });
 }
@@ -1586,6 +1691,7 @@ async function fetchVehicleData(loadLocal = false) {
 
     //fetch data from server
     console.log('fetchVehicleData: Fetching Vehicle Data from Ford Servers...');
+
     let statusData = await getVehicleStatus();
 
     // console.log(`statusData: ${JSON.stringify(statusData)}`);
@@ -1605,26 +1711,30 @@ async function fetchVehicleData(loadLocal = false) {
         return vehicleData;
     }
     if (widgetConfig.logVehicleData) {
-        console.log(`statusData: ${JSON.stringify(statusData)}`);
+        console.log(`Status: ${JSON.stringify(statusData)}`);
     }
 
     // Pulls in info about the vehicle like brand, model, year, etc. (Used to help with getting vehicle image and name for the map)
     let infoData = await getVehicleInfo();
     // console.log(`infoData: ${JSON.stringify(infoData)}`);
     vehicleData.info = infoData;
+    if (widgetConfig.logVehicleData) {
+        console.log(`Info: ${JSON.stringify(infoData)}`);
+    }
+
     // Pulls in a list of the vehicles capabilities like zone lighting, remote start, etc.
     let capData = await getVehicleCapabilities();
     // console.log(`capData: ${JSON.stringify(capData)}`);
     vehicleData.capabilities = capData;
-
-    // if (infoData && infoData.vehicle && infoData.vehicle.brandCode) {
-    //     let otaData = await getVehicleOtaInfo(infoData.vehicle.brandCode);
-    //     console.log(`otaData: ${JSON.stringify(otaData)}`);
-    //     vehicleData.otaInfo = otaData;
-    // }
-
     if (widgetConfig.logVehicleData) {
-        console.log(JSON.stringify(vehicleData));
+        console.log(`Capabilities: ${JSON.stringify(capData)}`);
+    }
+
+    let otaData = await getVehicleOtaInfo(infoData.vehicle.brandCode);
+    console.log(`otaData: ${JSON.stringify(otaData)}`);
+    vehicleData.otaInfo = otaData;
+    if (widgetConfig.logVehicleData) {
+        console.log(`OTA: ${JSON.stringify(otaData)}`);
     }
 
     let vehicleStatus = statusData.vehiclestatus;
@@ -1809,7 +1919,7 @@ async function getVehicleImage(modelYear) {
         return fm.readImage(path);
     } else {
         let vin = await getKeychainValue('fpVin');
-        let token = await getKeychainValue('fpToken');
+        let token = await getKeychainValue('fpToken2');
         // console.log(`modelYear: ${modelYear}`);
         let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=USA&angle=4`);
         req.headers = {
