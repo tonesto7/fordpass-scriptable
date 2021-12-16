@@ -68,12 +68,14 @@ Changelog:
         - Added a rough OTA API page under the debug menu as well.
         - Added a rough Vehicle Data page under the debug menu as well.
         - Lot's of fixes
-     v1.2.1: 
+    v1.2.1: 
         - Tweaked the way door status is handled.  Hopefully eliminating some errors and removing read door entries on 2-door vehicles.
         - Fixed some bugs in the debug menu
+    v1.2.2: 
+        - Added in a personal data scrubber to remove personal data from the data shown in the debug menu.  Cleans VIN, address, long & lat position.
 
 **************/
-const WIDGET_VERSION = '1.2.1';
+const WIDGET_VERSION = '1.2.2';
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
 console.log('Script Update Available: ' + updateAvailable);
@@ -413,7 +415,7 @@ async function subControlMenu(type) {
                     action: async() => {
                         console.log('(Debug Menu) Copy Data was pressed');
                         let data = await fetchVehicleData(true);
-                        // console.log('data: ' + JSON.stringify(data));
+                        data = scrubPersonalData(data);
                         await Pasteboard.copyString(JSON.stringify(data, null, 4));
                         await showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
                         subControlMenu('debugMenu');
@@ -593,9 +595,10 @@ async function subControlMenu(type) {
 }
 
 async function showOtaWebView() {
-    let otaData = await getVehicleOtaInfo();
-    // console.log(`otaData: ${JSON.stringify(otaData)}`);
-    const otaWebView = new WebView();
+    let data = await getVehicleOtaInfo();
+    // console.log(`otaData: ${JSON.stringify(data)}`);
+    data = scrubPersonalData(data);
+    const wv = new WebView();
     let html = `
         <html>
             <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"/>
@@ -605,19 +608,22 @@ async function showOtaWebView() {
         
         <body>
             <h3 style="color:black;">OTA Info</h3>
-            <pre id="otaCode_el" style="color:black; font-size: 10px;">${JSON.stringify(otaData, null, 4)}</pre>
+            <pre id="otaCode_el" style="color:black; font-size: 10px;">${JSON.stringify(data, null, 4)}</pre>
             <script>
             </script>
         </body>
         </html>  
     `;
-    let otaHtml = await otaWebView.loadHTML(html);
-    await otaWebView.present(true);
+    let hv = await wv.loadHTML(html);
+    await wv.present(true);
 }
 
 async function showDebugWebView() {
     let data = await fetchVehicleData(true);
-    // console.log(`otaData: ${JSON.stringify(otaData)}`);
+    data.ota = await getVehicleOtaInfo();
+    data = scrubPersonalData(data);
+
+    // console.log(`otaData: ${JSON.stringify(data)}`);
     const wv = new WebView();
     let html = `
         <html>
@@ -636,6 +642,37 @@ async function showDebugWebView() {
     `;
     let hv = await wv.loadHTML(html);
     await wv.present(true);
+}
+
+function scrubPersonalData(data) {
+    function scrubInfo(obj, id) {
+        function scrub(type, str) {
+            switch (type) {
+                case 'vin':
+                    return str.substring(0, str.length - 6) + 'XXXXXX';
+                case 'position':
+                    return '1234 Someplace Drive';
+                case 'latitude':
+                    return 42.123456;
+                case 'longitude':
+                    return -89.123456;
+            }
+        }
+        Object.keys(obj).forEach((key) => {
+            if (key === id) {
+                obj[key] = scrub(id, obj[key]);
+            } else if (obj[key] !== null && typeof obj[key] === 'object') {
+                scrubInfo(obj[key], id);
+            }
+        });
+        return obj;
+    }
+
+    let out = scrubInfo(data, 'vin');
+    out = scrubInfo(data, 'position');
+    out = scrubInfo(data, 'latitude');
+    out = scrubInfo(data, 'longitude');
+    return out;
 }
 
 async function createMainMenu() {
