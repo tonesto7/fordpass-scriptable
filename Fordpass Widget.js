@@ -228,6 +228,10 @@ if (config.runsInWidget) {
 // Show alert with current data (if running script in app)
 else if (config.runsInApp || config.runsFromHomeScreen) {
     createMainMenu();
+} else if (config.runsWithSiri || config.runsInActionExtension) {
+    console.log('shortcutArgs:', args.shortcutParameter);
+    console.log('runsWithSiri: ' + config.runsWithSiri);
+    console.log('runsInActionExtension: ' + config.runsInActionExtension);
 } else {
     if (widgetConfig.largeWidget) {
         await widget.presentLarge();
@@ -273,7 +277,7 @@ async function getMainMenuItems() {
                 await subControlMenu('advancedInfo');
             },
             destructive: false,
-            show: true,
+            show: false,
         },
         {
             title: 'Lock Vehicle',
