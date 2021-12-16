@@ -68,9 +68,12 @@ Changelog:
         - Added a rough OTA API page under the debug menu as well.
         - Added a rough Vehicle Data page under the debug menu as well.
         - Lot's of fixes
+     v1.2.1: 
+        - Tweaked the way door status is handled.  Hopefully eliminating some errors and removing read door entries on 2-door vehicles.
+        - Fixed some bugs in the debug menu
 
 **************/
-const WIDGET_VERSION = '1.2.0';
+const WIDGET_VERSION = '1.2.1';
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
 console.log('Script Update Available: ' + updateAvailable);
@@ -234,6 +237,7 @@ else if (config.runsInApp || config.runsFromHomeScreen) {
     console.log('shortcutArgs:', args.shortcutParameter);
     console.log('runsWithSiri: ' + config.runsWithSiri);
     console.log('runsInActionExtension: ' + config.runsInActionExtension);
+    await showAlert('Shortcut Arguments', args.shortcutParameter);
 } else {
     if (widgetConfig.largeWidget) {
         await widget.presentLarge();
@@ -422,7 +426,7 @@ async function subControlMenu(type) {
                     action: async() => {
                         console.log('(Debug Menu) OTA Info was pressed');
                         await showOtaWebView();
-                        await subControlMenu('advancedInfo');
+                        await subControlMenu('debugMenu');
                     },
                     destructive: false,
                     show: true,
@@ -432,7 +436,7 @@ async function subControlMenu(type) {
                     action: async() => {
                         console.log('(Debug Menu) Vehicle Data was pressed');
                         await showDebugWebView();
-                        await subControlMenu('advancedInfo');
+                        await subControlMenu('debugMenu');
                     },
                     destructive: false,
                     show: true,
@@ -1145,13 +1149,15 @@ async function createDoorElement(srcField, vehicleData, countOnly = false) {
         let row1RfTxt2 = await createText(dataRow1Fld, ')', styles.normTxt);
 
         // Creates the second row of status elements for LR and RR
-        let dataRow2Fld = await createRow(srcField);
-        let row2RfTxt1 = await createText(dataRow2Fld, 'LR (', styles.normTxt);
-        let row2RfStatTxt = await createText(dataRow2Fld, vehicleData.statusDoors['leftRear'] ? openSymbol : closedSymbol, vehicleData.statusDoors['leftRear'] ? styles.statOpen : styles.statClosed);
-        let row2RfTxt2 = await createText(dataRow2Fld, ')' + ' | ', styles.normTxt);
-        let row2RrTxt1 = await createText(dataRow2Fld, 'RR (', styles.normTxt);
-        let row2RrStatTxt = await createText(dataRow2Fld, vehicleData.statusDoors['rightRear'] ? openSymbol : closedSymbol, vehicleData.statusDoors['rightRear'] ? styles.statOpen : styles.statClosed);
-        let row2RrTxt2 = await createText(dataRow2Fld, ')', styles.normTxt);
+        if (vehicleData.statusDoors.leftRear !== undefined && vehicleData.statusDoors.rightRear !== undefined) {
+            let dataRow2Fld = await createRow(srcField);
+            let row2RfTxt1 = await createText(dataRow2Fld, 'LR (', styles.normTxt);
+            let row2RfStatTxt = await createText(dataRow2Fld, vehicleData.statusDoors['leftRear'] ? openSymbol : closedSymbol, vehicleData.statusDoors['leftRear'] ? styles.statOpen : styles.statClosed);
+            let row2RfTxt2 = await createText(dataRow2Fld, ')' + ' | ', styles.normTxt);
+            let row2RrTxt1 = await createText(dataRow2Fld, 'RR (', styles.normTxt);
+            let row2RrStatTxt = await createText(dataRow2Fld, vehicleData.statusDoors['rightRear'] ? openSymbol : closedSymbol, vehicleData.statusDoors['rightRear'] ? styles.statOpen : styles.statClosed);
+            let row2RrTxt2 = await createText(dataRow2Fld, ')', styles.normTxt);
+        }
 
         // Creates the third row of status elements for the tailgate (if equipped)
         if (vehicleData.statusDoors['tailgate'] !== undefined) {
@@ -1923,16 +1929,23 @@ async function fetchVehicleData(loadLocal = false) {
     //true means, that door is open
     let doors = vehicleStatus.doorStatus;
     vehicleData.statusDoors = {
-        leftFront: !(doors.driverDoor.value == 'Closed'),
-        rightFront: !(doors.passengerDoor.value == 'Closed'),
-        leftRear: !(doors.leftRearDoor.value == 'Closed'),
-        rightRear: !(doors.rightRearDoor.value == 'Closed'),
+        leftFront: !(doors.driverDoor && doors.driverDoor.value == 'Closed'),
+        rightFront: !(doors.passengerDoor && doors.passengerDoor.value == 'Closed'),
     };
+    if (doors.leftRearDoor && doors.leftRearDoor.value !== undefined) {
+        vehicleData.statusDoors.leftRear = !(doors.leftRearDoor.value == 'Closed');
+    }
+    if (doors.rightRearDoor && doors.rightRearDoor.value !== undefined) {
+        vehicleData.statusDoors.rightRear = !(doors.rightRearDoor.value == 'Closed');
+    }
     if (doors.hoodDoor && doors.hoodDoor.value !== undefined) {
         vehicleData.statusDoors.hood = !(doors.hoodDoor.value == 'Closed');
     }
     if (doors.tailgateDoor && doors.tailgateDoor.value !== undefined) {
         vehicleData.statusDoors.tailgate = !(doors.tailgateDoor.value == 'Closed');
+    }
+    if (doors.innerTailgateDoor && doors.innerTailgateDoor.value !== undefined) {
+        vehicleData.statusDoors.innerTailgate = !(doors.innerTailgateDoor.value == 'Closed');
     }
 
     //tire pressure
