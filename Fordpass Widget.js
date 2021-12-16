@@ -68,8 +68,6 @@ Changelog:
         - Lot's of fixes
 
 **************/
-// await removeKeychainValue('fpToken2');
-
 const WIDGET_VERSION = '1.2.0';
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
@@ -1258,7 +1256,7 @@ async function fetchToken() {
         let req1 = new Request('https://sso.ci.ford.com/oidc/endpoint/default/token');
         req1.headers = headers;
         req1.method = 'POST';
-        req1.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=password&username=${username}&password=${password}`;
+        req1.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=password&username=${username}&password=${encodeURIComponent(password)}`;
 
         let token1 = await req1.loadJSON();
         let resp1 = req1.response;
