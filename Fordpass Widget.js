@@ -68,12 +68,18 @@ Changelog:
         - Added a rough OTA API page under the debug menu as well.
         - Added a rough Vehicle Data page under the debug menu as well.
         - Lot's of fixes
-     v1.2.1: 
+    v1.2.1: 
         - Tweaked the way door status is handled.  Hopefully eliminating some errors and removing read door entries on 2-door vehicles.
         - Fixed some bugs in the debug menu
+    v1.2.2: 
+        - Added in a personal data scrubber to remove personal data from the data shown in the debug menu.  Cleans VIN, address, long & lat position.
+    v1.2.3:
+        - Added in a placeholder image for vehicles that don't have an image.
+        - Fixed a bug for the using psi tire pressure and metric units.
+        - Pull in user data from Ford account to determine measurement units like distance and pressure, and to determine your locale for certain calls. This should allow support for users outside north america.
 
 **************/
-const WIDGET_VERSION = '1.2.1';
+const WIDGET_VERSION = '1.2.3 ';
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
 console.log('Script Update Available: ' + updateAvailable);
@@ -100,8 +106,6 @@ const widgetConfig = {
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
     refreshInterval: 5, // allow data to refresh every (xx) minutes
-    unitOfLength: (await useMetricUnits()) ? 'km' : 'mi', // unit of length
-    distanceMultiplier: (await useMetricUnits()) ? 1 : 0.621371, // distance multiplier
     largeWidget: false, // uses large widget layout, if false, medium layout is used
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     /**
@@ -115,53 +119,55 @@ let fetchCnt = 0;
 //******************************************************************
 //* Edit these values to accomodate your langauge or prefrerences
 //******************************************************************
-const textValues = {
-    elemHeaders: {
-        fuelTank: 'Fuel',
-        odometer: 'Mileage',
-        oil: 'Oil Life',
-        windows: 'Windows',
-        doors: 'Doors',
-        position: 'Location',
-        tirePressure: `Tires (${(await usePsiUnit()) ? 'psi' : 'kPa'})`,
-        lockStatus: 'Locks',
-        lock: 'Lock',
-        unlock: 'Unlock',
-        ignitionStatus: 'Ignition',
-        batteryStatus: 'Battery',
-        evChargeStatus: 'Charger',
-        remoteStart: 'Remote Start',
-    },
-    UIValues: {
-        closed: 'Closed',
-        open: 'Open',
-        unknown: 'Unknown',
-        greaterOneDay: '> 1 Day',
-        smallerOneMinute: '< 1 Min Ago',
-        minute: 'Minute',
-        hour: 'Hour',
-        perYear: 'p.a.',
-        plural: 's', // 's' in english
-        precedingAdverb: '', // used in german language, for english let it empty
-        subsequentAdverb: 'ago', // used in english language ('ago'), for german let it empty
-    },
-    errorMessages: {
-        invalidGrant: 'Incorrect Login Data',
-        connectionErrorOrVin: 'Incorrect VIN Number',
-        unknownError: 'Unknown Error',
-        accessDenied: 'Access Denied',
-        noData: 'No Data',
-        noCredentials: 'Missing Login Credentials',
-        noVin: 'VIN Missing',
-        cmd_err_590: 'Command Failed!\n\nVehicle failed to start. You must start from inside your vehicle after two consecutive remote start events. ',
-        cmd_err: `There was an error sending the command to the vehicle!\n`,
-    },
-    successMessages: {
-        locks_cmd_title: 'Lock Command',
-        locked_msg: 'Vehicle Received Lock Command Successfully',
-        unlocked_msg: 'Vehicle Received Unlock Command Successfully',
-        cmd_success: `Vehicle Received Command Successfully`,
-    },
+const textValues = (str) => {
+    return {
+        elemHeaders: {
+            fuelTank: 'Fuel',
+            odometer: 'Mileage',
+            oil: 'Oil Life',
+            windows: 'Windows',
+            doors: 'Doors',
+            position: 'Location',
+            tirePressure: `Tires (${str})`,
+            lockStatus: 'Locks',
+            lock: 'Lock',
+            unlock: 'Unlock',
+            ignitionStatus: 'Ignition',
+            batteryStatus: 'Battery',
+            evChargeStatus: 'Charger',
+            remoteStart: 'Remote Start',
+        },
+        UIValues: {
+            closed: 'Closed',
+            open: 'Open',
+            unknown: 'Unknown',
+            greaterOneDay: '> 1 Day',
+            smallerOneMinute: '< 1 Min Ago',
+            minute: 'Minute',
+            hour: 'Hour',
+            perYear: 'p.a.',
+            plural: 's', // 's' in english
+            precedingAdverb: '', // used in german language, for english let it empty
+            subsequentAdverb: 'ago', // used in english language ('ago'), for german let it empty
+        },
+        errorMessages: {
+            invalidGrant: 'Incorrect Login Data',
+            connectionErrorOrVin: 'Incorrect VIN Number',
+            unknownError: 'Unknown Error',
+            accessDenied: 'Access Denied',
+            noData: 'No Data',
+            noCredentials: 'Missing Login Credentials',
+            noVin: 'VIN Missing',
+            cmd_err_590: 'Command Failed!\n\nVehicle failed to start. You must start from inside your vehicle after two consecutive remote start events. ',
+            cmd_err: `There was an error sending the command to the vehicle!\n`,
+        },
+        successMessages: {
+            locks_cmd_title: 'Lock Command',
+            locked_msg: 'Vehicle Received Lock Command Successfully',
+            unlocked_msg: 'Vehicle Received Unlock Command Successfully',
+            cmd_success: `Vehicle Received Command Successfully`,
+        },
+    };
 };
 
 //***************************************************************************
@@ -221,6 +227,7 @@ const sizes = {
 // console.log(`ScriptURL: ${URLScheme.forRunningScript()}`);
 // console.log(`Script QueryParams: ${args.queryParameter}`);
 // console.log(`Script WidgetParams: ${args.widgetParameter}`);
+// let chkKcMigrated = await performKeychainMigration();
 let widget = await createWidget();
 if (widget === null) {
     return;
@@ -413,7 +420,7 @@ async function subControlMenu(type) {
                     action: async() => {
                         console.log('(Debug Menu) Copy Data was pressed');
                         let data = await fetchVehicleData(true);
-                        // console.log('data: ' + JSON.stringify(data));
+                        data = scrubPersonalData(data);
                         await Pasteboard.copyString(JSON.stringify(data, null, 4));
                         await showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
                         subControlMenu('debugMenu');
@@ -593,9 +600,10 @@ async function subControlMenu(type) {
 }
 
 async function showOtaWebView() {
-    let otaData = await getVehicleOtaInfo();
-    // console.log(`otaData: ${JSON.stringify(otaData)}`);
-    const otaWebView = new WebView();
+    let data = await getVehicleOtaInfo();
+    // console.log(`otaData: ${JSON.stringify(data)}`);
+    data = scrubPersonalData(data);
+    const wv = new WebView();
     let html = `
         <html>
             <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"/>
@@ -605,19 +613,22 @@ async function showOtaWebView() {
         
         <body>
             <h3 style="color:black;">OTA Info</h3>
-            <pre id="otaCode_el" style="color:black; font-size: 10px;">${JSON.stringify(otaData, null, 4)}</pre>
+            <pre id="otaCode_el" style="color:black; font-size: 10px;">${JSON.stringify(data, null, 4)}</pre>
             <script>
             </script>
         </body>
         </html>  
     `;
-    let otaHtml = await otaWebView.loadHTML(html);
-    await otaWebView.present(true);
+    let hv = await wv.loadHTML(html);
+    await wv.present(true);
 }
 
 async function showDebugWebView() {
     let data = await fetchVehicleData(true);
-    // console.log(`otaData: ${JSON.stringify(otaData)}`);
+    data.ota = await getVehicleOtaInfo();
+    data = scrubPersonalData(data);
+
+    // console.log(`otaData: ${JSON.stringify(data)}`);
     const wv = new WebView();
     let html = `
         <html>
@@ -636,6 +647,37 @@ async function showDebugWebView() {
     `;
     let hv = await wv.loadHTML(html);
     await wv.present(true);
+}
+
+function scrubPersonalData(data) {
+    function scrubInfo(obj, id) {
+        function scrub(type, str) {
+            switch (type) {
+                case 'vin':
+                    return str.substring(0, str.length - 6) + 'XXXXXX';
+                case 'position':
+                    return '1234 Someplace Drive';
+                case 'latitude':
+                    return 42.123456;
+                case 'longitude':
+                    return -89.123456;
+            }
+        }
+        Object.keys(obj).forEach((key) => {
+            if (key === id) {
+                obj[key] = scrub(id, obj[key]);
+            } else if (obj[key] !== null && typeof obj[key] === 'object') {
+                scrubInfo(obj[key], id);
+            }
+        });
+        return obj;
+    }
+
+    let out = scrubInfo(data, 'vin');
+    out = scrubInfo(data, 'position');
+    out = scrubInfo(data, 'latitude');
+    out = scrubInfo(data, 'longitude');
+    return out;
 }
 
 async function createMainMenu() {
@@ -668,8 +710,8 @@ async function createSettingMenu() {
     let useMetric = await useMetricUnits();
     settingMenu.addAction(`Measurement Units: ${useMetric ? 'Metric' : 'Imperial'}`); //1
 
-    let psi = await usePsiUnit();
-    settingMenu.addAction(`Pressure Units: ${psi ? 'psi' : 'kPa'}`); //2
+    let pressureUnits = await getKeychainValue('fpPressureUnits');
+    settingMenu.addAction(`Pressure Units: ${pressureUnits}`); //2
 
     let mapProvider = await getMapProvider();
     settingMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //3
@@ -689,12 +731,12 @@ async function createSettingMenu() {
             break;
         case 1:
             console.log('(Setting Menu) Measurement Units pressed');
-            await toggleUseMetricUnits();
+            // await toggleUseMetricUnits();
             createSettingMenu();
             break;
         case 2:
             console.log('(Setting Menu) Pressure Units pressed');
-            await toggleUsePsiUnits();
+            // await toggleUsePsiUnits();
             createSettingMenu();
             break;
         case 3:
@@ -728,8 +770,8 @@ async function requiredPrefsMenu() {
         let user = await getKeychainValue('fpUser');
         let pass = await getKeychainValue('fpPass');
         let vin = await getKeychainValue('fpVin');
-        let useMetric = await useMetricUnits();
-        let psi = await usePsiUnit();
+        // let useMetric = await useMetricUnits();
+        // let psi = await usePsiUnit();
         let mapProvider = await getMapProvider();
 
         let prefsMenu = new Alert();
@@ -740,33 +782,19 @@ async function requiredPrefsMenu() {
         prefsMenu.addSecureTextField('FordPass Password', pass || '');
         prefsMenu.addTextField('Vehicle VIN', vin || '');
 
-        prefsMenu.addAction(`Measurement Units: ${useMetric ? 'Metric' : 'Imperial'}`); //0
+        prefsMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //0
 
-        prefsMenu.addAction(`Pressure Units: ${psi ? 'psi' : 'kPa'}`); //1
-
-        prefsMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //2
-
-        prefsMenu.addAction('Save'); //3
-        prefsMenu.addCancelAction('Cancel'); //4
+        prefsMenu.addAction('Save'); //1
+        prefsMenu.addCancelAction('Cancel'); //2
 
         let respInd = await prefsMenu.presentAlert();
         switch (respInd) {
             case 0:
-                console.log('(Config Menu) Measurement Units pressed');
-                await toggleUseMetricUnits();
-                requiredPrefsMenu();
-                break;
-            case 1:
-                console.log('(Config Menu) Pressure Units pressed');
-                await toggleUsePsiUnits();
-                requiredPrefsMenu();
-                break;
-            case 2:
                 console.log('(Config Menu) Map Provider pressed');
                 await toggleMapProvider();
                 requiredPrefsMenu();
                 break;
-            case 3:
+            case 1:
                 console.log('(Config Menu) Done was pressed');
                 user = prefsMenu.textFieldValue(0);
                 pass = prefsMenu.textFieldValue(1);
@@ -777,15 +805,13 @@ async function requiredPrefsMenu() {
                     await setKeychainValue('fpPass', pass);
                     await setKeychainValue('fpVin', vin);
                     // console.log(`metric: ${useMetric ? 'true' : 'false'} | map: ${mapProvider}`);
-                    await setKeychainValue('fpUseMetricUnits', useMetric ? 'true' : 'false');
-                    await setKeychainValue('fpUsePsi', psi ? 'true' : 'false');
                     await setKeychainValue('fpMapProvider', mapProvider);
                     return true;
                 } else {
                     requiredPrefsMenu();
                 }
                 break;
-            case 4:
+            case 2:
                 return false;
         }
     } catch (err) {
@@ -795,12 +821,6 @@ async function requiredPrefsMenu() {
 }
 
 async function createWidget() {
-    // if (widgetConfig.debugMode) {
-    //     console.log('widgetConfig | DEBUG:');
-    //     for (const k in widgetConfig) {
-    //         console.log(`${k}: ${widgetConfig[k]}`);
-    //     }
-    // }
     if (widgetConfig.clearKeychainOnNextRun) {
         await clearKeychain();
     }
@@ -814,6 +834,8 @@ async function createWidget() {
         if (!prompt) {
             console.log('Login, VIN, or Prefs not set... User cancelled!!!');
             return null;
+        } else {
+            await setUserPrefs();
         }
     }
 
@@ -917,7 +939,7 @@ async function createWidget() {
     let infoStack = await createRow(mainStack, { '*layoutHorizontally': null });
 
     // Creates the Refresh Label to show when the data was last updated from Ford
-    let refreshTime = vehicleData.fetchTime ? calculateTimeDifference(vehicleData.fetchTime) : textValues.UIValues.unknown;
+    let refreshTime = vehicleData.fetchTime ? calculateTimeDifference(vehicleData.fetchTime) : textValues().UIValues.unknown;
     let refreshLabel = await createText(infoStack, refreshTime, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.lightGray() });
     if (updateAvailable) {
         infoStack.addSpacer(10);
@@ -999,7 +1021,10 @@ async function createTitle(headerField, element, icon = undefined) {
         let titleImg = await createImage(headerField, imgFile, { imageSize: new Size(11, 11) });
         headerField.addSpacer(2);
     }
-    let txt = await createText(headerField, textValues.elemHeaders[element] + ':', { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let titleParams = element.split('||');
+    //     console.log(`titleParams(${element}): ${titleParams}`);
+    let title = titleParams.length > 1 ? textValues(titleParams[1]).elemHeaders[titleParams[0]] : textValues().elemHeaders[titleParams[0]];
+    let txt = await createText(headerField, title + ':', { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
     // return headerField;
 }
 
@@ -1059,7 +1084,7 @@ async function createFuelBattElement(srcField, vehicleData) {
     // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
 
     let lvlTxt = lvlValue ? (lvlValue > 100 ? 100 : lvlValue) : 50;
-    let fuelHeadertext = await createText(fuelHeaderRow, textValues.elemHeaders[isEV ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let fuelHeadertext = await createText(fuelHeaderRow, textValues().elemHeaders[isEV ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
     let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
     srcField.addSpacer(3);
 
@@ -1070,7 +1095,9 @@ async function createFuelBattElement(srcField, vehicleData) {
 
     // Fuel Distance to Empty
     let fuelBarTextRow = await createRow(fuelBarCol, { '*centerAlignContent': null, '*topAlignContent': null });
-    let dteInfo = dteValue ? `    ${Math.floor(dteValue * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength} ${dtePostfix}` : textValues.errorMessages.noData;
+    let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+    let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
+    let dteInfo = dteValue ? `    ${Math.floor(dteValue * distanceMultiplier)}${unitOfLength} ${dtePostfix}` : textValues().errorMessages.noData;
     let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
 
     srcField.addSpacer(3);
@@ -1080,7 +1107,9 @@ async function createMileageElement(srcField, vehicleData) {
     let elem = await createRow(srcField, { '*layoutHorizontally': null });
     await createTitle(elem, 'odometer');
     elem.addSpacer(2);
-    let value = vehicleData.odometer ? `${Math.floor(vehicleData.odometer * widgetConfig.distanceMultiplier)}${widgetConfig.unitOfLength}` : textValues.errorMessages.noData;
+    let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+    let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
+    let value = vehicleData.odometer ? `${Math.floor(vehicleData.odometer * distanceMultiplier)}${unitOfLength}` : textValues().errorMessages.noData;
     // console.log(`odometer: ${value}`);
     let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
@@ -1101,7 +1130,7 @@ async function createOilElement(srcField, vehicleData) {
     let elem = await createRow(srcField, { '*layoutHorizontally': null });
     await createTitle(elem, 'oil');
     elem.addSpacer(2);
-    let value = vehicleData.oilLife ? `${vehicleData.oilLife}%` : textValues.errorMessages.noData;
+    let value = vehicleData.oilLife ? `${vehicleData.oilLife}%` : textValues().errorMessages.noData;
     // console.log(`oilLife: ${value}`);
     let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
@@ -1111,7 +1140,7 @@ async function createEvChargeElement(srcField, vehicleData) {
     let elem = await createRow(srcField, { '*layoutHorizontally': null });
     await createTitle(elem, 'evChargeStatus');
     elem.addSpacer(2);
-    let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : textValues.errorMessages.noData;
+    let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : textValues().errorMessages.noData;
     // console.log(`oilLife: ${value}`);
     let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
@@ -1133,11 +1162,11 @@ async function createDoorElement(srcField, vehicleData, countOnly = false) {
     let dataRow1Fld = await createRow(srcField);
 
     if (countOnly) {
-        let value = textValues.errorMessages.noData;
+        let value = textValues().errorMessages.noData;
         let countOpenDoors;
         if (vehicleData.statusDoors) {
             countOpenDoors = Object.values(vehicleData.statusDoors).filter((door) => door === true).length;
-            value = countOpenDoors == 0 ? textValues.UIValues.closed : `${countOpenDoors} ${textValues.UIValues.open}`;
+            value = countOpenDoors == 0 ? textValues().UIValues.closed : `${countOpenDoors} ${textValues().UIValues.open}`;
         }
         let cntOpenTxt = await createText(dataRow1Fld, value, styles.normTxt);
     } else {
@@ -1186,11 +1215,11 @@ async function createWindowElement(srcField, vehicleData, countOnly = false) {
     // Creates the first row of status elements for LF and RF
     let dataRow1Fld = await createRow(srcField);
     if (countOnly) {
-        let value = textValues.errorMessages.noData;
+        let value = textValues().errorMessages.noData;
         let countOpenWindows;
         if (vehicleData.statusWindows) {
             countOpenWindows = Object.values(vehicleData.statusWindows).filter((window) => window === true).length;
-            value = countOpenWindows == 0 ? textValues.UIValues.closed : `${countOpenWindows} ${textValues.UIValues.open}`;
+            value = countOpenWindows == 0 ? textValues().UIValues.closed : `${countOpenWindows} ${textValues().UIValues.open}`;
         }
         let cntOpenTxt = await createText(dataRow1Fld, value, styles.normTxt);
     } else {
@@ -1220,7 +1249,9 @@ async function createWindowElement(srcField, vehicleData, countOnly = false) {
 async function createTireElement(srcField, vehicleData) {
     let offset = 0;
     let titleFld = await createRow(srcField);
-    await createTitle(titleFld, 'tirePressure');
+    let pressureUnits = await getKeychainValue('fpPressureUnits');
+    let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
+    await createTitle(titleFld, `tirePressure||${unitTxt}`);
 
     let dataFld = await createRow(srcField);
     let value = `${vehicleData.tirePressure['leftFront']} | ${vehicleData.tirePressure['rightFront']}\n${vehicleData.tirePressure['leftRear']} | ${vehicleData.tirePressure['rightRear']}`;
@@ -1235,7 +1266,7 @@ async function createPositionElement(srcField, vehicleData) {
 
     let dataFld = await createRow(srcField);
     let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
-    let value = vehicleData.position ? `${vehicleData.position}` : textValues.errorMessages.noData;
+    let value = vehicleData.position ? `${vehicleData.position}` : textValues().errorMessages.noData;
     let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
 }
@@ -1250,7 +1281,7 @@ async function createLockStatusElement(srcField, vehicleData) {
     await createTitle(titleFld, 'lockStatus');
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
-    let value = vehicleData.lockStatus ? vehicleData.lockStatus : textValues.errorMessages.noData;
+    let value = vehicleData.lockStatus ? vehicleData.lockStatus : textValues().errorMessages.noData;
     let text = await createText(dataFld, value, vehicleData.lockStatus !== undefined && vehicleData.lockStatus === 'LOCKED' ? styles.statClosed : styles.statOpen);
     srcField.addSpacer(offset);
 }
@@ -1267,7 +1298,7 @@ async function createIgnitionStatusElement(srcField, vehicleData) {
     } else if (vehicleData.ignitionStatus != undefined) {
         status = vehicleData.ignitionStatus.toUpperCase();
     } else {
-        textValues.errorMessages.noData;
+        textValues().errorMessages.noData;
     }
     let offset = 5;
     let titleFld = await createRow(srcField);
@@ -1312,7 +1343,7 @@ async function checkAuth(src = undefined) {
         console.log('Token or Expiration State is Missing... Fetching Token...');
         tok = await fetchToken();
     }
-    if ((tok || refresh) && (tok == textValues.errorMessages.invalidGrant || tok == textValues.errorMessages.noCredentials || refresh == textValues.errorMessages.invalidGrant || refresh == textValues.errorMessages.noCredentials)) {
+    if ((tok || refresh) && (tok == textValues().errorMessages.invalidGrant || tok == textValues().errorMessages.noCredentials || refresh == textValues().errorMessages.invalidGrant || refresh == textValues().errorMessages.noCredentials)) {
         return tok;
     }
     return;
@@ -1321,11 +1352,11 @@ async function checkAuth(src = undefined) {
 async function fetchToken() {
     let username = await getKeychainValue('fpUser');
     if (!username) {
-        return textValues.errorMessages.noCredentials;
+        return textValues().errorMessages.noCredentials;
     }
     let password = await getKeychainValue('fpPass');
     if (!password) {
-        return textValues.errorMessages.noCredentials;
+        return textValues().errorMessages.noCredentials;
     }
     let headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -1352,7 +1383,7 @@ async function fetchToken() {
                 console.log('Debug: Error while receiving token1 data');
                 console.log(token1);
             }
-            return textValues.errorMessages.invalidGrant;
+            return textValues().errorMessages.invalidGrant;
         }
         if (resp1.statusCode === 200) {
             let req2 = new Request(`https://api.mps.ford.com/api/oauth2/v1/token`);
@@ -1372,7 +1403,7 @@ async function fetchToken() {
                     console.log('Debug: Error while receiving token2 data');
                     console.log(token2);
                 }
-                return textValues.errorMessages.invalidGrant;
+                return textValues().errorMessages.invalidGrant;
             }
             if (resp2.statusCode === 200) {
                 await setKeychainValue('fpToken2', token2.access_token);
@@ -1387,7 +1418,7 @@ async function fetchToken() {
     } catch (e) {
         console.log(`fetchToken Error: ${e}`);
         if (e.error && e.error == 'invalid_grant') {
-            return textValues.errorMessages.invalidGrant;
+            return textValues().errorMessages.invalidGrant;
         }
         throw e;
     }
@@ -1419,7 +1450,7 @@ async function refreshToken() {
                 console.log('Debug: Error while receiving refreshing token');
                 console.log(token);
             }
-            return textValues.errorMessages.invalidGrant;
+            return textValues().errorMessages.invalidGrant;
         }
         if (resp.statusCode === 200) {
             await setKeychainValue('fpToken2', token.access_token);
@@ -1433,7 +1464,7 @@ async function refreshToken() {
     } catch (e) {
         console.log(`refreshMpsToken Error: ${e}`);
         if (e.error && e.error == 'invalid_grant') {
-            return textValues.errorMessages.invalidGrant;
+            return textValues().errorMessages.invalidGrant;
         }
         throw e;
     }
@@ -1442,7 +1473,7 @@ async function refreshToken() {
 async function getVehicleStatus() {
     let vin = await getKeychainValue('fpVin');
     if (!vin) {
-        return textValues.errorMessages.noVin;
+        return textValues().errorMessages.noVin;
     }
     return await makeFordRequest('getVehicleStatus', `https://usapi.cv.ford.com/api/vehicles/v4/${vin}/status`, 'GET', false);
 }
@@ -1450,7 +1481,7 @@ async function getVehicleStatus() {
 async function getVehicleInfo() {
     let vin = await getKeychainValue('fpVin');
     if (!vin) {
-        return textValues.errorMessages.noVin;
+        return textValues().errorMessages.noVin;
     }
     return await makeFordRequest('getVehicleInfo', `https://usapi.cv.ford.com/api/users/vehicles/${vin}/detail?lrdt=01-01-1970%2000:00:00`, 'GET', false);
 }
@@ -1458,7 +1489,7 @@ async function getVehicleInfo() {
 async function getVehicleCapabilities() {
     let vin = await getKeychainValue('fpVin');
     if (!vin) {
-        return textValues.errorMessages.noVin;
+        return textValues().errorMessages.noVin;
     }
     let data = await makeFordRequest('getVehicleCapabilities', `https://api.mps.ford.com/api/capability/v1/vehicles/${vin}?lrdt=01-01-1970%2000:00:00`, 'GET', false);
     if (data && data.result && data.result.features && data.result.features.length > 0) {
@@ -1477,11 +1508,12 @@ async function getVehicleCapabilities() {
 async function getVehicleOtaInfo() {
     let vin = await getKeychainValue('fpVin');
     let token = await getKeychainValue('fpToken2');
+    let country = await getKeychainValue('fpCountry');
     if (!vin) {
-        return textValues.errorMessages.noVin;
+        return textValues().errorMessages.noVin;
     }
 
-    return await makeFordRequest('getVehicleOtaInfo', `https://www.digitalservices.ford.com/owner/api/v2/ota/status?country=usa&vin=${vin}`, 'GET', false, {
+    return await makeFordRequest('getVehicleOtaInfo', `https://www.digitalservices.ford.com/owner/api/v2/ota/status?country=${country.toLowerCase()}&vin=${vin}`, 'GET', false, {
         'Content-Type': 'application/json',
         Accept: '*/*',
         'Accept-Language': 'en-US,en;q=0.9',
@@ -1497,7 +1529,7 @@ async function getVehicleOtaInfo() {
 async function getSecuriAlertStatus() {
     let vin = await getKeychainValue('fpVin');
     if (!vin) {
-        return textValues.errorMessages.noVin;
+        return textValues().errorMessages.noVin;
     }
     let data = await makeFordRequest('getSecuriAlertStatus', `https://api.mps.ford.com/api/guardmode/v1/${vin}/session`, 'GET', false);
     return data && data.session && data.session.gmStatus ? data.session.gmStatus : undefined;
@@ -1512,7 +1544,7 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
     let token = await getKeychainValue('fpToken2');
     let vin = await getKeychainValue('fpVin');
     if (!vin) {
-        return textValues.errorMessages.noVin;
+        return textValues().errorMessages.noVin;
     }
     const headers = headerOverride || {
         'Content-Type': 'application/json',
@@ -1535,10 +1567,10 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
         // if (widgetConfig.debugMode) {
         // console.log(`makeFordRequest Req | Status: ${resp.statusCode}) | Resp: ${data}`);
         // }
-        if (data == textValues.errorMessages.accessDenied) {
+        if (data == textValues().errorMessages.accessDenied) {
             console.log(`makeFordRequest(${desc}): Auth Token Expired. Fetching New Token and Requesting Data Again!`);
             let result = await fetchToken();
-            if (result && result == textValues.errorMessages.invalidGrant) {
+            if (result && result == textValues().errorMessages.invalidGrant) {
                 return result;
             }
             data = await makeFordRequest(desc, url, method, json, body);
@@ -1546,12 +1578,12 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
             data = json ? data : JSON.parse(data);
         }
         if (data.statusCode && data.statusCode !== 200) {
-            return textValues.errorMessages.connectionErrorOrVin;
+            return textValues().errorMessages.connectionErrorOrVin;
         }
         return data;
     } catch (e) {
         console.log(`makeFordRequest | ${desc} | Error: ${e}`);
-        return textValues.errorMessages.unknownError;
+        return textValues().errorMessages.unknownError;
     }
 }
 
@@ -1702,7 +1734,7 @@ async function sendVehicleCmd(cmd_type = '') {
             if (data == 'Access Denied') {
                 console.log('sendVehicleCmd: Auth Token Expired. Fetching new token and fetch raw data again');
                 let result = await fetchToken();
-                if (result && result == textValues.errorMessages.invalidGrant) {
+                if (result && result == textValues().errorMessages.invalidGrant) {
                     console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
                     return result;
                 }
@@ -1721,14 +1753,14 @@ async function sendVehicleCmd(cmd_type = '') {
                     if (cmdResp.statusCode === 590) {
                         console.log('code 590');
                         console.log(`isLastCmd: ${isLastCmd}`);
-                        outMsg = { title: `${cmdDesc} Command`, message: textValues.errorMessages.cmd_err_590 };
+                        outMsg = { title: `${cmdDesc} Command`, message: textValues().errorMessages.cmd_err_590 };
                     } else {
                         errMsg = `Command Error: ${JSON.stringify(data)}`;
-                        outMsg = { title: `${cmdDesc} Command`, message: `${textValues.errorMessages.cmd_err}\n\Error: ${cmdResp.statusCode}` };
+                        outMsg = { title: `${cmdDesc} Command`, message: `${textValues().errorMessages.cmd_err}\n\Error: ${cmdResp.statusCode}` };
                     }
                 } else {
                     console.log('sendVehicleCmd Response: ' + JSON.stringify(data));
-                    outMsg = { title: `${cmdDesc} Command`, message: textValues.successMessages.cmd_success };
+                    outMsg = { title: `${cmdDesc} Command`, message: textValues().successMessages.cmd_success };
                 }
             }
 
@@ -1754,6 +1786,10 @@ async function sendVehicleCmd(cmd_type = '') {
     return;
 }
 
+async function getUuid() {
+    console.log(UUID.toString());
+}
+
 async function getKeychainValue(cred) {
     try {
         if (await Keychain.contains(cred)) {
@@ -1774,28 +1810,38 @@ function hasKeychainValue(key) {
 }
 
 async function removeKeychainValue(key) {
+    const vin = await Keychain.get('fpVin');
     if (await Keychain.contains(key)) {
         await Keychain.remove(key);
     }
 }
 
 async function requiredPrefsOk() {
-    let user = (await getKeychainValue('fpUser')) === null || (await getKeychainValue('fpUser')) === '' || (await getKeychainValue('fpUser')) === undefined;
-    let pass = (await getKeychainValue('fpPass')) === null || (await getKeychainValue('fpPass')) === '' || (await getKeychainValue('fpPass')) === undefined;
-    let vin = (await getKeychainValue('fpVin')) === null || (await getKeychainValue('fpVin')) === '' || (await getKeychainValue('fpVin')) === undefined;
-    let metric = (await getKeychainValue('fpUseMetricUnits')) === null || (await getKeychainValue('fpUseMetricUnits')) === '' || (await getKeychainValue('fpUseMetricUnits')) === undefined;
-    let psi = (await getKeychainValue('fpUsePsi')) === null || (await getKeychainValue('fpUsePsi')) === '' || (await getKeychainValue('fpUsePsi')) === undefined;
-    let map = (await getKeychainValue('fpMapProvider')) === null || (await getKeychainValue('fpMapProvider')) === '' || (await getKeychainValue('fpMapProvider')) === undefined;
-    let missing = user || pass || vin || metric || psi || map;
-    // console.log(`requiredPrefsOk: ${!missing}`);
-    return !missing;
+    let kcKeys = ['fpUser', 'fpPassword', 'fpToken', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
+    let missingKeys = [];
+    for (const key in kcKeys) {
+        let val = await getKeychainValue(kcKeys[key]);
+        if (val === null || val === '' || val === undefined) {
+            missingKeys.push(kcKeys[key]);
+        }
+    }
+    // console.log("missing: " + missingKeys);
+    return missingKeys.length === 0;
 }
 
-function clearKeychain() {
+async function clearKeychain() {
     console.log('Info: Clearing Authentication from Keychain');
-    ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt'].forEach(async(key) => {
-        await removeKeychainValue(key);
-    });
+    const keys = ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
+    for (const key in keys) {
+        await removeKeychainValue(keys[key]);
+    }
+}
+
+async function performKeychainMigration() {
+    let kcKeys = ['fpUser', 'fpPassword', 'fpToken', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
+    for (const key in kcKeys) {
+        // if (Keychain.contains())
+    }
 }
 
 //from local store if last fetch is < x minutes, otherwise fetch from server
@@ -1807,18 +1853,17 @@ async function fetchVehicleData(loadLocal = false) {
 
     //fetch data from server
     console.log('fetchVehicleData: Fetching Vehicle Data from Ford Servers...');
-
     let statusData = await getVehicleStatus();
 
     // console.log(`statusData: ${JSON.stringify(statusData)}`);
     let vehicleData = new Object();
-    if (statusData == textValues.errorMessages.invalidGrant || statusData == textValues.errorMessages.connectionErrorOrVin || statusData == textValues.errorMessages.unknownError || statusData == textValues.errorMessages.noVin || statusData == textValues.errorMessages.noCredentials) {
+    if (statusData == textValues().errorMessages.invalidGrant || statusData == textValues().errorMessages.connectionErrorOrVin || statusData == textValues().errorMessages.unknownError || statusData == textValues().errorMessages.noVin || statusData == textValues().errorMessages.noCredentials) {
         // console.log('fetchVehicleData | Error: ' + statusData);
         let localData = readLocalData();
         if (localData) {
             vehicleData = localData;
         }
-        if (statusData == textValues.errorMessages.invalidGrant) {
+        if (statusData == textValues().errorMessages.invalidGrant) {
             console.log(`fetchVehicleData | Error: ${statusData} | Clearing Authentication from Keychain`);
             await removeKeychainValue('fpPass');
             // await removeLocalData();
@@ -1845,13 +1890,6 @@ async function fetchVehicleData(loadLocal = false) {
     if (widgetConfig.logVehicleData) {
         console.log(`Capabilities: ${JSON.stringify(capData)}`);
     }
-
-    // let otaData = await getVehicleOtaInfo(infoData.vehicle.brandCode);
-    // console.log(`otaData: ${JSON.stringify(otaData)}`);
-    // vehicleData.otaInfo = otaData;
-    // if (widgetConfig.logVehicleData) {
-    //     console.log(`OTA: ${JSON.stringify(otaData)}`);
-    // }
 
     vehicleData.rawStatus = statusData;
     let vehicleStatus = statusData.vehiclestatus;
@@ -1896,8 +1934,8 @@ async function fetchVehicleData(loadLocal = false) {
     vehicleData.alarmStatus = vehicleStatus.alarm ? (vehicleStatus.alarm.value === 'SET' ? 'On' : 'Off') : 'Off';
 
     //Battery info
-    vehicleData.batteryStatus = vehicleStatus.battery && vehicleStatus.battery.batteryHealth ? vehicleStatus.battery.batteryHealth.value : textValues.UIValues.unknown;
-    vehicleData.batteryLevel = vehicleStatus.battery && vehicleStatus.battery.batteryStatusActual ? vehicleStatus.battery.batteryStatusActual.value : textValues.UIValues.unknown;
+    vehicleData.batteryStatus = vehicleStatus.battery && vehicleStatus.battery.batteryHealth ? vehicleStatus.battery.batteryHealth.value : textValues().UIValues.unknown;
+    vehicleData.batteryLevel = vehicleStatus.battery && vehicleStatus.battery.batteryStatusActual ? vehicleStatus.battery.batteryStatusActual.value : textValues().UIValues.unknown;
 
     // Whether Vehicle is in deep sleep mode (Battery Saver) | Supported Vehicles Only
     vehicleData.deepSleepMode = vehicleStatus.deepSleepInProgess ? vehicleStatus.deepSleepInProgess.value === 'true' : undefined;
@@ -1971,29 +2009,47 @@ async function fetchVehicleData(loadLocal = false) {
 //*                                             START FILE/KEYCHAIN MANAGEMENT FUNCTIONS
 //********************************************************************************************************************************
 
+async function setUserPrefs() {
+    let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
+    if (data && data.status === 200 && data.profile) {
+        const prefs = {
+            fpCountry: data.profile.country || 'USA',
+            fpDeviceLanguage: data.profile.deviceLanguage,
+            fpLanguage: data.profile.preferredLanguage || 'en-US',
+            fpTz: data.profile.timeZone,
+            fpPressureUnits: data.profile.uomPressure || 'PSI',
+            fpSpeedUnits: data.profile.uomSpeed || 'MPH',
+        };
+        for (const key in prefs) {
+            await setKeychainValue(key, prefs[key]);
+        }
+        console.log(`setUserPrefs: ${JSON.stringify(prefs)}`);
+    }
+}
+
 async function useMetricUnits() {
-    return (await getKeychainValue('fpUseMetricUnits')) === 'true';
+    return (await getKeychainValue('fpSpeedUnits')) !== 'MPH';
 }
 
-async function setUseMetricUnits(value) {
-    await setKeychainValue('fpUseMetricUnits', value.toString());
-}
+// async function setUseMetricUnits(value) {
+//     await setKeychainValue("fpUseMetricUnits", value.toString());
+// }
 
-async function toggleUseMetricUnits() {
-    setUseMetricUnits((await useMetricUnits()) ? 'false' : 'true');
-}
+// async function toggleUseMetricUnits() {
+//     setUseMetricUnits((await useMetricUnits()) ? "false" : "true");
+// }
 
-async function usePsiUnit() {
-    return (await getKeychainValue('fpUsePsi')) !== 'false';
-}
+// async function usePsiUnit() {
+//     return (await getKeychainValue("fpUsePsi")) !== "false";
+// }
 
-async function setUsePsiUnit(value) {
-    await setKeychainValue('fpUsePsi', value.toString());
-}
+// async function setUsePsiUnit(value) {
+//     await setKeychainValue("fpUsePsi", value.toString());
+// }
 
-async function toggleUsePsiUnits() {
-    setUsePsiUnit((await usePsiUnit()) ? 'false' : 'true');
-}
+// async function toggleUsePsiUnits() {
+//     setUsePsiUnit((await usePsiUnit()) ? "false" : "true");
+// }
 
 async function getMapProvider() {
     return (await getKeychainValue('fpMapProvider')) || 'apple';
@@ -2044,8 +2100,9 @@ async function getVehicleImage(modelYear) {
     } else {
         let vin = await getKeychainValue('fpVin');
         let token = await getKeychainValue('fpToken2');
+        let country = await getKeychainValue('fpCountry');
         // console.log(`modelYear: ${modelYear}`);
-        let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=USA&angle=4`);
+        let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=4`);
         req.headers = {
             'Content-Type': 'application/json',
             Accept: 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
@@ -2055,9 +2112,15 @@ async function getVehicleImage(modelYear) {
             'auth-token': `${token}`,
         };
         req.method = 'GET';
+
         try {
             let img = await req.loadImage();
-            fm.writeImage(path, img);
+            let resp = req.response;
+            if (resp.statusCode === 200) {
+                fm.writeImage(path, img);
+            } else {
+                img = await getImage('placeholder.png');
+            }
             return img;
         } catch (e) {
             console.log(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
@@ -2158,24 +2221,29 @@ function calculateTimeDifference(oldTime) {
     let newTime = Date.now();
     let diffMs = newTime - oldTime;
     if (Math.floor(diffMs / 86400000) >= 1) {
-        return textValues.UIValues.greaterOneDay;
+        return textValues().UIValues.greaterOneDay;
     }
     if (Math.floor((diffMs % 86400000) / 3600000) >= 1) {
         let diff = Math.floor((diffMs % 86400000) / 3600000);
-        return `${textValues.UIValues.precedingAdverb} ${diff} ${textValues.UIValues.hour}${diff == 1 ? '' : textValues.UIValues.plural} ${textValues.UIValues.subsequentAdverb}`;
+        return `${textValues().UIValues.precedingAdverb} ${diff} ${textValues().UIValues.hour}${diff == 1 ? '' : textValues().UIValues.plural} ${textValues().UIValues.subsequentAdverb}`;
     }
     if (Math.round(((diffMs % 86400000) % 3600000) / 60000) >= 1) {
         let diff = Math.round(((diffMs % 86400000) % 3600000) / 60000);
-        return `${textValues.UIValues.precedingAdverb} ${diff} ${textValues.UIValues.minute}${diff == 1 ? '' : textValues.UIValues.plural} ${textValues.UIValues.subsequentAdverb}`;
+        return `${textValues().UIValues.precedingAdverb} ${diff} ${textValues().UIValues.minute}${diff == 1 ? '' : textValues().UIValues.plural} ${textValues().UIValues.subsequentAdverb}`;
     }
-    return textValues.UIValues.smallerOneMinute;
+    return textValues().UIValues.smallerOneMinute;
 }
 
 async function pressureToFixed(pressure, digits) {
-    if (!(await usePsiUnit()) && !(await useMetricUnits())) {
-        return pressure || -1;
-    } else {
-        return pressure ? (pressure * 0.145).toFixed(digits) : -1;
+    let unit = await getKeychainValue('fpPressureUnits');
+    switch (unit) {
+        case 'PSI':
+            return pressure ? (pressure * 0.145).toFixed(digits) : -1;
+        case 'BAR':
+            return pressure ? pressure / 100 : -1;
+        default:
+            //KPA
+            return pressure || -1;
     }
 }
 
