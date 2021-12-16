@@ -64,7 +64,8 @@ Changelog:
         - Added support for advanced commands like securialert, and likely any future commands.
         - Updated navigation labels and menus so that you can go back to previous menus instead of exiting each time
         - Refactored the entire authentication mechinism to get the new token required for more advanced commands and data
-        - Added a new info button to the main menu that shows securialert status and another for the raw OTA data in an HTML WebView
+        - Added a debug menu under the widget settings menu.  It will allow you to save all vehicle data to your device clipboard for easy sharing with me or others.
+        - Added a rough OTA API page under the debug menu as well.
         - Lot's of fixes
 
 **************/
@@ -283,7 +284,7 @@ async function getMainMenuItems() {
             title: 'Lock Vehicle',
             action: async() => {
                 console.log('(Main Menu) Lock was pressed');
-                await sendLockCmd();
+                await sendVehicleCmd('lock');
             },
             destructive: false,
             show: true,
@@ -292,7 +293,7 @@ async function getMainMenuItems() {
             title: 'Unlock Vehicle',
             action: async() => {
                 console.log('(Main Menu) Unlock was pressed');
-                await sendUnlockCmd();
+                await sendVehicleCmd('unlock');
             },
             destructive: true,
             show: true,
@@ -301,7 +302,7 @@ async function getMainMenuItems() {
             title: 'Remote Start (Stop)',
             action: async() => {
                 console.log('(Main Menu) Stop was pressed');
-                await sendStopCmd();
+                await sendVehicleCmd('stop');
             },
             destructive: false,
             show: true,
@@ -310,9 +311,18 @@ async function getMainMenuItems() {
             title: 'Remote Start (Run)',
             action: async() => {
                 console.log('(Main Menu) Start was pressed');
-                await sendStartCmd();
+                await sendVehicleCmd('start');
             },
             destructive: true,
+            show: true,
+        },
+        {
+            title: 'Force Refresh',
+            action: async() => {
+                console.log('(Main Menu) Refresh was pressed');
+                await sendVehicleCmd('status');
+            },
+            destructive: false,
             show: true,
         },
         {
@@ -391,6 +401,42 @@ async function subControlMenu(type) {
                 },
             ];
             break;
+        case 'debugMenu':
+            title = 'Debug Menu';
+            items = [{
+                    title: 'Copy Vehicle Data to Clipboard',
+                    action: async() => {
+                        console.log('(Debug Menu) Copy Data was pressed');
+                        let data = await fetchVehicleData(true);
+                        // console.log('data: ' + JSON.stringify(data));
+                        await Pasteboard.copyString(JSON.stringify(data, null, 4));
+                        await showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
+                        subControlMenu('debugMenu');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'View OTA API Info',
+                    action: async() => {
+                        console.log('(Debug Menu) OTA Info was pressed');
+                        await showOtaWebView();
+                        await subControlMenu('advancedInfo');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Back',
+                    action: async() => {
+                        console.log('(Debug Menu) Back was pressed');
+                        createMainMenu();
+                    },
+                    destructive: false,
+                    show: true,
+                },
+            ];
+            break;
         case 'advancedInfo':
             title = 'Advanced Info';
             items = [{
@@ -401,16 +447,6 @@ async function subControlMenu(type) {
                     },
                     destructive: false,
                     show: caps && caps.length && caps.includes('GUARD_MODE'),
-                },
-                {
-                    title: 'View OTA Info',
-                    action: async() => {
-                        console.log('(Advanced Controls Menu) SecuriAlert was pressed');
-                        await showOtaWebView();
-                        await subControlMenu('advancedInfo');
-                    },
-                    destructive: false,
-                    show: true,
                 },
                 {
                     title: 'Back',
@@ -430,7 +466,7 @@ async function subControlMenu(type) {
                     title: 'Turn On All ZoneLighting',
                     action: async() => {
                         console.log('(Zone Lighting Menu) On was pressed');
-                        await sendZoneLightsAllOnCmd();
+                        await sendVehicleCmd('zone_lights_on');
                     },
                     destructive: false,
                     show: true,
@@ -439,7 +475,7 @@ async function subControlMenu(type) {
                     title: 'Turn Off All ZoneLighting',
                     action: async() => {
                         console.log('(Zone Lighting Menu) Off was pressed');
-                        await sendZoneLightsAllOffCmd();
+                        await sendVehicleCmd('zone_lights_off');
                     },
                     destructive: false,
                     show: true,
@@ -462,7 +498,7 @@ async function subControlMenu(type) {
                     title: 'Disable SecuriAlert',
                     action: async() => {
                         console.log('(SecuriAlert Menu) Off was pressed');
-                        await sendGuardModeOffCmd();
+                        await sendVehicleCmd('guard_mode_off');
                     },
                     destructive: true,
                     show: true,
@@ -471,7 +507,7 @@ async function subControlMenu(type) {
                     title: 'Enable SecuriAlert',
                     action: async() => {
                         console.log('(SecuriAlert Menu) On was pressed');
-                        await sendGuardModeOnCmd();
+                        await sendVehicleCmd('guard_mode_on');
                     },
                     destructive: false,
                     show: true,
@@ -494,7 +530,7 @@ async function subControlMenu(type) {
                     title: 'Turn On Trailer Light Check',
                     action: async() => {
                         console.log('(Trailer Lighting Menu) On was pressed');
-                        await sendTrailerLightCheckOnCmd();
+                        await sendVehicleCmd('trailer_light_check_on');
                     },
                     destructive: true,
                     show: true,
@@ -503,7 +539,7 @@ async function subControlMenu(type) {
                     title: 'Turn Off Trailer Light Check',
                     action: async() => {
                         console.log('(Trailer Lighting Menu) Off was pressed');
-                        await sendTrailerLightCheckOffCmd();
+                        await sendVehicleCmd('trailer_light_check_off');
                     },
                     destructive: false,
                     show: true,
@@ -553,10 +589,8 @@ async function showOtaWebView() {
         </head>
         
         <body>
-            <h1 style="color:blue;">OTA Info</h1>
-            
+            <h3 style="color:black;">OTA Info</h3>
             <pre id="otaCode_el" style="color:black; font-size: 10px;">${JSON.stringify(otaData, null, 4)}</pre>
-            
             <script>
             </script>
         </body>
@@ -602,9 +636,11 @@ async function createSettingMenu() {
     let mapProvider = await getMapProvider();
     settingMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //3
 
-    settingMenu.addDestructiveAction('Clear All Saved Data'); //4
+    settingMenu.addAction('Debug Menu'); //4
 
-    settingMenu.addAction('Back'); //5
+    settingMenu.addDestructiveAction('Clear All Saved Data'); //5
+
+    settingMenu.addAction('Back'); //6
 
     const respInd = await settingMenu.presentSheet();
 
@@ -629,12 +665,16 @@ async function createSettingMenu() {
             createSettingMenu();
             break;
         case 4:
+            console.log('(Setting Menu) Debug Menu pressed');
+            subControlMenu('debugMenu');
+            break;
+        case 5:
             console.log('(Setting Menu) Clear All Data was pressed');
             await clearKeychain();
             await clearFileManager();
             // createSettingMenu();
             break;
-        case 5:
+        case 6:
             console.log('(Setting Menu) Back was pressed');
             createMainMenu();
             break;
@@ -1296,7 +1336,6 @@ async function fetchToken() {
             }
             if (resp2.statusCode === 200) {
                 await setKeychainValue('fpToken2', token2.access_token);
-                await setKeychainValue('fpCat1Token', token2.cat1_token);
                 await setKeychainValue('fpRefreshToken', token2.refresh_token);
                 await setKeychainValue('fpTokenExpiresAt', (Date.now() + token2.expires_in).toString());
                 let token = await getKeychainValue('fpToken2');
@@ -1344,7 +1383,6 @@ async function refreshToken() {
         }
         if (resp.statusCode === 200) {
             await setKeychainValue('fpToken2', token.access_token);
-            await setKeychainValue('fpCat1Token', token2.cat1_token);
             await setKeychainValue('fpRefreshToken', token.refresh_token);
             await setKeychainValue('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
             console.log(`expiresAt: ${expiresAt}`);
@@ -1497,7 +1535,6 @@ const vehicleCmdConfigs = (vin) => {
     return {
         lock: {
             desc: 'Lock Vehicle',
-            cmd: 'sendLockCmd',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
                 method: 'PUT',
@@ -1505,7 +1542,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         unlock: {
             desc: 'Unlock Vehicle',
-            cmd: 'sendUnlockCmd',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
                 method: 'DELETE',
@@ -1513,7 +1549,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         start: {
             desc: 'Remote Start Vehicle',
-            cmd: 'sendStartCmd',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/engine/start`,
                 method: 'PUT',
@@ -1521,7 +1556,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         stop: {
             desc: 'Remote Stop Vehicle',
-            cmd: 'sendStopCmd',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/engine/start`,
                 method: 'DELETE',
@@ -1529,7 +1563,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         zone_lights_off: {
             desc: 'Zone Off Zone Lighting (All Lights)',
-            cmd: 'sendZoneLightsOffCmd',
             cmds: [{
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'DELETE',
@@ -1542,7 +1575,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         zone_lights_on: {
             desc: 'Turn On Zone Lighting (All Lights)',
-            cmd: 'sendZoneLightsOnCmd',
             cmds: [{
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'PUT',
@@ -1555,7 +1587,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         guard_mode_on: {
             desc: 'Enable SecuriAlert',
-            cmd: 'sendGuardModeOnCmd',
             cmds: [{
                 uri: `${guardUrl}/guardmode/v1/${vin}/session`,
                 method: 'PUT',
@@ -1563,7 +1594,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         guard_mode_off: {
             desc: 'Disable SecuriAlert',
-            cmd: 'sendGuardModeOffCmd',
             cmds: [{
                 uri: `${guardUrl}/guardmode/v1/${vin}/session`,
                 method: 'DELETE',
@@ -1571,7 +1601,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         trailer_light_check_on: {
             desc: 'Trailer Light Check ON',
-            cmd: 'sendTrailLightCheckOnCmd',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
                 method: 'PUT',
@@ -1579,7 +1608,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         trailer_light_check_off: {
             desc: 'Trailer Light Check OFF',
-            cmd: 'sendTrailLightCheckOffCmd',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
                 method: 'DELETE',
@@ -1587,7 +1615,6 @@ const vehicleCmdConfigs = (vin) => {
         },
         status: {
             desc: 'Refresh Vehicle Status',
-            cmd: 'sendStatusCmd',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/status`,
                 method: 'PUT',
@@ -1687,50 +1714,6 @@ async function sendVehicleCmd(cmd_type = '') {
     return;
 }
 
-async function sendLockCmd() {
-    await sendVehicleCmd('lock');
-}
-
-async function sendUnlockCmd() {
-    await sendVehicleCmd('unlock');
-}
-
-async function sendStartCmd() {
-    await sendVehicleCmd('start');
-}
-
-async function sendStopCmd() {
-    await sendVehicleCmd('stop');
-}
-
-async function sendStatusCmd() {
-    await sendVehicleCmd('status');
-}
-
-async function sendGuardModeOnCmd() {
-    await sendVehicleCmd('guard_mode_on');
-}
-
-async function sendGuardModeOffCmd() {
-    await sendVehicleCmd('guard_mode_off');
-}
-
-async function sendZoneLightsAllOnCmd() {
-    await sendVehicleCmd('zone_lights_on');
-}
-
-async function sendZoneLightsAllOffCmd() {
-    await sendVehicleCmd('zone_lights_off');
-}
-
-async function sendTrailerLightCheckOnCmd() {
-    await sendVehicleCmd('trailer_light_check_on');
-}
-
-async function sendTrailerLightCheckOffCmd() {
-    await sendVehicleCmd('trailer_light_check_off');
-}
-
 async function getKeychainValue(cred) {
     try {
         if (await Keychain.contains(cred)) {
@@ -1770,7 +1753,7 @@ async function requiredPrefsOk() {
 
 function clearKeychain() {
     console.log('Info: Clearing Authentication from Keychain');
-    ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider'].forEach(async(key) => {
+    ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt'].forEach(async(key) => {
         await removeKeychainValue(key);
     });
 }
@@ -1830,6 +1813,7 @@ async function fetchVehicleData(loadLocal = false) {
     //     console.log(`OTA: ${JSON.stringify(otaData)}`);
     // }
 
+    vehicleData.rawStatus = statusData;
     let vehicleStatus = statusData.vehiclestatus;
 
     vehicleData.fetchTime = Date.now();
