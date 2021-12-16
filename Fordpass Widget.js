@@ -66,6 +66,7 @@ Changelog:
         - Refactored the entire authentication mechinism to get the new token required for more advanced commands and data
         - Added a debug menu under the widget settings menu.  It will allow you to save all vehicle data to your device clipboard for easy sharing with me or others.
         - Added a rough OTA API page under the debug menu as well.
+        - Added a rough Vehicle Data page under the debug menu as well.
         - Lot's of fixes
 
 **************/
@@ -427,6 +428,16 @@ async function subControlMenu(type) {
                     show: true,
                 },
                 {
+                    title: 'View Vehicle Data Output',
+                    action: async() => {
+                        console.log('(Debug Menu) Vehicle Data was pressed');
+                        await showDebugWebView();
+                        await subControlMenu('advancedInfo');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
                     title: 'Back',
                     action: async() => {
                         console.log('(Debug Menu) Back was pressed');
@@ -598,6 +609,29 @@ async function showOtaWebView() {
     `;
     let otaHtml = await otaWebView.loadHTML(html);
     await otaWebView.present(true);
+}
+
+async function showDebugWebView() {
+    let data = await fetchVehicleData(true);
+    // console.log(`otaData: ${JSON.stringify(otaData)}`);
+    const wv = new WebView();
+    let html = `
+        <html>
+            <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"/>
+        <head>
+            <title>Vehicle Data Page</title>
+        </head>
+        
+        <body>
+            <h3 style="color:black;">Vehicle Data</h3>
+            <pre id="otaCode_el" style="color:black; font-size: 10px;">${JSON.stringify(data, null, 4)}</pre>
+            <script>
+            </script>
+        </body>
+        </html>  
+    `;
+    let hv = await wv.loadHTML(html);
+    await wv.present(true);
 }
 
 async function createMainMenu() {

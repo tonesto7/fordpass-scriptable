@@ -40,7 +40,6 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 - Add customizable refresh intervals in the settings
 - Get SecuriAlert control working.
 - Widget code updater mechanism (I don't have a way to do this yet)
-- Better support for electric vehicles (Don´t have one test with yet!!)
 
 ## Installation
 
