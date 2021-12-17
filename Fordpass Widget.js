@@ -1191,10 +1191,17 @@ async function createDoorElement(srcField, vehicleData, countOnly = false) {
         // Creates the third row of status elements for the tailgate (if equipped)
         if (vehicleData.statusDoors['tailgate'] !== undefined) {
             let dataRow3Fld = await createRow(srcField);
-            let row3TgTxt1 = await createText(dataRow3Fld, '       TG (', styles.normTxt);
+            let row3TgTxt1 = await createText(dataRow3Fld, `${vehicleData.statusDoors['hood'] ? '' : '       '}TG (`, styles.normTxt);
             let row3TgStatTxt = await createText(dataRow3Fld, vehicleData.statusDoors['tailgate'] ? openSymbol : closedSymbol, vehicleData.statusDoors['tailgate'] ? styles.statOpen : styles.statClosed);
             let row3TgTxt2 = await createText(dataRow3Fld, ')', styles.normTxt);
-            offset = offset - 5;
+            // Adds hood (frunk) status to third row
+            if (vehicleData.statusDoors['hood'] !== undefined) {
+                let row3HdTxt1 = await createText(dataRow3Fld, ' | HD (', styles.normTxt);
+                let row3HdStatTxt = await createText(dataRow3Fld, vehicleData.statusDoors['hood'] ? openSymbol : closedSymbol, vehicleData.statusDoors['hood'] ? styles.statOpen : styles.statClosed);
+                let row3HdTxt2 = await createText(dataRow3Fld, ')', styles.normTxt);
+            } else {
+                offset = offset - 5;
+            }
         }
     }
     srcField.addSpacer(offset);
