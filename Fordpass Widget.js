@@ -76,7 +76,8 @@ Changelog:
     v1.2.3:
         - Added in a placeholder image for vehicles that don't have an image.
         - Fixed a bug for the using psi tire pressure and metric units.
-        - Pull in user data from Ford account to determine measurement units like distance and pressure, and to determine your locale for certain calls. This should allow support for users outside north america.
+        - Automatically determine measurement units like distance, pressure, and locale from your Ford account. This should allow support for users outside north america.
+        - Added Light/Dark mode to ota and vehicle data pages.
 
 **************/
 const WIDGET_VERSION = '1.2.3 ';
@@ -154,6 +155,7 @@ const textValues = (str) => {
             invalidGrant: 'Incorrect Login Data',
             connectionErrorOrVin: 'Incorrect VIN Number',
             unknownError: 'Unknown Error',
+            noMessages: 'No Messages',
             accessDenied: 'Access Denied',
             noData: 'No Data',
             noCredentials: 'Missing Login Credentials',
@@ -239,12 +241,15 @@ if (config.runsInWidget) {
 }
 // Show alert with current data (if running script in app)
 else if (config.runsInApp || config.runsFromHomeScreen) {
-    createMainMenu();
+    if (args.shortcutParameter) {
+        await showAlert('shortcutParameter: ', JSON.stringify(args.shortcutParameter));
+        // Create a parser function...
+    } else {
+        createMainMenu();
+    }
 } else if (config.runsWithSiri || config.runsInActionExtension) {
-    console.log('shortcutArgs:', args.shortcutParameter);
-    console.log('runsWithSiri: ' + config.runsWithSiri);
-    console.log('runsInActionExtension: ' + config.runsInActionExtension);
-    await showAlert('Shortcut Arguments', args.shortcutParameter);
+    // console.log('runsWithSiri: ' + config.runsWithSiri);
+    // console.log('runsInActionExtension: ' + config.runsInActionExtension);
 } else {
     if (widgetConfig.largeWidget) {
         await widget.presentLarge();
@@ -432,7 +437,8 @@ async function subControlMenu(type) {
                     title: 'View OTA API Info',
                     action: async() => {
                         console.log('(Debug Menu) OTA Info was pressed');
-                        await showOtaWebView();
+                        let data = await getVehicleOtaInfo();
+                        await showDataWebView('OTA Info Page', 'OTA Vehicle Info', data);
                         await subControlMenu('debugMenu');
                     },
                     destructive: false,
@@ -442,7 +448,9 @@ async function subControlMenu(type) {
                     title: 'View Vehicle Data Output',
                     action: async() => {
                         console.log('(Debug Menu) Vehicle Data was pressed');
-                        await showDebugWebView();
+                        let data = await fetchVehicleData(true);
+                        data.ota = await getVehicleOtaInfo();
+                        await showDataWebView('Vehicle Data Output', 'Vehicle Data', data);
                         await subControlMenu('debugMenu');
                     },
                     destructive: false,
@@ -599,53 +607,43 @@ async function subControlMenu(type) {
     }
 }
 
-async function showOtaWebView() {
-    let data = await getVehicleOtaInfo();
-    // console.log(`otaData: ${JSON.stringify(data)}`);
+async function showDataWebView(title, heading, data) {
+    // console.log(`showDataWebView(${title}, ${heading}, ${data})`);
     data = scrubPersonalData(data);
+    console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
+    const bgColor = usingDarkMode ? '#242424' : 'white';
+    const fontColor = usingDarkMode ? '#ffffff' : '#242425';
     const wv = new WebView();
     let html = `
         <html>
-            <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"/>
         <head>
-            <title>OTA Info Page</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"/>
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.1/mdb.min.css" rel="stylesheet"/>
+            <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css">
+            
+            <title>${title}</title>
+            <style>
+                body { font-family: -apple-system; background-color: ${bgColor}; color: ${fontColor}; }
+            </style>
+            
         </head>
         
         <body>
-            <h3 style="color:black;">OTA Info</h3>
-            <pre id="otaCode_el" style="color:black; font-size: 10px;">${JSON.stringify(data, null, 4)}</pre>
-            <script>
-            </script>
+            <div class="mx-2"><h3>${heading}</h3></div>
+            <div class="ml-3" id="wrapper">
+                <pre>${JSON.stringify(data, null, 4)}</pre>
+            </div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.1/mdb.min.js"></script>
         </body>
-        </html>  
-    `;
-    let hv = await wv.loadHTML(html);
-    await wv.present(true);
-}
-
-async function showDebugWebView() {
-    let data = await fetchVehicleData(true);
-    data.ota = await getVehicleOtaInfo();
-    data = scrubPersonalData(data);
-
-    // console.log(`otaData: ${JSON.stringify(data)}`);
-    const wv = new WebView();
-    let html = `
-        <html>
-            <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"/>
-        <head>
-            <title>Vehicle Data Page</title>
-        </head>
         
-        <body>
-            <h3 style="color:black;">Vehicle Data</h3>
-            <pre id="otaCode_el" style="color:black; font-size: 10px;">${JSON.stringify(data, null, 4)}</pre>
-            <script>
-            </script>
-        </body>
         </html>  
     `;
-    let hv = await wv.loadHTML(html);
+    await wv.loadHTML(html);
+    await wv.waitForLoad();
+    // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
     await wv.present(true);
 }
 
@@ -842,6 +840,8 @@ async function createWidget() {
     let vehicleData = await fetchVehicleData();
     // console.log(`vehicleData: ${JSON.stringify(vehicleData)}`);
     // Defines the Widget Object
+    const widgetSize = config.widgetFamily;
+    console.log('Widget Size: ' + widgetSize);
     const widget = new ListWidget();
     widget.backgroundGradient = getBgGradient();
 
@@ -1097,7 +1097,7 @@ async function createFuelBattElement(srcField, vehicleData) {
     let fuelBarTextRow = await createRow(fuelBarCol, { '*centerAlignContent': null, '*topAlignContent': null });
     let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
     let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
-    let dteInfo = dteValue ? `    ${Math.floor(dteValue * distanceMultiplier)}${unitOfLength} ${dtePostfix}` : textValues().errorMessages.noData;
+    let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${unitOfLength} ${dtePostfix}` : textValues().errorMessages.noData;
     let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
 
     srcField.addSpacer(3);
@@ -1109,7 +1109,7 @@ async function createMileageElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
     let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
-    let value = vehicleData.odometer ? `${Math.floor(vehicleData.odometer * distanceMultiplier)}${unitOfLength}` : textValues().errorMessages.noData;
+    let value = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)}${unitOfLength}` : textValues().errorMessages.noData;
     // console.log(`odometer: ${value}`);
     let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
@@ -1411,7 +1411,7 @@ async function fetchToken() {
                 await setKeychainValue('fpTokenExpiresAt', (Date.now() + token2.expires_in).toString());
                 let token = await getKeychainValue('fpToken2');
                 let expiresAt = await getKeychainValue('fpTokenExpiresAt');
-                console.log(`expiresAt: ${expiresAt}`);
+                // console.log(`expiresAt: ${expiresAt}`);
                 return;
             }
         }
@@ -1456,7 +1456,7 @@ async function refreshToken() {
             await setKeychainValue('fpToken2', token.access_token);
             await setKeychainValue('fpRefreshToken', token.refresh_token);
             await setKeychainValue('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
-            console.log(`expiresAt: ${expiresAt}`);
+            // console.log(`expiresAt: ${expiresAt}`);
             return;
         } else if (resp.statusCode === 401) {
             await fetchToken();
@@ -1484,6 +1484,15 @@ async function getVehicleInfo() {
         return textValues().errorMessages.noVin;
     }
     return await makeFordRequest('getVehicleInfo', `https://usapi.cv.ford.com/api/users/vehicles/${vin}/detail?lrdt=01-01-1970%2000:00:00`, 'GET', false);
+}
+
+async function getVehicleMessages() {
+    let vin = await getKeychainValue('fpVin');
+    if (!vin) {
+        return textValues().errorMessages.noVin;
+    }
+    let data = await makeFordRequest('getVehicleMessages', `https://api.mps.ford.com/api/messagecenter/v3/messages`, 'GET', false);
+    return data && data.result ? data.result : textValues().errorMessages.noMessages;
 }
 
 async function getVehicleCapabilities() {
@@ -1817,7 +1826,7 @@ async function removeKeychainValue(key) {
 }
 
 async function requiredPrefsOk() {
-    let kcKeys = ['fpUser', 'fpPassword', 'fpToken', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
+    let kcKeys = ['fpUser', 'fpPass', 'fpToken2', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
     let missingKeys = [];
     for (const key in kcKeys) {
         let val = await getKeychainValue(kcKeys[key]);
@@ -1825,7 +1834,7 @@ async function requiredPrefsOk() {
             missingKeys.push(kcKeys[key]);
         }
     }
-    // console.log("missing: " + missingKeys);
+    console.log('missing: ' + missingKeys);
     return missingKeys.length === 0;
 }
 
@@ -1838,7 +1847,7 @@ async function clearKeychain() {
 }
 
 async function performKeychainMigration() {
-    let kcKeys = ['fpUser', 'fpPassword', 'fpToken', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
+    let kcKeys = ['fpUser', 'fpPass', 'fpToken2', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
     for (const key in kcKeys) {
         // if (Keychain.contains())
     }
@@ -1871,6 +1880,7 @@ async function fetchVehicleData(loadLocal = false) {
         vehicleData.error = statusData;
         return vehicleData;
     }
+    vehicleData.rawStatus = statusData;
     if (widgetConfig.logVehicleData) {
         console.log(`Status: ${JSON.stringify(statusData)}`);
     }
@@ -1891,7 +1901,9 @@ async function fetchVehicleData(loadLocal = false) {
         console.log(`Capabilities: ${JSON.stringify(capData)}`);
     }
 
-    vehicleData.rawStatus = statusData;
+    vehicleData.messages = await getVehicleMessages();
+    // console.log(`messagesData: ${JSON.stringify(vehicleData.messages)}`);
+
     let vehicleStatus = statusData.vehiclestatus;
 
     vehicleData.fetchTime = Date.now();
