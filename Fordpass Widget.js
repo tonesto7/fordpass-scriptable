@@ -78,27 +78,35 @@ Changelog:
         - Fixed a bug for the using psi tire pressure and metric units.
         - Automatically determine measurement units like distance, pressure, and locale from your Ford account. This should allow support for users outside north america.
         - Added Light/Dark mode to ota and vehicle data pages.
+    v1.2.4:
+        - Fixed the VIN field to store VIN as uppercase string.
+        - Added VIN format validation to setup prompt.
+        - Added fixes (error handling) for reported issues in the forums.
+        - Added core support for large and small widget layouts (coming in next release)
+        - Updated the widget timestamp to reflect the last time the vehicle checked in (it matches the last communication in the Fordpass App).
+        - Added the ability to hardcode an id into the script to allow for multiple instances for multiple vehicles. See the SCRIPT_ID variable below.
 
 **************/
-const WIDGET_VERSION = '1.2.3 ';
+const SCRIPT_VERSION = '1.2.4';
+const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and unique.
 const LATEST_VERSION = await getLatestScriptVersion();
-const updateAvailable = isNewerVersion(WIDGET_VERSION, LATEST_VERSION);
-console.log('Script Update Available: ' + updateAvailable);
+const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
+console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${updateAvailable} | Latest Version: ${LATEST_VERSION}`);
 //************************************************************************* */
 //*                  Device Detail Functions
 //************************************************************************* */
 const screenSize = Device.screenResolution();
 const screenType = screenSize.width < 1200 ? 'small' : 'default';
-const usingDarkMode = Device.isUsingDarkAppearance();
+const darkMode = Device.isUsingDarkAppearance();
+const runningWidgetSize = config.widgetFamily;
 const isPhone = Device.isPhone();
 const isPad = Device.isPad();
 // console.log('---------------DEVICE INFO ----------------');
-// console.log(`OSDarkMode: ${usingDarkMode}`);
+// console.log(`OSDarkMode: ${darkMode}`);
 // console.log(`ScreenType: ${screenType}`);
 // console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.height}`);
-// console.log(`Device Info | Model: ${Device.model()} | OSVersion: ${Device.systemVersion()}`, Device.name());
-// console.log(`Locale: ${Device.locale()} | Language: ${Device.language()}`);
-
+// console.log(`Device Info | Model: ${Device.model()} | OSVersion: ${Device.systemVersion()}`);
+// let keychainMigration = await performKeychainMigration()
 //******************************************************************
 //* Customize Widget Options
 //******************************************************************
@@ -107,7 +115,6 @@ const widgetConfig = {
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
     refreshInterval: 5, // allow data to refresh every (xx) minutes
-    largeWidget: false, // uses large widget layout, if false, medium layout is used
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     /**
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
@@ -116,12 +123,17 @@ const widgetConfig = {
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
 };
-let fetchCnt = 0;
+
 //******************************************************************
 //* Edit these values to accomodate your langauge or prefrerences
 //******************************************************************
 const textValues = (str) => {
     return {
+        symbols: {
+            closed: '✓',
+            open: '✗',
+        },
+        // Widget Title
         elemHeaders: {
             fuelTank: 'Fuel',
             odometer: 'Mileage',
@@ -144,8 +156,12 @@ const textValues = (str) => {
             unknown: 'Unknown',
             greaterOneDay: '> 1 Day',
             smallerOneMinute: '< 1 Min Ago',
+            second: 'Second',
             minute: 'Minute',
             hour: 'Hour',
+            day: 'Day',
+            month: 'Month',
+            year: 'Year',
             perYear: 'p.a.',
             plural: 's', // 's' in english
             precedingAdverb: '', // used in german language, for english let it empty
@@ -177,33 +193,30 @@ const textValues = (str) => {
 //***************************************************************************
 
 const runtimeData = {
-    textColor1: usingDarkMode ? 'EDEDED' : '000000', // Header Text Color
-    textColor2: usingDarkMode ? 'EDEDED' : '000000', // Value Text Color
-    backColor: usingDarkMode ? '111111' : 'FFFFFF', // Background Color'
-    backColorGrad: usingDarkMode ? ['141414', '13233F'] : ['BCBBBB', 'DDDDDD'], // Background Color Gradient
-    fuelIcon: usingDarkMode ? 'gas-station_dark.png' : 'gas-station_light.png', // Image for gas station
-    lockStatus: usingDarkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
-    lockIcon: usingDarkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
-    tirePressure: usingDarkMode ? 'tire_dark.png' : 'tire_light.png', // Image for tire pressure
-    unlockIcon: usingDarkMode ? 'unlock_dark.png' : 'unlock_light.png', // Image Used for UnLock Icon
-    batteryStatus: usingDarkMode ? 'battery_dark.png' : 'battery_light.png', // Image Used for Battery Icon
-    doors: usingDarkMode ? 'door_dark.png' : 'door_light.png', // Image Used for Door Lock Icon
-    windows: usingDarkMode ? 'window_dark.png' : 'window_light.png', // Image Used for Window Icon
-    oil: usingDarkMode ? 'oil_dark.png' : 'oil_light.png', // Image Used for Oil Icon
-    ignitionStatus: usingDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Ignition Icon
-    keyIcon: usingDarkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
-    position: usingDarkMode ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
-    evBatteryStatus: usingDarkMode ? 'ev_battery_dark.png' : 'ev_battery_light.png', // Image Used for EV Battery Icon
-    evChargeStatus: usingDarkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
+    textColor1: darkMode ? 'EDEDED' : '000000', // Header Text Color
+    textColor2: darkMode ? 'EDEDED' : '000000', // Value Text Color
+    backColor: darkMode ? '111111' : 'FFFFFF', // Background Color'
+    backColorGrad: darkMode ? ['141414', '13233F'] : ['BCBBBB', 'DDDDDD'], // Background Color Gradient
+    fuelIcon: darkMode ? 'gas-station_dark.png' : 'gas-station_light.png', // Image for gas station
+    lockStatus: darkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
+    lockIcon: darkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
+    tirePressure: darkMode ? 'tire_dark.png' : 'tire_light.png', // Image for tire pressure
+    unlockIcon: darkMode ? 'unlock_dark.png' : 'unlock_light.png', // Image Used for UnLock Icon
+    batteryStatus: darkMode ? 'battery_dark.png' : 'battery_light.png', // Image Used for Battery Icon
+    doors: darkMode ? 'door_dark.png' : 'door_light.png', // Image Used for Door Lock Icon
+    windows: darkMode ? 'window_dark.png' : 'window_light.png', // Image Used for Window Icon
+    oil: darkMode ? 'oil_dark.png' : 'oil_light.png', // Image Used for Oil Icon
+    ignitionStatus: darkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Ignition Icon
+    keyIcon: darkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
+    position: darkMode ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
+    evBatteryStatus: darkMode ? 'ev_battery_dark.png' : 'ev_battery_light.png', // Image Used for EV Battery Icon
+    evChargeStatus: darkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
 };
-
-const closedSymbol = '✓';
-const openSymbol = '✗';
 
 /*
  * Change titleFontSize to 9 and detailFontSizeMedium to 10 for smaller displays, e.g. iPhone SE 2
  */
-const sizes = {
+const sizeMap = {
     default: {
         titleFontSize: 10,
         detailFontSizeSmall: 10,
@@ -229,18 +242,61 @@ const sizes = {
 // console.log(`ScriptURL: ${URLScheme.forRunningScript()}`);
 // console.log(`Script QueryParams: ${args.queryParameter}`);
 // console.log(`Script WidgetParams: ${args.widgetParameter}`);
-// let chkKcMigrated = await performKeychainMigration();
-let widget = await createWidget();
-if (widget === null) {
-    return;
+
+async function prepWidget() {
+    if (widgetConfig.clearKeychainOnNextRun) {
+        await clearKeychain();
+    }
+    if (widgetConfig.clearFileManagerOnNextRun) {
+        await clearFileManager();
+    }
+    await vinFix();
+    let reqOk = await requiredPrefsOk();
+    // console.log(`reqOk: ${ukcOk}`);
+    if (!reqOk) {
+        let prompt = await requiredPrefsMenu();
+        console.log('prompt: ', prompt);
+        if (!prompt) {
+            console.log('Login, VIN, or Prefs not set... User cancelled!!!');
+            return null;
+        } else {
+            await setUserPrefs();
+        }
+    }
+
+    let vehicleData = await fetchVehicleData();
+    // console.log(`vehicleData: ${JSON.stringify(vehicleData)}`);
+    return vehicleData;
 }
-widget.setPadding(10, 5, 5, 5);
+
+async function generateWidget(size, data) {
+    let w = null;
+    switch (size) {
+        case 'small':
+            w = await createWidget('small', data);
+            break;
+        case 'large':
+            w = await createWidget('large', data);
+            break;
+        default:
+            w = await createWidget('medium', data);
+            break;
+    }
+    if (w === null) {
+        return;
+    }
+    Script.setWidget(w);
+    w.setPadding(10, 5, 5, 5);
+    return w;
+}
+
+let fordData = await prepWidget();
+if (fordData === null) return;
 
 if (config.runsInWidget) {
-    Script.setWidget(widget);
-}
-// Show alert with current data (if running script in app)
-else if (config.runsInApp || config.runsFromHomeScreen) {
+    await generateWidget(runningWidgetSize, fordData);
+} else if (config.runsInApp || config.runsFromHomeScreen) {
+    // Show alert with current data (if running script in app)
     if (args.shortcutParameter) {
         await showAlert('shortcutParameter: ', JSON.stringify(args.shortcutParameter));
         // Create a parser function...
@@ -251,11 +307,7 @@ else if (config.runsInApp || config.runsFromHomeScreen) {
     // console.log('runsWithSiri: ' + config.runsWithSiri);
     // console.log('runsInActionExtension: ' + config.runsInActionExtension);
 } else {
-    if (widgetConfig.largeWidget) {
-        await widget.presentLarge();
-    } else {
-        await widget.presentMedium();
-    }
+    await generateWidget(runningWidgetSize, fordData);
 }
 Script.complete();
 
@@ -263,8 +315,7 @@ Script.complete();
 //*                                              START WIDGET UI ELEMENT FUNCTIONS
 //*****************************************************************************************************************************
 
-async function getMainMenuItems() {
-    const vehicleData = await fetchVehicleData(true);
+async function getMainMenuItems(vehicleData) {
     const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
     return [{
             title: `New Script Available: (v${LATEST_VERSION})`,
@@ -279,11 +330,12 @@ async function getMainMenuItems() {
             title: 'View Widget',
             action: async() => {
                 console.log('(Main Menu) View Widget was pressed');
-                if (widgetConfig.largeWidget) {
-                    await widget.presentLarge();
-                } else {
-                    await widget.presentMedium();
-                }
+                subControlMenu('widgetView');
+                // if (widgetConfig.largeWidget) {
+                //     await widget.presentLarge();
+                // } else {
+                //     await widget.presentMedium();
+                // }
             },
             destructive: false,
             show: true,
@@ -378,6 +430,49 @@ async function subControlMenu(type) {
     let items = [];
     let message = '';
     switch (type) {
+        case 'widgetView':
+            title = 'View Widget';
+            items = [{
+                    title: 'Small',
+                    action: async() => {
+                        console.log('(Widget View Menu) Small Widget was pressed');
+                        const w = await generateWidget('small', fordData);
+                        await w.presentSmall();
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Medium',
+                    action: async() => {
+                        console.log('(Widget View Menu) Medium Widget was pressed');
+                        const w = await generateWidget('medium', fordData);
+                        await w.presentMedium();
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Large',
+                    action: async() => {
+                        console.log('(Widget View Menu) Large Widget was pressed');
+                        const w = await generateWidget('large', fordData);
+                        await w.presentLarge();
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Back',
+                    action: async() => {
+                        console.log('(Widget View Menu) Back was pressed');
+                        createMainMenu();
+                    },
+                    destructive: false,
+                    show: true,
+                },
+            ];
+            break;
         case 'advancedControl':
             title = 'Advanced Controls';
             items = [{
@@ -611,8 +706,8 @@ async function showDataWebView(title, heading, data) {
     // console.log(`showDataWebView(${title}, ${heading}, ${data})`);
     data = scrubPersonalData(data);
     console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
-    const bgColor = usingDarkMode ? '#242424' : 'white';
-    const fontColor = usingDarkMode ? '#ffffff' : '#242425';
+    const bgColor = darkMode ? '#242424' : 'white';
+    const fontColor = darkMode ? '#ffffff' : '#242425';
     const wv = new WebView();
     let html = `
         <html>
@@ -647,42 +742,14 @@ async function showDataWebView(title, heading, data) {
     await wv.present(true);
 }
 
-function scrubPersonalData(data) {
-    function scrubInfo(obj, id) {
-        function scrub(type, str) {
-            switch (type) {
-                case 'vin':
-                    return str.substring(0, str.length - 6) + 'XXXXXX';
-                case 'position':
-                    return '1234 Someplace Drive';
-                case 'latitude':
-                    return 42.123456;
-                case 'longitude':
-                    return -89.123456;
-            }
-        }
-        Object.keys(obj).forEach((key) => {
-            if (key === id) {
-                obj[key] = scrub(id, obj[key]);
-            } else if (obj[key] !== null && typeof obj[key] === 'object') {
-                scrubInfo(obj[key], id);
-            }
-        });
-        return obj;
-    }
-
-    let out = scrubInfo(data, 'vin');
-    out = scrubInfo(data, 'position');
-    out = scrubInfo(data, 'latitude');
-    out = scrubInfo(data, 'longitude');
-    return out;
-}
-
 async function createMainMenu() {
+    const vehicleData = await fetchVehicleData(true);
+    let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : textValues().UIValues.unknown;
     const mainMenu = new Alert();
     mainMenu.title = `FordPass Actions`;
+    mainMenu.message = `Status Updated: (${refreshTime})`.trim();
 
-    let menuItems = (await getMainMenuItems()).filter((item) => item.show === true);
+    let menuItems = (await getMainMenuItems(vehicleData)).filter((item) => item.show === true);
     // console.log(`Menu Items: (${menuItems.length}) ${JSON.stringify(menuItems)}`);
     menuItems.forEach((item, ind) => {
         if (item.destructive) {
@@ -704,7 +771,7 @@ async function createSettingMenu() {
     settingMenu.title = `FordPass Widget Settings`;
     // settingMenu.message = 'These settings allow you to configure FordPass Widget.';
 
-    settingMenu.addAction(`Widget Version: ${WIDGET_VERSION}`); //0
+    settingMenu.addAction(`Widget Version: ${SCRIPT_VERSION}`); //0
     let useMetric = await useMetricUnits();
     settingMenu.addAction(`Measurement Units: ${useMetric ? 'Metric' : 'Imperial'}`); //1
 
@@ -759,10 +826,6 @@ async function createSettingMenu() {
     }
 }
 
-function inputTest(val) {
-    return val !== '' && val !== null && val !== undefined;
-}
-
 async function requiredPrefsMenu() {
     try {
         let user = await getKeychainValue('fpUser');
@@ -798,13 +861,31 @@ async function requiredPrefsMenu() {
                 pass = prefsMenu.textFieldValue(1);
                 vin = prefsMenu.textFieldValue(2);
                 // console.log(`${user} ${pass} ${vin}`);
+
+                // if (inputTest(user) && inputTest(pass) && inputTest(vin)) {
+                //     await setKeychainValue('fpUser', user);
+                //     await setKeychainValue('fpPass', pass);
+                //     await setKeychainValue('fpVin', vin.toUpperCase());
+                //     // console.log(`metric: ${useMetric ? 'true' : 'false'} | map: ${mapProvider}`);
+                //     await setKeychainValue('fpMapProvider', mapProvider);
+                //     return true;
+                // } else {
+                //     requiredPrefsMenu();
+                // }
+
                 if (inputTest(user) && inputTest(pass) && inputTest(vin)) {
                     await setKeychainValue('fpUser', user);
                     await setKeychainValue('fpPass', pass);
-                    await setKeychainValue('fpVin', vin);
-                    // console.log(`metric: ${useMetric ? 'true' : 'false'} | map: ${mapProvider}`);
                     await setKeychainValue('fpMapProvider', mapProvider);
-                    return true;
+                    // console.log(`map: ${mapProvider}`);
+                    let vinChk = await vinCheck(vin, true);
+                    console.log('vinChk: ', vinChk);
+                    if (vinChk) {
+                        await setKeychainValue('fpVin', vin.toUpperCase());
+                        return true;
+                    } else {
+                        await requiredPrefsMenu();
+                    }
                 } else {
                     requiredPrefsMenu();
                 }
@@ -818,29 +899,41 @@ async function requiredPrefsMenu() {
     }
 }
 
-async function createWidget() {
-    if (widgetConfig.clearKeychainOnNextRun) {
-        await clearKeychain();
+async function vinFix() {
+    vin = await getKeychainValue('fpVin');
+    if (vin && hasLowerCase(vin)) {
+        console.log('VIN Validation Error: Your saved VIN number has lowercase letters.\nUpdating your saved value for you!');
+        await setKeychainValue('fpVin', vin.toUpperCase());
     }
-    if (widgetConfig.clearFileManagerOnNextRun) {
-        await clearFileManager();
-    }
-    let reqOk = await requiredPrefsOk();
-    // console.log(`reqOk: ${ukcOk}`);
-    if (!reqOk) {
-        let prompt = await requiredPrefsMenu();
-        if (!prompt) {
-            console.log('Login, VIN, or Prefs not set... User cancelled!!!');
-            return null;
+}
+
+async function vinCheck(vin, setup = false) {
+    vin = vin || (await getKeychainValue('fpVin'));
+    let vinLen = vin && vin.length === 17;
+    let vinChar = vin && vin.match(/^[a-zA-Z0-9]+$/);
+    let msgs = [];
+    if (vin) {
+        if (setup && !vinLen) {
+            msgs.push('VIN Number is not 17 characters long!');
+        }
+        if (setup && !vinChar) {
+            msgs.push('VIN Number contains invalid characters!\nOnly A-Z, 0-9 are allowed!');
+        }
+        if (msgs.length > 0) {
+            await showAlert('VIN Validation Error', msgs.join('\n'));
+            return false;
         } else {
-            await setUserPrefs();
+            return true;
         }
     }
+    return false;
+}
 
-    let vehicleData = await fetchVehicleData();
+async function createWidget(widgetSize, vData) {
+    let vehicleData = vData; //await fetchVehicleData();
     // console.log(`vehicleData: ${JSON.stringify(vehicleData)}`);
+
     // Defines the Widget Object
-    const widgetSize = config.widgetFamily;
     console.log('Widget Size: ' + widgetSize);
     const widget = new ListWidget();
     widget.backgroundGradient = getBgGradient();
@@ -939,35 +1032,49 @@ async function createWidget() {
     let infoStack = await createRow(mainStack, { '*layoutHorizontally': null });
 
     // Creates the Refresh Label to show when the data was last updated from Ford
-    let refreshTime = vehicleData.fetchTime ? calculateTimeDifference(vehicleData.fetchTime) : textValues().UIValues.unknown;
-    let refreshLabel = await createText(infoStack, refreshTime, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.lightGray() });
+    let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : textValues().UIValues.unknown;
+    let refreshLabel = await createText(infoStack, refreshTime, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.lightGray() });
     if (updateAvailable) {
         infoStack.addSpacer(10);
-        await createText(infoStack, `New Version Available: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.orange() });
+        await createText(infoStack, `New Version Available: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.orange() });
     }
     if (!vehicleData.evVehicle && vehicleData.batteryStatus === 'STATUS_LOW') {
         infoStack.addSpacer(10);
-        await createText(infoStack, `12V Battery Low`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.red() });
+        await createText(infoStack, `12V Battery Low`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.red() });
     }
 
     if (vehicleData.deepSleepMode) {
         infoStack.addSpacer(10);
-        await createText(infoStack, `Deep Sleep Mode Active`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.red() });
+        await createText(infoStack, `Deep Sleep Mode Active`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.red() });
     }
 
     if (vehicleData.firmwareUpdating) {
         infoStack.addSpacer(10);
-        await createText(infoStack, `Firmware Updating`, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.orange() });
+        await createText(infoStack, `Firmware Updating`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.orange() });
     }
 
     // Creates Elements to display any errors in red at the bottom of the widget
     if (vehicleData.error) {
         infoStack.addSpacer(10);
         let errorMsg = vehicleData.error ? 'Error: ' + vehicleData.error : '';
-        let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeSmall), textColor: Color.red() });
+        let errorLabel = await createText(infoStack, errorMsg, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.red() });
     }
 
     return widget;
+}
+
+async function showAlert(title, message) {
+    let alert = new Alert();
+    alert.title = title;
+    alert.message = message;
+    alert.addAction('OK');
+    const respInd = await alert.presentAlert();
+    // console.log(`showAlert Response: ${respInd}`);
+    switch (respInd) {
+        case 0:
+            // console.log(`${title} alert was cleared...`);
+            return true;
+    }
 }
 
 function getBgGradient() {
@@ -1024,40 +1131,40 @@ async function createTitle(headerField, element, icon = undefined) {
     let titleParams = element.split('||');
     //     console.log(`titleParams(${element}): ${titleParams}`);
     let title = titleParams.length > 1 ? textValues(titleParams[1]).elemHeaders[titleParams[0]] : textValues().elemHeaders[titleParams[0]];
-    let txt = await createText(headerField, title + ':', { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let txt = await createText(headerField, title + ':', { font: Font.boldSystemFont(sizeMap[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
     // return headerField;
 }
 
 async function createProgressBar(percent) {
     let fuelLevel = percent > 100 ? 100 : percent;
     const bar = new DrawContext();
-    bar.size = new Size(sizes[screenType].barWidth, sizes[screenType].barHeight + 3);
+    bar.size = new Size(sizeMap[screenType].barWidth, sizeMap[screenType].barHeight + 3);
     bar.opaque = false;
     bar.respectScreenScale = true;
     // Background
     const path = new Path();
-    path.addRoundedRect(new Rect(0, 0, sizes[screenType].barWidth, sizes[screenType].barHeight), 3, 2);
+    path.addRoundedRect(new Rect(0, 0, sizeMap[screenType].barWidth, sizeMap[screenType].barHeight), 3, 2);
     bar.addPath(path);
     bar.setFillColor(Color.lightGray());
     bar.fillPath();
     // Fuel
     const fuel = new Path();
-    fuel.addRoundedRect(new Rect(0, 0, (sizes[screenType].barWidth * fuelLevel) / 100, sizes[screenType].barHeight), 3, 2);
+    fuel.addRoundedRect(new Rect(0, 0, (sizeMap[screenType].barWidth * fuelLevel) / 100, sizeMap[screenType].barHeight), 3, 2);
     bar.addPath(fuel);
     bar.setFillColor(new Color('2f78dd'));
     bar.fillPath();
     const fuel25Indicator = new Path();
-    fuel25Indicator.addRoundedRect(new Rect(sizes[screenType].barWidth * 0.25, 1, 2, sizes[screenType].barHeight - 2), 3, 2);
+    fuel25Indicator.addRoundedRect(new Rect(sizeMap[screenType].barWidth * 0.25, 1, 2, sizeMap[screenType].barHeight - 2), 3, 2);
     bar.addPath(fuel25Indicator);
     bar.setFillColor(Color.black());
     bar.fillPath();
     const fuel50Indicator = new Path();
-    fuel50Indicator.addRoundedRect(new Rect(sizes[screenType].barWidth * 0.5, 1, 2, sizes[screenType].barHeight - 2), 3, 2);
+    fuel50Indicator.addRoundedRect(new Rect(sizeMap[screenType].barWidth * 0.5, 1, 2, sizeMap[screenType].barHeight - 2), 3, 2);
     bar.addPath(fuel50Indicator);
     bar.setFillColor(Color.black());
     bar.fillPath();
     const fuel75Indicator = new Path();
-    fuel75Indicator.addRoundedRect(new Rect(sizes[screenType].barWidth * 0.75, 1, 2, sizes[screenType].barHeight - 2), 3, 2);
+    fuel75Indicator.addRoundedRect(new Rect(sizeMap[screenType].barWidth * 0.75, 1, 2, sizeMap[screenType].barHeight - 2), 3, 2);
     bar.addPath(fuel75Indicator);
     bar.setFillColor(Color.black());
     bar.fillPath();
@@ -1084,21 +1191,21 @@ async function createFuelBattElement(srcField, vehicleData) {
     // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
 
     let lvlTxt = lvlValue ? (lvlValue > 100 ? 100 : lvlValue) : 50;
-    let fuelHeadertext = await createText(fuelHeaderRow, textValues().elemHeaders[isEV ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizes[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
-    let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
+    let fuelHeadertext = await createText(fuelHeaderRow, textValues().elemHeaders[isEV ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizeMap[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+    let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
     srcField.addSpacer(3);
 
     // Fuel Level Bar
     let fuelBarCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
     let fuelBarRow = await createRow(fuelBarCol, { '*setPadding': [0, 0, 0, 0] });
-    let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(lvlValue ? lvlValue : 50), { '*centerAlignImage': null, imageSize: new Size(sizes[screenType].barWidth, sizes[screenType].barHeight + 3) });
+    let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(lvlValue ? lvlValue : 50), { '*centerAlignImage': null, imageSize: new Size(sizeMap[screenType].barWidth, sizeMap[screenType].barHeight + 3) });
 
     // Fuel Distance to Empty
     let fuelBarTextRow = await createRow(fuelBarCol, { '*centerAlignContent': null, '*topAlignContent': null });
     let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
     let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
     let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${unitOfLength} ${dtePostfix}` : textValues().errorMessages.noData;
-    let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+    let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
 
     srcField.addSpacer(3);
 }
@@ -1111,7 +1218,7 @@ async function createMileageElement(srcField, vehicleData) {
     let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
     let value = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)}${unitOfLength}` : textValues().errorMessages.noData;
     // console.log(`odometer: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
@@ -1122,7 +1229,7 @@ async function createBatteryElement(srcField, vehicleData) {
     let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
     // console.log(`batteryLevel: ${value}`);
     let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
@@ -1132,7 +1239,7 @@ async function createOilElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.oilLife ? `${vehicleData.oilLife}%` : textValues().errorMessages.noData;
     // console.log(`oilLife: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
@@ -1142,15 +1249,15 @@ async function createEvChargeElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : textValues().errorMessages.noData;
     // console.log(`oilLife: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizes[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
+    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2) });
     srcField.addSpacer(3);
 }
 
 async function createDoorElement(srcField, vehicleData, countOnly = false) {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
-        statOpen: { font: Font.heavySystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        statOpen: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('FF5733') },
+        statClosed: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
@@ -1171,30 +1278,37 @@ async function createDoorElement(srcField, vehicleData, countOnly = false) {
         let cntOpenTxt = await createText(dataRow1Fld, value, styles.normTxt);
     } else {
         let row1LfTxt1 = await createText(dataRow1Fld, 'LF (', styles.normTxt);
-        let row1LfStatTxt = await createText(dataRow1Fld, vehicleData.statusDoors['leftFront'] ? openSymbol : closedSymbol, vehicleData.statusDoors['leftFront'] ? styles.statOpen : styles.statClosed);
+        let row1LfStatTxt = await createText(dataRow1Fld, vehicleData.statusDoors['leftFront'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusDoors['leftFront'] ? styles.statOpen : styles.statClosed);
         let row1LfTxt2 = await createText(dataRow1Fld, ')' + ' | ', styles.normTxt);
         let row1RfTxt1 = await createText(dataRow1Fld, 'RF (', styles.normTxt);
-        let row1RfStatTxt = await createText(dataRow1Fld, vehicleData.statusDoors['rightFront'] ? openSymbol : closedSymbol, vehicleData.statusDoors['rightFront'] ? styles.statOpen : styles.statClosed);
+        let row1RfStatTxt = await createText(dataRow1Fld, vehicleData.statusDoors['rightFront'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusDoors['rightFront'] ? styles.statOpen : styles.statClosed);
         let row1RfTxt2 = await createText(dataRow1Fld, ')', styles.normTxt);
 
         // Creates the second row of status elements for LR and RR
         if (vehicleData.statusDoors.leftRear !== undefined && vehicleData.statusDoors.rightRear !== undefined) {
             let dataRow2Fld = await createRow(srcField);
             let row2RfTxt1 = await createText(dataRow2Fld, 'LR (', styles.normTxt);
-            let row2RfStatTxt = await createText(dataRow2Fld, vehicleData.statusDoors['leftRear'] ? openSymbol : closedSymbol, vehicleData.statusDoors['leftRear'] ? styles.statOpen : styles.statClosed);
+            let row2RfStatTxt = await createText(dataRow2Fld, vehicleData.statusDoors['leftRear'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusDoors['leftRear'] ? styles.statOpen : styles.statClosed);
             let row2RfTxt2 = await createText(dataRow2Fld, ')' + ' | ', styles.normTxt);
             let row2RrTxt1 = await createText(dataRow2Fld, 'RR (', styles.normTxt);
-            let row2RrStatTxt = await createText(dataRow2Fld, vehicleData.statusDoors['rightRear'] ? openSymbol : closedSymbol, vehicleData.statusDoors['rightRear'] ? styles.statOpen : styles.statClosed);
+            let row2RrStatTxt = await createText(dataRow2Fld, vehicleData.statusDoors['rightRear'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusDoors['rightRear'] ? styles.statOpen : styles.statClosed);
             let row2RrTxt2 = await createText(dataRow2Fld, ')', styles.normTxt);
         }
 
         // Creates the third row of status elements for the tailgate (if equipped)
         if (vehicleData.statusDoors['tailgate'] !== undefined) {
             let dataRow3Fld = await createRow(srcField);
-            let row3TgTxt1 = await createText(dataRow3Fld, '       TG (', styles.normTxt);
-            let row3TgStatTxt = await createText(dataRow3Fld, vehicleData.statusDoors['tailgate'] ? openSymbol : closedSymbol, vehicleData.statusDoors['tailgate'] ? styles.statOpen : styles.statClosed);
+            let row3TgTxt1 = await createText(dataRow3Fld, `${vehicleData.statusDoors['hood'] !== undefined ? '' : '       '}TG (`, styles.normTxt);
+            let row3TgStatTxt = await createText(dataRow3Fld, vehicleData.statusDoors['tailgate'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusDoors['tailgate'] ? styles.statOpen : styles.statClosed);
             let row3TgTxt2 = await createText(dataRow3Fld, ')', styles.normTxt);
-            offset = offset - 5;
+            // Adds hood (frunk) status to third row
+            if (vehicleData.statusDoors['hood'] !== undefined) {
+                let row3HdTxt1 = await createText(dataRow3Fld, ' | HD (', styles.normTxt);
+                let row3HdStatTxt = await createText(dataRow3Fld, vehicleData.statusDoors['hood'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusDoors['hood'] ? styles.statOpen : styles.statClosed);
+                let row3HdTxt2 = await createText(dataRow3Fld, ')', styles.normTxt);
+            } else {
+                offset = offset - 5;
+            }
         }
     }
     srcField.addSpacer(offset);
@@ -1202,9 +1316,9 @@ async function createDoorElement(srcField, vehicleData, countOnly = false) {
 
 async function createWindowElement(srcField, vehicleData, countOnly = false) {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
-        statOpen: { font: Font.heavySystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        statOpen: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('FF5733') },
+        statClosed: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
@@ -1224,19 +1338,19 @@ async function createWindowElement(srcField, vehicleData, countOnly = false) {
         let cntOpenTxt = await createText(dataRow1Fld, value, styles.normTxt);
     } else {
         let row1LfTxt1 = await createText(dataRow1Fld, 'LF (', styles.normTxt);
-        let row1LfStatTxt = await createText(dataRow1Fld, vehicleData.statusWindows['leftFront'] ? openSymbol : closedSymbol, vehicleData.statusWindows['leftFront'] ? styles.statOpen : styles.statClosed);
+        let row1LfStatTxt = await createText(dataRow1Fld, vehicleData.statusWindows['leftFront'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusWindows['leftFront'] ? styles.statOpen : styles.statClosed);
         let row1LfTxt2 = await createText(dataRow1Fld, ')' + ' | ', styles.normTxt);
         let row1RfTxt1 = await createText(dataRow1Fld, 'RF (', styles.normTxt);
-        let row1RfStatTxt = await createText(dataRow1Fld, vehicleData.statusWindows['rightFront'] ? openSymbol : closedSymbol, vehicleData.statusWindows['rightFront'] ? styles.statOpen : styles.statClosed);
+        let row1RfStatTxt = await createText(dataRow1Fld, vehicleData.statusWindows['rightFront'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusWindows['rightFront'] ? styles.statOpen : styles.statClosed);
         let row1RfTxt2 = await createText(dataRow1Fld, ')', styles.normTxt);
 
         // Creates the second row of status elements for LR and RR
         let dataRow2Fld = await createRow(srcField);
         let row2RfTxt1 = await createText(dataRow2Fld, 'LR (', styles.normTxt);
-        let row2RfStatTxt = await createText(dataRow2Fld, vehicleData.statusWindows['leftRear'] ? openSymbol : closedSymbol, vehicleData.statusWindows['leftRear'] ? styles.statOpen : styles.statClosed);
+        let row2RfStatTxt = await createText(dataRow2Fld, vehicleData.statusWindows['leftRear'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusWindows['leftRear'] ? styles.statOpen : styles.statClosed);
         let row2RfTxt2 = await createText(dataRow2Fld, ')' + ' | ', styles.normTxt);
         let row2RrTxt1 = await createText(dataRow2Fld, 'RR (', styles.normTxt);
-        let row2RrStatTxt = await createText(dataRow2Fld, vehicleData.statusWindows['rightRear'] ? openSymbol : closedSymbol, vehicleData.statusWindows['rightRear'] ? styles.statOpen : styles.statClosed);
+        let row2RrStatTxt = await createText(dataRow2Fld, vehicleData.statusWindows['rightRear'] ? textValues().symbols.open : textValues().symbols.closed, vehicleData.statusWindows['rightRear'] ? styles.statOpen : styles.statClosed);
         let row2RrTxt2 = await createText(dataRow2Fld, ')', styles.normTxt);
 
         if (vehicleData.statusDoors['tailgate'] !== undefined) {
@@ -1255,7 +1369,7 @@ async function createTireElement(srcField, vehicleData) {
 
     let dataFld = await createRow(srcField);
     let value = `${vehicleData.tirePressure['leftFront']} | ${vehicleData.tirePressure['rightFront']}\n${vehicleData.tirePressure['leftRear']} | ${vehicleData.tirePressure['rightRear']}`;
-    let txt = await createText(dataFld, value, { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2 });
+    let txt = await createText(dataFld, value, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2 });
     srcField.addSpacer(offset);
 }
 
@@ -1267,14 +1381,14 @@ async function createPositionElement(srcField, vehicleData) {
     let dataFld = await createRow(srcField);
     let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
     let value = vehicleData.position ? `${vehicleData.position}` : textValues().errorMessages.noData;
-    let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
+    let text = await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
 }
 
 async function createLockStatusElement(srcField, vehicleData) {
     const styles = {
-        statOpen: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        statClosed: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        statOpen: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        statClosed: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
     };
     let offset = 5;
     let titleFld = await createRow(srcField);
@@ -1288,8 +1402,8 @@ async function createLockStatusElement(srcField, vehicleData) {
 
 async function createIgnitionStatusElement(srcField, vehicleData) {
     const styles = {
-        statOn: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#FF5733') },
-        statOff: { font: Font.mediumSystemFont(sizes[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        statOn: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#FF5733') },
+        statOff: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
     };
     let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
     let status = '';
@@ -1545,6 +1659,24 @@ async function getSecuriAlertStatus() {
     // console.log('getSecuriAlertStatus: ' + JSON.stringify(data));
 }
 
+async function setUserPrefs() {
+    let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
+    if (data && data.status === 200 && data.profile) {
+        const prefs = {
+            fpCountry: data.profile.country || 'USA',
+            fpDeviceLanguage: data.profile.deviceLanguage,
+            fpLanguage: data.profile.preferredLanguage || 'en-US',
+            fpTz: data.profile.timeZone,
+            fpPressureUnits: data.profile.uomPressure || 'PSI',
+            fpSpeedUnits: data.profile.uomSpeed || 'MPH',
+        };
+        for (const key in prefs) {
+            await setKeychainValue(key, prefs[key]);
+        }
+        console.log(`setUserPrefs: ${JSON.stringify(prefs)}`);
+    }
+}
+
 async function makeFordRequest(desc, url, method, json = false, headerOverride = undefined, body = undefined) {
     let authMsg = await checkAuth('makeFordRequest(' + desc + ')');
     if (authMsg) {
@@ -1593,20 +1725,6 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
     } catch (e) {
         console.log(`makeFordRequest | ${desc} | Error: ${e}`);
         return textValues().errorMessages.unknownError;
-    }
-}
-
-async function showAlert(title, message) {
-    let alert = new Alert();
-    alert.title = title;
-    alert.message = message;
-    alert.addAction('OK');
-    const respInd = await alert.presentAlert();
-    // console.log(`showAlert Response: ${respInd}`);
-    switch (respInd) {
-        case 0:
-            // console.log(`${title} alert was cleared...`);
-            return true;
     }
 }
 
@@ -1795,64 +1913,6 @@ async function sendVehicleCmd(cmd_type = '') {
     return;
 }
 
-async function getUuid() {
-    console.log(UUID.toString());
-}
-
-async function getKeychainValue(cred) {
-    try {
-        if (await Keychain.contains(cred)) {
-            return await Keychain.get(cred);
-        }
-    } catch (e) {
-        console.log(`getKeychainValue(${cred}) Error: ${e}`);
-    }
-    return null;
-}
-
-async function setKeychainValue(key, value) {
-    await Keychain.set(key, value);
-}
-
-function hasKeychainValue(key) {
-    return Keychain.contains(key);
-}
-
-async function removeKeychainValue(key) {
-    const vin = await Keychain.get('fpVin');
-    if (await Keychain.contains(key)) {
-        await Keychain.remove(key);
-    }
-}
-
-async function requiredPrefsOk() {
-    let kcKeys = ['fpUser', 'fpPass', 'fpToken2', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
-    let missingKeys = [];
-    for (const key in kcKeys) {
-        let val = await getKeychainValue(kcKeys[key]);
-        if (val === null || val === '' || val === undefined) {
-            missingKeys.push(kcKeys[key]);
-        }
-    }
-    console.log('missing: ' + missingKeys);
-    return missingKeys.length === 0;
-}
-
-async function clearKeychain() {
-    console.log('Info: Clearing Authentication from Keychain');
-    const keys = ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
-    for (const key in keys) {
-        await removeKeychainValue(keys[key]);
-    }
-}
-
-async function performKeychainMigration() {
-    let kcKeys = ['fpUser', 'fpPass', 'fpToken2', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
-    for (const key in kcKeys) {
-        // if (Keychain.contains())
-    }
-}
-
 //from local store if last fetch is < x minutes, otherwise fetch from server
 async function fetchVehicleData(loadLocal = false) {
     //Fetch data from local store
@@ -1909,7 +1969,7 @@ async function fetchVehicleData(loadLocal = false) {
     vehicleData.fetchTime = Date.now();
 
     //ev details
-    vehicleData.evVehicle = vehicleData.capabilities.includes('EV_FUEL') || (vehicleStatus.batteryFillLevel && vehicleStatus.batteryFillLevel.value !== null);
+    vehicleData.evVehicle = vehicleData.capabilities.includes('EV_FUEL') || (vehicleStatus && vehicleStatus.batteryFillLevel && vehicleStatus.batteryFillLevel.value !== null);
     if (vehicleData.evVehicle) {
         vehicleData.evBatteryLevel = vehicleStatus.batteryFillLevel && vehicleStatus.batteryFillLevel.value ? Math.floor(vehicleStatus.batteryFillLevel.value) : null;
         vehicleData.evDistanceToEmpty = vehicleStatus.elVehDTE && vehicleStatus.elVehDTE.value ? vehicleStatus.elVehDTE.value : null;
@@ -2006,6 +2066,12 @@ async function fetchVehicleData(loadLocal = false) {
         leftRear: await pressureToFixed(tpms.outerLeftRearTirePressure.value, 1),
         rightRear: await pressureToFixed(tpms.outerRightRearTirePressure.value, 1),
     };
+
+    vehicleData.lastRefresh = convertFordDtToLocal(vehicleStatus.lastRefresh);
+    vehicleData.lastRefreshElapsed = timeDifference(convertFordDtToLocal(vehicleStatus.lastRefresh));
+    // console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
+    // console.log(`timeSince: ${vehicleData.lastRefreshElapsed}`);
+
     // console.log(JSON.stringify(vehicleData));
 
     //save data to local store
@@ -2021,47 +2087,9 @@ async function fetchVehicleData(loadLocal = false) {
 //*                                             START FILE/KEYCHAIN MANAGEMENT FUNCTIONS
 //********************************************************************************************************************************
 
-async function setUserPrefs() {
-    let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
-    if (data && data.status === 200 && data.profile) {
-        const prefs = {
-            fpCountry: data.profile.country || 'USA',
-            fpDeviceLanguage: data.profile.deviceLanguage,
-            fpLanguage: data.profile.preferredLanguage || 'en-US',
-            fpTz: data.profile.timeZone,
-            fpPressureUnits: data.profile.uomPressure || 'PSI',
-            fpSpeedUnits: data.profile.uomSpeed || 'MPH',
-        };
-        for (const key in prefs) {
-            await setKeychainValue(key, prefs[key]);
-        }
-        console.log(`setUserPrefs: ${JSON.stringify(prefs)}`);
-    }
-}
-
 async function useMetricUnits() {
     return (await getKeychainValue('fpSpeedUnits')) !== 'MPH';
 }
-
-// async function setUseMetricUnits(value) {
-//     await setKeychainValue("fpUseMetricUnits", value.toString());
-// }
-
-// async function toggleUseMetricUnits() {
-//     setUseMetricUnits((await useMetricUnits()) ? "false" : "true");
-// }
-
-// async function usePsiUnit() {
-//     return (await getKeychainValue("fpUsePsi")) !== "false";
-// }
-
-// async function setUsePsiUnit(value) {
-//     await setKeychainValue("fpUsePsi", value.toString());
-// }
-
-// async function toggleUsePsiUnits() {
-//     setUsePsiUnit((await usePsiUnit()) ? "false" : "true");
-// }
 
 async function getMapProvider() {
     return (await getKeychainValue('fpMapProvider')) || 'apple';
@@ -2074,6 +2102,69 @@ async function setMapProvider(value) {
 async function toggleMapProvider() {
     await setMapProvider((await getMapProvider()) === 'google' ? 'apple' : 'google');
 }
+
+async function getKeychainValue(key) {
+    key = SCRIPT_ID !== null && SCRIPT_ID !== undefined && SCRIPT_ID > 0 ? `${key}_${SCRIPT_ID}` : key;
+    try {
+        if (await Keychain.contains(key)) {
+            return await Keychain.get(key);
+        }
+    } catch (e) {
+        console.log(`getKeychainValue(${key}) Error: ${e}`);
+    }
+    return null;
+}
+
+async function setKeychainValue(key, value) {
+    if (key && value) {
+        key = SCRIPT_ID !== null && SCRIPT_ID !== undefined && SCRIPT_ID > 0 ? `${key}_${SCRIPT_ID}` : key;
+        await Keychain.set(key, value);
+    }
+}
+
+function hasKeychainValue(key) {
+    return Keychain.contains(key);
+}
+
+async function removeKeychainValue(key) {
+    key = SCRIPT_ID !== null && SCRIPT_ID !== undefined && SCRIPT_ID > 0 ? `${key}_${SCRIPT_ID}` : key;
+    if (await Keychain.contains(key)) {
+        await Keychain.remove(key);
+    }
+}
+
+async function requiredPrefsOk() {
+    let kcKeys = ['fpUser', 'fpPass', 'fpToken2', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
+    let missingKeys = [];
+    for (const key in kcKeys) {
+        let val = await getKeychainValue(kcKeys[key]);
+        if (val === null || val === '' || val === undefined) {
+            missingKeys.push(kcKeys[key]);
+        }
+    }
+
+    if (missingKeys.length > 0) {
+        console.log('Required Prefs Missing: ' + missingKeys);
+        return false;
+    } else {
+        return true;
+    }
+}
+
+async function clearKeychain() {
+    console.log('Info: Clearing Authentication from Keychain');
+    const keys = ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
+    for (const key in keys) {
+        await removeKeychainValue(keys[key]);
+    }
+}
+
+// async function performKeychainMigration() {
+//     let kcKeys = ['fpUser', 'fpPass', 'fpToken2', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpSpeedUnits'];
+//     for (const key in kcKeys) {
+//         // if (Keychain.contains())
+//     }
+// }
 
 // get images from local filestore or download them once
 async function getImage(image) {
@@ -2229,21 +2320,40 @@ async function getPosition(data) {
     return `${loc[0].postalAddress.street}, ${loc[0].postalAddress.city}`;
 }
 
-function calculateTimeDifference(oldTime) {
-    let newTime = Date.now();
-    let diffMs = newTime - oldTime;
-    if (Math.floor(diffMs / 86400000) >= 1) {
-        return textValues().UIValues.greaterOneDay;
+function convertFordDtToLocal(src) {
+    let dtp = new Date(Date.parse(src.replace(/-/g, '/')));
+    let dto = new Date(dtp.getTime() - dtp.getTimezoneOffset() * 60 * 1000);
+    return dto;
+}
+
+function timeDifference(prevTime) {
+    const now = new Date().getTime();
+    const min = 60 * 1000;
+    const hour = min * 60;
+    const day = hour * 24;
+    const month = day * 30;
+    const year = day * 365;
+    const elap = now - prevTime;
+
+    if (elap < min) {
+        let d = Math.round(elap / 1000);
+        return `${d} ${textValues().UIValues.second}${d > 1 ? textValues().UIValues.plural : ''} ${textValues().UIValues.subsequentAdverb}`;
+    } else if (elap < hour) {
+        let d = Math.round(elap / min);
+        return `${d} ${textValues().UIValues.minute}${d > 1 ? textValues().UIValues.plural : ''} ${textValues().UIValues.subsequentAdverb}`;
+    } else if (elap < day) {
+        let d = Math.round(elap / hour);
+        return `${d} ${textValues().UIValues.hour}${d > 1 ? textValues().UIValues.plural : ''} ${textValues().UIValues.subsequentAdverb}`;
+    } else if (elap < month) {
+        let d = Math.round(elap / day);
+        return `${d} ${textValues().UIValues.day}${d > 1 ? textValues().UIValues.plural : ''} ${textValues().UIValues.subsequentAdverb}`;
+    } else if (elap < year) {
+        let d = Math.round(elap / month);
+        return `${d} ${textValues().UIValues.month}${d > 1 ? textValues().UIValues.plural : ''} ${textValues().UIValues.subsequentAdverb}`;
+    } else {
+        let d = Math.round(elap / year);
+        return `${d} ${textValues().UIValues.year}${d > 1 ? textValues().UIValues.plural : ''} ${textValues().UIValues.subsequentAdverb}`;
     }
-    if (Math.floor((diffMs % 86400000) / 3600000) >= 1) {
-        let diff = Math.floor((diffMs % 86400000) / 3600000);
-        return `${textValues().UIValues.precedingAdverb} ${diff} ${textValues().UIValues.hour}${diff == 1 ? '' : textValues().UIValues.plural} ${textValues().UIValues.subsequentAdverb}`;
-    }
-    if (Math.round(((diffMs % 86400000) % 3600000) / 60000) >= 1) {
-        let diff = Math.round(((diffMs % 86400000) % 3600000) / 60000);
-        return `${textValues().UIValues.precedingAdverb} ${diff} ${textValues().UIValues.minute}${diff == 1 ? '' : textValues().UIValues.plural} ${textValues().UIValues.subsequentAdverb}`;
-    }
-    return textValues().UIValues.smallerOneMinute;
 }
 
 async function pressureToFixed(pressure, digits) {
@@ -2257,6 +2367,45 @@ async function pressureToFixed(pressure, digits) {
             //KPA
             return pressure || -1;
     }
+}
+
+function hasLowerCase(str) {
+    return str.toUpperCase() != str;
+}
+
+function scrubPersonalData(data) {
+    function scrubInfo(obj, id) {
+        function scrub(type, str) {
+            switch (type) {
+                case 'vin':
+                    return str.substring(0, str.length - 6) + 'XXXXXX';
+                case 'position':
+                    return '1234 Someplace Drive';
+                case 'latitude':
+                    return 42.123456;
+                case 'longitude':
+                    return -89.123456;
+            }
+        }
+        Object.keys(obj).forEach((key) => {
+            if (key === id) {
+                obj[key] = scrub(id, obj[key]);
+            } else if (obj[key] !== null && typeof obj[key] === 'object') {
+                scrubInfo(obj[key], id);
+            }
+        });
+        return obj;
+    }
+
+    let out = scrubInfo(data, 'vin');
+    out = scrubInfo(data, 'position');
+    out = scrubInfo(data, 'latitude');
+    out = scrubInfo(data, 'longitude');
+    return out;
+}
+
+function inputTest(val) {
+    return val !== '' && val !== null && val !== undefined;
 }
 
 // Shamelessly borrowed from WidgetMarkup.js by @rafaelgandi
