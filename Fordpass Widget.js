@@ -2336,7 +2336,7 @@ async function getImage(image) {
                 // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
         }
         let iconImage = await loadImage(imageUrl);
-        fm.writeImage(path, iconImage);
+        await fm.writeImage(path, iconImage);
         return iconImage;
     }
 }
