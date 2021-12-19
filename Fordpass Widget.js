@@ -753,7 +753,7 @@ async function createDoorElement(srcField, vData, countOnly = false) {
         }
 
         // Creates the third row of status elements for the tailgate and/or hood (if equipped)
-        let hasHood = false; //vData.statusDoors.hood !== null;
+        let hasHood = vData.statusDoors.hood !== null;
         let hasTailgate = vData.statusDoors.tailgate !== null;
         if (hasHood || hasTailgate) {
             if (hasHood && hasTailgate) {
@@ -795,12 +795,12 @@ async function createWindowElement(srcField, vData, countOnly = false) {
     let dataRow1Fld = await createRow(srcField);
     if (countOnly) {
         let value = textValues().errorMessages.noData;
-        let countOpenWindows;
+        let countOpen;
         if (vData.statusWindows) {
-            countOpenWindows = Object.values(vData.statusWindows).filter((window) => window === true).length;
-            value = countOpenWindows == 0 ? textValues().UIValues.closed : `${countOpenWindows} ${textValues().UIValues.open}`;
+            countOpen = Object.values(vData.statusWindows).filter((window) => window === true).length;
+            value = countOpen == 0 ? textValues().UIValues.closed : `${countOpenWindows} ${textValues().UIValues.open}`;
         }
-        let cntOpenTxt = await createText(dataRow1Fld, value, styles.normTxt);
+        await createText(dataRow1Fld, value, styles.normTxt);
     } else {
         let col1 = await createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
         let col1row1 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
@@ -2336,7 +2336,7 @@ async function getImage(image) {
                 // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
         }
         let iconImage = await loadImage(imageUrl);
-        fm.writeImage(path, iconImage);
+        await fm.writeImage(path, iconImage);
         return iconImage;
     }
 }
