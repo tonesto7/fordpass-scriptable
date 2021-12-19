@@ -34,6 +34,9 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
    <img src="images/advanced_control_menu.png" alt="Menu example" width="300" />
   <img src="images/setting_menu.png" alt="Menu example" width="300" />
  
+## Community Help
+* Discord Link: https://discord.gg/VPw3zw9v
+ 
   
 ## Todo
 
