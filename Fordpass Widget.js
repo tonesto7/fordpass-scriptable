@@ -105,6 +105,7 @@ Changelog:
     v1.3.3:
         - Fix for some vehicles reporting rear windows with a status of undefined and showing open in the widget.
         - Fix for some vehicles not having the windows status for front windows.
+        - Mores fixes to handle undefined values in the vehicle data.
         
 **************/
 
@@ -135,7 +136,7 @@ const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
-    screenShotMode: true, // Places a dummy address in the widget for anonymous screenshots.
+    screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     tirePressureThresholds: {
@@ -722,7 +723,7 @@ async function createEvChargeElement(srcField, vehicleData) {
     elem.addSpacer(2);
     let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : textValues().errorMessages.noData;
     // console.log(`battery charge: ${value}`);
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+    await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
     srcField.addSpacer(3);
 }
 
@@ -963,7 +964,7 @@ async function createIgnitionStatusElement(srcField, vehicleData) {
     await createTitle(titleFld, 'ignitionStatus');
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
-    let text = await createText(dataFld, status, (vehicleData.ignitionStatus !== undefined && vehicleData.ignitionStatus === 'On') || remStartOn ? styles.statOn : styles.statOff);
+    await createText(dataFld, status, (vehicleData.ignitionStatus !== undefined && vehicleData.ignitionStatus === 'On') || remStartOn ? styles.statOn : styles.statOff);
     srcField.addSpacer(offset);
 }
 
