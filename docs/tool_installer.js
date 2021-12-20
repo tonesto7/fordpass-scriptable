@@ -24,9 +24,7 @@ class WidgetInstaller {
         let req = new Request(sourceUrl);
         let code = await req.loadString();
         let hash = this.hashCode(code);
-        let codeToStore = Data.fromString(
-            `// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\n// Do not remove these lines, if you want to benefit from automatic updates.\n// source: ${sourceUrl}; docs: ${documentationUrl}; hash: ${hash};\n\n${code}`,
-        );
+        let codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n${code}`);
         this.fileManager.write(filePath, codeToStore);
         let selfFilePath = this.fileManager.joinPath(this.documentsDirectory, Script.name() + '.js');
         this.fileManager.remove(selfFilePath);
