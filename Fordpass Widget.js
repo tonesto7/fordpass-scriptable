@@ -97,11 +97,11 @@ Changelog:
         - Fixed the Alerts not allowed in widget error (this is really shown because the saved VIN is invalid)
         - Fixed repeated login prompt because of the deviceLanguage variable missing from the setUserPrefs call.  Removed the requirement as it's not being used right now 
     v1.3.2:
-        - Fixed issues with distance and pressure units not mathing those set in fordpass app settings.
+        - Fixed issues with distance and pressure units not matching those set in Fordpass app settings.
         - Fixed vehicle image when multiple versions of the script are selected.
         - Fixed status message left offset when there were any messages.
-        - Fixed some unhandeled variables errors.
-        - Updated the webview titles to remind users that there person info (VIN, address, position, etc) has been scrubbed from the data they are viewing.
+        - Fixed some unhandled variables errors.
+        - Updated the WebView titles to remind users that their personal info (VIN, address, position, etc) has been scrubbed from the data they are viewing.
         
 **************/
 const SCRIPT_VERSION = '1.3.2';
