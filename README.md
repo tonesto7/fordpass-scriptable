@@ -55,27 +55,9 @@ The widget has been tested on many many ford models, and should work on any vehi
 
 ## Installation
 
-### Automated Install
 
- - COMING SOON
-<!-- [![Download with ScriptDude](https://scriptdu.de/download.svg)](https://scriptdu.de/?name=Fordpass+Widget&source=https%3A%2F%2Fgist.githubusercontent.com%2Ftonesto7%2F942bda23e3228f16f324bf4e68fec6d2%2Fraw%2F77cf729f1c65cdbc729c95b97db1f78e18e9b395%2FFordpass%252520Widget.js&docs=https%3A%2F%2Fgithub.com%2Ftonesto7%2Ffordpass-scriptable%23readme#generator) -->
-
-### Manual Install
-
-- Browse here to [view the latest code](Fordpass%20Widget.js)
-- Press "raw" in the upper left corner and copy everything after opening the [Fordpass Widget.js](Fordpass%20Widget.js) script
-- Open Scriptable App
-- Press on "+" in the upper right corner and paste the code
-- Press "Done"
-- Tap on the widget and a menu will appear for you to enter your login information and VIN number.
-- Pressing "Done" will save the data and open another config page to allow you to change the settings.
-- Go to your iOS homescreen and make a long press to enter "homescreen edit mode"
-- Press "+" on the upper left corner and choose "Scriptable" as a medium sized widget
-- Tap done
-- Long press on the newly created widget and choose the FordPass Widget from the list under "Script"
-- Select Run Script under the when interacting.
-- Tap out the widget setup box
-- Your done
+### Install Videos
+https://tonesto7.github.io/fordpass-scriptable/videos/install_demo.mp4
 
 For easy maintenance of the script I recommend just saving the Fordpass Widget.js file directly to the Scriptable folder inside the iCloud Drive it will make it easier to update it without having to copy and paste the code again. Any changes are reflected in the scriptable app.
 
