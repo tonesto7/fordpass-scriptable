@@ -71,7 +71,11 @@ The widget has been tested on many many ford models, and should work on any vehi
 - Pressing "Done" will save the data and open another config page to allow you to change the settings.
 - Go to your iOS homescreen and make a long press to enter "homescreen edit mode"
 - Press "+" on the upper left corner and choose "Scriptable" as a medium sized widget
-- Still in "wiggle mode" tap on the newly created widget and choose the FordPass Widget from the list under "Script"
+- Tap done
+- Long press on the newly created widget and choose the FordPass Widget from the list under "Script"
+- Select Run Script under the when interacting.
+- Tap out the widget setup box
+- Your done
 
 For easy maintenance of the script I recommend just saving the Fordpass Widget.js file directly to the Scriptable folder inside the iCloud Drive it will make it easier to update it without having to copy and paste the code again. Any changes are reflected in the scriptable app.
 
