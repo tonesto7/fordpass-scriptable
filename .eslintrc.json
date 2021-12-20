@@ -1,0 +1,10 @@
+// .eslintrc.json
+
+// Applying via plugin rule
+{
+    "rules": {
+        "prettier": {
+            "space-before-function-paren": ["error", "never"]
+        }
+    }
+}
