@@ -6,15 +6,16 @@
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tonesto7/fordpass-scriptable?label=Latest%20Script%20Version&sort=semver&style=for-the-badge)
 
-<img src="images/widget_screenshot.png" alt="Widget example" width="300" />
+<img src="images/widget_light_example.png" alt="Widget light example" width="300" />
+<img src="images/widget_dark_example.png" alt="Widget dark example" width="300" />
 
 ## Intro
 
 This widget is based off the work of [](https://github.com/dschablowsky/FordPassWidget) by David Schablowsky.
-It's been significantly rewritten to add a new design, features, and much easier to maintain and improve.
-It no longer requires editing the script file to configure options and login information.
-This widget fetches information about your ford vehicle and displays them in a simple interactive widget.
-The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but should work on a majority of FordPass enabled devices (It doesn't support all electric features yet).
+It has been rewritten to add a new design, support infinitly more features, and will be much easier to maintain and improve over time.
+This version no longer requires you to edit the script file to configure login information and preferences.
+The widget now fetches all information required about your ford vehicle and displays them in a simple interactive widget.
+The widget has been tested on many many ford models, and should work on any vehicle that's supported in the FordPass mobile app.
 
 ## Requirements
 
@@ -24,33 +25,47 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 
 ## Features
 
-- Will automatically fetch data from server (default every 5 minutes)
+- Will automatically fetch data from server (default is every 3-5 minutes)
 - Tapping on the Vehicle location in the widget will open Apple Maps (or Google Maps) pin the position of your vehicle.
-- Tapping anywhere in the widget will open the scriptable app and provide a menu of quick actions for your vehicle
-- Automatically pulls in you vehicle image and displays it in the widget.
+- Tapping anywhere in the widget will open the scriptable app and provide a menu of quick actions support by your vehicles capabilities.
+- Automatically pulls in the following info about you and your vehicle:
+  - Vehicles actual image
+  - Distance and Pressure units defined in the FordPass app.
+
+- Debug Menu to view advanced information about your vehicle data:
+  - View the Hidden OTA data embedded in Ford.com vehicle dashboard.
+  - View all data pulled into the widget using various ford endpoints.
   
-  
+## Screenshots
+
   <img src="images/main_menu_example.png" alt="Menu example" width="300" />
-   <img src="images/advanced_control_menu.png" alt="Menu example" width="300" />
+  <img src="images/advanced_control_menu.png" alt="Advanced Control example" width="300" />
   <img src="images/setting_menu.png" alt="Menu example" width="300" />
- 
+  <img src="images/debug_menu.png" alt="Debug Menu example" width="300" />
+
+## Known Issues & Limitations
+
+- The widget offers limited controls for electric vehicles at the moment (I need to get the commands from the FordPass app mapped out.)
+- Sometimes the fuel and oil data will be missing or incorrect. This is due to the fact that the fuel and oil data is not always available in the Fordpass API when the vehicle is off.
+
 ## Community Help
-* Discord Link: https://discord.gg/VPw3zw9v
- 
-  
+
+ Discord Link: <https://discord.gg/VPw3zw9v>
+
 ## Todo
 
-- Add customizable refresh intervals in the settings
-- Get SecuriAlert control working.
+- Get small, large, and extra large layouts working.
 - Widget code updater mechanism (I don't have a way to do this yet)
 
 ## Installation
 
 ### Automated Install
 
-- Coming Soon
+ - COMING SOON
+<!-- [![Download with ScriptDude](https://scriptdu.de/download.svg)](https://scriptdu.de/?name=Fordpass+Widget&source=https%3A%2F%2Fgist.githubusercontent.com%2Ftonesto7%2F942bda23e3228f16f324bf4e68fec6d2%2Fraw%2F77cf729f1c65cdbc729c95b97db1f78e18e9b395%2FFordpass%252520Widget.js&docs=https%3A%2F%2Fgithub.com%2Ftonesto7%2Ffordpass-scriptable%23readme#generator) -->
 
 ### Manual Install
+
 - Browse here to [view the latest code](Fordpass%20Widget.js)
 - Press "raw" in the upper left corner and copy everything after opening the [Fordpass Widget.js](Fordpass%20Widget.js) script
 - Open Scriptable App
@@ -62,11 +77,7 @@ The widget has been tested on my 2021 F-150 and another users 2020 Explorer, but
 - Press "+" on the upper left corner and choose "Scriptable" as a medium sized widget
 - Still in "wiggle mode" tap on the newly created widget and choose the FordPass Widget from the list under "Script"
 
-For easy maintenance of the script I recommend just saving the Fordpass Widget.js file directly to the Scriptable folded inside the iCloud Drive it will make it easier to update it without having to copy and paste the code again. Any changes are reflected in the scriptable app.
-
-## Notes
- 
-Sometimes the fuel data will be missing or incorrect. This is due to the fact that the fuel data is not always available in the Fordpass API.
+For easy maintenance of the script I recommend just saving the Fordpass Widget.js file directly to the Scriptable folder inside the iCloud Drive it will make it easier to update it without having to copy and paste the code again. Any changes are reflected in the scriptable app.
 
 ## Troubleshooting and Debugging
 
