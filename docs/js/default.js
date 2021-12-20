@@ -10,7 +10,7 @@ document.addEventListener(
 
         // Copy install code
         let installCode;
-        fetch('FordWidgetTool.js')
+        fetch('tool_installer.js')
             .then((res) => res.text())
             .then((source) => (installCode = source));
         document.querySelector('#copyInstaller').addEventListener('click', function (event) {
