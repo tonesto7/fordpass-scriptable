@@ -97,7 +97,7 @@ Changelog:
         - Fixed the Alerts not allowed in widget error (this is really shown because the saved VIN is invalid)
         - Fixed repeated login prompt because of the deviceLanguage variable missing from the setUserPrefs call.  Removed the requirement as it's not being used right now 
     v1.3.2:
-        - Fixed issues with distance and pressure units not matching those set in Fordpass app settings.
+        - Fixed issues with distance and pressure units not matching those set in Fordpass app settings. (Only refreshes when values are missing and every 5 minutes)
         - Fixed vehicle image when multiple versions of the script are selected.
         - Fixed status message left offset when there were any messages.
         - Fixed some unhandled variables errors.
@@ -298,7 +298,7 @@ async function queryFordPassPrefs(force = false) {
 
         if (ok2Upd || lastDt === null || force) {
             await setKeychainValue('fpLastPrefsQueryTs', dtNow.toString());
-            console.log(ok2Upd ? `UserPrefs Expired - Refreshing from Ford API` : `UserPrefs Being Required - Refreshing from Ford API`);
+            console.log(ok2Upd ? `UserPrefs Expired - Refreshing from Ford API` : `UserPrefs Requested or Missing - Refreshing from Ford API`);
 
             let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
             // console.log('user: ' + JSON.stringify(data));
