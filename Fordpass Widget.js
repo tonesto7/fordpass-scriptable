@@ -102,9 +102,13 @@ Changelog:
         - Fixed status message left offset when there were any messages.
         - Fixed some unhandled variables errors.
         - Updated the WebView titles to remind users that their personal info (VIN, address, position, etc) has been scrubbed from the data they are viewing.
+    v1.3.3:
+        - Fix for some vehicles reporting rear windows with a status of undefined and showing open in the widget.
+        - Fix for some vehicles not having the windows status for front windows.
         
 **************/
-const SCRIPT_VERSION = '1.3.2';
+
+const SCRIPT_VERSION = '1.3.3';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -131,6 +135,7 @@ const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
+    screenShotMode: true, // Places a dummy address in the widget for anonymous screenshots.
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     tirePressureThresholds: {
@@ -288,42 +293,6 @@ async function prepWidget() {
     let vehicleData = await fetchVehicleData();
     // console.log(`vehicleData: ${JSON.stringify(vehicleData)}`);
     return vehicleData;
-}
-
-async function queryFordPassPrefs(force = false) {
-    try {
-        let dtNow = Date.now();
-        let lastDt = await getKeychainValue('fpLastPrefsQueryTs');
-        let ok2Upd = lastDt && dtNow - Number(lastDt) > 1000 * 60 * 5;
-
-        if (ok2Upd || lastDt === null || force) {
-            await setKeychainValue('fpLastPrefsQueryTs', dtNow.toString());
-            console.log(ok2Upd ? `UserPrefs Expired - Refreshing from Ford API` : `UserPrefs Requested or Missing - Refreshing from Ford API`);
-
-            let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
-            // console.log('user: ' + JSON.stringify(data));
-            if (data && data.status === 200 && data.profile) {
-                try {
-                    await setKeychainValue('fpCountry', data.profile.country ? data.profile.country : 'USA');
-                    await setKeychainValue('fpLanguage', data.profile.preferredLanguage || Device.locale());
-                    await setKeychainValue('fpTz', data.profile.timeZone || CalendarEvent.timeZone);
-                    await setKeychainValue('fpDistanceUnits', data.profile.uomDistance === 2 ? 'km' : 'mi');
-                    await setKeychainValue('fpPressureUnits', data.profile.uomPressure ? data.profile.uomPressure : 'MPH');
-                    console.log(`Saving User Preferences from Ford Account:`);
-                    console.log(` - Country: ${data.profile.country ? data.profile.country : 'USA (Fallback)'}`);
-                    console.log(` - Language: ${data.profile.preferredLanguage ? data.profile.preferredLanguage : Device.locale() + ' (Fallback)'}`);
-                    console.log(` - DistanceUnit: ${data.profile.uomDistance === 2 ? 'km' : 'mi'}`);
-                    console.log(` - PressureUnit: ${data.profile.uomPressure !== undefined && data.profile.uomPressure !== '' ? data.profile.uomPressure : 'PSI (Fallback)'}`);
-                } catch (e) {
-                    console.log(`setUserPrefs Error: ${e}`);
-                }
-                return true;
-            }
-            return false;
-        }
-    } catch (e) {
-        console.error(e);
-    }
 }
 
 async function generateWidget(size, data) {
@@ -692,7 +661,7 @@ async function createFuelBattElement(srcField, vehicleData, widgetSize = 'defaul
         let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
         let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
         let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${unitOfLength} ${dtePostfix}` : textValues().errorMessages.noData;
-        let fuelDteRowTxt = await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+        await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
     } catch (e) {
         console.log(`createFuelBattElement error ${e}`);
     }
@@ -710,7 +679,7 @@ async function createMileageElement(srcField, vehicleData) {
         let distanceUnit = isMetric ? 'km' : 'mi'; // unit of length
         let value = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)}${distanceUnit}` : textValues().errorMessages.noData;
         // console.log(`odometer: ${value}`);
-        let txt = await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1, '*leftAlignText': null });
+        await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1, '*leftAlignText': null });
         srcField.addSpacer(3);
     } catch (e) {
         console.log(`createMileageElement error ${e}`);
@@ -724,7 +693,7 @@ async function createBatteryElement(srcField, vehicleData) {
     let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
     // console.log(`batteryLevel: ${value}`);
     let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
-    let txt = await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2), lineLimit: 1 });
+    await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2), lineLimit: 1 });
     srcField.addSpacer(3);
 }
 
@@ -955,7 +924,7 @@ async function createPositionElement(srcField, vehicleData) {
 
     let dataFld = await createRow(srcField);
     let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
-    let value = vehicleData.position ? `${vehicleData.position}` : textValues().errorMessages.noData;
+    let value = vehicleData.position ? (widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vehicleData.position}`) : textValues().errorMessages.noData;
     await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
 }
@@ -1054,9 +1023,10 @@ async function createStatusElement(stk, vData, maxMsgs = 2) {
 
 async function getMainMenuItems(vehicleData) {
     const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
-    return [{
+    return [
+        {
             title: `New Script Available: (v${LATEST_VERSION})`,
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) New Version was pressed');
                 createMainMenu();
             },
@@ -1065,7 +1035,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'View Widget',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) View Widget was pressed');
                 subControlMenu('widgetView');
                 // const w = await generateWidget('medium', fordData);
@@ -1076,7 +1046,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'View Info',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) View Info was pressed');
                 await subControlMenu('advancedInfo');
             },
@@ -1085,7 +1055,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Lock Vehicle',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Lock was pressed');
                 await sendVehicleCmd('lock');
             },
@@ -1094,7 +1064,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Unlock Vehicle',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Unlock was pressed');
                 await sendVehicleCmd('unlock');
             },
@@ -1103,7 +1073,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Remote Start (Stop)',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Stop was pressed');
                 await sendVehicleCmd('stop');
             },
@@ -1112,7 +1082,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Remote Start (Run)',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Start was pressed');
                 await sendVehicleCmd('start');
             },
@@ -1121,7 +1091,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Force Refresh',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Refresh was pressed');
                 await sendVehicleCmd('status');
             },
@@ -1130,7 +1100,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Advanced Controls',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Advanced Control was pressed');
                 await subControlMenu('advancedControl');
             },
@@ -1139,7 +1109,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Widget Settings',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Widget Settings was pressed');
                 createSettingMenu();
             },
@@ -1148,7 +1118,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Exit',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Exit was pressed');
             },
             destructive: false,
@@ -1166,9 +1136,10 @@ async function subControlMenu(type) {
     switch (type) {
         case 'widgetView':
             title = 'View Widget';
-            items = [{
+            items = [
+                {
                     title: 'Small',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Small Widget was pressed');
                         const w = await generateWidget('small', fordData);
                         await w.presentSmall();
@@ -1178,7 +1149,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Medium',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Medium Widget was pressed');
                         const w = await generateWidget('medium', fordData);
                         await w.presentMedium();
@@ -1188,7 +1159,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Large',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Large Widget was pressed');
                         const w = await generateWidget('large', fordData);
                         await w.presentLarge();
@@ -1198,7 +1169,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Back was pressed');
                         createMainMenu();
                     },
@@ -1209,9 +1180,10 @@ async function subControlMenu(type) {
             break;
         case 'advancedControl':
             title = 'Advanced Controls';
-            items = [{
+            items = [
+                {
                     title: 'ZoneLighting Control',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Advanced Controls Menu) Zone Lighting was pressed');
                         await subControlMenu('zoneLighting');
                     },
@@ -1220,7 +1192,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'SecuriAlert Control',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Advanced Controls Menu) SecuriAlert was pressed');
                         await subControlMenu('securiAlert');
                     },
@@ -1229,7 +1201,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Trailer Lighting Check',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Advanced Controls Menu) Trailer Light Check was pressed');
                         await subControlMenu('trailerLightCheck');
                     },
@@ -1238,7 +1210,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Advanced Controls Menu) Back was pressed');
                         createMainMenu();
                     },
@@ -1249,9 +1221,10 @@ async function subControlMenu(type) {
             break;
         case 'debugMenu':
             title = 'Debug Menu';
-            items = [{
+            items = [
+                {
                     title: 'Copy Vehicle Data to Clipboard',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Debug Menu) Copy Data was pressed');
                         let data = await fetchVehicleData(true);
                         data = scrubPersonalData(data);
@@ -1264,7 +1237,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'View OTA API Info',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Debug Menu) OTA Info was pressed');
                         let data = await getVehicleOtaInfo();
                         await showDataWebView('OTA Info Page', 'OTA Vehicle Info', data);
@@ -1275,7 +1248,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'View Vehicle Data Output',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Debug Menu) Vehicle Data was pressed');
                         let data = await fetchVehicleData(true);
                         data.userPrefs = {
@@ -1294,7 +1267,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Debug Menu) Back was pressed');
                         createMainMenu();
                     },
@@ -1305,9 +1278,10 @@ async function subControlMenu(type) {
             break;
         case 'advancedInfo':
             title = 'Advanced Info';
-            items = [{
+            items = [
+                {
                     title: `SecuriAlert Status: ${(await getSecuriAlertStatus()) === 'enable' ? 'Enabled' : 'Disabled'}`,
-                    action: async() => {
+                    action: async () => {
                         console.log('(Advanced Controls Menu) Zone Lighting was pressed');
                         subControlMenu('advancedInfo');
                     },
@@ -1316,7 +1290,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Advanced Controls Menu) Back was pressed');
                         createMainMenu();
                     },
@@ -1328,9 +1302,10 @@ async function subControlMenu(type) {
         case 'zoneLighting':
             title = 'Zone Lighting Control';
             message = '';
-            items = [{
+            items = [
+                {
                     title: 'Turn On All ZoneLighting',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Zone Lighting Menu) On was pressed');
                         await sendVehicleCmd('zone_lights_on');
                     },
@@ -1339,7 +1314,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Turn Off All ZoneLighting',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Zone Lighting Menu) Off was pressed');
                         await sendVehicleCmd('zone_lights_off');
                     },
@@ -1348,7 +1323,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Zone Lighting Menu) Back was pressed');
                         subControlMenu('advancedControl');
                     },
@@ -1360,9 +1335,10 @@ async function subControlMenu(type) {
         case 'securiAlert':
             title = 'SecuriAlert Control';
             message = '';
-            items = [{
+            items = [
+                {
                     title: 'Disable SecuriAlert',
-                    action: async() => {
+                    action: async () => {
                         console.log('(SecuriAlert Menu) Off was pressed');
                         await sendVehicleCmd('guard_mode_off');
                     },
@@ -1371,7 +1347,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Enable SecuriAlert',
-                    action: async() => {
+                    action: async () => {
                         console.log('(SecuriAlert Menu) On was pressed');
                         await sendVehicleCmd('guard_mode_on');
                     },
@@ -1380,7 +1356,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(SecuriAlert Menu) Back was pressed');
                         subControlMenu('advancedControl');
                     },
@@ -1392,9 +1368,10 @@ async function subControlMenu(type) {
         case 'trailerLightCheck':
             title = 'Trailer Lighting Check Control';
             message = '';
-            items = [{
+            items = [
+                {
                     title: 'Turn On Trailer Light Check',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Trailer Lighting Menu) On was pressed');
                         await sendVehicleCmd('trailer_light_check_on');
                     },
@@ -1403,7 +1380,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Turn Off Trailer Light Check',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Trailer Lighting Menu) Off was pressed');
                         await sendVehicleCmd('trailer_light_check_off');
                     },
@@ -1412,7 +1389,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Trailer Lighting Menu) Back was pressed');
                         subControlMenu('advancedControl');
                     },
@@ -1855,6 +1832,42 @@ async function getSecuriAlertStatus() {
     // console.log('getSecuriAlertStatus: ' + JSON.stringify(data));
 }
 
+async function queryFordPassPrefs(force = false) {
+    try {
+        let dtNow = Date.now();
+        let lastDt = await getKeychainValue('fpLastPrefsQueryTs');
+        let ok2Upd = lastDt && dtNow - Number(lastDt) > 1000 * 60 * 5;
+        // console.log(`Last prefs query: ${lastDt} | Now: ${dtNow} | Diff: ${dtNow - Number(lastDt)} | Ok2Upd: ${ok2Upd}`);
+        if (ok2Upd || lastDt === null || force) {
+            await setKeychainValue('fpLastPrefsQueryTs', dtNow.toString());
+            console.log(ok2Upd ? `UserPrefs Expired - Refreshing from Ford API` : `UserPrefs Requested or Missing - Refreshing from Ford API`);
+
+            let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
+            // console.log('user: ' + JSON.stringify(data));
+            if (data && data.status === 200 && data.profile) {
+                try {
+                    await setKeychainValue('fpCountry', data.profile.country ? data.profile.country : 'USA');
+                    await setKeychainValue('fpLanguage', data.profile.preferredLanguage || Device.locale());
+                    await setKeychainValue('fpTz', data.profile.timeZone || CalendarEvent.timeZone);
+                    await setKeychainValue('fpDistanceUnits', data.profile.uomDistance === 2 ? 'km' : 'mi');
+                    await setKeychainValue('fpPressureUnits', data.profile.uomPressure ? data.profile.uomPressure : 'MPH');
+                    console.log(`Saving User Preferences from Ford Account:`);
+                    console.log(` - Country: ${data.profile.country ? data.profile.country : 'USA (Fallback)'}`);
+                    console.log(` - Language: ${data.profile.preferredLanguage ? data.profile.preferredLanguage : Device.locale() + ' (Fallback)'}`);
+                    console.log(` - DistanceUnit: ${data.profile.uomDistance === 2 ? 'km' : 'mi'}`);
+                    console.log(` - PressureUnit: ${data.profile.uomPressure !== undefined && data.profile.uomPressure !== '' ? data.profile.uomPressure : 'PSI (Fallback)'}`);
+                } catch (e) {
+                    console.log(`setUserPrefs Error: ${e}`);
+                }
+                return true;
+            }
+            return false;
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
 async function makeFordRequest(desc, url, method, json = false, headerOverride = undefined, body = undefined) {
     let authMsg = await checkAuth('makeFordRequest(' + desc + ')');
     if (authMsg) {
@@ -1912,35 +1925,44 @@ const vehicleCmdConfigs = (vin) => {
     return {
         lock: {
             desc: 'Lock Vehicle',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                    method: 'PUT',
+                },
+            ],
         },
         unlock: {
             desc: 'Unlock Vehicle',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                    method: 'DELETE',
+                },
+            ],
         },
         start: {
             desc: 'Remote Start Vehicle',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                    method: 'PUT',
+                },
+            ],
         },
         stop: {
             desc: 'Remote Stop Vehicle',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                    method: 'DELETE',
+                },
+            ],
         },
         zone_lights_off: {
             desc: 'Zone Off Zone Lighting (All Lights)',
-            cmds: [{
+            cmds: [
+                {
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'DELETE',
                 },
@@ -1952,7 +1974,8 @@ const vehicleCmdConfigs = (vin) => {
         },
         zone_lights_on: {
             desc: 'Turn On Zone Lighting (All Lights)',
-            cmds: [{
+            cmds: [
+                {
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'PUT',
                 },
@@ -1964,38 +1987,48 @@ const vehicleCmdConfigs = (vin) => {
         },
         guard_mode_on: {
             desc: 'Enable SecuriAlert',
-            cmds: [{
-                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                    method: 'PUT',
+                },
+            ],
         },
         guard_mode_off: {
             desc: 'Disable SecuriAlert',
-            cmds: [{
-                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                    method: 'DELETE',
+                },
+            ],
         },
         trailer_light_check_on: {
             desc: 'Trailer Light Check ON',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
+                    method: 'PUT',
+                },
+            ],
         },
         trailer_light_check_off: {
             desc: 'Trailer Light Check OFF',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
+                    method: 'DELETE',
+                },
+            ],
         },
         status: {
             desc: 'Refresh Vehicle Status',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/status`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/status`,
+                    method: 'PUT',
+                },
+            ],
         },
     };
 };
@@ -2186,7 +2219,7 @@ async function fetchVehicleData(loadLocal = false) {
 
     //Battery info
     vehicleData.batteryStatus = vehicleStatus.battery && vehicleStatus.battery.batteryHealth ? vehicleStatus.battery.batteryHealth.value : textValues().UIValues.unknown;
-    vehicleData.batteryLevel = vehicleStatus.battery && vehicleStatus.battery.batteryStatusActual ? vehicleStatus.battery.batteryStatusActual.value : textValues().UIValues.unknown;
+    vehicleData.batteryLevel = vehicleStatus.battery && vehicleStatus.battery.batteryStatusActual ? vehicleStatus.battery.batteryStatusActual.value : undefined;
 
     // Whether Vehicle is in deep sleep mode (Battery Saver) | Supported Vehicles Only
     vehicleData.deepSleepMode = vehicleStatus.deepSleepInProgess ? vehicleStatus.deepSleepInProgess.value === 'true' : undefined;
@@ -2209,10 +2242,10 @@ async function fetchVehicleData(loadLocal = false) {
     let windows = vehicleStatus.windowPosition;
     //console.log("windows:", JSON.stringify(windows));
     vehicleData.statusWindows = {
-        leftFront: !['Fully_Closed', 'Fully closed position', 'Undefined window position'].includes(windows.driverWindowPosition.value),
-        rightFront: !['Fully_Closed', 'Fully closed position', 'Undefined window position'].includes(windows.passWindowPosition.value),
-        leftRear: !['Fully_Closed', 'Fully closed position', 'Undefined window position'].includes(windows.rearDriverWindowPos.value),
-        rightRear: !['Fully_Closed', 'Fully closed position', 'Undefined window position'].includes(windows.rearPassWindowPos.value),
+        leftFront: windows.driverWindowPosition ? !['Fully_Closed', 'Fully closed position', 'Undefined window position', 'Undefined'].includes(windows.driverWindowPosition.value) : false,
+        rightFront: windows.passWindowPosition ? !['Fully_Closed', 'Fully closed position', 'Undefined window position', 'Undefined'].includes(windows.passWindowPosition.value) : false,
+        leftRear: windows.rearDriverWindowPos ? !['Fully_Closed', 'Fully closed position', 'Undefined window position', 'Undefined'].includes(windows.rearDriverWindowPos.value) : false,
+        rightRear: windows.rearPassWindowPos ? !['Fully_Closed', 'Fully closed position', 'Undefined window position', 'Undefined'].includes(windows.rearPassWindowPos.value) : false,
     };
 
     //true means, that door is open
@@ -2405,7 +2438,7 @@ async function getImage(image) {
                 break;
             default:
                 imageUrl = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/' + image;
-                // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
+            // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
         }
         let iconImage = await loadImage(imageUrl);
         await fm.writeImage(path, iconImage);
@@ -2508,7 +2541,7 @@ async function clearFileManager() {
     console.log('Info: Clearing All Files from Local Directory');
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    fm.listContents(dir).forEach(async(file) => {
+    fm.listContents(dir).forEach(async (file) => {
         await removeLocalData(file);
     });
 }
