@@ -10,7 +10,7 @@ document.addEventListener(
 
         // Copy install code
         let installCode;
-        fetch('install.js')
+        fetch('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/FordWidgetTool.js')
             .then((res) => res.text())
             .then((source) => (installCode = source));
         document.querySelector('#copyInstaller').addEventListener('click', function (event) {
