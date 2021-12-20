@@ -6,8 +6,7 @@
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tonesto7/fordpass-scriptable?label=Latest%20Script%20Version&sort=semver&style=for-the-badge)
 
-<img src="images/widget_light_example.png" alt="Widget light example" width="300" />
-<img src="images/widget_dark_example.png" alt="Widget dark example" width="300" />
+  <img src="images/widget_light_example.png" alt="Widget light example" width="300" /> <img src="images/widget_dark_example.png" alt="Widget dark example" width="300" />
 
 ## Intro
 
@@ -38,10 +37,7 @@ The widget has been tested on many many ford models, and should work on any vehi
   
 ## Screenshots
 
-  <img src="images/main_menu_example.png" alt="Menu example" width="300" />
-  <img src="images/advanced_control_menu.png" alt="Advanced Control example" width="300" />
-  <img src="images/setting_menu.png" alt="Menu example" width="300" />
-  <img src="images/debug_menu.png" alt="Debug Menu example" width="300" />
+  <img src="images/main_menu_example.png" alt="Menu example" width="300" /> <img src="images/advanced_control_menu.png" alt="Advanced Control example" width="300" /> <img src="images/setting_menu.png" alt="Menu example" width="300" /> <img src="images/debug_menu.png" alt="Debug Menu example" width="300" />
 
 ## Known Issues & Limitations
 
