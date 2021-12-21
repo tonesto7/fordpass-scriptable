@@ -55,11 +55,14 @@ The widget has been tested on many many ford models, and should work on any vehi
 
 ## Installation
 
+Please visit this site for easy install process
+https://tonesto7.github.io/fordpass-scriptable
 
 ### Install Videos
 https://tonesto7.github.io/fordpass-scriptable/videos/install_demo.mp4
 
-For easy maintenance of the script I recommend just saving the Fordpass Widget.js file directly to the Scriptable folder inside the iCloud Drive it will make it easier to update it without having to copy and paste the code again. Any changes are reflected in the scriptable app.
+### Setup Videos
+https://tonesto7.github.io/fordpass-scriptable/videos/setup_demo.mp4
 
 ## Troubleshooting and Debugging
 
