@@ -1055,7 +1055,6 @@ async function createDoorElement(srcField, vData, countOnly = false, wSize = 'me
     // Creates the first row of status elements for LF and RF
     let dataRow1Fld = await createRow(srcField);
 
-    // TODO: FIX THis dispay for small widgets (color the numbers for any open)
     if (countOnly) {
         let value = textValues().errorMessages.noData;
         // let allDoorsCnt = Object.values(vData.statusDoors).filter((door) => door !== null).length;
@@ -1617,7 +1616,7 @@ async function subControlMenu(type) {
                     action: async () => {
                         console.log('(Debug Menu) OTA Info was pressed');
                         let data = await getVehicleOtaInfo();
-                        await showDataWebView('OTA Info Page', 'OTA Vehicle Info', data);
+                        await showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
                         await subControlMenu('debugMenu');
                     },
                     destructive: false,
@@ -1810,14 +1809,60 @@ async function subControlMenu(type) {
     }
 }
 
-async function showDataWebView(title, heading, data) {
+async function showDataWebView(title, heading, data, type = undefined) {
     // console.log(`showDataWebView(${title}, ${heading}, ${data})`);
-    data = scrubPersonalData(data);
-    console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
-    const bgColor = darkMode ? '#242424' : 'white';
-    const fontColor = darkMode ? '#ffffff' : '#242425';
-    const wv = new WebView();
-    let html = `
+    let otaHTML = '';
+    try {
+        data = scrubPersonalData(data);
+        if (type === 'OTA') {
+            if (data.fuseResponse && data.fuseResponse.fuseResponseList && data.fuseResponse.fuseResponseList.length) {
+                otaHTML += `<h3>OTA Details</h3>`;
+
+                data.fuseResponse.fuseResponseList.forEach((fuse, ind) => {
+                    otaHTML += `<ul>`;
+                    otaHTML += `<li>CorrelationID: ${fuse.oemCorrelationId || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Created: ${fuse.deploymentCreationDate || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Expiration: ${fuse.deploymentExpirationTime || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Priority: ${fuse.communicationPriority || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Type: ${fuse.type || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Trigger: ${fuse.triggerType || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Inhibit Required: ${fuse.inhibitRequired}</li>`;
+                    otaHTML += `<li>Environment: ${fuse.tmcEnvironment || textValues().errorMessages.noData}</li>`;
+                    if (fuse.latestStatus) {
+                        otaHTML += `<li>Latest Status:`;
+                        otaHTML += `    <ul>`;
+                        otaHTML += `        <li>Status: ${fuse.latestStatus.aggregateStatus || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>Details: ${fuse.latestStatus.detailedStatus || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>DateTime: ${fuse.latestStatus.dateTimestamp || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `    </ul>`;
+                        otaHTML += `</li>`;
+                    }
+                    if (fuse.packageUpdateDetails) {
+                        otaHTML += `<li>Package Details:`;
+                        otaHTML += `    <ul>`;
+                        otaHTML += `        <li>WiFi Required: ${fuse.packageUpdateDetails.wifiRequired}</li>`;
+                        otaHTML += `        <li>Priority: ${fuse.packageUpdateDetails.packagePriority || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>ReleaseNotes:`;
+                        otaHTML += `            <ul>`;
+                        otaHTML += `                 <li>${data.fuseResponse.languageText.Text || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `            </ul>`;
+                        otaHTML += `        </li>`;
+                        otaHTML += `    </ul>`;
+                        otaHTML += `</li>`;
+                    }
+                    otaHTML += `</ul>`;
+                    otaHTML += `<hr>`;
+                });
+            }
+        }
+
+        console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
+        const bgColor = darkMode ? '#242424' : 'white';
+        const fontColor = darkMode ? '#ffffff' : '#242425';
+        const wv = new WebView();
+        let html = `
         <html>
         <head>
             <meta charset="UTF-8">
@@ -1836,6 +1881,9 @@ async function showDataWebView(title, heading, data) {
         
         <body>
             <div class="mx-2">
+                ${otaHTML}
+            </div>
+            <div class="mx-2">
                 <h3>${heading}</h3>
                 <p style="color: orange;">(Personal Data Removed)</p>
             </div>
@@ -1847,10 +1895,13 @@ async function showDataWebView(title, heading, data) {
         
         </html>  
     `;
-    await wv.loadHTML(html);
-    await wv.waitForLoad();
-    // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
-    await wv.present(true);
+        await wv.loadHTML(html);
+        await wv.waitForLoad();
+        // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
+        await wv.present(true);
+    } catch (e) {
+        console.log(e);
+    }
 }
 
 async function createMainMenu() {
