@@ -1141,6 +1141,15 @@ async function getMainMenuItems(vehicleData) {
             show: true,
         },
         {
+            title: 'Sound Horn/Flash Lights',
+            action: async() => {
+                console.log('(Main Menu) Horn/Lights was pressed');
+                await sendVehicleCmd('hornAndLights');
+            },
+            destructive: true,
+            show: true, //caps && caps.length && caps.includes('REMOTE_PANIC_ALARM'),
+        },
+        {
             title: 'Force Refresh',
             action: async() => {
                 console.log('(Main Menu) Refresh was pressed');
@@ -1968,31 +1977,38 @@ const vehicleCmdConfigs = (vin) => {
     const guardUrl = 'https://api.mps.ford.com/api';
     return {
         lock: {
-            desc: 'Lock Vehicle',
+            desc: 'Lock Doors',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
                 method: 'PUT',
             }, ],
         },
         unlock: {
-            desc: 'Unlock Vehicle',
+            desc: 'Unlock Doors',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
                 method: 'DELETE',
             }, ],
         },
         start: {
-            desc: 'Remote Start Vehicle',
+            desc: 'Remote Start',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/engine/start`,
                 method: 'PUT',
             }, ],
         },
         stop: {
-            desc: 'Remote Stop Vehicle',
+            desc: 'Remote Stop',
             cmds: [{
                 uri: `${baseUrl}/vehicles/${vin}/engine/start`,
                 method: 'DELETE',
+            }, ],
+        },
+        horn_and_lights: {
+            desc: 'Flash Lights | Sound Horn',
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/panic/3`,
+                method: 'PUT',
             }, ],
         },
         zone_lights_off: {
