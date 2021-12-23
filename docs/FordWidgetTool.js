@@ -20,6 +20,60 @@ class WidgetInstaller {
         return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
     }
 
+    async getMainMenuItems() {
+        return [{
+                title: `New Script Available: (v${LATEST_VERSION})`,
+                action: async() => {
+                    console.log('(Main Menu) New Version was pressed');
+                    createMainMenu();
+                },
+                destructive: true,
+                show: updateAvailable,
+            },
+            {
+                title: 'View Widget',
+                action: async() => {
+                    console.log('(Main Menu) View Widget was pressed');
+                    subControlMenu('widgetView');
+                    // const w = await generateWidget('medium', fordData);
+                    // await w.presentMedium();
+                },
+                destructive: false,
+                show: true,
+            },
+            {
+                title: 'Exit',
+                action: async() => {
+                    console.log('(Main Menu) Exit was pressed');
+                },
+                destructive: false,
+                show: true,
+            },
+        ];
+    }
+
+    async createMainMenu() {
+        const mainMenu = new Alert();
+        mainMenu.title = `FordPass Actions`;
+        mainMenu.message = `Widge Version: (${SCRIPT_VERSION})\nVehicle Updated: (${refreshTime})`.trim();
+
+        let menuItems = (await getMainMenuItems(vehicleData)).filter((item) => item.show === true);
+        // console.log(`Menu Items: (${menuItems.length}) ${JSON.stringify(menuItems)}`);
+        menuItems.forEach((item, ind) => {
+            if (item.destructive) {
+                mainMenu.addDestructiveAction(item.title);
+            } else {
+                mainMenu.addAction(item.title);
+            }
+        });
+        const respInd = await mainMenu.presentSheet();
+        if (respInd !== null) {
+            const menuItem = menuItems[respInd];
+            // console.log(`(Main Menu) Selected: ${JSON.stringify(menuItem)}`);
+            menuItem.action();
+        }
+    }
+
     async showAlert(title, message) {
         let alert = new Alert();
         alert.title = title;
