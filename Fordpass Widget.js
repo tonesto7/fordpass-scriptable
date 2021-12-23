@@ -1874,7 +1874,7 @@ async function showDataWebView(title, heading, data, type = undefined) {
             
             <title>${title}</title>
             <style>
-                body { font-family: -apple-system; background-color: ${bgColor}; color: ${fontColor}; }
+                body { font-family: -apple-system; background-color: ${bgColor}; color: ${fontColor}; font-size: 0.8rem;}
             </style>
             
         </head>
