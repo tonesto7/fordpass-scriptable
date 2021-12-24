@@ -111,6 +111,7 @@ Changelog:
         - Fixed data scrubber to scrub out relevantVin keys.
         - Menu optimization to reduce the number of menu items. Lock and remotestart are now submenus and they are officially only shown to supported vehicles.
         - Added Horn/Lights control to main menu for supported vehicles.
+        - Fixed a lot the text and image alignment in the widget.
         
 **************/
 
@@ -416,7 +417,7 @@ async function createSmallWidget(vData) {
     try {
         let mainStack = widget.addStack();
         mainStack.layoutVertically();
-        mainStack.setPadding(0, 1, 0, 1);
+        mainStack.setPadding(0, 0, 0, 0);
 
         let contentStack = mainStack.addStack();
         contentStack.layoutHorizontally();
@@ -479,7 +480,7 @@ async function createSmallWidget(vData) {
 
         // This is the row displaying the time elapsed since last vehicle checkin.
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-        await createTimeStampElement(timestampRow, vehicleData, 0, 0, wSize);
+        await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createSmallWidget Error ${e}`);
     }
@@ -571,13 +572,10 @@ async function createMediumWidget(vData) {
 
         let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
         await createStatusElement(statusRow, vehicleData, wSize);
-        if (!hasStatusMsg()) {
-            // mainStack.addSpacer(20);
-        }
 
         // This is the row displaying the time elapsed since last vehicle checkin.
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-        await createTimeStampElement(timestampRow, vehicleData, 0, 0, wSize);
+        await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createMediumWidget Error ${e}`);
     }
@@ -669,13 +667,10 @@ async function createLargeWidget(vData) {
 
         let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
         await createStatusElement(statusRow, vehicleData, wSize);
-        if (!hasStatusMsg()) {
-            // mainStack.addSpacer(20);
-        }
 
         // This is the row displaying the time elapsed since last vehicle checkin.
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-        await createTimeStampElement(timestampRow, vehicleData, 0, 0, wSize);
+        await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createLargeWidget Error ${e}`);
     }
@@ -767,13 +762,10 @@ async function createExtraLargeWidget(vData) {
 
         let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
         await createStatusElement(statusRow, vehicleData, wSize);
-        if (!hasStatusMsg()) {
-            // mainStack.addSpacer(20);
-        }
 
         // This is the row displaying the time elapsed since last vehicle checkin.
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-        await createTimeStampElement(timestampRow, vehicleData, 0, 0, wSize);
+        await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createExtraLargeWidget Error ${e}`);
     }
@@ -840,66 +832,19 @@ async function createImage(srcField, image, styles = {}) {
 async function createTitle(headerField, titleText, wSize = 'medium', hideTitleForSmall = false) {
     let titleParams = titleText.split('||');
     let icon = runtimeData[titleParams[0]];
+    let titleStack = await headerField.addStack({ '*centerAlignContent': null });
     if (icon !== undefined) {
-        headerField.layoutHorizontally();
+        titleStack.layoutHorizontally();
         let imgFile = await getImage(icon.toString());
-        await createImage(headerField, imgFile, { imageSize: new Size(sizeMap[wSize].iconSize.w, sizeMap[wSize].iconSize.h) });
+        await createImage(titleStack, imgFile, { imageSize: new Size(sizeMap[wSize].iconSize.w, sizeMap[wSize].iconSize.h) });
     }
     // console.log(`titleParams(${titleText}): ${titleParams}`);
     if (titleText && titleText.length && !hideTitleForSmall) {
-        headerField.addSpacer(2);
+        titleStack.addSpacer(2);
         let title = titleParams.length > 1 ? textValues(titleParams[1]).elemHeaders[titleParams[0]] : textValues().elemHeaders[titleParams[0]];
-        await createText(headerField, title + ':', { font: Font.boldSystemFont(sizeMap[wSize].titleFontSize), textColor: new Color(runtimeData.textColor1), lineLimit: 1 });
+        await createText(titleStack, title + ':', { font: Font.boldSystemFont(sizeMap[wSize].titleFontSize), textColor: new Color(runtimeData.textColor1), lineLimit: 1 });
     }
-    // return headerField;
 }
-
-// function createTableMenu() {
-//     let table = new UITable();
-//     let data = [
-//         ["foo", "bar", "baz"],
-//         ["asdf", "quz", "42"],
-//         [123, 567, "add"],
-//     ];
-
-//     let row, cell;
-//     let first = true;
-//     for (const drow of data) {
-//         // drow = data row
-//         // create a new row
-//         row = new UITableRow();
-//         // immediately add it to the table to not forget that part
-//         table.addRow(row);
-//         if (first) {
-//             // set the first row to have bold text
-//             row.isHeader = true;
-//             first = false;
-//         }
-//         for (const [i, dcell] of drow.entries()) {
-//             // the last cell should contain a button
-//             if (i === 2) {
-//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
-//                 cell = row.addButton("" + dcell);
-//                 // even though the next line is not needed because it is the default setting, I like to do it anyway to be more specific of what is going on
-//                 cell.dismissOnTap = false;
-//                 // register our callback function
-//                 cell.onTap = () => {
-//                     // create a simple alert to have some user feedback on button tap
-//                     // let alert = new Alert();
-//                     // alert.message = dcell;
-//                     // alert.present();
-//                     // no need to add buttons, they will be added automatically
-//                     // no need to await it, because we don't need anything from the user
-//                 };
-//             } else {
-//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
-//                 cell = row.addText("" + dcell);
-//             }
-//             cell.centerAligned();
-//         }
-//     }
-//     table.present();
-// }
 
 async function createProgressBar(percent, wSize = 'medium') {
     let fuelLevel = percent > 100 ? 100 : percent;
@@ -963,7 +908,6 @@ async function createFuelBattElement(srcField, vehicleData, wSize = 'medium') {
             let fuelHeadertext = await createText(fuelHeaderRow, textValues().elemHeaders[isEV ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizeMap[wSize].titleFontSize), textColor: new Color(runtimeData.textColor1) });
         }
         let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor1) });
-        srcField.addSpacer(3);
 
         // Fuel Level Bar
         let fuelBarCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
@@ -984,7 +928,7 @@ async function createFuelBattElement(srcField, vehicleData, wSize = 'medium') {
 
 async function createMileageElement(srcField, vehicleData, wSize = 'medium') {
     try {
-        let elem = await createRow(srcField, { '*layoutHorizontally': null });
+        let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
         await createTitle(elem, 'odometer', wSize);
         elem.addSpacer(2);
         let isMetric = await useMetricUnits();
@@ -1001,7 +945,7 @@ async function createMileageElement(srcField, vehicleData, wSize = 'medium') {
 }
 
 async function createBatteryElement(srcField, vehicleData, wSize = 'medium') {
-    let elem = await createRow(srcField, { '*layoutHorizontally': null });
+    let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
     await createTitle(elem, 'batteryStatus', wSize, isSmallDisplay || wSize === 'small');
     elem.addSpacer(2);
     let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
@@ -1014,10 +958,10 @@ async function createBatteryElement(srcField, vehicleData, wSize = 'medium') {
 async function createOilElement(srcField, vData, wSize = 'medium') {
     const styles = {
         normal: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 },
-        warning: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF6700'), lineLimit: 1 },
-        critical: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#DE1738'), lineLimit: 1 },
+        warning: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color('#FF6700'), lineLimit: 1 },
+        critical: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color('#DE1738'), lineLimit: 1 },
     };
-    let elem = await createRow(srcField, { '*layoutHorizontally': null });
+    let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
     await createTitle(elem, 'oil', wSize, isSmallDisplay || wSize === 'small');
     elem.addSpacer(2);
     let txtStyle = styles.normal;
@@ -1280,8 +1224,8 @@ async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'mediu
     srcField.addSpacer(offset);
 }
 
-async function createTimeStampElement(stk, vehicleData, leftOffset = 2, rightOffset = 2, wSize = 'medium') {
-    stk.setPadding(2, leftOffset, 2, rightOffset);
+async function createTimeStampElement(stk, vehicleData, wSize = 'medium') {
+    // stk.setPadding(topOffset, leftOffset, bottomOffset, rightOffset);
     // Creates the Refresh Label to show when the data was last updated from Ford
     let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : textValues().UIValues.unknown;
     await createText(stk, 'Updated: ' + refreshTime, { font: Font.mediumSystemFont(8), textColor: Color.lightGray(), lineLimit: 1 });
@@ -1326,7 +1270,7 @@ async function createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
         }
     }
     if (!hasStatusMsg()) {
-        await createText(stk, ` `, { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+        await createText(stk, `     `, { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
     }
     return stk;
 }
@@ -3188,3 +3132,50 @@ function isNewerVersion(oldVer, newVer) {
 
 //************************************************* END UTILITY FUNCTIONS ********************************************************
 //********************************************************************************************************************************
+
+// function createTableMenu() {
+//     let table = new UITable();
+//     let data = [
+//         ["foo", "bar", "baz"],
+//         ["asdf", "quz", "42"],
+//         [123, 567, "add"],
+//     ];
+
+//     let row, cell;
+//     let first = true;
+//     for (const drow of data) {
+//         // drow = data row
+//         // create a new row
+//         row = new UITableRow();
+//         // immediately add it to the table to not forget that part
+//         table.addRow(row);
+//         if (first) {
+//             // set the first row to have bold text
+//             row.isHeader = true;
+//             first = false;
+//         }
+//         for (const [i, dcell] of drow.entries()) {
+//             // the last cell should contain a button
+//             if (i === 2) {
+//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
+//                 cell = row.addButton("" + dcell);
+//                 // even though the next line is not needed because it is the default setting, I like to do it anyway to be more specific of what is going on
+//                 cell.dismissOnTap = false;
+//                 // register our callback function
+//                 cell.onTap = () => {
+//                     // create a simple alert to have some user feedback on button tap
+//                     // let alert = new Alert();
+//                     // alert.message = dcell;
+//                     // alert.present();
+//                     // no need to add buttons, they will be added automatically
+//                     // no need to await it, because we don't need anything from the user
+//                 };
+//             } else {
+//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
+//                 cell = row.addText("" + dcell);
+//             }
+//             cell.centerAligned();
+//         }
+//     }
+//     table.present();
+// }
