@@ -1,5 +1,12 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: car;
+// This script was downloaded using FordWidgetTool.
+// Do not remove these lines, if you want to benefit from automatic updates.
+// source: https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Fordpass%20Widget.js; docs: https://github.com/tonesto7/fordpass-scriptable#readme; hash: -1660804449;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: magic;
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
@@ -116,7 +123,7 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '1.4.0';
-const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
+const SCRIPT_ID = undefined; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
 console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${updateAvailable} | Latest Version: ${LATEST_VERSION}`);
@@ -377,7 +384,7 @@ async function generateWidget(size, data) {
     Script.setWidget(w);
     w.setPadding(5, 5, 2, 5);
 
-    // w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+    w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
     return w;
 }
 
@@ -425,7 +432,7 @@ async function createSmallWidget(vData) {
         //*****************
         //* First column
         //*****************
-        let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, -5] });
+        let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
         // Vehicle Logo
         let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
@@ -1280,9 +1287,10 @@ async function createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
 
 async function getMainMenuItems(vehicleData) {
     const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
-    return [{
+    return [
+        {
             title: `New Script Available: (v${LATEST_VERSION})`,
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) New Version was pressed');
                 createMainMenu();
             },
@@ -1291,7 +1299,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'View Widget',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) View Widget was pressed');
                 subControlMenu('widgetView');
                 // const w = await generateWidget('medium', fordData);
@@ -1302,7 +1310,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Lock Control',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Lock Control was pressed');
                 await subControlMenu('lockControl');
             },
@@ -1311,7 +1319,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Remote Start Control',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Stop was pressed');
                 await subControlMenu('remoteStartControl');
             },
@@ -1321,7 +1329,7 @@ async function getMainMenuItems(vehicleData) {
 
         {
             title: 'Sound Horn/Flash Lights',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Horn/Lights was pressed');
                 await sendVehicleCmd('horn_and_lights');
             },
@@ -1330,7 +1338,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Force Refresh',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Refresh was pressed');
                 await sendVehicleCmd('status');
             },
@@ -1339,7 +1347,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Advanced Controls',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Advanced Control was pressed');
                 await subControlMenu('advancedControl');
             },
@@ -1348,7 +1356,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Widget Settings',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Widget Settings was pressed');
                 createSettingMenu();
             },
@@ -1357,7 +1365,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Exit',
-            action: async() => {
+            action: async () => {
                 console.log('(Main Menu) Exit was pressed');
             },
             destructive: false,
@@ -1375,9 +1383,10 @@ async function subControlMenu(type) {
     switch (type) {
         case 'widgetView':
             title = 'View Widget';
-            items = [{
+            items = [
+                {
                     title: 'Small',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Small Widget was pressed');
                         const w = await generateWidget('small', fordData);
                         await w.presentSmall();
@@ -1387,7 +1396,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Medium',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Medium Widget was pressed');
                         const w = await generateWidget('medium', fordData);
                         await w.presentMedium();
@@ -1397,7 +1406,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Large',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Large Widget was pressed');
                         const w = await generateWidget('large', fordData);
                         await w.presentLarge();
@@ -1407,7 +1416,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Extra-Large',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Extra-Large Widget was pressed');
                         const w = await generateWidget('extraLarge', fordData);
                         await w.presentExtraLarge();
@@ -1417,7 +1426,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Widget View Menu) Back was pressed');
                         createMainMenu();
                     },
@@ -1430,9 +1439,10 @@ async function subControlMenu(type) {
         case 'lockControl':
             title = 'Lock Control';
             message = `Lock Status: (${vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked'})`;
-            items = [{
+            items = [
+                {
                     title: 'Lock Vehicle',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Lock Control Menu) Lock was pressed');
                         await sendVehicleCmd('lock');
                     },
@@ -1441,7 +1451,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Unlock Vehicle',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Lock Control Menu) Unlock was pressed');
                         await sendVehicleCmd('unlock');
                     },
@@ -1450,7 +1460,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Lock Control Menu) Back was pressed');
                         createMainMenu();
                     },
