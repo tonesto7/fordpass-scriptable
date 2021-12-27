@@ -5,8 +5,8 @@
 // This is based on the scriptdude installer https://github.com/kevinkub/scriptdu.de script and modified to manage the Ford Widget script
 
 const SCRIPT_VERSION = '1.1.0';
-const scriptSrcUrl = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js';
-// const scriptSrcUrl = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Fordpass%20Widget.js';
+const useBeta = false;
+const scriptSrcUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/${useBeta ? 'beta' : 'main'}/Fordpass%20Widget.js`;
 const scriptName = 'Fordpass Widget';
 const scriptDocsUrl = 'https://github.com/tonesto7/fordpass-scriptable#readme';
 const scriptGlyph = 'car';
@@ -55,7 +55,7 @@ class WidgetInstaller {
             await this.removeKeychainValue(keys[key], id);
         }
         let files2Del = [`vehicle_image${id === 0 ? '' : id}.png`, `vehicle_data_${id === 0 ? '' : id}.json`];
-        files2Del.forEach(async(file) => {
+        files2Del.forEach(async (file) => {
             let filePath = this.localFileManager.joinPath(this.localDocDirectory, file);
             if (await this.localFileManager.fileExists(filePath)) {
                 console.log('Info: Deleting file: ' + file);
@@ -153,7 +153,7 @@ class WidgetInstaller {
     getIdFromCode(code) {
         let match = code.match(/const SCRIPT_ID = [0-9]+;/);
         if (match && match[0]) {
-            return match[0].split('=')[1].trim();
+            return match[0].split('=')[1].trim().replace(';', '');
         } else {
             return 0;
         }
@@ -161,12 +161,12 @@ class WidgetInstaller {
 
     async getIdFromFIle(file) {
         let filePath = this.icloudFileManager.joinPath(this.icloudDocDirectory, file + '.js');
-
         if (await this.icloudFileManager.fileExists(filePath)) {
             let code = await this.icloudFileManager.readString(filePath);
             return await this.getIdFromCode(code);
+        } else {
+            return undefined;
         }
-        return undefined;
     }
 
     updateIdInCode(code, newId) {
@@ -177,7 +177,7 @@ class WidgetInstaller {
         return code;
     }
 
-    async newScript(name, sourceUrl, documentationUrl, icon, color) {
+    async newScript(name, sourceUrl, docsUrl, icon, color) {
         try {
             let fileName = name;
             let nextId = 0;
@@ -188,12 +188,12 @@ class WidgetInstaller {
                 return false;
             }
             nextId = await this.getNextInstanceId();
-            //console.log('nextInstanceId: ' + nextId);
+            // console.log('nextInstanceId: ' + nextId);
             if (nextId >= 1) {
                 fileName = `${name} ${nextId}`;
             }
             // console.log(`newScript | name: ${fileName} | nextId: ${nextId}`);
-            if (await this.saveScript(fileName, nextId, sourceUrl, documentationUrl, icon, color)) {
+            if (await this.saveScript(fileName, nextId, sourceUrl, docsUrl, icon, color)) {
                 this.runScript(fileName);
                 return true;
             }
@@ -203,15 +203,19 @@ class WidgetInstaller {
         }
     }
 
-    async saveScript(name, nextId, sourceUrl, documentationUrl, icon, color) {
+    async saveScript(name, nextId, sourceUrl, docsUrl, icon, color) {
         try {
             let req = new Request(sourceUrl);
             let code = await req.loadString();
-            code = this.updateIdInCode(code, nextId);
+            if (nextId) {
+                // console.log('saveScript | id: ' + nextId);
+                code = await this.updateIdInCode(code, nextId);
+                let newId = await this.getIdFromCode(code);
+                console.log(`Wrote Scipt With ID: ${newId}`);
+            }
             let hash = this.hashCode(code);
-            // console.log('Writing Scipt With ID: ' + this.getIdFromCode(code));
             let codeToStore = Data.fromString(
-                `// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\n// Do not remove these lines, if you want to benefit from automatic updates.\n// source: ${sourceUrl}; docs: ${documentationUrl}; hash: ${hash};\n\n${code}`,
+                `// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\n// Do not remove these lines, if you want to benefit from automatic updates.\n// source: ${sourceUrl}; docs: ${docsUrl}; hash: ${hash};\n\n${code}`,
             );
             let filePath = this.icloudFileManager.joinPath(this.icloudDocDirectory, name + '.js');
             this.icloudFileManager.write(filePath, codeToStore);
@@ -228,14 +232,14 @@ class WidgetInstaller {
         callback.open();
     }
 
-    async updateScripts(name, sourceUrl, documentationUrl, icon, color) {
+    async updateScripts(name, sourceUrl, docsUrl, icon, color) {
         try {
             let filesFnd = await this.getAllInstances();
             if (filesFnd.length) {
                 // console.log(`filesFnd: (${filesFnd.length})`);
                 for (let i = 0; i < filesFnd.length; i++) {
-                    let id = this.getIdFromFIle(filesFnd[i]);
-                    await this.saveScript(filesFnd[i], id, sourceUrl, documentationUrl, icon, color);
+                    let id = await this.getIdFromFIle(filesFnd[i]);
+                    await this.saveScript(filesFnd[i], id, sourceUrl, docsUrl, icon, color);
                 }
             }
             await this.showAlert(`Widget Tool - Script Updater`, `The following Scripts were updated to the latest version:\n${filesFnd.join('\n')}`);
@@ -253,9 +257,10 @@ async function getMenuItems(type, showExit = false) {
     let filesFnd = await wI.getAllInstances();
     switch (type) {
         case 'main':
-            items = [{
+            items = [
+                {
                     title: `Update ${filesFnd.length} Instance${filesFnd.length > 1 ? 's' : ''}`,
-                    action: async() => {
+                    action: async () => {
                         console.log('(Main Menu) Update Ford Widgets was pressed');
                         await wI.updateScripts(scriptName, scriptSrcUrl, scriptDocsUrl, scriptGlyph, scriptColor);
                     },
@@ -264,7 +269,7 @@ async function getMenuItems(type, showExit = false) {
                 },
                 {
                     title: 'Create New Instance',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Main Menu) Update Ford Widgets was pressed');
                         await wI.newScript(scriptName, scriptSrcUrl, scriptDocsUrl, scriptGlyph, scriptColor);
                     },
@@ -273,7 +278,7 @@ async function getMenuItems(type, showExit = false) {
                 },
                 {
                     title: 'Remove Instances',
-                    action: async() => {
+                    action: async () => {
                         console.log('(Main Menu) Instances Removal was pressed');
                         await createMenu('removal');
                     },
@@ -282,7 +287,7 @@ async function getMenuItems(type, showExit = false) {
                 },
                 {
                     title: 'Exit',
-                    action: async() => {
+                    action: async () => {
                         console.log(`(${type} Menu) Exit was pressed`);
                     },
                     destructive: false,
@@ -296,7 +301,7 @@ async function getMenuItems(type, showExit = false) {
                 for (const i in filesFnd) {
                     items.push({
                         title: filesFnd[i],
-                        action: async() => {
+                        action: async () => {
                             console.log(`(Removal Menu) ${filesFnd[i]} was pressed`);
                             await wI.removeInstance(filesFnd[i]);
                             await wI.showAlert('Widget Tool - Instance Removal', `${filesFnd[i]} Instance removed...`);
@@ -307,25 +312,28 @@ async function getMenuItems(type, showExit = false) {
                     });
                 }
             }
-            items.push({
-                title: 'Remove All Instances',
-                action: async() => {
-                    console.log(`(Removal Menu) Remove All was pressed`);
-                    await wI.removeAllInstances();
-                    await wI.showAlert('Widget Tool - Instances Removal', `All ${filesFnd.length} Instances were removed`);
-                    createMenu('main');
+            items.push(
+                {
+                    title: 'Remove All Instances',
+                    action: async () => {
+                        console.log(`(Removal Menu) Remove All was pressed`);
+                        await wI.removeAllInstances();
+                        await wI.showAlert('Widget Tool - Instances Removal', `All ${filesFnd.length} Instances were removed`);
+                        createMenu('main');
+                    },
+                    destructive: true,
+                    show: filesFnd.length ? true : false,
                 },
-                destructive: true,
-                show: filesFnd.length ? true : false,
-            }, {
-                title: 'Back',
-                action: async() => {
-                    console.log(`(${type} Menu) Back was pressed`);
-                    await createMenu('main');
+                {
+                    title: 'Back',
+                    action: async () => {
+                        console.log(`(${type} Menu) Back was pressed`);
+                        await createMenu('main');
+                    },
+                    destructive: false,
+                    show: true,
                 },
-                destructive: false,
-                show: true,
-            }, );
+            );
             break;
     }
     return items;
