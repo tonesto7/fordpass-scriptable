@@ -1,12 +1,5 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: car;
-// This script was downloaded using FordWidgetTool.
-// Do not remove these lines, if you want to benefit from automatic updates.
-// source: https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Fordpass%20Widget.js; docs: https://github.com/tonesto7/fordpass-scriptable#readme; hash: -1660804449;
-
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: magic;
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
@@ -123,7 +116,7 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '1.4.0';
-const SCRIPT_ID = undefined; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
+const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
 console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${updateAvailable} | Latest Version: ${LATEST_VERSION}`);
