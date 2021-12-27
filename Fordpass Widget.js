@@ -107,11 +107,15 @@ Changelog:
         - Fix for some vehicles not having the windows status for front windows.
         - Mores fixes to handle undefined values in the vehicle data.
     v1.4.0:
-        - Fixed local vehicle data file to support multiple instances...
+        - Fixed local vehicle data file to support multiple instances.
         - Fixed data scrubber to scrub out relevantVin keys.
-        - Menu optimization to reduce the number of menu items. Lock and remotestart are now submenus and they are officially only shown to supported vehicles.
-        - Added Horn/Lights control to main menu for supported vehicles.
-        - Fixed a lot the text and image alignment in the widget.
+        - Removed the low oil life warning for now.
+        - Menu optimization to reduce the number of menu items. Lock and remote start are now submenus and they are officially only shown to supported vehicles.
+        - Added Horn/Lights control to the main menu for supported vehicles.
+        - Fixed a lot of the text and image alignment in the widget.
+        - Reworked the small widget to not show text on labels with icons.
+        - Added door and window status to small widget
+
         
 **************/
 
