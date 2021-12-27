@@ -106,10 +106,16 @@ Changelog:
         - Fix for some vehicles reporting rear windows with a status of undefined and showing open in the widget.
         - Fix for some vehicles not having the windows status for front windows.
         - Mores fixes to handle undefined values in the vehicle data.
+    v1.4.0:
+        - Fixed local vehicle data file to support multiple instances...
+        - Fixed data scrubber to scrub out relevantVin keys.
+        - Menu optimization to reduce the number of menu items. Lock and remotestart are now submenus and they are officially only shown to supported vehicles.
+        - Added Horn/Lights control to main menu for supported vehicles.
+        - Fixed a lot the text and image alignment in the widget.
         
 **************/
 
-const SCRIPT_VERSION = '1.3.3';
+const SCRIPT_VERSION = '1.4.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -118,14 +124,14 @@ console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${updateAvail
 //*                  Device Detail Functions
 //************************************************************************* */
 const screenSize = Device.screenResolution();
-const screenType = screenSize.width < 1200 ? 'small' : 'default';
+const isSmallDisplay = screenSize.width < 1200 === true;
 const darkMode = Device.isUsingDarkAppearance();
 const runningWidgetSize = config.widgetFamily;
 const isPhone = Device.isPhone();
 const isPad = Device.isPad();
 // console.log('---------------DEVICE INFO ----------------');
 // console.log(`OSDarkMode: ${darkMode}`);
-// console.log(`ScreenType: ${screenType}`);
+// console.log(`IsSmallDisplay: ${isSmallDisplay}`);
 // console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.height}`);
 // console.log(`Device Info | Model: ${Device.model()} | OSVersion: ${Device.systemVersion()}`);
 // let keychainMigration = await performKeychainMigration()
@@ -160,6 +166,8 @@ const textValues = (str) => {
         symbols: {
             closed: '✓',
             open: '✗',
+            closed2: '🟢',
+            open2: '🟠',
         },
         // Widget Title
         elemHeaders: {
@@ -182,8 +190,6 @@ const textValues = (str) => {
             closed: 'Closed',
             open: 'Open',
             unknown: 'Unknown',
-            greaterOneDay: '> 1 Day',
-            smallerOneMinute: '< 1 Min Ago',
             second: 'Second',
             minute: 'Minute',
             hour: 'Hour',
@@ -241,25 +247,78 @@ const runtimeData = {
     evChargeStatus: darkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
 };
 
-/*
- * Change titleFontSize to 9 and detailFontSizeMedium to 10 for smaller displays, e.g. iPhone SE 2
- */
 const sizeMap = {
-    default: {
-        titleFontSize: 10,
-        detailFontSizeSmall: 10,
-        detailFontSizeMedium: 11,
-        detailFontSizeBig: 19,
-        barWidth: 80,
-        barHeight: 10,
-    },
     small: {
-        titleFontSize: 9,
-        detailFontSizeSmall: 8,
-        detailFontSizeMedium: 9,
-        detailFontSizeBig: 19,
-        barWidth: 80,
-        barHeight: 10,
+        titleFontSize: isSmallDisplay ? 9 : 9,
+        fontSizeSmall: isSmallDisplay ? 8 : 8,
+        fontSizeMedium: isSmallDisplay ? 9 : 9,
+        fontSizeBig: isSmallDisplay ? 12 : 12,
+        barGauge: {
+            w: isSmallDisplay ? 80 : 80,
+            h: isSmallDisplay ? 10 : 10,
+        },
+        logoSize: {
+            w: isSmallDisplay ? 65 : 65,
+            h: isSmallDisplay ? 35 : 35,
+        },
+        iconSize: {
+            w: isSmallDisplay ? 11 : 11,
+            h: isSmallDisplay ? 11 : 11,
+        },
+    },
+    medium: {
+        titleFontSize: isSmallDisplay ? 9 : 10,
+        fontSizeSmall: isSmallDisplay ? 8 : 10,
+        fontSizeMedium: isSmallDisplay ? 9 : 11,
+        fontSizeBig: isSmallDisplay ? 12 : 12,
+        barGauge: {
+            w: isSmallDisplay ? 80 : 80,
+            h: isSmallDisplay ? 10 : 10,
+        },
+        logoSize: {
+            w: isSmallDisplay ? 85 : 85,
+            h: isSmallDisplay ? 45 : 45,
+        },
+        iconSize: {
+            w: isSmallDisplay ? 11 : 11,
+            h: isSmallDisplay ? 11 : 11,
+        },
+    },
+    large: {
+        titleFontSize: isSmallDisplay ? 9 : 10,
+        fontSizeSmall: isSmallDisplay ? 8 : 10,
+        fontSizeMedium: isSmallDisplay ? 9 : 11,
+        fontSizeBig: isSmallDisplay ? 12 : 12,
+        barGauge: {
+            w: isSmallDisplay ? 80 : 80,
+            h: isSmallDisplay ? 10 : 10,
+        },
+        logoSize: {
+            w: isSmallDisplay ? 85 : 85,
+            h: isSmallDisplay ? 45 : 45,
+        },
+        iconSize: {
+            w: isSmallDisplay ? 11 : 11,
+            h: isSmallDisplay ? 11 : 11,
+        },
+    },
+    extraLarge: {
+        titleFontSize: 10,
+        fontSizeSmall: 10,
+        fontSizeMedium: 11,
+        fontSizeBig: 12,
+        barGauge: {
+            w: isSmallDisplay ? 80 : 80,
+            h: isSmallDisplay ? 10 : 10,
+        },
+        logoSize: {
+            w: 85,
+            h: 45,
+        },
+        iconSize: {
+            w: 11,
+            h: 11,
+        },
     },
 };
 
@@ -303,10 +362,10 @@ async function generateWidget(size, data) {
             w = await createSmallWidget(data);
             break;
         case 'large':
-            w = await createMediumWidget(data);
+            w = await createLargeWidget(data);
             break;
         case 'extraLarge':
-            w = await createMediumWidget(data);
+            w = await createExtraLargeWidget(data);
             break;
         default:
             w = await createMediumWidget(data);
@@ -318,7 +377,7 @@ async function generateWidget(size, data) {
     Script.setWidget(w);
     w.setPadding(5, 5, 2, 5);
 
-    // w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+    w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
     return w;
 }
 
@@ -348,173 +407,368 @@ Script.complete();
 //*                                              START WIDGET UI ELEMENT FUNCTIONS
 //*****************************************************************************************************************************
 
-async function createMediumWidget(vData) {
+async function createSmallWidget(vData) {
     let vehicleData = vData;
-
+    const wSize = 'small';
     // Defines the Widget Object
     const widget = new ListWidget();
     widget.backgroundGradient = getBgGradient();
 
-    let mainStack = widget.addStack();
-    mainStack.layoutVertically();
-    mainStack.setPadding(0, 0, 0, 0);
+    try {
+        let mainStack = widget.addStack();
+        mainStack.layoutVertically();
+        mainStack.setPadding(0, 0, 0, 0);
 
-    let contentStack = mainStack.addStack();
-    contentStack.layoutHorizontally();
+        let contentStack = mainStack.addStack();
+        contentStack.layoutHorizontally();
 
-    //*****************
-    //* First column
-    //*****************
-    let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+        //*****************
+        //* First column
+        //*****************
+        let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
-    // Vehicle Logo
-    let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
-    let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(85, 45), '*centerAlignImage': null }) : null;
-    mainCol1.addSpacer(0);
+        // Vehicle Logo
+        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
+        let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
+        mainCol1.addSpacer(0);
 
-    // Creates the Fuel Info Elements
-    await createFuelBattElement(mainCol1, vehicleData);
+        // Creates the Fuel Info Elements
+        await createFuelBattElement(mainCol1, vehicleData, wSize);
 
-    // Creates the Mileage Info Elements
-    await createMileageElement(mainCol1, vehicleData);
+        // Creates the Mileage Info Elements
+        await createMileageElement(mainCol1, vehicleData, wSize);
 
-    // Creates Battery Level Elements
-    await createBatteryElement(mainCol1, vehicleData);
+        // Creates Battery Level Elements
+        await createBatteryElement(mainCol1, vehicleData, wSize);
 
-    // Creates Oil Life Elements
-    if (!vehicleData.evVehicle) {
-        await createOilElement(mainCol1, vehicleData);
-    } else {
-        // Creates EV Plug Elements
-        await createEvChargeElement(mainCol1, vehicleData);
+        // Creates Oil Life Elements
+        if (!vehicleData.evVehicle) {
+            await createOilElement(mainCol1, vehicleData, wSize);
+        } else {
+            // Creates EV Plug Elements
+            await createEvChargeElement(mainCol1, vehicleData, wSize);
+        }
+
+        contentStack.addSpacer();
+
+        //************************
+        //* Second column
+        //************************
+        let mainCol2 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+        // Creates the Lock Status Elements
+        await createLockStatusElement(mainCol2, vehicleData, wSize);
+
+        // Creates the Ignition Status Elements
+        await createIgnitionStatusElement(mainCol2, vehicleData, wSize);
+
+        // Creates the Door Status Elements
+        await createDoorElement(mainCol2, vehicleData, true, wSize);
+
+        // Creates the Door Status Elements
+        await createWindowElement(mainCol2, vehicleData, true, wSize);
+
+        mainCol2.addSpacer(0);
+
+        contentStack.addSpacer();
+
+        //**********************
+        //* Refresh and error
+        //*********************
+        let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+        await createStatusElement(statusRow, vehicleData, wSize);
+
+        // This is the row displaying the time elapsed since last vehicle checkin.
+        let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+        await createTimeStampElement(timestampRow, vehicleData, wSize);
+    } catch (e) {
+        console.error(`createSmallWidget Error ${e}`);
     }
-
-    contentStack.addSpacer();
-
-    //************************
-    //* Second column
-    //************************
-    let mainCol2 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
-
-    // Creates the Lock Status Elements
-    await createLockStatusElement(mainCol2, vehicleData);
-
-    // Creates the Door Status Elements
-    await createDoorElement(mainCol2, vehicleData);
-
-    // Create Tire Pressure Elements
-    await createTireElement(mainCol2, vehicleData);
-
-    mainCol2.addSpacer(0);
-
-    contentStack.addSpacer();
-
-    //****************
-    //* Third column
-    //****************
-    let mainCol3 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
-
-    // Creates the Ignition Status Elements
-    await createIgnitionStatusElement(mainCol3, vehicleData);
-
-    // Creates the Door Status Elements
-    await createWindowElement(mainCol3, vehicleData);
-
-    // Creates the Vehicle Location Element
-    await createPositionElement(mainCol3, vehicleData);
-
-    mainCol3.addSpacer();
-
-    contentStack.addSpacer();
-
-    //**********************
-    //* Refresh and error
-    //*********************
-
-    let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
-    await createStatusElement(statusRow, vehicleData);
-    if (!hasStatusMsg()) {
-        // mainStack.addSpacer(20);
-    }
-
-    // This is the row displaying the time elapsed since last vehicle checkin.
-    let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-    await createTimeStampElement(timestampRow, vehicleData, 0);
-
     return widget;
 }
 
-async function createSmallWidget(vData) {
+async function createMediumWidget(vData) {
     let vehicleData = vData;
-
+    const wSize = 'medium';
     // Defines the Widget Object
     const widget = new ListWidget();
     widget.backgroundGradient = getBgGradient();
+    try {
+        let mainStack = widget.addStack();
+        mainStack.layoutVertically();
+        mainStack.setPadding(0, 0, 0, 0);
 
-    let mainStack = widget.addStack();
-    mainStack.layoutVertically();
-    mainStack.setPadding(0, 1, 0, 1);
+        let contentStack = mainStack.addStack();
+        contentStack.layoutHorizontally();
 
-    let contentStack = mainStack.addStack();
-    contentStack.layoutHorizontally();
+        //*****************
+        //* First column
+        //*****************
+        let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
-    //*****************
-    //* First column
-    //*****************
-    let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, -5] });
+        // Vehicle Logo
+        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
+        let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
+        mainCol1.addSpacer(0);
 
-    // Vehicle Logo
-    let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
-    let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(65, 35), '*centerAlignImage': null }) : null;
-    mainCol1.addSpacer(0);
+        // Creates the Fuel Info Elements
+        await createFuelBattElement(mainCol1, vehicleData, wSize);
 
-    // Creates the Fuel Info Elements
-    await createFuelBattElement(mainCol1, vehicleData, 'small');
+        // Creates the Mileage Info Elements
+        await createMileageElement(mainCol1, vehicleData, wSize);
 
-    // Creates the Mileage Info Elements
-    await createMileageElement(mainCol1, vehicleData);
+        // Creates Battery Level Elements
+        await createBatteryElement(mainCol1, vehicleData, wSize);
 
-    // Creates Battery Level Elements
-    await createBatteryElement(mainCol1, vehicleData);
+        // Creates Oil Life Elements
+        if (!vehicleData.evVehicle) {
+            await createOilElement(mainCol1, vehicleData, wSize);
+        } else {
+            // Creates EV Plug Elements
+            await createEvChargeElement(mainCol1, vehicleData, wSize);
+        }
 
-    // Creates Oil Life Elements
-    if (!vehicleData.evVehicle) {
-        await createOilElement(mainCol1, vehicleData);
-    } else {
-        // Creates EV Plug Elements
-        await createEvChargeElement(mainCol1, vehicleData);
+        contentStack.addSpacer();
+
+        //************************
+        //* Second column
+        //************************
+        let mainCol2 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+        // Creates the Lock Status Elements
+        await createLockStatusElement(mainCol2, vehicleData, wSize);
+
+        // Creates the Door Status Elements
+        await createDoorElement(mainCol2, vehicleData, false, wSize);
+
+        // Create Tire Pressure Elements
+        await createTireElement(mainCol2, vehicleData, wSize);
+
+        mainCol2.addSpacer(0);
+
+        contentStack.addSpacer();
+
+        //****************
+        //* Third column
+        //****************
+        let mainCol3 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+        // Creates the Ignition Status Elements
+        await createIgnitionStatusElement(mainCol3, vehicleData, wSize);
+
+        // Creates the Door Status Elements
+        await createWindowElement(mainCol3, vehicleData, false, wSize);
+
+        // Creates the Vehicle Location Element
+        await createPositionElement(mainCol3, vehicleData, wSize);
+
+        mainCol3.addSpacer();
+
+        contentStack.addSpacer();
+
+        //**********************
+        //* Refresh and error
+        //*********************
+
+        let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+        await createStatusElement(statusRow, vehicleData, wSize);
+
+        // This is the row displaying the time elapsed since last vehicle checkin.
+        let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+        await createTimeStampElement(timestampRow, vehicleData, wSize);
+    } catch (e) {
+        console.error(`createMediumWidget Error ${e}`);
     }
+    return widget;
+}
 
-    contentStack.addSpacer();
+async function createLargeWidget(vData) {
+    let vehicleData = vData;
+    const wSize = 'large';
+    // Defines the Widget Object
+    const widget = new ListWidget();
+    widget.backgroundGradient = getBgGradient();
+    try {
+        let mainStack = widget.addStack();
+        mainStack.layoutVertically();
+        mainStack.setPadding(0, 0, 0, 0);
 
-    //************************
-    //* Second column
-    //************************
-    let mainCol2 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+        let contentStack = mainStack.addStack();
+        contentStack.layoutHorizontally();
 
-    // Creates the Lock Status Elements
-    await createLockStatusElement(mainCol2, vehicleData);
+        //*****************
+        //* First column
+        //*****************
+        let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
-    // Creates the Ignition Status Elements
-    await createIgnitionStatusElement(mainCol2, vehicleData);
+        // Vehicle Logo
+        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
+        let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
+        mainCol1.addSpacer(0);
 
-    mainCol2.addSpacer(0);
+        // Creates the Fuel Info Elements
+        await createFuelBattElement(mainCol1, vehicleData, wSize);
 
-    contentStack.addSpacer();
+        // Creates the Mileage Info Elements
+        await createMileageElement(mainCol1, vehicleData, wSize);
 
-    //**********************
-    //* Refresh and error
-    //*********************
-    let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
-    await createStatusElement(statusRow, vehicleData);
-    // if (!hasStatusMsg()) {
-    //     mainStack.addSpacer(20);
-    // }
+        // Creates Battery Level Elements
+        await createBatteryElement(mainCol1, vehicleData, wSize);
 
-    // This is the row displaying the time elapsed since last vehicle checkin.
-    let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-    await createTimeStampElement(timestampRow, vehicleData, 0);
+        // Creates Oil Life Elements
+        if (!vehicleData.evVehicle) {
+            await createOilElement(mainCol1, vehicleData, wSize);
+        } else {
+            // Creates EV Plug Elements
+            await createEvChargeElement(mainCol1, vehicleData, wSize);
+        }
 
+        contentStack.addSpacer();
+
+        //************************
+        //* Second column
+        //************************
+        let mainCol2 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+        // Creates the Lock Status Elements
+        await createLockStatusElement(mainCol2, vehicleData, wSize);
+
+        // Creates the Door Status Elements
+        await createDoorElement(mainCol2, vehicleData, false, wSize);
+
+        // Create Tire Pressure Elements
+        await createTireElement(mainCol2, vehicleData, wSize);
+
+        mainCol2.addSpacer(0);
+
+        contentStack.addSpacer();
+
+        //****************
+        //* Third column
+        //****************
+        let mainCol3 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+        // Creates the Ignition Status Elements
+        await createIgnitionStatusElement(mainCol3, vehicleData, wSize);
+
+        // Creates the Door Status Elements
+        await createWindowElement(mainCol3, vehicleData, false, wSize);
+
+        // Creates the Vehicle Location Element
+        await createPositionElement(mainCol3, vehicleData, wSize);
+
+        mainCol3.addSpacer();
+
+        contentStack.addSpacer();
+
+        //**********************
+        //* Refresh and error
+        //*********************
+
+        let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+        await createStatusElement(statusRow, vehicleData, wSize);
+
+        // This is the row displaying the time elapsed since last vehicle checkin.
+        let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+        await createTimeStampElement(timestampRow, vehicleData, wSize);
+    } catch (e) {
+        console.error(`createLargeWidget Error ${e}`);
+    }
+    return widget;
+}
+
+async function createExtraLargeWidget(vData) {
+    let vehicleData = vData;
+    const wSize = 'extraLarge';
+    // Defines the Widget Object
+    const widget = new ListWidget();
+    widget.backgroundGradient = getBgGradient();
+    try {
+        let mainStack = widget.addStack();
+        mainStack.layoutVertically();
+        mainStack.setPadding(0, 0, 0, 0);
+
+        let contentStack = mainStack.addStack();
+        contentStack.layoutHorizontally();
+
+        //*****************
+        //* First column
+        //*****************
+        let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+        // Vehicle Logo
+        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
+        let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
+        mainCol1.addSpacer(0);
+
+        // Creates the Fuel Info Elements
+        await createFuelBattElement(mainCol1, vehicleData, wSize);
+
+        // Creates the Mileage Info Elements
+        await createMileageElement(mainCol1, vehicleData, wSize);
+
+        // Creates Battery Level Elements
+        await createBatteryElement(mainCol1, vehicleData, wSize);
+
+        // Creates Oil Life Elements
+        if (!vehicleData.evVehicle) {
+            await createOilElement(mainCol1, vehicleData, wSize);
+        } else {
+            // Creates EV Plug Elements
+            await createEvChargeElement(mainCol1, vehicleData, wSize);
+        }
+
+        contentStack.addSpacer();
+
+        //************************
+        //* Second column
+        //************************
+        let mainCol2 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+        // Creates the Lock Status Elements
+        await createLockStatusElement(mainCol2, vehicleData, wSize);
+
+        // Creates the Door Status Elements
+        await createDoorElement(mainCol2, vehicleData, false, wSize);
+
+        // Create Tire Pressure Elements
+        await createTireElement(mainCol2, vehicleData, wSize);
+
+        mainCol2.addSpacer(0);
+
+        contentStack.addSpacer();
+
+        //****************
+        //* Third column
+        //****************
+        let mainCol3 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+        // Creates the Ignition Status Elements
+        await createIgnitionStatusElement(mainCol3, vehicleData, wSize);
+
+        // Creates the Door Status Elements
+        await createWindowElement(mainCol3, vehicleData, false, wSize);
+
+        // Creates the Vehicle Location Element
+        await createPositionElement(mainCol3, vehicleData, wSize);
+
+        mainCol3.addSpacer();
+
+        contentStack.addSpacer();
+
+        //**********************
+        //* Refresh and error
+        //*********************
+
+        let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+        await createStatusElement(statusRow, vehicleData, wSize);
+
+        // This is the row displaying the time elapsed since last vehicle checkin.
+        let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+        await createTimeStampElement(timestampRow, vehicleData, wSize);
+    } catch (e) {
+        console.error(`createExtraLargeWidget Error ${e}`);
+    }
     return widget;
 }
 
@@ -575,59 +829,61 @@ async function createImage(srcField, image, styles = {}) {
     return _img;
 }
 
-async function createTitle(headerField, element, icon = undefined) {
-    let titleParams = element.split('||');
-    let ico = icon || runtimeData[titleParams[0]];
-    if (ico !== undefined) {
-        headerField.layoutHorizontally();
-        let imgFile = await getImage(ico.toString());
-        let titleImg = await createImage(headerField, imgFile, { imageSize: new Size(11, 11) });
-        headerField.addSpacer(2);
+async function createTitle(headerField, titleText, wSize = 'medium', hideTitleForSmall = false) {
+    let titleParams = titleText.split('||');
+    let icon = runtimeData[titleParams[0]];
+    let titleStack = await headerField.addStack({ '*centerAlignContent': null });
+    if (icon !== undefined) {
+        titleStack.layoutHorizontally();
+        let imgFile = await getImage(icon.toString());
+        await createImage(titleStack, imgFile, { imageSize: new Size(sizeMap[wSize].iconSize.w, sizeMap[wSize].iconSize.h) });
     }
-
-    //console.log(`titleParams(${element}): ${titleParams}`);
-    let title = titleParams.length > 1 ? textValues(titleParams[1]).elemHeaders[titleParams[0]] : textValues().elemHeaders[titleParams[0]];
-    let txt = await createText(headerField, title + ':', { font: Font.boldSystemFont(sizeMap[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1), lineLimit: 1 });
-    // return headerField;
+    // console.log(`titleParams(${titleText}): ${titleParams}`);
+    if (titleText && titleText.length && !hideTitleForSmall) {
+        titleStack.addSpacer(2);
+        let title = titleParams.length > 1 ? textValues(titleParams[1]).elemHeaders[titleParams[0]] : textValues().elemHeaders[titleParams[0]];
+        await createText(titleStack, title + ':', { font: Font.boldSystemFont(sizeMap[wSize].titleFontSize), textColor: new Color(runtimeData.textColor1), lineLimit: 1 });
+    }
 }
 
-async function createProgressBar(percent, barWidth = sizeMap[screenType].barWidth) {
+async function createProgressBar(percent, wSize = 'medium') {
     let fuelLevel = percent > 100 ? 100 : percent;
+    const barWidth = sizeMap[wSize].barGauge.w;
     const bar = new DrawContext();
-    bar.size = new Size(barWidth, sizeMap[screenType].barHeight + 3);
+    bar.size = new Size(barWidth, sizeMap[wSize].barGauge.h + 3);
     bar.opaque = false;
     bar.respectScreenScale = true;
     // Background
     const path = new Path();
-    path.addRoundedRect(new Rect(0, 0, barWidth, sizeMap[screenType].barHeight), 3, 2);
+    path.addRoundedRect(new Rect(0, 0, barWidth, sizeMap[wSize].barGauge.h), 3, 2);
     bar.addPath(path);
     bar.setFillColor(Color.lightGray());
     bar.fillPath();
     // Fuel
     const fuel = new Path();
-    fuel.addRoundedRect(new Rect(0, 0, (barWidth * fuelLevel) / 100, sizeMap[screenType].barHeight), 3, 2);
+    fuel.addRoundedRect(new Rect(0, 0, (barWidth * fuelLevel) / 100, sizeMap[wSize].barGauge.h), 3, 2);
     bar.addPath(fuel);
     bar.setFillColor(new Color('2f78dd'));
     bar.fillPath();
     const fuel25Indicator = new Path();
-    fuel25Indicator.addRoundedRect(new Rect(barWidth * 0.25, 1, 2, sizeMap[screenType].barHeight - 2), 3, 2);
+    fuel25Indicator.addRoundedRect(new Rect(barWidth * 0.25, 1, 2, sizeMap[wSize].barGauge.h - 2), 3, 2);
     bar.addPath(fuel25Indicator);
     bar.setFillColor(Color.black());
     bar.fillPath();
     const fuel50Indicator = new Path();
-    fuel50Indicator.addRoundedRect(new Rect(barWidth * 0.5, 1, 2, sizeMap[screenType].barHeight - 2), 3, 2);
+    fuel50Indicator.addRoundedRect(new Rect(barWidth * 0.5, 1, 2, sizeMap[wSize].barGauge.h - 2), 3, 2);
     bar.addPath(fuel50Indicator);
     bar.setFillColor(Color.black());
     bar.fillPath();
     const fuel75Indicator = new Path();
-    fuel75Indicator.addRoundedRect(new Rect(barWidth * 0.75, 1, 2, sizeMap[screenType].barHeight - 2), 3, 2);
+    fuel75Indicator.addRoundedRect(new Rect(barWidth * 0.75, 1, 2, sizeMap[wSize].barGauge.h - 2), 3, 2);
     bar.addPath(fuel75Indicator);
     bar.setFillColor(Color.black());
     bar.fillPath();
     return await bar.getImage();
 }
 
-async function createFuelBattElement(srcField, vehicleData, widgetSize = 'default') {
+async function createFuelBattElement(srcField, vehicleData, wSize = 'medium') {
     try {
         const isEV = vehicleData.evVehicle === true;
         let lvlValue = !isEV ? (vehicleData.fuelLevel ? vehicleData.fuelLevel : 0) : vehicleData.evBatteryLevel ? vehicleData.evBatteryLevel : 0;
@@ -648,31 +904,32 @@ async function createFuelBattElement(srcField, vehicleData, widgetSize = 'defaul
         // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
 
         let lvlTxt = lvlValue ? (lvlValue > 100 ? 100 : lvlValue) : 50;
-        let fuelHeadertext = await createText(fuelHeaderRow, textValues().elemHeaders[isEV ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizeMap[screenType].titleFontSize), textColor: new Color(runtimeData.textColor1) });
-        let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor1) });
-        srcField.addSpacer(3);
+        if (!isSmallDisplay && wSize !== 'small') {
+            let fuelHeadertext = await createText(fuelHeaderRow, textValues().elemHeaders[isEV ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizeMap[wSize].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+        }
+        let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor1) });
 
         // Fuel Level Bar
         let fuelBarCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         let fuelBarRow = await createRow(fuelBarCol, { '*setPadding': [0, 0, 0, 0] });
-        let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(lvlValue ? lvlValue : 50, sizeMap[widgetSize].barWidth), { '*centerAlignImage': null, imageSize: new Size(sizeMap[screenType].barWidth, sizeMap[screenType].barHeight + 3) });
+        let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(lvlValue ? lvlValue : 50, wSize), { '*centerAlignImage': null, imageSize: new Size(sizeMap[wSize].barGauge.w, sizeMap[wSize].barGauge.h + 3) });
 
         // Fuel Distance to Empty
         let fuelBarTextRow = await createRow(fuelBarCol, { '*centerAlignContent': null, '*topAlignContent': null });
         let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
         let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
         let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${unitOfLength} ${dtePostfix}` : textValues().errorMessages.noData;
-        await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+        await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
     } catch (e) {
         console.log(`createFuelBattElement error ${e}`);
     }
     srcField.addSpacer(3);
 }
 
-async function createMileageElement(srcField, vehicleData) {
+async function createMileageElement(srcField, vehicleData, wSize = 'medium') {
     try {
-        let elem = await createRow(srcField, { '*layoutHorizontally': null });
-        await createTitle(elem, 'odometer');
+        let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
+        await createTitle(elem, 'odometer', wSize);
         elem.addSpacer(2);
         let isMetric = await useMetricUnits();
         console.log(`mileage isMetric: ${isMetric}`);
@@ -680,32 +937,32 @@ async function createMileageElement(srcField, vehicleData) {
         let distanceUnit = isMetric ? 'km' : 'mi'; // unit of length
         let value = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)}${distanceUnit}` : textValues().errorMessages.noData;
         // console.log(`odometer: ${value}`);
-        await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1, '*leftAlignText': null });
+        await createText(elem, value, { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1, '*leftAlignText': null });
         srcField.addSpacer(3);
     } catch (e) {
         console.log(`createMileageElement error ${e}`);
     }
 }
 
-async function createBatteryElement(srcField, vehicleData) {
-    let elem = await createRow(srcField, { '*layoutHorizontally': null });
-    await createTitle(elem, 'batteryStatus');
+async function createBatteryElement(srcField, vehicleData, wSize = 'medium') {
+    let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
+    await createTitle(elem, 'batteryStatus', wSize, isSmallDisplay || wSize === 'small');
     elem.addSpacer(2);
     let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
     // console.log(`batteryLevel: ${value}`);
     let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
-    await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2), lineLimit: 1 });
+    await createText(elem, value, { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2), lineLimit: 1 });
     srcField.addSpacer(3);
 }
 
-async function createOilElement(srcField, vData) {
+async function createOilElement(srcField, vData, wSize = 'medium') {
     const styles = {
-        normal: { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 1 },
-        warning: { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#FF6700'), lineLimit: 1 },
-        critical: { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#DE1738'), lineLimit: 1 },
+        normal: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 },
+        warning: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color('#FF6700'), lineLimit: 1 },
+        critical: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color('#DE1738'), lineLimit: 1 },
     };
-    let elem = await createRow(srcField, { '*layoutHorizontally': null });
-    await createTitle(elem, 'oil');
+    let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
+    await createTitle(elem, 'oil', wSize, isSmallDisplay || wSize === 'small');
     elem.addSpacer(2);
     let txtStyle = styles.normal;
     if (vData.oilLife && vData.oilLife >= 0 && vData.oilLife <= 25) {
@@ -717,41 +974,40 @@ async function createOilElement(srcField, vData) {
     srcField.addSpacer(3);
 }
 
-async function createEvChargeElement(srcField, vehicleData) {
+async function createEvChargeElement(srcField, vehicleData, wSize = 'medium') {
     let elem = await createRow(srcField, { '*layoutHorizontally': null });
-    await createTitle(elem, 'evChargeStatus');
+    await createTitle(elem, 'evChargeStatus', wSize, isSmallDisplay || wSize === 'small');
     elem.addSpacer(2);
     let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : textValues().errorMessages.noData;
     // console.log(`battery charge: ${value}`);
-    await createText(elem, value, { font: Font.regularSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+    await createText(elem, value, { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
     srcField.addSpacer(3);
 }
 
-async function createDoorElement(srcField, vData, countOnly = false) {
+async function createDoorElement(srcField, vData, countOnly = false, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 1 },
-        statOpen: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 1 },
+        statOpen: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
+        statClosed: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 5,
     };
 
     let offset = styles.offset;
     let titleFld = await createRow(srcField);
-    await createTitle(titleFld, 'doors');
+    await createTitle(titleFld, 'doors', wSize);
 
     // Creates the first row of status elements for LF and RF
     let dataRow1Fld = await createRow(srcField);
 
-    // TODO: FIX THis dispay for small widgets (color the numbers for any open)
     if (countOnly) {
         let value = textValues().errorMessages.noData;
-        let allDoorsCnt = Object.values(vData.statusDoors).filter((door) => door !== null).length;
-        let openDoorsCnt;
+        // let allDoorsCnt = Object.values(vData.statusDoors).filter((door) => door !== null).length;
+        let countOpen;
         if (vData.statusDoors) {
-            openDoorsCnt = Object.values(vData.statusDoors).filter((door) => door === true).length;
-            value = openDoorsCnt == 0 ? textValues().UIValues.closed : `${openDoorsCnt} ${textValues().UIValues.open}`;
+            countOpen = Object.values(vData.statusDoors).filter((door) => door === true).length;
+            value = countOpen == 0 ? textValues().UIValues.closed : `${countOpen} ${textValues().UIValues.open}`;
         }
-        await createText(dataRow1Fld, value, styles.normTxt);
+        await createText(dataRow1Fld, value, countOpen > 0 ? styles.statOpen : styles.statClosed);
     } else {
         let col1 = await createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
         let col1row1 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
@@ -823,17 +1079,17 @@ async function createDoorElement(srcField, vData, countOnly = false) {
     srcField.addSpacer(offset);
 }
 
-async function createWindowElement(srcField, vData, countOnly = false) {
+async function createWindowElement(srcField, vData, countOnly = false, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
-        statOpen: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        statOpen: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
+        statClosed: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
     let offset = styles.offset;
     let titleFld = await createRow(srcField);
-    await createTitle(titleFld, 'windows');
+    await createTitle(titleFld, 'windows', wSize);
 
     // Creates the first row of status elements for LF and RF
     let dataRow1Fld = await createRow(srcField);
@@ -844,7 +1100,7 @@ async function createWindowElement(srcField, vData, countOnly = false) {
             countOpen = Object.values(vData.statusWindows).filter((window) => window === true).length;
             value = countOpen == 0 ? textValues().UIValues.closed : `${countOpenWindows} ${textValues().UIValues.open}`;
         }
-        await createText(dataRow1Fld, value, styles.normTxt);
+        await createText(dataRow1Fld, value, countOpen > 0 ? styles.statOpen : styles.statClosed);
     } else {
         let col1 = await createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
         let col1row1 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
@@ -885,15 +1141,15 @@ async function createWindowElement(srcField, vData, countOnly = false) {
     srcField.addSpacer(offset);
 }
 
-async function createTireElement(srcField, vData) {
+async function createTireElement(srcField, vData, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2) },
     };
     let offset = 0;
     let titleFld = await createRow(srcField);
     let pressureUnits = await getKeychainValue('fpPressureUnits');
     let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
-    await createTitle(titleFld, `tirePressure||${unitTxt}`);
+    await createTitle(titleFld, `tirePressure||${unitTxt}`, wSize);
 
     let dataFld = await createRow(srcField);
     // Row 1 - Tire Pressure Left Front amd Right Front
@@ -918,26 +1174,26 @@ async function createTireElement(srcField, vData) {
     srcField.addSpacer(offset);
 }
 
-async function createPositionElement(srcField, vehicleData) {
+async function createPositionElement(srcField, vehicleData, wSize = 'medium') {
     let offset = 0;
     let titleFld = await createRow(srcField);
-    await createTitle(titleFld, 'position');
+    await createTitle(titleFld, 'position', wSize);
 
     let dataFld = await createRow(srcField);
     let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
     let value = vehicleData.position ? (widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vehicleData.position}`) : textValues().errorMessages.noData;
-    await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
+    await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
 }
 
-async function createLockStatusElement(srcField, vehicleData) {
+async function createLockStatusElement(srcField, vehicleData, wSize = 'medium') {
     const styles = {
-        statOpen: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        statClosed: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        statOpen: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        statClosed: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
     };
     let offset = 5;
     let titleFld = await createRow(srcField);
-    await createTitle(titleFld, 'lockStatus');
+    await createTitle(titleFld, 'lockStatus', wSize);
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
     let value = vehicleData.lockStatus ? vehicleData.lockStatus : textValues().errorMessages.noData;
@@ -945,31 +1201,31 @@ async function createLockStatusElement(srcField, vehicleData) {
     srcField.addSpacer(offset);
 }
 
-async function createIgnitionStatusElement(srcField, vehicleData) {
+async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'medium') {
     const styles = {
-        statOn: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#FF5733') },
-        statOff: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('#5A65C0') },
+        statOn: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
+        statOff: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
     };
     let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
     let status = '';
     if (remStartOn) {
         status = `Remote Start (ON)`;
-    } else if (vehicleData.ignitionStatus != undefined) {
+    } else if (vehicleData.ignitionStatus !== undefined) {
         status = vehicleData.ignitionStatus.toUpperCase();
     } else {
         textValues().errorMessages.noData;
     }
     let offset = 5;
     let titleFld = await createRow(srcField);
-    await createTitle(titleFld, 'ignitionStatus');
+    await createTitle(titleFld, 'ignitionStatus', wSize);
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
     await createText(dataFld, status, (vehicleData.ignitionStatus !== undefined && vehicleData.ignitionStatus === 'On') || remStartOn ? styles.statOn : styles.statOff);
     srcField.addSpacer(offset);
 }
 
-async function createTimeStampElement(stk, vehicleData, leftOffset = 2, rightOffset = 2) {
-    stk.setPadding(2, leftOffset, 2, rightOffset);
+async function createTimeStampElement(stk, vehicleData, wSize = 'medium') {
+    // stk.setPadding(topOffset, leftOffset, bottomOffset, rightOffset);
     // Creates the Refresh Label to show when the data was last updated from Ford
     let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : textValues().UIValues.unknown;
     await createText(stk, 'Updated: ' + refreshTime, { font: Font.mediumSystemFont(8), textColor: Color.lightGray(), lineLimit: 1 });
@@ -977,44 +1233,44 @@ async function createTimeStampElement(stk, vehicleData, leftOffset = 2, rightOff
 }
 
 async function hasStatusMsg(vData) {
-    return vData.error || (!vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') || (!vData.evVehicle && vData.oilLow) || vData.deepSleepMode || vData.firmwareUpdating || updateAvailable;
+    return vData.error || (!vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') || vData.deepSleepMode || vData.firmwareUpdating || updateAvailable; //|| (!vData.evVehicle && vData.oilLow)
 }
 
-async function createStatusElement(stk, vData, maxMsgs = 2) {
+async function createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
     let cnt = 0;
     // Creates Elements to display any errors in red at the bottom of the widget
     if (vData.error) {
         stk.addSpacer(5);
-        await createText(stk, vData.error ? 'Error: ' + vData.error : '', { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.red() });
+        await createText(stk, vData.error ? 'Error: ' + vData.error : '', { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: Color.red() });
     } else {
         if (cnt < maxMsgs && !vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') {
             stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 12V Battery Low`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.red(), lineLimit: 1 });
+            await createText(stk, `\u2022 12V Battery Low`, { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: Color.red(), lineLimit: 1 });
             cnt++;
         }
-        if (cnt < maxMsgs && !vData.evVehicle && vData.oilLow) {
-            stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 Oil Reporting Low`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.red(), lineLimit: 1 });
-            cnt++;
-        }
+        // if (cnt < maxMsgs && !vData.evVehicle && vData.oilLow) {
+        //     stk.addSpacer(cnt > 0 ? 5 : 0);
+        //     await createText(stk, `\u2022 Oil Reporting Low`, { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: Color.red(), lineLimit: 1 });
+        //     cnt++;
+        // }
         if (cnt < maxMsgs && vData.deepSleepMode) {
             stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 Deep Sleep Mode`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
+            await createText(stk, `\u2022 Deep Sleep Mode`, { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
             cnt++;
         }
         if (cnt < maxMsgs && vData.firmwareUpdating) {
             stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.green(), lineLimit: 1 });
+            await createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: Color.green(), lineLimit: 1 });
             cnt++;
         }
         if (cnt < maxMsgs && updateAvailable) {
             stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 Script Update: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
+            await createText(stk, `\u2022 Script Update: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
             cnt++;
         }
     }
     if (!hasStatusMsg()) {
-        await createText(stk, ` `, { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+        await createText(stk, `     `, { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
     }
     return stk;
 }
@@ -1046,49 +1302,32 @@ async function getMainMenuItems(vehicleData) {
             show: true,
         },
         {
-            title: 'View Info',
+            title: 'Lock Control',
             action: async () => {
-                console.log('(Main Menu) View Info was pressed');
-                await subControlMenu('advancedInfo');
-            },
-            destructive: false,
-            show: false,
-        },
-        {
-            title: 'Lock Vehicle',
-            action: async () => {
-                console.log('(Main Menu) Lock was pressed');
-                await sendVehicleCmd('lock');
-            },
-            destructive: false,
-            show: true,
-        },
-        {
-            title: 'Unlock Vehicle',
-            action: async () => {
-                console.log('(Main Menu) Unlock was pressed');
-                await sendVehicleCmd('unlock');
+                console.log('(Main Menu) Lock Control was pressed');
+                await subControlMenu('lockControl');
             },
             destructive: true,
-            show: true,
+            show: caps && caps.length && caps.includes('DOOR_LOCK_UNLOCK'), //true,
         },
         {
-            title: 'Remote Start (Stop)',
+            title: 'Remote Start Control',
             action: async () => {
                 console.log('(Main Menu) Stop was pressed');
-                await sendVehicleCmd('stop');
+                await subControlMenu('remoteStartControl');
             },
             destructive: false,
-            show: true,
+            show: caps && caps.length && caps.includes('REMOTE_START'), //true,
         },
+
         {
-            title: 'Remote Start (Run)',
+            title: 'Sound Horn/Flash Lights',
             action: async () => {
-                console.log('(Main Menu) Start was pressed');
-                await sendVehicleCmd('start');
+                console.log('(Main Menu) Horn/Lights was pressed');
+                await sendVehicleCmd('horn_and_lights');
             },
             destructive: true,
-            show: true,
+            show: caps && caps.length && caps.includes('REMOTE_PANIC_ALARM'),
         },
         {
             title: 'Force Refresh',
@@ -1169,9 +1408,92 @@ async function subControlMenu(type) {
                     show: true,
                 },
                 {
+                    title: 'Extra-Large',
+                    action: async () => {
+                        console.log('(Widget View Menu) Extra-Large Widget was pressed');
+                        const w = await generateWidget('extraLarge', fordData);
+                        await w.presentExtraLarge();
+                    },
+                    destructive: false,
+                    show: Device.isPad(),
+                },
+                {
                     title: 'Back',
                     action: async () => {
                         console.log('(Widget View Menu) Back was pressed');
+                        createMainMenu();
+                    },
+                    destructive: false,
+                    show: true,
+                },
+            ];
+            break;
+
+        case 'lockControl':
+            title = 'Lock Control';
+            message = `Lock Status: (${vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked'})`;
+            items = [
+                {
+                    title: 'Lock Vehicle',
+                    action: async () => {
+                        console.log('(Lock Control Menu) Lock was pressed');
+                        await sendVehicleCmd('lock');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Unlock Vehicle',
+                    action: async () => {
+                        console.log('(Lock Control Menu) Unlock was pressed');
+                        await sendVehicleCmd('unlock');
+                    },
+                    destructive: true,
+                    show: true,
+                },
+                {
+                    title: 'Back',
+                    action: async () => {
+                        console.log('(Lock Control Menu) Back was pressed');
+                        createMainMenu();
+                    },
+                    destructive: false,
+                    show: true,
+                },
+            ];
+            break;
+        case 'remoteStartControl':
+            title = 'Remote Start Control';
+            let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
+            let remStartDur = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.duration ? vehicleData.remoteStartStatus.duration : undefined;
+            if (remStartOn) {
+                message = `Remote Start Status: (Running)${remStartDur ? `\nDuration: (${remStartDur} min.)` : ''}`;
+            } else {
+                message = 'Remote Start Status: (Not Activated)';
+            }
+            items = [
+                {
+                    title: 'Remote Start (Stop)',
+                    action: async () => {
+                        console.log('(Remote Start Control Menu) Stop was pressed');
+                        await sendVehicleCmd('stop');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Remote Start (Run)',
+                    action: async () => {
+                        console.log('(Remote Start Control Menu) Start was pressed');
+                        await sendVehicleCmd('start');
+                    },
+                    destructive: true,
+                    show: true,
+                },
+                {
+                    title: 'Back',
+                    action: async () => {
+                        console.log('(Remote Start Control Menu) Back was pressed');
                         createMainMenu();
                     },
                     destructive: false,
@@ -1241,7 +1563,7 @@ async function subControlMenu(type) {
                     action: async () => {
                         console.log('(Debug Menu) OTA Info was pressed');
                         let data = await getVehicleOtaInfo();
-                        await showDataWebView('OTA Info Page', 'OTA Vehicle Info', data);
+                        await showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
                         await subControlMenu('debugMenu');
                     },
                     destructive: false,
@@ -1277,25 +1599,37 @@ async function subControlMenu(type) {
                 },
             ];
             break;
-        case 'advancedInfo':
-            title = 'Advanced Info';
+        case 'resetDataMenu':
+            title = 'Reset Data Menu';
             items = [
                 {
-                    title: `SecuriAlert Status: ${(await getSecuriAlertStatus()) === 'enable' ? 'Enabled' : 'Disabled'}`,
+                    title: 'Clear Cached Files',
                     action: async () => {
-                        console.log('(Advanced Controls Menu) Zone Lighting was pressed');
-                        subControlMenu('advancedInfo');
+                        console.log('(Reset Data Menu) Clear Files was pressed');
+                        await clearFileManager();
+                        subControlMenu('resetDataMenu');
                     },
-                    destructive: false,
-                    show: caps && caps.length && caps.includes('GUARD_MODE'),
+                    destructive: true,
+                    show: true,
                 },
                 {
-                    title: 'Back',
+                    title: 'Clear Saved Settings',
                     action: async () => {
-                        console.log('(Advanced Controls Menu) Back was pressed');
-                        createMainMenu();
+                        console.log('(Reset Data Menu) Clear Settings was pressed');
+                        await clearKeychain();
+                        await showAlert('Reset Data Menu', 'Saved Settings Cleared\n\nPlease run the script again to re-initialize the app.');
                     },
-                    destructive: false,
+                    destructive: true,
+                    show: true,
+                },
+                {
+                    title: 'Reset Everything',
+                    action: async () => {
+                        console.log('(Reset Data Menu) Reset All was pressed');
+                        await clearKeychain();
+                        await showAlert('Reset Data Menu', 'All Files and Settings Cleared\n\nPlease run the script again to re-initialize the app.');
+                    },
+                    destructive: true,
                     show: true,
                 },
             ];
@@ -1422,14 +1756,60 @@ async function subControlMenu(type) {
     }
 }
 
-async function showDataWebView(title, heading, data) {
+async function showDataWebView(title, heading, data, type = undefined) {
     // console.log(`showDataWebView(${title}, ${heading}, ${data})`);
-    data = scrubPersonalData(data);
-    console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
-    const bgColor = darkMode ? '#242424' : 'white';
-    const fontColor = darkMode ? '#ffffff' : '#242425';
-    const wv = new WebView();
-    let html = `
+    let otaHTML = '';
+    try {
+        data = scrubPersonalData(data);
+        if (type === 'OTA') {
+            if (data.fuseResponse && data.fuseResponse.fuseResponseList && data.fuseResponse.fuseResponseList.length) {
+                otaHTML += `<h3>OTA Details</h3>`;
+
+                data.fuseResponse.fuseResponseList.forEach((fuse, ind) => {
+                    otaHTML += `<ul>`;
+                    otaHTML += `<li>CorrelationID: ${fuse.oemCorrelationId || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Created: ${fuse.deploymentCreationDate || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Expiration: ${fuse.deploymentExpirationTime || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Priority: ${fuse.communicationPriority || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Type: ${fuse.type || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Trigger: ${fuse.triggerType || textValues().errorMessages.noData}</li>`;
+                    otaHTML += `<li>Inhibit Required: ${fuse.inhibitRequired}</li>`;
+                    otaHTML += `<li>Environment: ${fuse.tmcEnvironment || textValues().errorMessages.noData}</li>`;
+                    if (fuse.latestStatus) {
+                        otaHTML += `<li>Latest Status:`;
+                        otaHTML += `    <ul>`;
+                        otaHTML += `        <li>Status: ${fuse.latestStatus.aggregateStatus || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>Details: ${fuse.latestStatus.detailedStatus || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>DateTime: ${fuse.latestStatus.dateTimestamp || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `    </ul>`;
+                        otaHTML += `</li>`;
+                    }
+                    if (fuse.packageUpdateDetails) {
+                        otaHTML += `<li>Package Details:`;
+                        otaHTML += `    <ul>`;
+                        otaHTML += `        <li>WiFi Required: ${fuse.packageUpdateDetails.wifiRequired}</li>`;
+                        otaHTML += `        <li>Priority: ${fuse.packageUpdateDetails.packagePriority || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `        <li>ReleaseNotes:`;
+                        otaHTML += `            <ul>`;
+                        otaHTML += `                 <li>${data.fuseResponse.languageText.Text || textValues().errorMessages.noData}</li>`;
+                        otaHTML += `            </ul>`;
+                        otaHTML += `        </li>`;
+                        otaHTML += `    </ul>`;
+                        otaHTML += `</li>`;
+                    }
+                    otaHTML += `</ul>`;
+                    otaHTML += `<hr>`;
+                });
+            }
+        }
+
+        console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
+        const bgColor = darkMode ? '#242424' : 'white';
+        const fontColor = darkMode ? '#ffffff' : '#242425';
+        const wv = new WebView();
+        let html = `
         <html>
         <head>
             <meta charset="UTF-8">
@@ -1441,12 +1821,15 @@ async function showDataWebView(title, heading, data) {
             
             <title>${title}</title>
             <style>
-                body { font-family: -apple-system; background-color: ${bgColor}; color: ${fontColor}; }
+                body { font-family: -apple-system; background-color: ${bgColor}; color: ${fontColor}; font-size: 0.8rem;}
             </style>
             
         </head>
         
         <body>
+            <div class="mx-2">
+                ${otaHTML}
+            </div>
             <div class="mx-2">
                 <h3>${heading}</h3>
                 <p style="color: orange;">(Personal Data Removed)</p>
@@ -1459,10 +1842,13 @@ async function showDataWebView(title, heading, data) {
         
         </html>  
     `;
-    await wv.loadHTML(html);
-    await wv.waitForLoad();
-    // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
-    await wv.present(true);
+        await wv.loadHTML(html);
+        await wv.waitForLoad();
+        // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
+        await wv.present(true);
+    } catch (e) {
+        console.log(e);
+    }
 }
 
 async function createMainMenu() {
@@ -1470,7 +1856,7 @@ async function createMainMenu() {
     let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : textValues().UIValues.unknown;
     const mainMenu = new Alert();
     mainMenu.title = `FordPass Actions`;
-    mainMenu.message = `Status Updated: (${refreshTime})`.trim();
+    mainMenu.message = `Widge Version: (${SCRIPT_VERSION})\nVehicle Updated: (${refreshTime})`.trim();
 
     let menuItems = (await getMainMenuItems(vehicleData)).filter((item) => item.show === true);
     // console.log(`Menu Items: (${menuItems.length}) ${JSON.stringify(menuItems)}`);
@@ -1492,47 +1878,31 @@ async function createMainMenu() {
 async function createSettingMenu() {
     const settingMenu = new Alert();
     settingMenu.title = `FordPass Widget Settings`;
-    // settingMenu.message = 'Note:\nThe Measurement and Pressure Units are now Read-Only.';
-
-    settingMenu.addAction(`Widget Version: ${SCRIPT_VERSION}`); //0
-    // let useMetric = await useMetricUnits();
-    // settingMenu.addAction(`Measurement Units: ${useMetric ? 'Metric' : 'Imperial'}`); //1
-
-    // let pressureUnits = await getKeychainValue('fpPressureUnits');
-    // settingMenu.addAction(`Pressure Units: ${pressureUnits}`); //2
+    //settingMenu.message = ``;
 
     let mapProvider = await getMapProvider();
-    settingMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //1
-
-    settingMenu.addAction('Debug Menu'); //2
-
-    settingMenu.addDestructiveAction('Clear All Saved Data'); //3
-
-    settingMenu.addAction('Back'); //4
+    settingMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //0
+    settingMenu.addAction('Debug Menu'); //1
+    settingMenu.addDestructiveAction('Reset Menu'); //2
+    settingMenu.addAction('Back'); //3
 
     const respInd = await settingMenu.presentSheet();
-
     switch (respInd) {
         case 0:
-            console.log('(Setting Menu) Widget Version was pressed');
-            createSettingMenu();
-            break;
-        case 1:
             console.log('(Setting Menu) Map Provider pressed');
             await toggleMapProvider();
             createSettingMenu();
             break;
-        case 2:
+        case 1:
             console.log('(Setting Menu) Debug Menu pressed');
             subControlMenu('debugMenu');
             break;
-        case 3:
+        case 2:
             console.log('(Setting Menu) Clear All Data was pressed');
-            await clearKeychain();
-            await clearFileManager();
+            await subControlMenu('resetDataMenu');
             // createSettingMenu();
             break;
-        case 4:
+        case 3:
             console.log('(Setting Menu) Back was pressed');
             createMainMenu();
             break;
@@ -1925,7 +2295,7 @@ const vehicleCmdConfigs = (vin) => {
     const guardUrl = 'https://api.mps.ford.com/api';
     return {
         lock: {
-            desc: 'Lock Vehicle',
+            desc: 'Lock Doors',
             cmds: [
                 {
                     uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
@@ -1934,7 +2304,7 @@ const vehicleCmdConfigs = (vin) => {
             ],
         },
         unlock: {
-            desc: 'Unlock Vehicle',
+            desc: 'Unlock Doors',
             cmds: [
                 {
                     uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
@@ -1943,7 +2313,7 @@ const vehicleCmdConfigs = (vin) => {
             ],
         },
         start: {
-            desc: 'Remote Start Vehicle',
+            desc: 'Remote Start',
             cmds: [
                 {
                     uri: `${baseUrl}/vehicles/${vin}/engine/start`,
@@ -1952,11 +2322,20 @@ const vehicleCmdConfigs = (vin) => {
             ],
         },
         stop: {
-            desc: 'Remote Stop Vehicle',
+            desc: 'Remote Stop',
             cmds: [
                 {
                     uri: `${baseUrl}/vehicles/${vin}/engine/start`,
                     method: 'DELETE',
+                },
+            ],
+        },
+        horn_and_lights: {
+            desc: 'Horn & Lights On',
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/panic/3`,
+                    method: 'PUT',
                 },
             ],
         },
@@ -2065,6 +2444,7 @@ async function sendVehicleCmd(cmd_type = '') {
             'auth-token': `${token}`,
         };
         req.method = cmds[cmd].method;
+        req.timeoutInterval = 10;
 
         try {
             let data = await req.loadString();
@@ -2280,10 +2660,10 @@ async function fetchVehicleData(loadLocal = false) {
         rightRear: await pressureToFixed(tpms.outerRightRearTirePressure.value, 1),
     };
 
-    vehicleData.lastRefresh = convertFordDtToLocal(vehicleStatus.lastRefresh);
-    vehicleData.lastRefreshElapsed = timeDifference(convertFordDtToLocal(vehicleStatus.lastRefresh));
-    // console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
-    // console.log(`timeSince: ${vehicleData.lastRefreshElapsed}`);
+    vehicleData.lastRefresh = convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
+    vehicleData.lastRefreshElapsed = timeDifference(convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
+    console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
+    console.log(`timeSince: ${vehicleData.lastRefreshElapsed}`);
 
     // console.log(JSON.stringify(vehicleData));
 
@@ -2510,9 +2890,10 @@ function saveDataToLocal(data) {
 
 function readLocalData() {
     console.log('FileManager: Retrieving Vehicle Data from Local Storage...');
+    let fileName = SCRIPT_ID !== null && SCRIPT_ID !== undefined && SCRIPT_ID > 0 ? `$fp_vehicleData_${SCRIPT_ID}.json` : 'fp_vehicleData.json';
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    let path = fm.joinPath(dir, 'fp_vehicleData.json');
+    let path = fm.joinPath(dir, fileName);
     if (fm.fileExists(path)) {
         let localData = fm.readString(path);
         return JSON.parse(localData);
@@ -2576,11 +2957,11 @@ async function getPosition(data) {
     return `${loc[0].postalAddress.street}, ${loc[0].postalAddress.city}`;
 }
 
-function getTirePressureStyle(pressure, unit) {
+function getTirePressureStyle(pressure, unit, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color(runtimeData.textColor2) },
-        statLow: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('FF6700') },
-        statCrit: { font: Font.heavySystemFont(sizeMap[screenType].detailFontSizeMedium), textColor: new Color('DE1738') },
+        normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        statLow: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('FF6700') },
+        statCrit: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('DE1738') },
         offset: 10,
     };
     let p = parseFloat(pressure);
@@ -2695,6 +3076,7 @@ function scrubPersonalData(data) {
     }
 
     let out = scrubInfo(data, 'vin');
+    out = scrubInfo(data, 'relevantVin');
     out = scrubInfo(data, 'position');
     out = scrubInfo(data, 'latitude');
     out = scrubInfo(data, 'longitude');
@@ -2753,3 +3135,50 @@ function isNewerVersion(oldVer, newVer) {
 
 //************************************************* END UTILITY FUNCTIONS ********************************************************
 //********************************************************************************************************************************
+
+// function createTableMenu() {
+//     let table = new UITable();
+//     let data = [
+//         ["foo", "bar", "baz"],
+//         ["asdf", "quz", "42"],
+//         [123, 567, "add"],
+//     ];
+
+//     let row, cell;
+//     let first = true;
+//     for (const drow of data) {
+//         // drow = data row
+//         // create a new row
+//         row = new UITableRow();
+//         // immediately add it to the table to not forget that part
+//         table.addRow(row);
+//         if (first) {
+//             // set the first row to have bold text
+//             row.isHeader = true;
+//             first = false;
+//         }
+//         for (const [i, dcell] of drow.entries()) {
+//             // the last cell should contain a button
+//             if (i === 2) {
+//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
+//                 cell = row.addButton("" + dcell);
+//                 // even though the next line is not needed because it is the default setting, I like to do it anyway to be more specific of what is going on
+//                 cell.dismissOnTap = false;
+//                 // register our callback function
+//                 cell.onTap = () => {
+//                     // create a simple alert to have some user feedback on button tap
+//                     // let alert = new Alert();
+//                     // alert.message = dcell;
+//                     // alert.present();
+//                     // no need to add buttons, they will be added automatically
+//                     // no need to await it, because we don't need anything from the user
+//                 };
+//             } else {
+//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
+//                 cell = row.addText("" + dcell);
+//             }
+//             cell.centerAligned();
+//         }
+//     }
+//     table.present();
+// }

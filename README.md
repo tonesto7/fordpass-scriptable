@@ -56,13 +56,16 @@ The widget has been tested on many many ford models, and should work on any vehi
 ## Installation
 
 Please visit this site for easy install process
-https://tonesto7.github.io/fordpass-scriptable
+
+- https://tonesto7.github.io/fordpass-scriptable
 
 ### Install Videos
-https://tonesto7.github.io/fordpass-scriptable/videos/install_demo.mp4
+
+- https://tonesto7.github.io/fordpass-scriptable/videos/install_demo.mp4
 
 ### Setup Videos
-https://tonesto7.github.io/fordpass-scriptable/videos/setup_demo.mp4
+
+- https://tonesto7.github.io/fordpass-scriptable/videos/setup_demo.mp4
 
 ## Troubleshooting and Debugging
 
