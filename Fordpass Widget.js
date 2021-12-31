@@ -1,5 +1,15 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
+// icon-color: light-brown; icon-glyph: magic;
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: car;
+// This script was downloaded using FordWidgetTool.
+// Do not remove these lines, if you want to benefit from automatic updates.
+// source: https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js; docs: https://github.com/tonesto7/fordpass-scriptable#readme; hash: -1149100048;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: magic;
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
@@ -11,7 +21,7 @@
  * OF THIS SOFTWARE.
  *
  *
- * This is a widget for the iOS/iPad/MacOS app named Scriptable https://scriptable.app/ created by Anthony Santilli (https://github.com/tonesto7)
+ * This is a widget for the iOS/iPad/MacOS app named Scriptable https://scriptable.app/ created by tonesto7 (https://github.com/tonesto7)
  *
  * Fuel pump Icon made by Kiranshastry from www.flaticon.com
  *
@@ -107,11 +117,15 @@ Changelog:
         - Fix for some vehicles not having the windows status for front windows.
         - Mores fixes to handle undefined values in the vehicle data.
     v1.4.0:
-        - Fixed local vehicle data file to support multiple instances...
+        - Fixed local vehicle data file to support multiple instances.
         - Fixed data scrubber to scrub out relevantVin keys.
-        - Menu optimization to reduce the number of menu items. Lock and remotestart are now submenus and they are officially only shown to supported vehicles.
-        - Added Horn/Lights control to main menu for supported vehicles.
-        - Fixed a lot the text and image alignment in the widget.
+        - Removed the low oil life warning for now.
+        - Menu optimization to reduce the number of menu items. Lock and remote start are now submenus and they are officially only shown to supported vehicles.
+        - Added Horn/Lights control to the main menu for supported vehicles.
+        - Fixed a lot of the text and image alignment in the widget.
+        - Reworked the small widget to not show text on labels with icons.
+        - Added door and window status to small widget
+
         
 **************/
 
@@ -172,7 +186,7 @@ const textValues = (str) => {
         // Widget Title
         elemHeaders: {
             fuelTank: 'Fuel',
-            odometer: 'Mileage',
+            odometer: '',
             oil: 'Oil Life',
             windows: 'Windows',
             doors: 'Doors',
@@ -229,6 +243,8 @@ const textValues = (str) => {
 const runtimeData = {
     textColor1: darkMode ? 'EDEDED' : '000000', // Header Text Color
     textColor2: darkMode ? 'EDEDED' : '000000', // Value Text Color
+    textBlack: '000000',
+    textWhite: 'EDEDED',
     backColor: darkMode ? '111111' : 'FFFFFF', // Background Color'
     backColorGrad: darkMode ? ['141414', '13233F'] : ['BCBBBB', 'DDDDDD'], // Background Color Gradient
     fuelIcon: darkMode ? 'gas-station_dark.png' : 'gas-station_light.png', // Image for gas station
@@ -255,7 +271,7 @@ const sizeMap = {
         fontSizeBig: isSmallDisplay ? 12 : 12,
         barGauge: {
             w: isSmallDisplay ? 80 : 80,
-            h: isSmallDisplay ? 10 : 10,
+            h: isSmallDisplay ? 15 : 17,
         },
         logoSize: {
             w: isSmallDisplay ? 65 : 65,
@@ -273,7 +289,7 @@ const sizeMap = {
         fontSizeBig: isSmallDisplay ? 12 : 12,
         barGauge: {
             w: isSmallDisplay ? 80 : 80,
-            h: isSmallDisplay ? 10 : 10,
+            h: isSmallDisplay ? 15 : 17,
         },
         logoSize: {
             w: isSmallDisplay ? 85 : 85,
@@ -291,7 +307,7 @@ const sizeMap = {
         fontSizeBig: isSmallDisplay ? 12 : 12,
         barGauge: {
             w: isSmallDisplay ? 80 : 80,
-            h: isSmallDisplay ? 10 : 10,
+            h: isSmallDisplay ? 17 : 17,
         },
         logoSize: {
             w: isSmallDisplay ? 85 : 85,
@@ -309,7 +325,7 @@ const sizeMap = {
         fontSizeBig: 12,
         barGauge: {
             w: isSmallDisplay ? 80 : 80,
-            h: isSmallDisplay ? 10 : 10,
+            h: isSmallDisplay ? 17 : 17,
         },
         logoSize: {
             w: 85,
@@ -427,18 +443,10 @@ async function createSmallWidget(vData) {
         //*****************
         let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
-        // Vehicle Logo
-        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
-        let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
-        mainCol1.addSpacer(0);
+        // Creates the Vehicle Logo, Odometer, Fuel/Battery and Distance Info Elements
+        await createVehicleInfoElements(mainCol1, vehicleData, wSize);
 
-        // Creates the Fuel Info Elements
-        await createFuelBattElement(mainCol1, vehicleData, wSize);
-
-        // Creates the Mileage Info Elements
-        await createMileageElement(mainCol1, vehicleData, wSize);
-
-        // Creates Battery Level Elements
+        // Creates Low-Voltage Battery Voltage Elements
         await createBatteryElement(mainCol1, vehicleData, wSize);
 
         // Creates Oil Life Elements
@@ -468,7 +476,7 @@ async function createSmallWidget(vData) {
         // Creates the Door Status Elements
         await createWindowElement(mainCol2, vehicleData, true, wSize);
 
-        mainCol2.addSpacer(0);
+        // mainCol2.addSpacer(0);
 
         contentStack.addSpacer();
 
@@ -506,18 +514,10 @@ async function createMediumWidget(vData) {
         //*****************
         let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
-        // Vehicle Logo
-        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
-        let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
-        mainCol1.addSpacer(0);
+        // Creates the Odometer, Fuel/Battery and Distance Info Elements
+        await createVehicleInfoElements(mainCol1, vehicleData, wSize);
 
-        // Creates the Fuel Info Elements
-        await createFuelBattElement(mainCol1, vehicleData, wSize);
-
-        // Creates the Mileage Info Elements
-        await createMileageElement(mainCol1, vehicleData, wSize);
-
-        // Creates Battery Level Elements
+        // Creates Low-Voltage Battery Voltage Elements
         await createBatteryElement(mainCol1, vehicleData, wSize);
 
         // Creates Oil Life Elements
@@ -544,7 +544,7 @@ async function createMediumWidget(vData) {
         // Create Tire Pressure Elements
         await createTireElement(mainCol2, vehicleData, wSize);
 
-        mainCol2.addSpacer(0);
+        // mainCol2.addSpacer(0);
 
         contentStack.addSpacer();
 
@@ -562,7 +562,7 @@ async function createMediumWidget(vData) {
         // Creates the Vehicle Location Element
         await createPositionElement(mainCol3, vehicleData, wSize);
 
-        mainCol3.addSpacer();
+        // mainCol3.addSpacer();
 
         contentStack.addSpacer();
 
@@ -601,18 +601,10 @@ async function createLargeWidget(vData) {
         //*****************
         let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
-        // Vehicle Logo
-        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
-        let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
-        mainCol1.addSpacer(0);
+        // Creates the Odometer, Fuel/Battery and Distance Info Elements
+        await createVehicleInfoElements(mainCol1, vehicleData, wSize);
 
-        // Creates the Fuel Info Elements
-        await createFuelBattElement(mainCol1, vehicleData, wSize);
-
-        // Creates the Mileage Info Elements
-        await createMileageElement(mainCol1, vehicleData, wSize);
-
-        // Creates Battery Level Elements
+        // Creates Low-Voltage Battery Voltage Elements
         await createBatteryElement(mainCol1, vehicleData, wSize);
 
         // Creates Oil Life Elements
@@ -639,7 +631,7 @@ async function createLargeWidget(vData) {
         // Create Tire Pressure Elements
         await createTireElement(mainCol2, vehicleData, wSize);
 
-        mainCol2.addSpacer(0);
+        // mainCol2.addSpacer(0);
 
         contentStack.addSpacer();
 
@@ -657,7 +649,7 @@ async function createLargeWidget(vData) {
         // Creates the Vehicle Location Element
         await createPositionElement(mainCol3, vehicleData, wSize);
 
-        mainCol3.addSpacer();
+        // mainCol3.addSpacer();
 
         contentStack.addSpacer();
 
@@ -696,18 +688,10 @@ async function createExtraLargeWidget(vData) {
         //*****************
         let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
-        // Vehicle Logo
-        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
-        let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
-        mainCol1.addSpacer(0);
+        // Creates the Odometer, Fuel/Battery and Distance Info Elements
+        await createVehicleInfoElements(mainCol1, vehicleData, wSize);
 
-        // Creates the Fuel Info Elements
-        await createFuelBattElement(mainCol1, vehicleData, wSize);
-
-        // Creates the Mileage Info Elements
-        await createMileageElement(mainCol1, vehicleData, wSize);
-
-        // Creates Battery Level Elements
+        // Creates Low-Voltage Battery Voltage Elements
         await createBatteryElement(mainCol1, vehicleData, wSize);
 
         // Creates Oil Life Elements
@@ -734,7 +718,7 @@ async function createExtraLargeWidget(vData) {
         // Create Tire Pressure Elements
         await createTireElement(mainCol2, vehicleData, wSize);
 
-        mainCol2.addSpacer(0);
+        // mainCol2.addSpacer(0);
 
         contentStack.addSpacer();
 
@@ -752,7 +736,7 @@ async function createExtraLargeWidget(vData) {
         // Creates the Vehicle Location Element
         await createPositionElement(mainCol3, vehicleData, wSize);
 
-        mainCol3.addSpacer();
+        // mainCol3.addSpacer();
 
         contentStack.addSpacer();
 
@@ -846,49 +830,55 @@ async function createTitle(headerField, titleText, wSize = 'medium', hideTitleFo
     }
 }
 
-async function createProgressBar(percent, wSize = 'medium') {
+async function createProgressBar(percent, vData, wSize = 'medium') {
+    percent = 41;
+    const isEV = vData.evVehicle === true;
     let fuelLevel = percent > 100 ? 100 : percent;
     const barWidth = sizeMap[wSize].barGauge.w;
     const bar = new DrawContext();
     bar.size = new Size(barWidth, sizeMap[wSize].barGauge.h + 3);
     bar.opaque = false;
     bar.respectScreenScale = true;
-    // Background
-    const path = new Path();
-    path.addRoundedRect(new Rect(0, 0, barWidth, sizeMap[wSize].barGauge.h), 3, 2);
-    bar.addPath(path);
+
+    // Bar Background Gradient
+    const lvlBgPath = new Path();
+    lvlBgPath.addRoundedRect(new Rect(0, 0, barWidth, sizeMap[wSize].barGauge.h), 3, 2);
+    bar.addPath(lvlBgPath);
     bar.setFillColor(Color.lightGray());
     bar.fillPath();
-    // Fuel
-    const fuel = new Path();
-    fuel.addRoundedRect(new Rect(0, 0, (barWidth * fuelLevel) / 100, sizeMap[wSize].barGauge.h), 3, 2);
-    bar.addPath(fuel);
+
+    // Fuel/Battery Level Bar
+    const lvlBarPath = new Path();
+    lvlBarPath.addRoundedRect(new Rect(0, 0, (barWidth * fuelLevel) / 100, sizeMap[wSize].barGauge.h), 3, 2);
+    bar.addPath(lvlBarPath);
     bar.setFillColor(new Color('2f78dd'));
     bar.fillPath();
-    const fuel25Indicator = new Path();
-    fuel25Indicator.addRoundedRect(new Rect(barWidth * 0.25, 1, 2, sizeMap[wSize].barGauge.h - 2), 3, 2);
-    bar.addPath(fuel25Indicator);
-    bar.setFillColor(Color.black());
-    bar.fillPath();
-    const fuel50Indicator = new Path();
-    fuel50Indicator.addRoundedRect(new Rect(barWidth * 0.5, 1, 2, sizeMap[wSize].barGauge.h - 2), 3, 2);
-    bar.addPath(fuel50Indicator);
-    bar.setFillColor(Color.black());
-    bar.fillPath();
-    const fuel75Indicator = new Path();
-    fuel75Indicator.addRoundedRect(new Rect(barWidth * 0.75, 1, 2, sizeMap[wSize].barGauge.h - 2), 3, 2);
-    bar.addPath(fuel75Indicator);
-    bar.setFillColor(Color.black());
-    bar.fillPath();
+
+    let xPos = barWidth / 2 - 10;
+    bar.setFont(Font.boldSystemFont(sizeMap[wSize].fontSizeMedium));
+    bar.setTextColor(Color.black());
+    bar.setTextAlignedCenter();
+
+    let imgName = isEV ? 'ev_battery_light.png' : 'gas-station_light.png';
+    if (fuelLevel > 70) {
+        imgName = isEV ? 'ev_battery_dark.png' : 'gas-station_dark.png';
+        bar.setTextColor(Color.white());
+    }
+
+    const icon = await Image.fromData(await getImage(imgName, true));
+    bar.drawImageInRect(icon, new Rect(xPos - 15, sizeMap[wSize].barGauge.h / sizeMap[wSize].fontSizeMedium + 2, 11, 11));
+    bar.drawText(`${fuelLevel}%`, new Point(xPos, sizeMap[wSize].barGauge.h / sizeMap[wSize].fontSizeMedium));
     return await bar.getImage();
 }
 
-async function createFuelBattElement(srcField, vehicleData, wSize = 'medium') {
+async function createVehicleInfoElements(srcField, vehicleData, wSize = 'medium') {
     try {
         const isEV = vehicleData.evVehicle === true;
         let lvlValue = !isEV ? (vehicleData.fuelLevel ? vehicleData.fuelLevel : 0) : vehicleData.evBatteryLevel ? vehicleData.evBatteryLevel : 0;
         let dteValue = !isEV ? (vehicleData.distanceToEmpty ? vehicleData.distanceToEmpty : null) : vehicleData.evDistanceToEmpty ? vehicleData.evDistanceToEmpty : null;
         let dtePostfix = isEV ? 'Range' : 'to E';
+        let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+        let distanceUnit = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
         // console.log('isEV: ' + isEV);
         // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
         // console.log(`distanceToEmpty: ${vehicleData.distanceToEmpty}`);
@@ -897,62 +887,49 @@ async function createFuelBattElement(srcField, vehicleData, wSize = 'medium') {
         // console.log(`lvlValue: ${lvlValue}`);
         // console.log(`dteValue: ${dteValue}`);
 
-        // Fuel tank header
-        let fuelHeaderRow = await createRow(srcField);
-        let fuelHeadericon = await createImage(fuelHeaderRow, await getImage(isEV ? runtimeData.evBatteryStatus : runtimeData.fuelIcon), { imageSize: new Size(11, 11) });
-        fuelHeaderRow.addSpacer(3);
-        // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
+        // Fuel/Battery Section
+        let elemCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
 
-        let lvlTxt = lvlValue ? (lvlValue > 100 ? 100 : lvlValue) : 50;
-        if (!isSmallDisplay && wSize !== 'small') {
-            let fuelHeadertext = await createText(fuelHeaderRow, textValues().elemHeaders[isEV ? 'batteryStatus' : 'fuelTank'], { font: Font.boldSystemFont(sizeMap[wSize].titleFontSize), textColor: new Color(runtimeData.textColor1) });
+        // Vehicle Logo
+        let logoRow = await createRow(elemCol, { '*centerAlignContent': null });
+        if (vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined) {
+            await createImage(logoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null });
+            elemCol.addSpacer(3);
         }
-        let fuelHeadertext2 = await createText(fuelHeaderRow, ' (' + lvlTxt + '%):', { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor1) });
 
-        // Fuel Level Bar
-        let fuelBarCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-        let fuelBarRow = await createRow(fuelBarCol, { '*setPadding': [0, 0, 0, 0] });
-        let fuelBarImg = await createImage(fuelBarRow, await createProgressBar(lvlValue ? lvlValue : 50, wSize), { '*centerAlignImage': null, imageSize: new Size(sizeMap[wSize].barGauge.w, sizeMap[wSize].barGauge.h + 3) });
+        // Odometer Row
+        // let odomRow = await createRow(elemCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null, '*topAlignContent': null });
+        // let odomVal = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)} ${distanceUnit}` : textValues().errorMessages.noData;
+        // await createText(odomRow, odomVal, { '*centerAlignText': null, font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
+        // elemCol.addSpacer(2);
 
-        // Fuel Distance to Empty
-        let fuelBarTextRow = await createRow(fuelBarCol, { '*centerAlignContent': null, '*topAlignContent': null });
-        let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-        let unitOfLength = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
-        let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${unitOfLength} ${dtePostfix}` : textValues().errorMessages.noData;
-        await createText(fuelBarTextRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
-    } catch (e) {
-        console.log(`createFuelBattElement error ${e}`);
-    }
-    srcField.addSpacer(3);
-}
+        // Fuel/Battery Level BAR
+        let barRow = await createRow(elemCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+        await createImage(barRow, await createProgressBar(lvlValue ? lvlValue : 50, vehicleData, wSize), { '*centerAlignImage': null, imageSize: new Size(sizeMap[wSize].barGauge.w, sizeMap[wSize].barGauge.h + 3) });
 
-async function createMileageElement(srcField, vehicleData, wSize = 'medium') {
-    try {
-        let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
-        await createTitle(elem, 'odometer', wSize);
-        elem.addSpacer(2);
-        let isMetric = await useMetricUnits();
-        console.log(`mileage isMetric: ${isMetric}`);
-        let distanceMultiplier = isMetric ? 1 : 0.621371; // distance multiplier
-        let distanceUnit = isMetric ? 'km' : 'mi'; // unit of length
-        let value = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)}${distanceUnit}` : textValues().errorMessages.noData;
-        // console.log(`odometer: ${value}`);
-        await createText(elem, value, { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1, '*leftAlignText': null });
+        // Distance to Empty
+        let dteRow = await createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
+        let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : textValues().errorMessages.noData;
+        await createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: new Color(runtimeData.textColor2), lineLimit: 1 });
         srcField.addSpacer(3);
     } catch (e) {
-        console.log(`createMileageElement error ${e}`);
+        console.error(`createVehicleInfoElements error ${e}`);
     }
 }
 
 async function createBatteryElement(srcField, vehicleData, wSize = 'medium') {
-    let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
-    await createTitle(elem, 'batteryStatus', wSize, isSmallDisplay || wSize === 'small');
-    elem.addSpacer(2);
-    let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
-    // console.log(`batteryLevel: ${value}`);
-    let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
-    await createText(elem, value, { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2), lineLimit: 1 });
-    srcField.addSpacer(3);
+    try {
+        let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
+        await createTitle(elem, 'batteryStatus', wSize, isSmallDisplay || wSize === 'small');
+        elem.addSpacer(2);
+        let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
+        // console.log(`batteryLevel: ${value}`);
+        let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
+        await createText(elem, value, { font: Font.regularSystemFont(sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(runtimeData.textColor2), lineLimit: 1 });
+        srcField.addSpacer(3);
+    } catch (e) {
+        console.error(`createBatteryElement error ${e}`);
+    }
 }
 
 async function createOilElement(srcField, vData, wSize = 'medium') {
@@ -987,8 +964,8 @@ async function createEvChargeElement(srcField, vehicleData, wSize = 'medium') {
 async function createDoorElement(srcField, vData, countOnly = false, wSize = 'medium') {
     const styles = {
         normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 1 },
-        statOpen: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
+        statOpen: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        statClosed: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
         offset: 5,
     };
 
@@ -1188,23 +1165,23 @@ async function createPositionElement(srcField, vehicleData, wSize = 'medium') {
 
 async function createLockStatusElement(srcField, vehicleData, wSize = 'medium') {
     const styles = {
-        statOpen: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        statClosed: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        unlocked: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        locked: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
     };
-    let offset = 5;
+    let offset = 2;
     let titleFld = await createRow(srcField);
     await createTitle(titleFld, 'lockStatus', wSize);
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
     let value = vehicleData.lockStatus ? vehicleData.lockStatus : textValues().errorMessages.noData;
-    await createText(dataFld, value, vehicleData.lockStatus !== undefined && vehicleData.lockStatus === 'LOCKED' ? styles.statClosed : styles.statOpen);
+    await createText(dataFld, value, vehicleData.lockStatus !== undefined && vehicleData.lockStatus === 'LOCKED' ? styles.locked : styles.unlocked);
     srcField.addSpacer(offset);
 }
 
 async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'medium') {
     const styles = {
-        statOn: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
-        statOff: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
+        on: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
+        off: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
     };
     let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
     let status = '';
@@ -1215,12 +1192,12 @@ async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'mediu
     } else {
         textValues().errorMessages.noData;
     }
-    let offset = 5;
+    let offset = 2;
     let titleFld = await createRow(srcField);
     await createTitle(titleFld, 'ignitionStatus', wSize);
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
-    await createText(dataFld, status, (vehicleData.ignitionStatus !== undefined && vehicleData.ignitionStatus === 'On') || remStartOn ? styles.statOn : styles.statOff);
+    await createText(dataFld, status, (vehicleData.ignitionStatus !== undefined && vehicleData.ignitionStatus === 'On') || remStartOn ? styles.on : styles.off);
     srcField.addSpacer(offset);
 }
 
@@ -1280,10 +1257,9 @@ async function createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
 
 async function getMainMenuItems(vehicleData) {
     const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
-    return [
-        {
+    return [{
             title: `New Script Available: (v${LATEST_VERSION})`,
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) New Version was pressed');
                 createMainMenu();
             },
@@ -1292,7 +1268,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'View Widget',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) View Widget was pressed');
                 subControlMenu('widgetView');
                 // const w = await generateWidget('medium', fordData);
@@ -1303,7 +1279,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Lock Control',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Lock Control was pressed');
                 await subControlMenu('lockControl');
             },
@@ -1312,7 +1288,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Remote Start Control',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Stop was pressed');
                 await subControlMenu('remoteStartControl');
             },
@@ -1322,7 +1298,7 @@ async function getMainMenuItems(vehicleData) {
 
         {
             title: 'Sound Horn/Flash Lights',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Horn/Lights was pressed');
                 await sendVehicleCmd('horn_and_lights');
             },
@@ -1331,7 +1307,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Force Refresh',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Refresh was pressed');
                 await sendVehicleCmd('status');
             },
@@ -1340,7 +1316,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Advanced Controls',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Advanced Control was pressed');
                 await subControlMenu('advancedControl');
             },
@@ -1349,7 +1325,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Widget Settings',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Widget Settings was pressed');
                 createSettingMenu();
             },
@@ -1358,7 +1334,7 @@ async function getMainMenuItems(vehicleData) {
         },
         {
             title: 'Exit',
-            action: async () => {
+            action: async() => {
                 console.log('(Main Menu) Exit was pressed');
             },
             destructive: false,
@@ -1376,10 +1352,9 @@ async function subControlMenu(type) {
     switch (type) {
         case 'widgetView':
             title = 'View Widget';
-            items = [
-                {
+            items = [{
                     title: 'Small',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Widget View Menu) Small Widget was pressed');
                         const w = await generateWidget('small', fordData);
                         await w.presentSmall();
@@ -1389,7 +1364,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Medium',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Widget View Menu) Medium Widget was pressed');
                         const w = await generateWidget('medium', fordData);
                         await w.presentMedium();
@@ -1399,7 +1374,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Large',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Widget View Menu) Large Widget was pressed');
                         const w = await generateWidget('large', fordData);
                         await w.presentLarge();
@@ -1409,7 +1384,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Extra-Large',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Widget View Menu) Extra-Large Widget was pressed');
                         const w = await generateWidget('extraLarge', fordData);
                         await w.presentExtraLarge();
@@ -1419,7 +1394,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Widget View Menu) Back was pressed');
                         createMainMenu();
                     },
@@ -1432,10 +1407,9 @@ async function subControlMenu(type) {
         case 'lockControl':
             title = 'Lock Control';
             message = `Lock Status: (${vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked'})`;
-            items = [
-                {
+            items = [{
                     title: 'Lock Vehicle',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Lock Control Menu) Lock was pressed');
                         await sendVehicleCmd('lock');
                     },
@@ -1444,7 +1418,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Unlock Vehicle',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Lock Control Menu) Unlock was pressed');
                         await sendVehicleCmd('unlock');
                     },
@@ -1453,7 +1427,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Lock Control Menu) Back was pressed');
                         createMainMenu();
                     },
@@ -2800,12 +2774,16 @@ async function clearKeychain() {
 // }
 
 // get images from local filestore or download them once
-async function getImage(image) {
+async function getImage(image, asData = false) {
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
     let path = fm.joinPath(dir, image);
     if (fm.fileExists(path)) {
-        return fm.readImage(path);
+        if (asData) {
+            return await fm.read(path);
+        } else {
+            return await fm.readImage(path);
+        }
     } else {
         // download once
         let repoPath = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/';
