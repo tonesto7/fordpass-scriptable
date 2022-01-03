@@ -1286,7 +1286,7 @@ async function getMainMenuItems(vehicleData) {
             title: 'Test Menu',
             action: async() => {
                 console.log('(Main Menu) Test Menu was pressed');
-                await createTableMenu(vehicleData);
+                await generateTestMenu(vehicleData);
             },
             destructive: false,
             show: true,
@@ -1756,67 +1756,109 @@ async function subControlMenu(type) {
     }
 }
 
-async function createTableMenu(vehicleData) {
+async function generateTestMenu(vehicleData) {
+    let data = [
+        {
+            cells: [
+                {
+                    show: true,
+                    title: undefined,
+                    value: undefined,
+                    type: 'image',
+                    image: await getVehicleImage(vehicleData.info.vehicle.modelYear, false, 4),
+                    align: 'center',
+                    weight: 1,
+                    action: () => {},
+                },
+            ],
+            isHeader: false,
+            cellSpacing: undefined,
+            height: 100,
+            bgColor: '#999999',
+        },
+        {
+            cells: [
+                {
+                    show: true,
+                    title: vehicleData.info.vehicle.vehicleType,
+                    value: vehicleData.info.vehicle.nickName,
+                    type: 'text',
+                    align: 'center',
+                    format: { titleColor: '#00ff00', subtitleColor: '#0000ff' }, //, titleFont: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), subtitleFont: Font.thinSystemFont(sizeMap[wSize].fontSizeMedium) },
+                    weight: 1,
+                    action: () => {},
+                },
+            ],
+            isHeader: false,
+            cellSpacing: undefined,
+            height: 44,
+            bgColor: '#999999',
+        },
+        {
+            cells: [
+                {
+                    show: true,
+                    title: 'Title',
+                    value: 'value',
+                    type: 'button',
+                    align: 'left',
+                    weight: 1,
+                    action: () => {},
+                },
+            ],
+            isHeader: false,
+            cellSpacing: undefined,
+            height: undefined,
+            bgColor: undefined,
+        },
+        {
+            cells: [
+                {
+                    show: true,
+                    title: undefined,
+                    value: 'Test Value',
+                    type: 'text',
+                    image: undefined,
+                    align: 'right',
+                    weight: 1,
+                    action: () => {},
+                },
+            ],
+            isHeader: false,
+            cellSpacing: undefined,
+            height: undefined,
+            bgColor: undefined,
+        },
+    ];
+    return await createTableMenu(data);
+}
+
+async function createTableMenu(rowData, showSeparators = false) {
     let table = new UITable();
+    table.showSeparators = showSeparators;
     try {
-        let data = [
-            {
-                cells: [
-                    {
-                        show: true,
-                        title: undefined,
-                        value: undefined,
-                        type: 'image',
-                        image: await getVehicleImage(vehicleData.info.vehicle.modelYear, false, 4),
-                        align: 'center',
-                        weight: 1,
-                        format: {},
-                        action: undefined,
-                    },
-                ],
-            },
-
-            {
-                cells: [
-                    {
-                        show: true,
-                        title: 'Title',
-                        value: 'value',
-                        type: 'button',
-                        image: undefined,
-                        align: 'left',
-                        weight: 1,
-                        format: {},
-                        action: undefined,
-                    },
-                ],
-            },
-
-            {
-                cells: [
-                    {
-                        show: true,
-                        title: undefined,
-                        value: 'Test Value',
-                        type: 'text',
-                        image: undefined,
-                        align: 'right',
-                        weight: 1,
-                        format: {},
-                        action: undefined,
-                    },
-                ],
-            },
-        ];
-
-        for (const drow of data) {
+        for (const drow of rowData) {
             let row = new UITableRow();
+
             // console.log(drow);
             for (const [i, dcell] of drow.cells.entries()) {
                 // console.log(dcell);
-                let cell = await createCell(dcell);
-                row.addCell(cell);
+                if (dcell.show) {
+                    let cell = await createCell(dcell);
+                    row.addCell(cell);
+                }
             }
+            row.isHeader = drow.isHeader;
+            if (drow.bgColor) {
+                row.backgroundColor = new Color(drow.bgColor);
+            }
+            if (drow.cellSpacing) {
+                row.cellSpacing = drow.cellSpacing;
+            }
+            if (drow.height) {
+                row.height = drow.height;
+            }
+            table.addRow(row);
         }
     } catch (err) {
         console.error(`Error creating table menu: ${err}`);
@@ -1826,29 +1868,37 @@ async function createTableMenu(vehicleData) {
 
 async function createCell(opts) {
     let cell;
-    switch (opts.type) {
-        case 'text':
-            cell = UITableCell.text(opts.title ? opts.title : opts.value ? opts.value : '');
-            break;
-        case 'image':
-            cell = UITableCell.image(opts.image);
-            break;
+    try {
+        switch (opts.type) {
+            case 'text':
+                cell = UITableCell.text(opts.title ? opts.title : opts.value ? opts.value : '', opts.title && opts.value ? opts.value : '');
+                break;
+            case 'image':
+                cell = UITableCell.image(opts.image);
+                break;
+            case 'button':
+                cell = UITableCell.button(opts.title ? opts.title : '');
+                break;
+        }
+        if (opts.format) {
+            for (const [key, value] of Object.entries(opts.format)) {
+                console.log(key, value);
+                if (value !== undefined) {
+                    if (key === 'titleColor' || key === 'subtitleColor') {
+                        cell[key] = new Color(value);
+                    } else if (value !== undefined) {
+                        cell[key] = value;
+                    }
+                }
+            }
+        }
 
-        case 'button':
-            cell = UITableCell.button(opts.title ? opts.title : opts.value ? opts.value : '');
-            break;
-    }
-
-    if (opts.action !== undefined) {
         cell.onTap = opts.action();
+        cell.widthWeight = opts.weight;
+        cell[opts['align'] + 'Aligned']();
+    } catch (err) {
+        console.error(`Error creating cell: ${err}`);
     }
-
-    // let value = opts['value'];
-    // let format = opts['format'];
-    // let text = format ? value.toLocaleDateString('en-US', format) : value;
-    // let cell = UITableCell.text(text);
-    cell.widthWeight = opts['weight'];
-    cell[opts['align'] + 'Aligned']();
     return cell;
 }
 
@@ -2242,11 +2292,48 @@ async function getVehicleInfo() {
 
 async function getVehicleMessages() {
     let vin = await getKeychainValue('fpVin');
+    let country = await getKeychainValue('fpCountry');
     if (!vin) {
         return textValues().errorMessages.noVin;
     }
     let data = await makeFordRequest('getVehicleMessages', `https://api.mps.ford.com/api/messagecenter/v3/messages`, 'GET', false);
     return data && data.result ? data.result : textValues().errorMessages.noMessages;
+}
+
+async function getVehicleAlerts() {
+    let vin = await getKeychainValue('fpVin');
+    let token = await getKeychainValue('fpToken2');
+    let country = await getKeychainValue('fpCountry');
+    let lang = await getKeychainValue('fpLanguage');
+    if (!vin) {
+        return textValues().errorMessages.noVin;
+    }
+    let data = await makeFordRequest(
+        'getVehicleMessages',
+        `https://api.mps.ford.com/api/expvehiclealerts/v2/details`,
+        'POST',
+        false,
+        {
+            'Content-Type': 'application/json',
+            Accept: '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'Application-Id': appIDs().NA,
+            'auth-token': `${token}`,
+            countryCode: country,
+            locale: lang,
+        },
+        {
+            VIN: vin,
+            userAuthorization: 'AUTHORIZED',
+            hmiPreferredLanguage: '',
+            sdnLookup: 'VSDN',
+            getDtcsViaApplink: 'NoDisplay',
+            displayOTAStatusReport: 'Display',
+        },
+    );
+    // console.log(`getVehicleAlerts: ${JSON.stringify(data)}`);
+    return data && data.vehicleHealthAlerts && data.vehicleHealthAlerts.vehicleHealthAlertsDetails && data.vehicleHealthAlerts.vehicleHealthAlertsDetails.length ? data.vehicleHealthAlerts.vehicleHealthAlertsDetails : undefined;
 }
 
 async function getVehicleCapabilities() {
@@ -2711,6 +2798,8 @@ async function fetchVehicleData(loadLocal = false) {
 
     vehicleData.messages = await getVehicleMessages();
     // console.log(`messagesData: ${JSON.stringify(vehicleData.messages)}`);
+    vehicleData.alerts = await getVehicleAlerts();
+    // console.log(`alerts: ${JSON.stringify(vehicleData.alerts)}`);
 
     let vehicleStatus = statusData.vehiclestatus;
 
