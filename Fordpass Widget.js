@@ -965,7 +965,7 @@ async function createDoorElement(srcField, vData, countOnly = false, wSize = 'me
     const styles = {
         normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 1 },
         statOpen: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        statClosed: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        statClosed: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
         offset: 5,
     };
 
@@ -1060,7 +1060,7 @@ async function createWindowElement(srcField, vData, countOnly = false, wSize = '
     const styles = {
         normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2) },
         statOpen: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
-        statClosed: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
+        statClosed: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
@@ -1165,8 +1165,8 @@ async function createPositionElement(srcField, vehicleData, wSize = 'medium') {
 
 async function createLockStatusElement(srcField, vehicleData, wSize = 'medium') {
     const styles = {
-        unlocked: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        locked: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        unlocked: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        locked: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
     };
     let offset = 2;
     let titleFld = await createRow(srcField);
@@ -1180,8 +1180,8 @@ async function createLockStatusElement(srcField, vehicleData, wSize = 'medium') 
 
 async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'medium') {
     const styles = {
-        on: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
-        off: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
+        on: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
+        off: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
     };
     let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
     let status = '';
@@ -1273,6 +1273,15 @@ async function getMainMenuItems(vehicleData) {
                 subControlMenu('widgetView');
                 // const w = await generateWidget('medium', fordData);
                 // await w.presentMedium();
+            },
+            destructive: false,
+            show: true,
+        },
+        {
+            title: 'Test Menu',
+            action: async() => {
+                console.log('(Main Menu) Test Menu was pressed');
+                await createTableMenu(vehicleData);
             },
             destructive: false,
             show: true,
@@ -1730,6 +1739,102 @@ async function subControlMenu(type) {
     }
 }
 
+async function createTableMenu(vehicleData) {
+    let table = new UITable();
+    try {
+        let data = [
+            {
+                cells: [
+                    {
+                        show: true,
+                        title: null,
+                        value: null,
+                        type: 'image',
+                        image: await getVehicleImage(vehicleData.info.vehicle.modelYear, false, 4),
+                        align: 'center',
+                        weight: 1,
+                        format: {},
+                        action: undefined,
+                    },
+                ],
+            },
+
+            {
+                cells: [
+                    {
+                        show: true,
+                        title: 'Title',
+                        value: 'value',
+                        type: 'button',
+                        image: null,
+                        align: 'left',
+                        weight: 1,
+                        format: {},
+                        action: undefined,
+                    },
+                ],
+            },
+
+            {
+                cells: [
+                    {
+                        show: true,
+                        title: null,
+                        value: 'Test Value',
+                        type: 'text',
+                        image: null,
+                        align: 'right',
+                        weight: 1,
+                        format: {},
+                        action: undefined,
+                    },
+                ],
+            },
+        ];
+
+        for (const drow of data) {
+            let row = new UITableRow();
+            // console.log(drow);
+            for (const [i, dcell] of drow.cells.entries()) {
+                // console.log(dcell);
+                let cell = await createCell(dcell);
+                row.addCell(cell);
+            }
+        }
+    } catch (err) {
+        console.error(`Error creating table menu: ${err}`);
+    }
+    table.present();
+}
+
+async function createCell(opts) {
+    let cell;
+    switch (opts.type) {
+        case 'text':
+            cell = UITableCell.text(opts.title ? opts.title : opts.value ? opts.value : '');
+            break;
+        case 'image':
+            cell = UITableCell.image(opts.image);
+            break;
+
+        case 'button':
+            cell = UITableCell.button(opts.title ? opts.title : opts.value ? opts.value : '');
+            break;
+    }
+
+    if (opts.action !== undefined) {
+        cell.onTap = opts.action();
+    }
+
+    // let value = opts['value'];
+    // let format = opts['format'];
+    // let text = format ? value.toLocaleDateString('en-US', format) : value;
+    // let cell = UITableCell.text(text);
+    cell.widthWeight = opts['weight'];
+    cell[opts['align'] + 'Aligned']();
+    return cell;
+}
+
 async function showDataWebView(title, heading, data, type = undefined) {
     // console.log(`showDataWebView(${title}, ${heading}, ${data})`);
     let otaHTML = '';
@@ -1779,7 +1884,7 @@ async function showDataWebView(title, heading, data, type = undefined) {
             }
         }
 
-        console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
+        // console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
         const bgColor = darkMode ? '#242424' : 'white';
         const fontColor = darkMode ? '#ffffff' : '#242425';
         const wv = new WebView();
@@ -2167,8 +2272,68 @@ async function getVehicleOtaInfo() {
     });
 }
 
-async function getSecuriAlertStatus() {
+async function getVehicleManual() {
     let vin = await getKeychainValue('fpVin');
+    let token = await getKeychainValue('fpToken2');
+    const country = await getKeychainValue('fpCountry');
+    let lang = await getKeychainValue('fpLanguage');
+    if (!vin) {
+        return textValues().errorMessages.noVin;
+    }
+
+    return await makeFordRequest('getVehicleManual', `https://api.mps.ford.com/api/ownersmanual/v1/manuals/${vin}?countryCode=${country}&language=${lang}`, 'GET', false, {
+        'Content-Type': 'application/json',
+        Accept: '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+        'Application-Id': appIDs().NA,
+        'auth-token': `${token}`,
+        'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
+        Referer: 'https://ford.com',
+        Origin: 'https://ford.com',
+    });
+}
+
+async function getVehicleRecalls() {
+    const vin = await getKeychainValue('fpVin');
+    const token = await getKeychainValue('fpToken2');
+    const country = await getKeychainValue('fpCountry');
+    let lang = await getKeychainValue('fpLanguage');
+    lang = lang.split('-');
+    if (!vin) {
+        return textValues().errorMessages.noVin;
+    }
+    let data = await makeFordRequest('getVehicleRecalls', `https://api.mps.ford.com/api/recall/v2/recalls?vin=${vin}&language=${lang[0].toUpperCase()}&region=${lang[1].toUpperCase()}&country=${country}`, 'GET', false);
+    // console.log('recalls: ' + JSON.stringify(data));
+    return data && data.value ? data.value : undefined;
+}
+
+async function getFordpassRewardsInfo(program = 'F') {
+    const country = await getKeychainValue('fpCountry');
+    let data = await makeFordRequest('getFordpassRewardsInfo', `https://api.mps.ford.com/api/rewards-account-info/v1/customer/points/totals?rewardProgram=${program}&programCountry=${country}`, 'GET', false);
+    console.log('fordpass rewards: ' + JSON.stringify(data));
+    return data && data.pointsTotals && data.pointsTotals.F ? data.pointsTotals.F : undefined;
+}
+
+async function getEvChargeStatus() {
+    return await makeFordRequest('getEvChargeStatus', `https://api.mps.ford.com/api/cevs/v1/chargestatus/retrieve`, 'POST', false);
+}
+
+async function getEvPlugStatus() {
+    return await makeFordRequest('getEvPlugStatus', `https://api.mps.ford.com/api/vpoi/chargestations/v3/plugstatus`, 'GET', false);
+}
+
+async function getEvChargeBalance() {
+    const vin = await getKeychainValue('fpVin');
+    if (!vin) {
+        return textValues().errorMessages.noVin;
+    }
+    let data = await makeFordRequest('getEvChargeBalance', `https://api.mps.ford.com/api/usage-management/v1/usage/balance`, 'POST', false, undefined, { vin: vin });
+    return data && data.usageBalanceList ? data.usageBalanceList : [];
+}
+
+async function getSecuriAlertStatus() {
+    const vin = await getKeychainValue('fpVin');
     if (!vin) {
         return textValues().errorMessages.noVin;
     }
@@ -2188,7 +2353,7 @@ async function queryFordPassPrefs(force = false) {
             console.log(ok2Upd ? `UserPrefs Expired - Refreshing from Ford API` : `UserPrefs Requested or Missing - Refreshing from Ford API`);
 
             let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
-            // console.log('user: ' + JSON.stringify(data));
+            // console.log('user data: ' + JSON.stringify(data));
             if (data && data.status === 200 && data.profile) {
                 try {
                     await setKeychainValue('fpCountry', data.profile.country ? data.profile.country : 'USA');
@@ -2634,12 +2799,23 @@ async function fetchVehicleData(loadLocal = false) {
         rightRear: await pressureToFixed(tpms.outerRightRearTirePressure.value, 1),
     };
 
+    vehicleData.recallInfo = (await getVehicleRecalls()) || [];
+    console.log(`Recall Info: ${JSON.stringify(vehicleData.recallInfo)}`);
+
+    vehicleData.fordpassRewardsInfo = await getFordpassRewardsInfo();
+
     vehicleData.lastRefresh = convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
     vehicleData.lastRefreshElapsed = timeDifference(convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
     console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
     console.log(`timeSince: ${vehicleData.lastRefreshElapsed}`);
 
     // console.log(JSON.stringify(vehicleData));
+
+    // await getVehicleImage(vehicleData.info.vehicle.modelYear, true, 1);
+    // await getVehicleImage(vehicleData.info.vehicle.modelYear, true, 2);
+    // await getVehicleImage(vehicleData.info.vehicle.modelYear, true, 3);
+    // await getVehicleImage(vehicleData.info.vehicle.modelYear, true, 4);
+    // await getVehicleImage(vehicleData.info.vehicle.modelYear, true, 5);
 
     //save data to local store
     saveDataToLocal(vehicleData);
@@ -2805,19 +2981,23 @@ async function getImage(image, asData = false) {
     }
 }
 
-async function getVehicleImage(modelYear) {
-    let fm = FileManager.local();
+async function getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false) {
+    let fm = cloudStore ? FileManager.iCloud() : FileManager.local();
     let dir = fm.documentsDirectory();
-    let fileName = SCRIPT_ID !== null && SCRIPT_ID !== undefined && SCRIPT_ID > 0 ? `${vehicle}_${SCRIPT_ID}.png` : 'vehicle.png';
+    let fileName = SCRIPT_ID !== null && SCRIPT_ID !== undefined && SCRIPT_ID > 0 ? `vehicle-${angle}_${SCRIPT_ID}.png` : `vehicle-${angle}.png`;
     let path = fm.joinPath(dir, fileName);
     if (await fm.fileExists(path)) {
-        return await fm.readImage(path);
+        if (asData) {
+            return await fm.read(path);
+        } else {
+            return await fm.readImage(path);
+        }
     } else {
         let vin = await getKeychainValue('fpVin');
         let token = await getKeychainValue('fpToken2');
         let country = await getKeychainValue('fpCountry');
         console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
-        let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=4`);
+        let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`);
         req.headers = {
             'Content-Type': 'application/json',
             Accept: 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
@@ -3036,7 +3216,16 @@ function scrubPersonalData(data) {
                 case 'vin':
                     return str.substring(0, str.length - 6) + 'XXXXXX';
                 case 'position':
+                case 'streetAddress':
                     return '1234 Someplace Drive';
+                case 'zipCode':
+                    return '12345';
+                case 'city':
+                    return 'Some City';
+                case 'state':
+                    return 'SW';
+                case 'country':
+                    return 'UNK';
                 case 'latitude':
                     return 42.123456;
                 case 'longitude':
@@ -3052,12 +3241,11 @@ function scrubPersonalData(data) {
         });
         return obj;
     }
-
-    let out = scrubInfo(data, 'vin');
-    out = scrubInfo(data, 'relevantVin');
-    out = scrubInfo(data, 'position');
-    out = scrubInfo(data, 'latitude');
-    out = scrubInfo(data, 'longitude');
+    let out = data;
+    const keys = ['vin', 'position', 'streetAddress', 'zipCode', 'city', 'state', 'country', 'latitude', 'longitude'];
+    for (const [i, key] of keys.entries()) {
+        out = scrubInfo(data, key);
+    }
     return out;
 }
 
@@ -3113,50 +3301,3 @@ function isNewerVersion(oldVer, newVer) {
 
 //************************************************* END UTILITY FUNCTIONS ********************************************************
 //********************************************************************************************************************************
-
-// function createTableMenu() {
-//     let table = new UITable();
-//     let data = [
-//         ["foo", "bar", "baz"],
-//         ["asdf", "quz", "42"],
-//         [123, 567, "add"],
-//     ];
-
-//     let row, cell;
-//     let first = true;
-//     for (const drow of data) {
-//         // drow = data row
-//         // create a new row
-//         row = new UITableRow();
-//         // immediately add it to the table to not forget that part
-//         table.addRow(row);
-//         if (first) {
-//             // set the first row to have bold text
-//             row.isHeader = true;
-//             first = false;
-//         }
-//         for (const [i, dcell] of drow.entries()) {
-//             // the last cell should contain a button
-//             if (i === 2) {
-//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
-//                 cell = row.addButton("" + dcell);
-//                 // even though the next line is not needed because it is the default setting, I like to do it anyway to be more specific of what is going on
-//                 cell.dismissOnTap = false;
-//                 // register our callback function
-//                 cell.onTap = () => {
-//                     // create a simple alert to have some user feedback on button tap
-//                     // let alert = new Alert();
-//                     // alert.message = dcell;
-//                     // alert.present();
-//                     // no need to add buttons, they will be added automatically
-//                     // no need to await it, because we don't need anything from the user
-//                 };
-//             } else {
-//                 // cast dcell to a string, otherwise we will get an error like "Expected value of type UITableCell but got value of type null."
-//                 cell = row.addText("" + dcell);
-//             }
-//             cell.centerAligned();
-//         }
-//     }
-//     table.present();
-// }
