@@ -118,12 +118,22 @@ Changelog:
         - Added door and window status to small widget
     v1.5.0:
         - Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%;
-        - Removed vehicle odometer from the widget UI to save space (moved it to the main menu info section)
+        - Removed vehicle odometer from the widget UI to save space (moved it to the dashboard menu section)
+        - Modified the margins of the widget to be more consistent and be better on small screens and widgets.
         - Renamed debug menu to advanced info menu.
         - Added new option to advanced info menu to allow emailing your anonymous vehicle data to me 
             (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything)
         
         
+// Todo: 
+    - add runtime remaining to remote start output
+    - add message view menu to the dashboard menu
+    - add alerts to new dashboard Menu
+    - add rows like zone lighing, deep sleep and firmware updates to alerts section of the dashboard menu
+    - detail zone lighting items enabled when enabled
+    - add charge scheduling to dashboard menu
+    - add recalls to dashboard menu
+    
 
         
 **************/
@@ -394,7 +404,7 @@ async function generateWidget(size, data) {
         return;
     }
     Script.setWidget(w);
-    w.setPadding(5, 5, 2, 5);
+    w.setPadding(0, 5, 0, 1);
 
     w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
     return w;
@@ -1222,7 +1232,7 @@ async function createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
     let cnt = 0;
     // Creates Elements to display any errors in red at the bottom of the widget
     if (vData.error) {
-        stk.addSpacer(5);
+        // stk.addSpacer(5);
         await createText(stk, vData.error ? 'Error: ' + vData.error : '', { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeSmall), textColor: Color.red() });
     } else {
         if (cnt < maxMsgs && !vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') {
@@ -1283,10 +1293,10 @@ async function getMainMenuItems(vehicleData) {
             show: true,
         },
         {
-            title: 'Test Menu',
+            title: 'View Dashboard',
             action: async() => {
-                console.log('(Main Menu) Test Menu was pressed');
-                await generateTestMenu(vehicleData);
+                console.log('(Main Menu) View Info was pressed');
+                await generateMainInfoTable(vehicleData);
             },
             destructive: false,
             show: true,
@@ -1756,81 +1766,248 @@ async function subControlMenu(type) {
     }
 }
 
-async function generateTestMenu(vehicleData) {
-    let data = [
+async function generateMainInfoTable(vehicleData) {
+    const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
+    let distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+    let distanceUnit = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
+    //
+    // Row config object:
+    // cells: [
+    //     {
+    //          show: true, // show the cell
+    //          title: '', // title of the cell
+    //          value: '', // value of the cell or subtitle when title value is defined.
+    //          type: 'text', // type of the cell.  'text', 'image', or 'button'
+    //          options: { // optional parameters to customize the cell.
+    //              align: 'left', // left, right, center
+    //              widthWeight: 1,
+    //              dismissOnTap: false, // true, false
+    //              titleColor: new Color('#ffffff'),  // Color Object
+    //              titleFont: Font.mediumSystemFont(font size) // Font Object
+    //              subtitleColor: new Color('#ffffff'),  // Color Object
+    //              subtitleFont: Font.systemFont(font size) // Font Object
+    //              onTap: () => {
+    //                  console.log('(Test Menu) Cell was tapped');
+    //              },
+    //      },
+    // ],
+    // options: {
+    //    isHeader: false, // true, false
+    //    cellSpacing: 0, // spacing between cells
+    //    height: 44, // height of the row (default 44)
+    //    backgroundColor: new Color('#ffffff'), // Color Object
+    //}
+
+    let ignStatus = '';
+    if (vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false) {
+        ignStatus = `Remote Start (ON)`;
+    } else if (vehicleData.ignitionStatus !== undefined) {
+        ignStatus = vehicleData.ignitionStatus.charAt(0).toUpperCase() + vehicleData.ignitionStatus.slice(1);
+    } else {
+        textValues().errorMessages.noData;
+    }
+
+    let odometerVal = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)} ${distanceUnit}` : textValues().errorMessages.noData;
+    const headerColor = '#a8aaa5';
+    let rows = [
         {
             cells: [
                 {
-                    show: true,
-                    title: undefined,
-                    value: undefined,
-                    type: 'image',
-                    image: await getVehicleImage(vehicleData.info.vehicle.modelYear, false, 4),
-                    align: 'center',
-                    weight: 1,
-                    action: () => {},
-                },
-            ],
-            isHeader: false,
-            cellSpacing: undefined,
-            height: 100,
-            bgColor: '#999999',
-        },
-        {
-            cells: [
-                {
-                    show: true,
+                    type: 'text',
                     title: vehicleData.info.vehicle.vehicleType,
-                    value: vehicleData.info.vehicle.nickName,
-                    type: 'text',
-                    align: 'center',
-                    format: { titleColor: '#00ff00', subtitleColor: '#0000ff' }, //, titleFont: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), subtitleFont: Font.thinSystemFont(sizeMap[wSize].fontSizeMedium) },
-                    weight: 1,
-                    action: () => {},
+                    options: { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textWhite), subtitleColor: new Color('#5A65C0'), titleFont: Font.title2(), subtitleFont: Font.subheadline() },
+                    show: true,
                 },
             ],
-            isHeader: false,
-            cellSpacing: undefined,
-            height: 44,
-            bgColor: '#999999',
+            options: {
+                isHeader: true,
+                height: 20,
+                backgroundColor: new Color(headerColor),
+            },
+            show: true,
         },
         {
             cells: [
                 {
+                    type: 'image',
+                    image: await getVehicleImage(vehicleData.info.vehicle.modelYear, false, 1),
+                    options: { align: 'center', widthWeight: 1 },
                     show: true,
-                    title: 'Title',
-                    value: 'value',
+                },
+            ],
+            options: {
+                height: 80,
+                backgroundColor: new Color(headerColor),
+                dismissOnSelect: false,
+            },
+            show: true,
+        },
+        {
+            cells: [
+                {
+                    type: 'text',
+                    title: odometerVal,
+                    options: { align: 'center', widthWeight: 1, titleColor: new Color(runtimeData.textWhite), titleFont: Font.body() },
+                    show: true,
+                },
+            ],
+            options: {
+                height: 20,
+                backgroundColor: new Color(headerColor),
+                dismissOnSelect: false,
+            },
+            show: true,
+        },
+        {
+            cells: [
+                {
+                    type: 'text',
+                    title: 'Locks',
+                    value: `${vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked'}`,
+                    options: { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() },
+                    show: true,
+                },
+                {
                     type: 'button',
-                    align: 'left',
-                    weight: 1,
-                    action: () => {},
+                    title: 'Unlock',
+                    // image: await getImage(runtimeData.unlockIcon),
+                    options: {
+                        align: 'center',
+                        widthWeight: 15,
+                        titleColor: new Color('#ef4b2b'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Lock was pressed');
+                            await showAlert('Lock Control', 'Unlock Button');
+                            // await sendVehicleCmd('unlock');
+                        },
+                    },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Lock',
+                    // image: await getImage(runtimeData.unlockIcon),
+                    options: {
+                        align: 'center',
+                        widthWeight: 15,
+                        titleColor: new Color('#2b8aef'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Lock was pressed');
+                            await showAlert('Lock Control', 'Lock Button');
+                            // await sendVehicleCmd('lock');
+                        },
+                    },
+                    show: true,
                 },
             ],
-            isHeader: false,
-            cellSpacing: undefined,
-            height: undefined,
-            bgColor: undefined,
+            options: { height: 44, backgroundColor: new Color(runtimeData.backColor), dismissOnSelect: false },
+            show: caps && caps.length && caps.includes('DOOR_LOCK_UNLOCK'),
         },
         {
             cells: [
                 {
-                    show: true,
-                    title: undefined,
-                    value: 'Test Value',
                     type: 'text',
-                    image: undefined,
-                    align: 'right',
-                    weight: 1,
-                    action: () => {},
+                    title: 'Ignition:',
+                    value: `${ignStatus}`,
+                    options: {
+                        align: 'left',
+                        widthWeight: 70,
+
+                        titleColor: new Color(runtimeData.textColor1),
+                        subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'),
+                        titleFont: Font.title3(),
+                        subtitleFont: Font.headline(),
+                    },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Stop',
+                    options: {
+                        align: 'center',
+                        widthWeight: 15,
+                        titleColor: new Color('#2b8aef'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Stop was pressed');
+                            await showAlert('Ignition Control', 'Stop Button');
+                            // await sendVehicleCmd('unlock');
+                        },
+                    },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Start',
+                    options: {
+                        align: 'center',
+                        widthWeight: 15,
+                        titleColor: new Color('#ef4b2b'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Start was pressed');
+                            await showAlert('Ignition Control', 'Start Button');
+                            // await sendVehicleCmd('unlock');
+                        },
+                    },
+                    show: true,
                 },
             ],
-            isHeader: false,
-            cellSpacing: undefined,
-            height: undefined,
-            bgColor: undefined,
+            options: { height: 44, backgroundColor: new Color(runtimeData.backColor), dismissOnSelect: false },
+            show: caps && caps.length && caps.includes('REMOTE_START'),
+        },
+        {
+            cells: [
+                {
+                    type: 'text',
+                    title: 'SecuriAlert:',
+                    value: `${vehicleData.alarmStatus}`,
+                    options: { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Enable',
+                    options: {
+                        align: 'center',
+                        widthWeight: 15,
+                        titleColor: new Color('#2b8aef'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Enable was pressed');
+                            await showAlert('SecuriAlert Control', 'Enable Button');
+                            // await sendVehicleCmd('unlock');
+                        },
+                    },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Disable',
+                    options: {
+                        align: 'center',
+                        widthWeight: 15,
+                        titleColor: new Color('#ef4b2b'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Disable was pressed');
+                            await showAlert('SecuriAlert Control', 'Disable Button');
+                            // await sendVehicleCmd('unlock');
+                        },
+                    },
+                    show: true,
+                },
+            ],
+            options: {
+                height: 44,
+                backgroundColor: new Color(runtimeData.backColor),
+                dismissOnSelect: false,
+                onSelect: async (val) => {
+                    console.log('(Dashboard Menu) SecuriAlert row was tapped', val);
+                    await showAlert('SecuriAlert Control', 'Row Tapped');
+                    // await sendVehicleCmd('unlock');
+                },
+            },
+            show: caps && caps.length && caps.includes('GUARD_MODE'),
         },
     ];
-    return await createTableMenu(data);
+    return await createTableMenu(rows, true);
 }
 
 async function createTableMenu(rowData, showSeparators = false) {
@@ -1838,27 +2015,23 @@ async function createTableMenu(rowData, showSeparators = false) {
     table.showSeparators = showSeparators;
     try {
         for (const drow of rowData) {
-            let row = new UITableRow();
-
-            // console.log(drow);
-            for (const [i, dcell] of drow.cells.entries()) {
-                // console.log(dcell);
-                if (dcell.show) {
-                    let cell = await createCell(dcell);
-                    row.addCell(cell);
+            if (drow.show) {
+                let row = new UITableRow();
+                for (const [i, dcell] of drow.cells.entries()) {
+                    if (dcell.show) {
+                        row.addCell(await createCell(dcell));
+                    }
                 }
+                if (drow.options) {
+                    for (const [key, value] of Object.entries(drow.options)) {
+                        // console.log(key, value);
+                        if (value !== undefined) {
+                            row[key] = value;
+                        }
+                    }
+                }
+                table.addRow(row);
             }
-            row.isHeader = drow.isHeader;
-            if (drow.bgColor) {
-                row.backgroundColor = new Color(drow.bgColor);
-            }
-            if (drow.cellSpacing) {
-                row.cellSpacing = drow.cellSpacing;
-            }
-            if (drow.height) {
-                row.height = drow.height;
-            }
-            table.addRow(row);
         }
     } catch (err) {
         console.error(`Error creating table menu: ${err}`);
@@ -1866,36 +2039,34 @@ async function createTableMenu(rowData, showSeparators = false) {
     table.present();
 }
 
-async function createCell(opts) {
+async function createCell(config) {
     let cell;
     try {
-        switch (opts.type) {
+        switch (config.type) {
             case 'text':
-                cell = UITableCell.text(opts.title ? opts.title : opts.value ? opts.value : '', opts.title && opts.value ? opts.value : '');
+                let title = config.title ? config.title : '';
+                let subtitle = config.subtitle ? config.subtitle : config.value ? config.value : '';
+                cell = UITableCell.text(title, subtitle);
                 break;
             case 'image':
-                cell = UITableCell.image(opts.image);
+                cell = UITableCell.image(config.image);
                 break;
             case 'button':
-                cell = UITableCell.button(opts.title ? opts.title : '');
+                cell = UITableCell.button(config.title || '');
                 break;
         }
-        if (opts.format) {
-            for (const [key, value] of Object.entries(opts.format)) {
-                console.log(key, value);
+        if (config.options) {
+            for (const [key, value] of Object.entries(config.options)) {
+                // console.log(key, value);
                 if (value !== undefined) {
-                    if (key === 'titleColor' || key === 'subtitleColor') {
-                        cell[key] = new Color(value);
-                    } else if (value !== undefined) {
+                    if (key === 'align') {
+                        cell[`${value}Aligned`]();
+                    } else {
                         cell[key] = value;
                     }
                 }
             }
         }
-
-        cell.onTap = opts.action();
-        cell.widthWeight = opts.weight;
-        cell[opts['align'] + 'Aligned']();
     } catch (err) {
         console.error(`Error creating cell: ${err}`);
     }
@@ -2176,6 +2347,7 @@ async function fetchToken() {
         req1.headers = headers;
         req1.method = 'POST';
         req1.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=password&username=${username}&password=${encodeURIComponent(password)}`;
+        req1.timeoutInterval = 10;
 
         let token1 = await req1.loadJSON();
         let resp1 = req1.response;
@@ -2196,6 +2368,7 @@ async function fetchToken() {
             req2.headers = headers;
             req2.method = 'PUT';
             req2.body = JSON.stringify({ code: token1.access_token });
+            req2.timeoutInterval = 10;
 
             let token2 = await req2.loadJSON();
             let resp2 = req2.response;
@@ -2241,6 +2414,7 @@ async function refreshToken() {
             'Content-Type': 'application/json',
             'Application-Id': appIDs().NA,
         };
+        req.timeoutInterval = 10;
         req.method = 'PUT';
         req.body = JSON.stringify({ refresh_token: refreshToken });
 
@@ -2504,6 +2678,7 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
     let request = new Request(url);
     request.headers = headers;
     request.method = method;
+    request.timeoutInterval = 10;
     if (body) {
         request.body = JSON.stringify(body);
     }
@@ -2837,8 +3012,10 @@ async function fetchVehicleData(loadLocal = false) {
     vehicleData.ignitionStatus = vehicleStatus.ignitionStatus ? vehicleStatus.ignitionStatus.value : 'Off';
 
     //zone-lighting status
-    vehicleData.zoneLightingSupported = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value === undefined ? false : true;
-    vehicleData.zoneLightsStatus = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value ? vehicleStatus.zoneLighting.activationData.value : 'Off';
+    if (vehicleData.capabilities.includes('ZONE_LIGHTING_FOUR_ZONES') || vehicleData.capabilities.includes('ZONE_LIGHTING_TWO_ZONES')) {
+        vehicleData.zoneLightingSupported = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value === undefined ? false : true;
+        vehicleData.zoneLightingStatus = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value ? vehicleStatus.zoneLighting.activationData.value : 'Off';
+    }
 
     // Remote Start status
     vehicleData.remoteStartStatus = {
@@ -3115,7 +3292,7 @@ async function getVehicleImage(modelYear, cloudStore = false, angle = 4, asData 
             'auth-token': `${token}`,
         };
         req.method = 'GET';
-
+        req.timeoutInterval = 10;
         try {
             let img = await req.loadImage();
             let resp = req.response;
@@ -3203,6 +3380,7 @@ async function getLatestScriptVersion() {
         'Accept-Encoding': 'gzip, deflate, br',
     };
     req.method = 'GET';
+    req.timeoutInterval = 10;
     try {
         let ver = await req.loadJSON();
         return ver && ver.version ? ver.version.replace('v', '') : undefined;
@@ -3371,7 +3549,7 @@ function scrubPersonalData(data) {
         return obj;
     }
     let out = data;
-    const keys = ['vin', 'position', 'streetAddress', 'zipCode', 'city', 'state', 'country', 'latitude', 'longitude'];
+    const keys = ['vin', 'relevantVin', 'position', 'streetAddress', 'zipCode', 'city', 'state', 'country', 'latitude', 'longitude'];
     for (const [i, key] of keys.entries()) {
         out = scrubInfo(data, key);
     }
