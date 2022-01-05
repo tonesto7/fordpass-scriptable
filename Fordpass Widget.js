@@ -1808,20 +1808,50 @@ async function generateMainInfoTable(vehicleData) {
     }
 
     let odometerVal = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)} ${distanceUnit}` : textValues().errorMessages.noData;
-    const headerColor = '#a8aaa5';
+    const headerColor = '#13233F';
     let rows = [
         {
             cells: [
                 {
+                    type: 'button',
+                    title: `${String.fromCodePoint('0x1F514')}: ${vehicleData.alerts.length}`,
+                    options: {
+                        align: 'left',
+                        widthWeight: 30,
+                        titleColor: new Color(vehicleData.alerts.length ? '#FF5733' : '#5A65C0'),
+                        titleFont: Font.footnote(),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) View alerts was pressed');
+                            // await sendVehicleCmd('unlock');
+                        },
+                    },
+                    show: vehicleData.alerts && vehicleData.alerts.length,
+                },
+                {
                     type: 'text',
                     title: vehicleData.info.vehicle.vehicleType,
-                    options: { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textWhite), subtitleColor: new Color('#5A65C0'), titleFont: Font.title2(), subtitleFont: Font.subheadline() },
+                    options: { align: 'center', widthWeight: 40, dismissOnTap: false, titleColor: new Color(runtimeData.textWhite), subtitleColor: new Color('#5A65C0'), titleFont: Font.title2(), subtitleFont: Font.subheadline() },
                     show: true,
+                },
+                {
+                    type: 'button',
+                    title: `${String.fromCodePoint('0x2709')}: ${vehicleData.messages.messages.length}`,
+                    options: {
+                        align: 'right',
+                        widthWeight: 30,
+                        titleColor: new Color(vehicleData.alerts.length ? '#FF5733' : '#5A65C0'),
+                        titleFont: Font.caption1(),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) View Messages was pressed');
+                            // await sendVehicleCmd('unlock');
+                        },
+                    },
+                    show: vehicleData.messages && vehicleData.messages.messages && vehicleData.messages.messages.length,
                 },
             ],
             options: {
                 isHeader: true,
-                height: 20,
+                height: 30,
                 backgroundColor: new Color(headerColor),
             },
             show: true,
@@ -1836,7 +1866,7 @@ async function generateMainInfoTable(vehicleData) {
                 },
             ],
             options: {
-                height: 80,
+                height: 100,
                 backgroundColor: new Color(headerColor),
                 dismissOnSelect: false,
             },
@@ -1846,9 +1876,30 @@ async function generateMainInfoTable(vehicleData) {
             cells: [
                 {
                     type: 'text',
-                    title: odometerVal,
-                    options: { align: 'center', widthWeight: 1, titleColor: new Color(runtimeData.textWhite), titleFont: Font.body() },
+                    title: '',
+                    options: { align: 'center', widthWeight: 30, titleColor: new Color(runtimeData.textWhite), titleFont: Font.body() },
                     show: true,
+                },
+                {
+                    type: 'text',
+                    title: odometerVal,
+                    options: { align: 'center', widthWeight: 40, titleColor: new Color(runtimeData.textWhite), titleFont: Font.body() },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: `Recalls: ${vehicleData.recallInfo[0].recalls.length}`,
+                    options: {
+                        align: 'right',
+                        widthWeight: 30,
+                        titleColor: new Color(vehicleData.recallInfo[0].recalls.length ? '#FF5733' : '#5A65C0'),
+                        titleFont: Font.caption2(),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) View Recalls was pressed');
+                            // await sendVehicleCmd('unlock');
+                        },
+                    },
+                    show: vehicleData.recallInfo && vehicleData.recallInfo[0] && vehicleData.recallInfo[0].recalls && vehicleData.recallInfo[0].recalls.length,
                 },
             ],
             options: {
@@ -1862,23 +1913,36 @@ async function generateMainInfoTable(vehicleData) {
             cells: [
                 {
                     type: 'text',
+                    title: 'Vehicle Controls',
+                    options: { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() },
+                    show: true,
+                },
+            ],
+            options: {
+                isHeader: true,
+                height: 40,
+            },
+            show: caps && caps.length && (caps.includes('DOOR_LOCK_UNLOCK') || caps.includes('REMOTE_START')),
+        },
+        {
+            cells: [
+                {
+                    type: 'text',
                     title: 'Locks',
                     value: `${vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked'}`,
-                    options: { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() },
+                    options: { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() },
                     show: true,
                 },
                 {
                     type: 'button',
                     title: 'Unlock',
-                    // image: await getImage(runtimeData.unlockIcon),
                     options: {
                         align: 'center',
-                        widthWeight: 15,
+                        widthWeight: 20,
                         titleColor: new Color('#ef4b2b'),
                         onTap: async () => {
                             console.log('(Dashboard Menu) Lock was pressed');
-                            await showAlert('Lock Control', 'Unlock Button');
-                            // await sendVehicleCmd('unlock');
+                            await sendVehicleCmd('unlock');
                         },
                     },
                     show: true,
@@ -1886,21 +1950,19 @@ async function generateMainInfoTable(vehicleData) {
                 {
                     type: 'button',
                     title: 'Lock',
-                    // image: await getImage(runtimeData.unlockIcon),
                     options: {
                         align: 'center',
-                        widthWeight: 15,
+                        widthWeight: 20,
                         titleColor: new Color('#2b8aef'),
                         onTap: async () => {
                             console.log('(Dashboard Menu) Lock was pressed');
-                            await showAlert('Lock Control', 'Lock Button');
-                            // await sendVehicleCmd('lock');
+                            await sendVehicleCmd('lock');
                         },
                     },
                     show: true,
                 },
             ],
-            options: { height: 44, backgroundColor: new Color(runtimeData.backColor), dismissOnSelect: false },
+            options: { height: 50, dismissOnSelect: false },
             show: caps && caps.length && caps.includes('DOOR_LOCK_UNLOCK'),
         },
         {
@@ -1911,7 +1973,7 @@ async function generateMainInfoTable(vehicleData) {
                     value: `${ignStatus}`,
                     options: {
                         align: 'left',
-                        widthWeight: 70,
+                        widthWeight: 60,
 
                         titleColor: new Color(runtimeData.textColor1),
                         subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'),
@@ -1925,12 +1987,11 @@ async function generateMainInfoTable(vehicleData) {
                     title: 'Stop',
                     options: {
                         align: 'center',
-                        widthWeight: 15,
+                        widthWeight: 20,
                         titleColor: new Color('#2b8aef'),
                         onTap: async () => {
                             console.log('(Dashboard Menu) Stop was pressed');
-                            await showAlert('Ignition Control', 'Stop Button');
-                            // await sendVehicleCmd('unlock');
+                            await sendVehicleCmd('stop');
                         },
                     },
                     show: true,
@@ -1940,19 +2001,33 @@ async function generateMainInfoTable(vehicleData) {
                     title: 'Start',
                     options: {
                         align: 'center',
-                        widthWeight: 15,
+                        widthWeight: 20,
                         titleColor: new Color('#ef4b2b'),
                         onTap: async () => {
                             console.log('(Dashboard Menu) Start was pressed');
-                            await showAlert('Ignition Control', 'Start Button');
-                            // await sendVehicleCmd('unlock');
+                            await sendVehicleCmd('start');
                         },
                     },
                     show: true,
                 },
             ],
-            options: { height: 44, backgroundColor: new Color(runtimeData.backColor), dismissOnSelect: false },
+            options: { height: 50, dismissOnSelect: false },
             show: caps && caps.length && caps.includes('REMOTE_START'),
+        },
+        {
+            cells: [
+                {
+                    type: 'text',
+                    title: 'Advanced Controls',
+                    options: { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() },
+                    show: true,
+                },
+            ],
+            options: {
+                isHeader: true,
+                height: 40,
+            },
+            show: caps && caps.length && (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES' || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT'))),
         },
         {
             cells: [
@@ -1960,7 +2035,7 @@ async function generateMainInfoTable(vehicleData) {
                     type: 'text',
                     title: 'SecuriAlert:',
                     value: `${vehicleData.alarmStatus}`,
-                    options: { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() },
+                    options: { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() },
                     show: true,
                 },
                 {
@@ -1968,12 +2043,11 @@ async function generateMainInfoTable(vehicleData) {
                     title: 'Enable',
                     options: {
                         align: 'center',
-                        widthWeight: 15,
+                        widthWeight: 20,
                         titleColor: new Color('#2b8aef'),
                         onTap: async () => {
                             console.log('(Dashboard Menu) Enable was pressed');
-                            await showAlert('SecuriAlert Control', 'Enable Button');
-                            // await sendVehicleCmd('unlock');
+                            await sendVehicleCmd('guard_mode_on');
                         },
                     },
                     show: true,
@@ -1983,31 +2057,112 @@ async function generateMainInfoTable(vehicleData) {
                     title: 'Disable',
                     options: {
                         align: 'center',
-                        widthWeight: 15,
+                        widthWeight: 20,
                         titleColor: new Color('#ef4b2b'),
                         onTap: async () => {
                             console.log('(Dashboard Menu) Disable was pressed');
-                            await showAlert('SecuriAlert Control', 'Disable Button');
-                            // await sendVehicleCmd('unlock');
+                            await sendVehicleCmd('guard_mode_off');
                         },
                     },
                     show: true,
                 },
             ],
             options: {
-                height: 44,
-                backgroundColor: new Color(runtimeData.backColor),
+                height: 50,
                 dismissOnSelect: false,
-                onSelect: async (val) => {
-                    console.log('(Dashboard Menu) SecuriAlert row was tapped', val);
-                    await showAlert('SecuriAlert Control', 'Row Tapped');
-                    // await sendVehicleCmd('unlock');
-                },
             },
             show: caps && caps.length && caps.includes('GUARD_MODE'),
         },
+        {
+            cells: [
+                {
+                    type: 'text',
+                    title: 'Zone Lighting:',
+                    value: `${vehicleData.zoneLightingStatus}`,
+                    options: { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Enable',
+                    options: {
+                        align: 'center',
+                        widthWeight: 20,
+                        titleColor: new Color('#2b8aef'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Enable was pressed');
+                            await sendVehicleCmd('zone_lights_on');
+                        },
+                    },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Disable',
+                    options: {
+                        align: 'center',
+                        widthWeight: 20,
+                        titleColor: new Color('#ef4b2b'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Disable was pressed');
+                            await sendVehicleCmd('zone_lights_off');
+                        },
+                    },
+                    show: true,
+                },
+            ],
+            options: {
+                height: 50,
+                dismissOnSelect: false,
+            },
+            show: caps && caps.length && (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES')),
+        },
+        {
+            cells: [
+                {
+                    type: 'text',
+                    title: 'Trailer Light Check:',
+                    value: `${vehicleData.trailerLightCheckStatus}`,
+                    options: { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Enable',
+                    options: {
+                        align: 'center',
+                        widthWeight: 20,
+                        titleColor: new Color('#2b8aef'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Enable was pressed');
+                            await sendVehicleCmd('trailer_light_check_on');
+                        },
+                    },
+                    show: true,
+                },
+                {
+                    type: 'button',
+                    title: 'Disable',
+                    options: {
+                        align: 'center',
+                        widthWeight: 20,
+                        titleColor: new Color('#ef4b2b'),
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) Disable was pressed');
+                            await sendVehicleCmd('trailer_light_check_off');
+                        },
+                    },
+                    show: true,
+                },
+            ],
+            options: {
+                height: 50,
+                dismissOnSelect: false,
+            },
+            show: caps && caps.length && caps.includes('TRAILER_LIGHT'),
+        },
     ];
-    return await createTableMenu(rows, true);
+    return await createTableMenu(rows, false);
 }
 
 async function createTableMenu(rowData, showSeparators = false) {
@@ -3015,6 +3170,11 @@ async function fetchVehicleData(loadLocal = false) {
     if (vehicleData.capabilities.includes('ZONE_LIGHTING_FOUR_ZONES') || vehicleData.capabilities.includes('ZONE_LIGHTING_TWO_ZONES')) {
         vehicleData.zoneLightingSupported = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value === undefined ? false : true;
         vehicleData.zoneLightingStatus = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value ? vehicleStatus.zoneLighting.activationData.value : 'Off';
+    }
+
+    // trailer light check status
+    if (vehicleData.capabilities.includes('TRAILER_LIGHT')) {
+        vehicleData.trailerLightCheckStatus = vehicleStatus.trailerLightCheck && vehicleStatus.trailerLightCheck.trailerLightCheckStatus && vehicleStatus.trailerLightCheck.trailerLightCheckStatus.value ? (vehicleStatus.trailerLightCheck.trailerLightCheckStatus.value === 'LIGHT_CHECK_STOPPED' ? 'Off' : 'On') : undefined;
     }
 
     // Remote Start status
