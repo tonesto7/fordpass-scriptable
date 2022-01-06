@@ -139,6 +139,7 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '1.5.0';
+const SCRIPT_TS = '2022-01-06 11:28:00';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -1576,8 +1577,8 @@ async function subControlMenu(type) {
                             country: await getKeychainValue('fpCountry'),
                             timeZone: await getKeychainValue('fpTz'),
                             language: await getKeychainValue('fpLanguage'),
-                            unitOfDistance: await getKeychainValue('fpDistanceUnit'),
-                            unitOfPressure: await getKeychainValue('fpPressureUnit'),
+                            unitOfDistance: await getKeychainValue('fpDistanceUnits'),
+                            unitOfPressure: await getKeychainValue('fpPressureUnits'),
                         };
                         data.ota = await getVehicleOtaInfo();
                         await showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
@@ -1592,12 +1593,20 @@ async function subControlMenu(type) {
                         console.log('(Debug Menu) Email Vehicle Data was pressed');
                         let data = await fetchVehicleData(true);
                         data = scrubPersonalData(data);
+                        data.userPrefs = {
+                            country: await getKeychainValue('fpCountry'),
+                            timeZone: await getKeychainValue('fpTz'),
+                            language: await getKeychainValue('fpLanguage'),
+                            unitOfDistance: await getKeychainValue('fpDistanceUnits'),
+                            unitOfPressure: await getKeychainValue('fpPressureUnits'),
+                        };
+                        data.SCRIPT_VERSION = SCRIPT_VERSION;
+                        data.SCRIPT_TS = SCRIPT_TS;
                         await createEmailObject(data, true);
                     },
                     destructive: true,
                     show: true,
                 },
-                // mailto:purer_06_fidget@icloud.com?subject=Fordpass%20Widget%20Data&body=SampleText
                 {
                     title: 'Back',
                     action: async () => {
@@ -1814,7 +1823,7 @@ async function generateMainInfoTable(vehicleData) {
             cells: [
                 {
                     type: 'button',
-                    title: `${String.fromCodePoint('0x1F514')}: ${vehicleData.alerts.length}`,
+                    title: `${String.fromCodePoint('0x1F514')}: ${vehicleData.alerts.summary.length}`,
                     options: {
                         align: 'left',
                         widthWeight: 30,
@@ -1825,7 +1834,7 @@ async function generateMainInfoTable(vehicleData) {
                             // await sendVehicleCmd('unlock');
                         },
                     },
-                    show: vehicleData.alerts && vehicleData.alerts.length,
+                    show: vehicleData.alerts && ((vehicleData.alerts.vha && vehicleData.alerts.vha.length) || (vehicleData.alerts.mmota && vehicleData.alerts.mmota.length)),
                 },
                 {
                     type: 'text',
@@ -1897,6 +1906,7 @@ async function generateMainInfoTable(vehicleData) {
                         onTap: async () => {
                             console.log('(Dashboard Menu) View Recalls was pressed');
                             // await sendVehicleCmd('unlock');
+                            await generateRecallInfoTable(vehicleData);
                         },
                     },
                     show: vehicleData.recallInfo && vehicleData.recallInfo[0] && vehicleData.recallInfo[0].recalls && vehicleData.recallInfo[0].recalls.length,
@@ -1909,6 +1919,29 @@ async function generateMainInfoTable(vehicleData) {
             },
             show: true,
         },
+
+        // ---------------------------
+        // Alerts Section
+        // ---------------------------
+        {
+            cells: [
+                {
+                    type: 'text',
+                    title: 'Vehicle Alerts',
+                    options: { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() },
+                    show: true,
+                },
+            ],
+            options: {
+                isHeader: true,
+                height: 40,
+            },
+            show: vehicleData.alerts && ((vehicleData.alerts.vha && vehicleData.alerts.vha.length) || (vehicleData.alerts.mmota && vehicleData.alerts.mmota.length)),
+        },
+
+        // ---------------------------
+        // Vehicle Controls Section
+        // ---------------------------
         {
             cells: [
                 {
@@ -2162,7 +2195,7 @@ async function generateMainInfoTable(vehicleData) {
             show: caps && caps.length && caps.includes('TRAILER_LIGHT'),
         },
     ];
-    return await createTableMenu(rows, false);
+    return await createTableMenu(rows, true);
 }
 
 async function createTableMenu(rowData, showSeparators = false) {
@@ -2620,13 +2653,13 @@ async function getVehicleInfo() {
 }
 
 async function getVehicleMessages() {
-    let vin = await getKeychainValue('fpVin');
-    let country = await getKeychainValue('fpCountry');
-    if (!vin) {
-        return textValues().errorMessages.noVin;
-    }
     let data = await makeFordRequest('getVehicleMessages', `https://api.mps.ford.com/api/messagecenter/v3/messages`, 'GET', false);
     return data && data.result ? data.result : textValues().errorMessages.noMessages;
+}
+
+async function deleteVehicleMessages(msgIds = []) {
+    let data = await makeFordRequest('deleteVehicleMessages', `https://api.mps.ford.com/api/messagecenter/v3/user/messages`, 'DELETE', false, undefined, { messageIds: msgIds });
+    return data && data.result === 'Success' ? true : false;
 }
 
 async function getVehicleAlerts() {
@@ -2638,7 +2671,7 @@ async function getVehicleAlerts() {
         return textValues().errorMessages.noVin;
     }
     let data = await makeFordRequest(
-        'getVehicleMessages',
+        'getVehicleAlerts',
         `https://api.mps.ford.com/api/expvehiclealerts/v2/details`,
         'POST',
         false,
@@ -2662,7 +2695,11 @@ async function getVehicleAlerts() {
         },
     );
     // console.log(`getVehicleAlerts: ${JSON.stringify(data)}`);
-    return data && data.vehicleHealthAlerts && data.vehicleHealthAlerts.vehicleHealthAlertsDetails && data.vehicleHealthAlerts.vehicleHealthAlertsDetails.length ? data.vehicleHealthAlerts.vehicleHealthAlertsDetails : undefined;
+    return {
+        vha: data && data.vehicleHealthAlerts && data.vehicleHealthAlerts.vehicleHealthAlertsDetails && data.vehicleHealthAlerts.vehicleHealthAlertsDetails.length ? data.vehicleHealthAlerts.vehicleHealthAlertsDetails : [],
+        mmota: data && data.mmotaAlerts && data.mmotaAlerts.mmotaAlertsDetails && data.mmotaAlerts.mmotaAlertsDetails.length ? data.mmotaAlerts.mmotaAlertsDetails : [],
+        summary: data && data.summary && data.summary.alertSummary && data.summary.alertSummary.length ? data.summary.alertSummary : [],
+    };
 }
 
 async function getVehicleCapabilities() {
@@ -2749,11 +2786,28 @@ async function getFordpassRewardsInfo(program = 'F') {
 }
 
 async function getEvChargeStatus() {
-    return await makeFordRequest('getEvChargeStatus', `https://api.mps.ford.com/api/cevs/v1/chargestatus/retrieve`, 'POST', false);
+    const vin = await getKeychainValue('fpVin');
+    if (!vin) {
+        return textValues().errorMessages.noVin;
+    }
+    return await makeFordRequest('getEvChargeStatus', `https://api.mps.ford.com/api/cevs/v1/chargestatus/retrieve`, 'POST', false, undefined, { vin: vin });
 }
 
 async function getEvPlugStatus() {
-    return await makeFordRequest('getEvPlugStatus', `https://api.mps.ford.com/api/vpoi/chargestations/v3/plugstatus`, 'GET', false);
+    const token = await getKeychainValue('fpToken2');
+    const vin = await getKeychainValue('fpVin');
+    if (!vin) {
+        return textValues().errorMessages.noVin;
+    }
+    return await makeFordRequest('getEvPlugStatus', `https://api.mps.ford.com/api/vpoi/chargestations/v3/plugstatus`, 'GET', false, {
+        'Content-Type': 'application/json',
+        Accept: '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+        'Application-Id': appIDs().NA,
+        'auth-token': `${token}`,
+        vin: vin,
+    });
 }
 
 async function getEvChargerBalance() {
@@ -2833,7 +2887,7 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
     let request = new Request(url);
     request.headers = headers;
     request.method = method;
-    request.timeoutInterval = 10;
+    request.timeoutInterval = 20;
     if (body) {
         request.body = JSON.stringify(body);
     }
@@ -3395,7 +3449,7 @@ async function clearKeychain() {
 // }
 
 // get images from local filestore or download them once
-async function getImage(image, asData = false) {
+async function getImage(image, subPath = '', asData = false) {
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
     let path = fm.joinPath(dir, image);
@@ -3407,7 +3461,7 @@ async function getImage(image, asData = false) {
         }
     } else {
         // download once
-        let repoPath = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/';
+        let repoPath = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/' + subPath.length ? subPath + '/' : '';
         let imageUrl;
         switch (image) {
             case 'gas-station_light.png':
@@ -3417,7 +3471,7 @@ async function getImage(image, asData = false) {
                 imageUrl = 'https://i.imgur.com/hgYWYC0.png';
                 break;
             default:
-                imageUrl = 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/' + image;
+                imageUrl = repoPath + image;
             // console.log(`FP: Sorry, couldn't find a url for ${image}.`);
         }
         let iconImage = await loadImage(imageUrl);
@@ -3551,13 +3605,15 @@ async function getLatestScriptVersion() {
 
 async function createEmailObject(data, attachJson = false) {
     let email = new Mail();
-    email.subject = 'Fordpass Vehicle Data';
+    const vehType = data.info && data.info.vehicle && data.info.vehicle.vehicleType ? data.info.vehicle.vehicleType : undefined;
+    const vehVin = data.info && data.info.vehicle && data.info.vehicle.vin ? data.info.vehicle.vin : undefined;
+    email.subject = `${vehType || 'FordPass'} Vehicle Data`;
     email.toRecipients = ['purer_06_fidget@icloud.com']; // This is my anonymous email address provided by Apple,
     email.body = attachJson ? 'Vehicle data is attached file' : JSON.stringify(data, null, 4);
     email.isBodyHTML = true;
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    let path = fm.joinPath(dir, 'vehicleDataExport.json');
+    let path = fm.joinPath(dir, vehType ? `${vehType.replace(/\s/g, '_')}${vehVin ? '_' + vehVin : '_export'}.json` : `vehicleDataExport.json`);
     if (attachJson) {
         // Creates temporary JSON file and attaches it to the email
         if (fm.fileExists(path)) {
@@ -3681,11 +3737,14 @@ function scrubPersonalData(data) {
         function scrub(type, str) {
             switch (type) {
                 case 'vin':
-                    return str.substring(0, str.length - 6) + 'XXXXXX';
+                case 'relevantVin':
+                    return str.substring(0, str.length - 4) + 'XXXX';
                 case 'position':
+                case 'address1':
                 case 'streetAddress':
                     return '1234 Someplace Drive';
                 case 'zipCode':
+                case 'postalCode':
                     return '12345';
                 case 'city':
                     return 'Some City';
@@ -3693,6 +3752,8 @@ function scrubPersonalData(data) {
                     return 'SW';
                 case 'country':
                     return 'UNK';
+                case 'licenseplate':
+                    return 'ABC1234';
                 case 'latitude':
                     return 42.123456;
                 case 'longitude':
@@ -3709,7 +3770,7 @@ function scrubPersonalData(data) {
         return obj;
     }
     let out = data;
-    const keys = ['vin', 'relevantVin', 'position', 'streetAddress', 'zipCode', 'city', 'state', 'country', 'latitude', 'longitude'];
+    const keys = ['vin', 'relevantVin', 'position', 'streetAddress', 'address1', 'postalCode', 'zipCode', 'city', 'state', 'licenseplate', 'country', 'latitude', 'longitude'];
     for (const [i, key] of keys.entries()) {
         out = scrubInfo(data, key);
     }
@@ -3755,13 +3816,17 @@ function _mapMethodsAndCall(inst, options) {
 }
 
 function isNewerVersion(oldVer, newVer) {
-    const oldParts = oldVer.split('.');
-    const newParts = newVer.split('.');
-    for (var i = 0; i < newParts.length; i++) {
-        const a = ~~newParts[i]; // parse int
-        const b = ~~oldParts[i]; // parse int
-        if (a > b) return true;
-        if (a < b) return false;
+    try {
+        const oldParts = oldVer.split('.');
+        const newParts = newVer.split('.');
+        for (var i = 0; i < newParts.length; i++) {
+            const a = ~~newParts[i]; // parse int
+            const b = ~~oldParts[i]; // parse int
+            if (a > b) return true;
+            if (a < b) return false;
+        }
+    } catch (e) {
+        console.error(`isNewerVersion Error: ${e}`);
     }
     return false;
 }
