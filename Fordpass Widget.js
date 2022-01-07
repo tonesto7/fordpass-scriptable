@@ -1594,6 +1594,7 @@ async function subControlMenu(type) {
                     action: async () => {
                         console.log('(Debug Menu) Email Vehicle Data was pressed');
                         let data = await fetchVehicleData(true);
+                        data.otaInfo = await getVehicleOtaInfo();
                         data = scrubPersonalData(data);
                         data.userPrefs = {
                             country: await getKeychainValue('fpCountry'),
@@ -1602,6 +1603,7 @@ async function subControlMenu(type) {
                             unitOfDistance: await getKeychainValue('fpDistanceUnits'),
                             unitOfPressure: await getKeychainValue('fpPressureUnits'),
                         };
+                        // data.userDetails = await getAllUserData();
                         data.SCRIPT_VERSION = SCRIPT_VERSION;
                         data.SCRIPT_TS = SCRIPT_TS;
                         await createEmailObject(data, true);
@@ -1841,23 +1843,26 @@ async function generateMainInfoTable(vehicleData) {
         if (vehicleData.alerts && vehicleData.alerts.summary && vehicleData.alerts.summary.length) {
             // Creates the Vehicle Alerts Title Row
             tableRows.push(await createTableRow([await createTextCell(`${vehicleData.alerts.summary.length} Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
-            // Creates a row for each alert in the alerts.summary array
+            // Creates a single row for each alert in the top 10 of alerts.summary array
             for (const [i, alert] of vehicleData.alerts.summary.entries()) {
+                if (i >= 10) {
+                    break;
+                }
                 tableRows.push(
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                            await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 73, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }),
-                            await createButtonCell('View Alerts', {
-                                align: 'right',
-                                widthWeight: 20,
-                                onTap: async () => {
-                                    console.log('(Dashboard Menu) Alert Item View was pressed');
-                                    await generateAlertsTable(vehicleData);
-                                },
-                            }),
+                            await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 93, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }),
                         ],
-                        { height: 44, dismissOnSelect: false },
+                        {
+                            height: 44,
+                            dismissOnSelect: false,
+                            onSelect: async () => {
+                                console.log('(Dashboard Menu) Alert Item row was pressed');
+                                // await showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
+                                await generateAlertsTable(vehicleData);
+                            },
+                        },
                     ),
                 );
             }
@@ -2043,6 +2048,50 @@ function getAlertDescByType(type) {
         default:
             return '';
     }
+}
+
+async function generateAlertsTable(vehicleData) {
+    let vhaAlerts = vehicleData.alerts && vehicleData.alerts.vha && vehicleData.alerts.vha.length ? vehicleData.alerts.vha : [];
+    let otaAlerts = vehicleData.alerts && vehicleData.alerts.mmota && vehicleData.alerts.mmota.length ? vehicleData.alerts.mmota : [];
+
+    let tableRows = [];
+    if (vhaAlerts.length > 0) {
+        tableRows.push(await createTableRow([await createTextCell(`Vehicle Health Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+        for (const [i, alert] of vhaAlerts.entries()) {
+            let alertCells = [];
+            let dtTS = alert.eventTimeStamp ? convertFordDtToLocal(alert.eventTimeStamp) : undefined;
+            alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }));
+            alertCells.push(await createTextCell(alert.activeAlertBody.headline || textValues().errorMessages.noData, undefined, { align: 'left', widthWeight: 63, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }));
+            alertCells.push(await createTextCell(dtTS ? timeDifference(dtTS) : '', undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textColor1), titleFont: Font.regularSystemFont(9) }));
+            tableRows.push(await createTableRow(alertCells, { height: 40, dismissOnSelect: false }));
+        }
+    }
+
+    if (otaAlerts.length > 0) {
+        tableRows.push(await createTableRow([await createTextCell(`OTA Update Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+        for (const [i, alert] of otaAlerts.entries()) {
+            let dtTS = alert.vehicleDate && alert.vehicleTime ? convertFordDtToLocal(`${alert.vehicleDate} ${alert.vehicleTime}`) : undefined;
+            let timeDiff = dtTS ? timeDifference(dtTS) : '';
+            // let dtTS = alert.dateTimeStamp ? convertFordDtToLocal(alert.dateTimeStamp) : undefined;
+            let title = alert.alertIdentifier ? alert.alertIdentifier.replace('MMOTA_', '').split('_').join(' ') : undefined;
+            let alertCells = [];
+
+            alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }));
+            alertCells.push(await createTextCell(title, undefined, { align: 'left', widthWeight: 63, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body() }));
+            alertCells.push(await createTextCell(timeDiff, undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textColor1), titleFont: Font.regularSystemFont(9) }));
+            tableRows.push(await createTableRow(alertCells, { height: 44, dismissOnSelect: false }));
+
+            if (alert.releaseNotesUrl) {
+                let locale = (await getKeychainValue('fpLanguage')) || Device.locale().replace('_', '-');
+                let relNoteTxt = await getReleaseNotes(alert.releaseNotesUrl, locale);
+                if (relNoteTxt) {
+                    tableRows.push(await createTableRow([await createTextCell('Release Notes:', relNoteTxt, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.body() })], { height: 300, dismissOnSelect: false }));
+                }
+            }
+        }
+    }
+
+    await buildTableMenu(tableRows, true, false);
 }
 
 async function buildTableMenu(rows, showSeparators = false, fullscreen = false) {
@@ -2720,7 +2769,7 @@ async function queryFordPassPrefs(force = false) {
             await setKeychainValue('fpLastPrefsQueryTs', dtNow.toString());
             console.log(ok2Upd ? `UserPrefs Expired - Refreshing from Ford API` : `UserPrefs Requested or Missing - Refreshing from Ford API`);
 
-            let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
+            let data = await makeFordRequest('queryFordPassPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
             // console.log('user data: ' + JSON.stringify(data));
             if (data && data.status === 200 && data.profile) {
                 try {
@@ -2744,6 +2793,15 @@ async function queryFordPassPrefs(force = false) {
     } catch (e) {
         console.error(e);
     }
+}
+
+async function getAllUserData() {
+    let data = await makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
+    // console.log('user data: ' + JSON.stringify(data));
+    if (data && data.status === 200 && data.profile) {
+        return data;
+    }
+    return undefined;
 }
 
 async function makeFordRequest(desc, url, method, json = false, headerOverride = undefined, body = undefined) {
@@ -3472,12 +3530,36 @@ async function clearFileManager() {
     });
 }
 
+async function getReleaseNotes(url, locale) {
+    // console.log(`getReleaseNotes | Url: ${url} | Locale: ${locale}`);
+    let req = new Request(url);
+    req.method = 'GET';
+    req.headers = {
+        'Content-Type': 'plain/text',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+    };
+    req.timeoutInterval = 10;
+    let data = await req.loadString();
+    let cmdResp = req.response;
+    if (cmdResp.statusCode === 200 && data) {
+        let json = JSON.parse(data);
+        // console.log(JSON.stringify(json));
+        let rTextFnd = json.filter((r) => r.LanguageCodeMobileApp && r.LanguageCodeMobileApp === locale);
+        // console.log(`rTextFnd: ${JSON.stringify(rTextFnd)}`);
+        if (rTextFnd && rTextFnd[0] && rTextFnd[0].Text) {
+            // console.log(rTextFnd[0].Text);
+            return rTextFnd[0].Text;
+        }
+    }
+    return undefined;
+}
+
 async function getLatestScriptVersion() {
     let req = new Request(`https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/latest.json`);
     req.headers = {
         'Content-Type': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
-        'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
         'Accept-Encoding': 'gzip, deflate, br',
     };
     req.method = 'GET';
@@ -3562,9 +3644,13 @@ function getTirePressureStyle(pressure, unit, wSize = 'medium') {
 }
 
 function convertFordDtToLocal(src) {
-    let dtp = new Date(Date.parse(src.replace(/-/g, '/')));
-    let dto = new Date(dtp.getTime() - dtp.getTimezoneOffset() * 60 * 1000);
-    return dto;
+    try {
+        let dtp = new Date(Date.parse(src.replace(/-/g, '/')));
+        let dto = new Date(dtp.getTime() - dtp.getTimezoneOffset() * 60 * 1000);
+        return dto;
+    } catch (e) {
+        console.log(`convertFordDtToLocal Error: ${e}`);
+    }
 }
 
 function timeDifference(prevTime) {
