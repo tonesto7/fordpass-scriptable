@@ -2076,17 +2076,46 @@ async function generateAlertsTable(vehicleData) {
             let title = alert.alertIdentifier ? alert.alertIdentifier.replace('MMOTA_', '').split('_').join(' ') : undefined;
             let alertCells = [];
 
+            let releaseNotes;
+            if (alert.releaseNotesUrl) {
+                let locale = (await getKeychainValue('fpLanguage')) || Device.locale().replace('_', '-');
+                releaseNotes = await getReleaseNotes(alert.releaseNotesUrl, locale);
+            }
+            alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }));
+            alertCells.push(await createTextCell(title, releaseNotes, { align: 'left', widthWeight: 63, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body() }));
+            alertCells.push(await createTextCell(timeDiff, undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textColor1), titleFont: Font.regularSystemFont(9) }));
+            tableRows.push(await createTableRow(alertCells, { height: 500, dismissOnSelect: false }));
+
+            // if (releaseNotes) {
+            //     tableRows.push(await createTableRow([await createTextCell('Release Notes:', releaseNotes, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.body() })], { height: 300, dismissOnSelect: false }));
+            // }
+        }
+    }
+
+    await buildTableMenu(tableRows, true, false);
+}
+
+async function generateMessagesTable(vehicleData) {
+    let msgs = vehicleData.messages && vehicleData.messages.messages && vehicleData.messages.messages.length ? vehicleData.messages.messages : messagesTest || [];
+
+    let tableRows = [];
+
+    if (msgs.length > 0) {
+        tableRows.push(await createTableRow([await createTextCell(`Messages(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+        for (const [i, msg] of msgs.entries()) {
+            let dtTS = msg.vehicleDate && alert.vehicleTime ? convertFordDtToLocal(`${alert.vehicleDate} ${alert.vehicleTime}`) : undefined;
+            let timeDiff = dtTS ? timeDifference(dtTS) : '';
+            // let dtTS = alert.dateTimeStamp ? convertFordDtToLocal(alert.dateTimeStamp) : undefined;
+            let title = alert.alertIdentifier ? alert.alertIdentifier.replace('MMOTA_', '').split('_').join(' ') : undefined;
+            let alertCells = [];
+
             alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }));
             alertCells.push(await createTextCell(title, undefined, { align: 'left', widthWeight: 63, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body() }));
             alertCells.push(await createTextCell(timeDiff, undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textColor1), titleFont: Font.regularSystemFont(9) }));
-            tableRows.push(await createTableRow(alertCells, { height: 44, dismissOnSelect: false }));
+            tableRows.push(await createTableRow(alertCells, { height: 100, dismissOnSelect: false }));
 
-            if (alert.releaseNotesUrl) {
-                let locale = (await getKeychainValue('fpLanguage')) || Device.locale().replace('_', '-');
-                let relNoteTxt = await getReleaseNotes(alert.releaseNotesUrl, locale);
-                if (relNoteTxt) {
-                    tableRows.push(await createTableRow([await createTextCell('Release Notes:', relNoteTxt, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.body() })], { height: 300, dismissOnSelect: false }));
-                }
+            if (releaseNotes) {
+                tableRows.push(await createTableRow([await createTextCell('Release Notes:', releaseNotes, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.body() })], { height: 300, dismissOnSelect: false }));
             }
         }
     }
