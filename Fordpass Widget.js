@@ -141,7 +141,7 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '1.5.0';
-const SCRIPT_TS = '2022-01-07 09:30:00';
+const SCRIPT_TS = '2022-01-10 17:39:00';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -1873,8 +1873,8 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                            await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 90, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }),
+                            await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                            await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 93, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }),
                         ],
                         {
                             height: 44,
@@ -1895,18 +1895,21 @@ async function generateMainInfoTable(vehicleData) {
             tableRows.push(await createTableRow([await createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
 
             tableRows.push(
-                await createTableRow([
-                    await createImageCell(await getFPImage(`ic_message_center_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                    await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 75, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                    await createButtonCell('View', {
-                        align: 'right',
-                        widthWeight: 15,
-                        onTap: async () => {
-                            console.log('(Dashboard Menu) View Unread Messages was pressed');
-                            await generateMessagesTable(vehicleData, true);
-                        },
-                    }),
-                ]),
+                await createTableRow(
+                    [
+                        await createImageCell(await getFPImage(`ic_message_center_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                        await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 78, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                        await createButtonCell('View', {
+                            align: 'right',
+                            widthWeight: 15,
+                            onTap: async () => {
+                                console.log('(Dashboard Menu) View Unread Messages was pressed');
+                                await generateMessagesTable(vehicleData, true);
+                            },
+                        }),
+                    ],
+                    { height: 44, dismissOnSelect: false },
+                ),
             );
         }
 
@@ -1920,7 +1923,8 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createTextCell('Locks', vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`${vehicleData.lockStatus === 'LOCKED' ? 'unlock_icon' : 'lock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                            await createTextCell('Locks', vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Unlock', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1938,7 +1942,7 @@ async function generateMainInfoTable(vehicleData) {
                                 },
                             }),
                         ],
-                        { height: 50, dismissOnSelect: false },
+                        { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1948,7 +1952,8 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1966,7 +1971,7 @@ async function generateMainInfoTable(vehicleData) {
                                 },
                             }),
                         ],
-                        { height: 50, dismissOnSelect: false },
+                        { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1982,7 +1987,8 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createTextCell('SecuriAlert', vehicleData.alarmStatus, { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                            await createTextCell('SecuriAlert', vehicleData.alarmStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -2000,7 +2006,7 @@ async function generateMainInfoTable(vehicleData) {
                                 },
                             }),
                         ],
-                        { height: 50, dismissOnSelect: false },
+                        { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2010,7 +2016,8 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createTextCell('Zone Lighting', vehicleData.zoneLightingStatus, { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                            await createTextCell('Zone Lighting', vehicleData.zoneLightingStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -2028,7 +2035,7 @@ async function generateMainInfoTable(vehicleData) {
                                 },
                             }),
                         ],
-                        { height: 50, dismissOnSelect: false },
+                        { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2038,7 +2045,8 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createTextCell('Trailer Light Check', vehicleData.alarmStatus, { align: 'left', widthWeight: 70, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                            await createTextCell('Trailer Light Check', vehicleData.alarmStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -2056,7 +2064,7 @@ async function generateMainInfoTable(vehicleData) {
                                 },
                             }),
                         ],
-                        { height: 50, dismissOnSelect: false },
+                        { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
