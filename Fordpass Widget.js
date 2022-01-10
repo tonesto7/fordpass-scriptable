@@ -786,6 +786,26 @@ async function showAlert(title, message) {
     }
 }
 
+async function showPrompt(alertTitle, AlertMsg, okTitle, okRed = false) {
+    let prompt = new Alert();
+    prompt.title = alertTitle;
+    prompt.message = AlertMsg;
+    if (okRed) {
+        prompt.addDestructiveAction(okTitle);
+    } else {
+        prompt.addAction(okTitle);
+    }
+    prompt.addAction('Cancel');
+    const respInd = await prompt.presentAlert();
+    // console.log(`showAlert Response: ${respInd}`);
+    switch (respInd) {
+        case 0:
+            return true;
+        case 1:
+            return false;
+    }
+}
+
 function getBgGradient() {
     let grad = new LinearGradient();
     grad.locations = [0, 1];
@@ -1794,6 +1814,8 @@ async function generateMainInfoTable(vehicleData) {
     }
 
     const odometerVal = vehicleData.odometer ? `${Math.round(vehicleData.odometer * distanceMultiplier)} ${distanceUnit}` : textValues().errorMessages.noData;
+    const msgs = vehicleData.messages && vehicleData.messages.length ? vehicleData.messages : [];
+    const msgsUnread = msgs && msgs.length ? msgs.filter((msg) => msg.isRead === false) : [];
     const headerColor = '#13233F';
 
     let tableRows = [];
@@ -1803,12 +1825,12 @@ async function generateMainInfoTable(vehicleData) {
         tableRows.push(
             await createTableRow(
                 [
-                    await createButtonCell(vehicleData.messages.messages.length ? `Messages: ${vehicleData.messages.messages.length}` : '', {
-                        align: 'right',
+                    await createButtonCell(msgs.length ? `Messages: ${msgs.length}` : '', {
+                        align: 'left',
                         widthWeight: 30,
                         onTap: async () => {
                             console.log('(Dashboard Menu) View Messages was pressed');
-                            // await sendVehicleCmd('unlock');
+                            await generateMessagesTable(vehicleData, false);
                         },
                     }),
 
@@ -1851,8 +1873,8 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                            await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 93, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }),
+                            await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                            await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 90, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }),
                         ],
                         {
                             height: 44,
@@ -1866,6 +1888,26 @@ async function generateMainInfoTable(vehicleData) {
                     ),
                 );
             }
+        }
+
+        // Unread Messages Section - Displays a count of unread messages and a button to view all messages
+        if (msgsUnread.length) {
+            tableRows.push(await createTableRow([await createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+
+            tableRows.push(
+                await createTableRow([
+                    await createImageCell(await getFPImage(`ic_message_center_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                    await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 75, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                    await createButtonCell('View', {
+                        align: 'right',
+                        widthWeight: 15,
+                        onTap: async () => {
+                            console.log('(Dashboard Menu) View Unread Messages was pressed');
+                            await generateMessagesTable(vehicleData, true);
+                        },
+                    }),
+                ]),
+            );
         }
 
         // Vehicle Controls Section - Remote Start and Door Locks
@@ -2050,6 +2092,17 @@ function getAlertDescByType(type) {
     }
 }
 
+function getMessageDescByType(type) {
+    switch (type) {
+        case 'GENERAL':
+            return 'General';
+        case 'EXTERNALNOTIFICATIONREQUEST':
+            return 'External';
+        default:
+            return '';
+    }
+}
+
 async function generateAlertsTable(vehicleData) {
     let vhaAlerts = vehicleData.alerts && vehicleData.alerts.vha && vehicleData.alerts.vha.length ? vehicleData.alerts.vha : [];
     let otaAlerts = vehicleData.alerts && vehicleData.alerts.mmota && vehicleData.alerts.mmota.length ? vehicleData.alerts.mmota : [];
@@ -2060,8 +2113,8 @@ async function generateAlertsTable(vehicleData) {
         for (const [i, alert] of vhaAlerts.entries()) {
             let alertCells = [];
             let dtTS = alert.eventTimeStamp ? convertFordDtToLocal(alert.eventTimeStamp) : undefined;
-            alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }));
-            alertCells.push(await createTextCell(alert.activeAlertBody.headline || textValues().errorMessages.noData, undefined, { align: 'left', widthWeight: 63, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }));
+            alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }));
+            alertCells.push(await createTextCell(alert.activeAlertBody.headline || textValues().errorMessages.noData, undefined, { align: 'left', widthWeight: 60, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }));
             alertCells.push(await createTextCell(dtTS ? timeDifference(dtTS) : '', undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textColor1), titleFont: Font.regularSystemFont(9) }));
             tableRows.push(await createTableRow(alertCells, { height: 40, dismissOnSelect: false }));
         }
@@ -2081,46 +2134,223 @@ async function generateAlertsTable(vehicleData) {
                 let locale = (await getKeychainValue('fpLanguage')) || Device.locale().replace('_', '-');
                 releaseNotes = await getReleaseNotes(alert.releaseNotesUrl, locale);
             }
-            alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }));
-            alertCells.push(await createTextCell(title, releaseNotes, { align: 'left', widthWeight: 63, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body() }));
+            alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }));
+            alertCells.push(await createTextCell(title, releaseNotes, { align: 'left', widthWeight: 60, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body() }));
             alertCells.push(await createTextCell(timeDiff, undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textColor1), titleFont: Font.regularSystemFont(9) }));
             tableRows.push(await createTableRow(alertCells, { height: 500, dismissOnSelect: false }));
-
-            // if (releaseNotes) {
-            //     tableRows.push(await createTableRow([await createTextCell('Release Notes:', releaseNotes, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.body() })], { height: 300, dismissOnSelect: false }));
-            // }
         }
     }
 
     await buildTableMenu(tableRows, true, false);
 }
 
-async function generateMessagesTable(vehicleData) {
-    let msgs = vehicleData.messages && vehicleData.messages.messages && vehicleData.messages.messages.length ? vehicleData.messages.messages : messagesTest || [];
-
-    let tableRows = [];
-
-    if (msgs.length > 0) {
-        tableRows.push(await createTableRow([await createTextCell(`Messages(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
-        for (const [i, msg] of msgs.entries()) {
-            let dtTS = msg.vehicleDate && alert.vehicleTime ? convertFordDtToLocal(`${alert.vehicleDate} ${alert.vehicleTime}`) : undefined;
-            let timeDiff = dtTS ? timeDifference(dtTS) : '';
-            // let dtTS = alert.dateTimeStamp ? convertFordDtToLocal(alert.dateTimeStamp) : undefined;
-            let title = alert.alertIdentifier ? alert.alertIdentifier.replace('MMOTA_', '').split('_').join(' ') : undefined;
-            let alertCells = [];
-
-            alertCells.push(await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }));
-            alertCells.push(await createTextCell(title, undefined, { align: 'left', widthWeight: 63, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body() }));
-            alertCells.push(await createTextCell(timeDiff, undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textColor1), titleFont: Font.regularSystemFont(9) }));
-            tableRows.push(await createTableRow(alertCells, { height: 100, dismissOnSelect: false }));
-
-            if (releaseNotes) {
-                tableRows.push(await createTableRow([await createTextCell('Release Notes:', releaseNotes, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.body() })], { height: 300, dismissOnSelect: false }));
-            }
+async function showActionPrompt(title = undefined, msg = undefined, menuItems, showCancel = false) {
+    let prompt = new Alert();
+    prompt.title = title;
+    prompt.message = msg;
+    menuItems.forEach((item, ind) => {
+        if (item.destructive) {
+            prompt.addDestructiveAction(item.title);
+        } else {
+            prompt.addAction(item.title);
         }
+    });
+    if (showCancel) {
+        prompt.addAction('Cancel');
     }
 
-    await buildTableMenu(tableRows, true, false);
+    const respInd = await prompt.presentAlert();
+    // console.log(`showAlert Response: ${respInd}`);
+    if (respInd !== null) {
+        const menuItem = menuItems[respInd];
+        if (menuItem.action) {
+            await menuItem.action();
+            return true;
+        }
+    }
+    return false;
+}
+
+async function generateMessagesTable(vehicleData, unreadOnly = false) {
+    try {
+        let msgs = vehicleData.messages && vehicleData.messages && vehicleData.messages && vehicleData.messages.length ? vehicleData.messages : messageTest || [];
+        msgs = unreadOnly ? msgs.filter((msg) => msg.isRead === false) : msgs;
+
+        let tableRows = [];
+
+        if (msgs.length > 0) {
+            tableRows.push(
+                await createTableRow(
+                    [
+                        await createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
+                        await createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() }),
+                        await createButtonCell('...', {
+                            align: 'right',
+                            widthWeight: 20,
+                            titleFont: Font.title3(),
+                            dismissOnTap: true,
+                            onTap: async () => {
+                                console.log(`(Messages Table) All Message Options was pressed`);
+                                let msgIds = msgs.map((msg) => msg.messageId);
+                                let prmpt = showActionPrompt(
+                                    'All Message Options',
+                                    undefined,
+                                    [
+                                        {
+                                            title: 'Mark All Read',
+                                            action: async () => {
+                                                console.log(`(Messages Table) Mark All Messages Read was pressed`);
+                                                let ok = await showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?\n\nMessage List will reload after data is refeshed`, `Mark (${msgIds.length}) Read`, true);
+                                                if (ok) {
+                                                    console.log(`(Messages Table) Marking ${msgIds.length} Messages as Read`);
+                                                    if (await markMultipleUserMessagesRead(msgIds)) {
+                                                        console.log(`(Messages Table) Marked (${msgIds.length}) Messages as Read Successfully`);
+                                                        await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                    }
+                                                }
+                                            },
+                                            destructive: false,
+                                            show: true,
+                                        },
+                                        {
+                                            title: 'Delete All',
+                                            action: async () => {
+                                                console.log(`(Messages Table) Delete All Messages was pressed`);
+                                                let ok = await showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?\n\nMessage List will reload after data is refeshed', `Delete (${msgIds.length}) Messages`, true);
+                                                if (ok) {
+                                                    console.log(`(Messages Table) Deleting ${msgIds.length} Messages`);
+                                                    if (await deleteUserMessages([msg.messageId])) {
+                                                        console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
+                                                        await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                    }
+                                                }
+                                            },
+                                            destructive: true,
+                                            show: true,
+                                        },
+                                    ],
+                                    true,
+                                );
+                                if (!prmpt) {
+                                    await generateMessagesTable(vehicleData, unreadOnly);
+                                }
+                            },
+                        }),
+                    ],
+                    { height: 40, dismissOnSelect: false },
+                ),
+            );
+
+            for (const [i, msg] of msgs.entries()) {
+                let dtTS = msg.createdDate ? convertFordDtToLocal(msg.createdDate) : undefined;
+                let timeDiff = dtTS ? timeDifference(dtTS) : '';
+                // Creates Message Header Row
+                tableRows.push(await createTableRow([await createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: msg.isRead === false ? new Color('#008200') : Color.lightGray(), height: 10, dismissOnSelect: false }));
+                tableRows.push(
+                    await createTableRow(
+                        [
+                            await createImageCell(await getFPImage(`ic_message_center_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                            await createTextCell(getMessageDescByType(msg.messageType), undefined, { align: 'left', widthWeight: 50, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                            await createTextCell(msg.isRead === false ? 'Unread' : 'Read', undefined, { align: 'right', widthWeight: 20, titleColor: new Color(msg.isRead === false ? '#008200' : runtimeData.textColor1), titleFont: Font.body() }),
+                            await createButtonCell('...', {
+                                align: 'right',
+                                widthWeight: 20,
+                                titleFont: Font.title3(),
+                                dismissOnTap: false,
+                                onTap: async () => {
+                                    console.log(`(Messages Table) Message Options was pressed for ${msg.messageId}`);
+                                    let prmpt = showActionPrompt(
+                                        'Message Options',
+                                        undefined,
+                                        [
+                                            {
+                                                title: 'Mark as Read',
+                                                action: async () => {
+                                                    console.log(`(Messages Table) Mark Message Read for ${msg.messageId} was pressed`);
+                                                    let ok = await showPrompt(`Message Options`, `Are you sure you want to mark this message as read?\n\nMessage List will reload after data is refeshed`, `Mark Read`, true);
+                                                    if (ok) {
+                                                        console.log(`(Messages Table) Marking Message Read Message ID: ${msg.messageId}`);
+                                                        if (await markMultipleUserMessagesRead([msg.messageId])) {
+                                                            console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
+                                                            await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                        }
+                                                    }
+                                                },
+                                                destructive: false,
+                                                show: true,
+                                            },
+                                            {
+                                                title: 'Delete Message',
+                                                action: async () => {
+                                                    console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
+                                                    let ok = await showPrompt('Delete Message', 'Are you sure you want to delete this message?\n\nMessage List will reload after data is refeshed', 'Delete', true);
+                                                    if (ok) {
+                                                        console.log(`(Messages Table) Delete Confirmed for Message ID: ${msg.messageId}`);
+                                                        if (await deleteUserMessages([msg.messageId])) {
+                                                            console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
+                                                            await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                        } else {
+                                                            await generateMessagesTable(vehicleData, unreadOnly);
+                                                        }
+                                                    }
+                                                },
+                                                destructive: true,
+                                                show: true,
+                                            },
+                                        ],
+                                        true,
+                                    );
+                                    if (!prmpt) {
+                                        await generateMessagesTable(vehicleData, unreadOnly);
+                                    }
+                                },
+                            }),
+                        ],
+                        { height: 40, dismissOnSelect: false },
+                    ),
+                );
+
+                // Creates Message Subject Row
+                tableRows.push(
+                    await createTableRow([await createTextCell(msg.messageSubject, dtTS ? dtTS.toLocaleString() : '' + timeDiff ? ` (${timeDiff})` : '', { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                        height: 44,
+                        dismissOnSelect: false,
+                    }),
+                );
+
+                // Creates Message Subject and Body Row
+                tableRows.push(await createTableRow([await createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() })], { height: msg.messageBody && msg.messageBody.length ? (msg.messageBody.length / 50).toFixed(0) * 35 : 44, dismissOnSelect: false }));
+
+                // Creates Timestamp text and delete button row
+                // tableRows.push(
+                //     await createTableRow([await createTextCell('Tap to Delete', undefined, { align: 'center', widthWeight: 100, titleColor: new Color('#FF0000'), titleFont: Font.body() })], {
+                //         height: 30,
+                //         dismissOnSelect: true,
+                //         onSelect: async () => {
+                //             console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
+                //             let ok = await showPrompt('Delete Message', 'Are you sure you want to delete this message?\n\nMessage List will reload after data is refeshed', 'Delete', true);
+                //             if (ok) {
+                //                 console.log(`(Messages Table) Delete Confirmed for Message ID: ${msg.messageId}`);
+                //                 if (await deleteUserMessages([msg.messageId])) {
+                //                     console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
+                //                     await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                //                 } else {
+                //                     await generateMessagesTable(vehicleData, unreadOnly);
+                //                 }
+                //             }
+                //         },
+                //     }),
+                // );
+                tableRows.push(await createTableRow([await createTextCell('', undefined, { align: 'left', widthWeight: 30 })]));
+            }
+        } else {
+            tableRows.push(await createTableRow([await createTextCell(textValues().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() })], { height: 44, dismissOnSelect: false }));
+        }
+
+        await buildTableMenu(tableRows, false, false);
+    } catch (e) {
+        console.error(`generateMessagesTable() error: ${e}`);
+    }
 }
 
 async function buildTableMenu(rows, showSeparators = false, fullscreen = false) {
@@ -2199,25 +2429,6 @@ function applyTableOptions(src, options) {
         console.error(`Error applying options: ${err}`);
     }
     return src;
-}
-
-async function createAlertsTable(vehicleData, runtimeData) {
-    try {
-        let tableRows = [];
-        let alerts = vehicleData.alerts;
-        if (alerts && alerts.length > 0) {
-            alerts.forEach(async (alert) => {
-                let cells = [];
-                cells.push(await createImageCell(alert.icon, { widthWeight: 10, height: 30, align: 'center' }));
-                cells.push(await createTextCell(alert.title, alert.message, { widthWeight: 80, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3() }));
-                cells.push(await createTextCell(alert.date, alert.time, { widthWeight: 20, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3() }));
-                tableRows.push(await createTableRow(cells, { height: 50, dismissOnSelect: false }));
-            });
-        }
-        return tableRows;
-    } catch (err) {
-        console.error(`Error in createAlertsTable: ${err}`);
-    }
 }
 
 async function showDataWebView(title, heading, data, type = undefined) {
@@ -2611,14 +2822,24 @@ async function getVehicleInfo() {
     return await makeFordRequest('getVehicleInfo', `https://usapi.cv.ford.com/api/users/vehicles/${vin}/detail?lrdt=01-01-1970%2000:00:00`, 'GET', false);
 }
 
-async function getVehicleMessages() {
-    let data = await makeFordRequest('getVehicleMessages', `https://api.mps.ford.com/api/messagecenter/v3/messages`, 'GET', false);
-    return data && data.result ? data.result : textValues().errorMessages.noMessages;
+async function getUserMessages() {
+    let data = await makeFordRequest('getUserMessages', `https://api.mps.ford.com/api/messagecenter/v3/messages`, 'GET', false);
+    return data && data.result && data.result.messages && data.result.messages.length ? data.result.messages : [];
 }
 
-async function deleteVehicleMessages(msgIds = []) {
-    let data = await makeFordRequest('deleteVehicleMessages', `https://api.mps.ford.com/api/messagecenter/v3/user/messages`, 'DELETE', false, undefined, { messageIds: msgIds });
+async function deleteUserMessages(msgIds = []) {
+    let data = await makeFordRequest('deleteUserMessages', `https://api.mps.ford.com/api/messagecenter/v3/user/messages`, 'DELETE', false, undefined, { messageIds: msgIds });
     return data && data.result === 'Success' ? true : false;
+}
+
+async function markMultipleUserMessagesRead(msgIds = []) {
+    let data = await makeFordRequest('markUserMessagesRead', `https://api.mps.ford.com/api/messagecenter/v3/user/messages/read`, 'PUT', false, undefined, { messageIds: msgIds });
+    return data && data.result === 'Success' ? true : false;
+}
+
+async function markUserMessageRead(msgId) {
+    let data = await makeFordRequest('markMultipleUserMessagesRead', `https://api.mps.ford.com/api/messagecenter/v3/user/content/${msgId}`, 'PUT', false);
+    return data && data.result && data.result.messageId === msgId ? true : false;
 }
 
 async function getVehicleAlerts() {
@@ -3148,8 +3369,9 @@ async function fetchVehicleData(loadLocal = false) {
         console.log(`Capabilities: ${JSON.stringify(capData)}`);
     }
 
-    vehicleData.messages = await getVehicleMessages();
+    vehicleData.messages = await getUserMessages();
     // console.log(`messagesData: ${JSON.stringify(vehicleData.messages)}`);
+
     vehicleData.alerts = await getVehicleAlerts();
     // console.log(`alerts: ${JSON.stringify(vehicleData.alerts)}`);
 
@@ -3478,6 +3700,8 @@ async function getVehicleImage(modelYear, cloudStore = false, angle = 4, asData 
             'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
             'Accept-Encoding': 'gzip, deflate, br',
             'auth-token': `${token}`,
+            Origin: 'https://www.ford.com',
+            Referer: 'https://www.ford.com',
         };
         req.method = 'GET';
         req.timeoutInterval = 10;
@@ -3560,7 +3784,7 @@ async function clearFileManager() {
 }
 
 async function getReleaseNotes(url, locale) {
-    // console.log(`getReleaseNotes | Url: ${url} | Locale: ${locale}`);
+    console.log(`getReleaseNotes | Url: ${url} | Locale: ${locale}`);
     let req = new Request(url);
     req.method = 'GET';
     req.headers = {
@@ -3835,3 +4059,5 @@ function isNewerVersion(oldVer, newVer) {
 
 //************************************************* END UTILITY FUNCTIONS ********************************************************
 //********************************************************************************************************************************
+
+// const messageTest = {}
