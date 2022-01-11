@@ -128,20 +128,18 @@ Changelog:
         
 // Todo: 
     - add runtime remaining to remote start output
-    - add message view menu to the dashboard menu
-    - add alerts to new dashboard Menu
-    - add rows like zone lighing, deep sleep and firmware updates to alerts section of the dashboard menu
+    - add deep sleep and firmware updates to alerts section of the dashboard menu
     - detail zone lighting items enabled when enabled
     - add charge scheduling to dashboard menu
-    - add recalls to dashboard menu
     - use OTA info to show when an update is available or pending.
+    - add other vehicle status info (tire, oil, battery) to the dashboard
     
 
         
 **************/
 
 const SCRIPT_VERSION = '1.5.0';
-const SCRIPT_TS = '2022-01-10 17:39:00';
+const SCRIPT_TS = '2022-01-11 19:00:00';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -156,7 +154,7 @@ const runningWidgetSize = config.widgetFamily;
 const isPhone = Device.isPhone();
 const isPad = Device.isPad();
 // console.log('---------------DEVICE INFO ----------------');
-// console.log(`OSDarkMode: ${darkMode}`);
+console.log(`OSDarkMode: ${darkMode}`);
 // console.log(`IsSmallDisplay: ${isSmallDisplay}`);
 // console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.height}`);
 // console.log(`Device Info | Model: ${Device.model()} | OSVersion: ${Device.systemVersion()}`);
@@ -1236,7 +1234,7 @@ async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'mediu
     await createTitle(titleFld, 'ignitionStatus', wSize);
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
-    await createText(dataFld, status, (vehicleData.ignitionStatus !== undefined && vehicleData.ignitionStatus === 'On') || remStartOn ? styles.on : styles.off);
+    await createText(dataFld, status, vehicleData.ignitionStatus !== undefined && (vehicleData.ignitionStatus === 'On' || vehicleData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
     srcField.addSpacer(offset);
 }
 
@@ -1294,92 +1292,83 @@ async function createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
 //***************************************************END WIDGET ELEMENT FUNCTIONS********************************************************
 //***************************************************************************************************************************************
 
-async function getMainMenuItems(vehicleData) {
-    const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
-    return [{
-            title: `New Script Available: (v${LATEST_VERSION})`,
-            action: async() => {
-                console.log('(Main Menu) New Version was pressed');
-                createMainMenu();
-            },
-            destructive: true,
-            show: updateAvailable,
-        },
-        {
-            title: 'View Widget',
-            action: async() => {
-                console.log('(Main Menu) View Widget was pressed');
-                subControlMenu('widgetView');
-                // const w = await generateWidget('medium', fordData);
-                // await w.presentMedium();
-            },
-            destructive: false,
-            show: true,
-        },
-        // {
-        //     title: 'View Dashboard',
-        //     action: async() => {
-        //         console.log('(Main Menu) View Info was pressed');
-        //         await generateMainInfoTable(vehicleData);
-        //     },
-        //     destructive: false,
-        //     show: true,
-        // },
-
-        // {
-        //     title: 'Sound Horn/Flash Lights',
-        //     action: async() => {
-        //         console.log('(Main Menu) Horn/Lights was pressed');
-        //         await sendVehicleCmd('horn_and_lights');
-        //     },
-        //     destructive: true,
-        //     show: caps && caps.length && caps.includes('REMOTE_PANIC_ALARM'),
-        // },
-        {
-            title: 'Force Refresh',
-            action: async() => {
-                console.log('(Main Menu) Refresh was pressed');
-                await sendVehicleCmd('status');
-            },
-            destructive: false,
-            show: true,
-        },
-        {
-            title: 'Advanced Info',
-            action: async() => {
-                console.log('(Main Menu) Advanced Info was pressed');
-                subControlMenu('advanceInfoMenu');
-            },
-            destructive: false,
-            show: true,
-        },
-        {
-            title: 'Widget Settings',
-            action: async() => {
-                console.log('(Main Menu) Widget Settings was pressed');
-                createSettingMenu();
-            },
-            destructive: false,
-            show: true,
-        },
-        {
-            title: 'Exit',
-            action: async() => {
-                console.log('(Main Menu) Exit was pressed');
-            },
-            destructive: false,
-            show: true,
-        },
-    ];
-}
-
-async function subControlMenu(type) {
+async function menuBuilderByType(type) {
     const vehicleData = await fetchVehicleData(true);
     const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
     let title = '';
     let items = [];
     let message = '';
     switch (type) {
+        case 'mainMenu':
+            let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : textValues().UIValues.unknown;
+            title = `Widget Menu`;
+            message = `Widget Version: (${SCRIPT_VERSION})\nVehicle Updated: (${refreshTime})`.trim();
+            items = [{
+                    title: `New Script Available: (v${LATEST_VERSION})`,
+                    action: async() => {
+                        console.log('(Main Menu) New Version was pressed');
+                        menuBuilderByType('mainMenu');
+                    },
+                    destructive: true,
+                    show: updateAvailable,
+                },
+                {
+                    title: `View Recall(s): ${vehicleData.recallInfo[0].recalls.length || 0}`,
+                    action: async() => {
+                        console.log('(Main Menu) View Recalls was pressed');
+                        generateRecallsTable(vehicleData);
+                    },
+                    destructive: false,
+                    show: vehicleData.recallInfo && vehicleData.recallInfo.length > 0 && vehicleData.recallInfo[0].recalls && vehicleData.recallInfo[0].recalls.length > 0,
+                },
+                {
+                    title: 'View Widget',
+                    action: async() => {
+                        console.log('(Main Menu) View Widget was pressed');
+                        menuBuilderByType('widgetView');
+                        // const w = await generateWidget('medium', fordData);
+                        // await w.presentMedium();
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Request Vehicle Refresh',
+                    action: async() => {
+                        console.log('(Main Menu) Refresh was pressed');
+                        await sendVehicleCmd('status');
+                    },
+                    destructive: true,
+                    show: true,
+                },
+                {
+                    title: 'Advanced Info',
+                    action: async() => {
+                        console.log('(Main Menu) Advanced Info was pressed');
+                        menuBuilderByType('advanceInfoMenu');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Widget Settings',
+                    action: async() => {
+                        console.log('(Main Menu) Widget Settings was pressed');
+                        menuBuilderByType('settingsMenu');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Close',
+                    action: async() => {
+                        console.log('(Main Menu) Close was pressed');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+            ];
+            break;
         case 'widgetView':
             title = 'View Widget';
             items = [{
@@ -1426,7 +1415,7 @@ async function subControlMenu(type) {
                     title: 'Back',
                     action: async() => {
                         console.log('(Widget View Menu) Back was pressed');
-                        createMainMenu();
+                        menuBuilderByType('mainMenu');
                     },
                     destructive: false,
                     show: true,
@@ -1444,7 +1433,7 @@ async function subControlMenu(type) {
                         data = scrubPersonalData(data);
                         await Pasteboard.copyString(JSON.stringify(data, null, 4));
                         await showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
-                        subControlMenu('advanceInfoMenu');
+                        menuBuilderByType('advanceInfoMenu');
                     },
                     destructive: false,
                     show: true,
@@ -1455,7 +1444,7 @@ async function subControlMenu(type) {
                         console.log('(Debug Menu) OTA Info was pressed');
                         let data = await getVehicleOtaInfo();
                         await showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
-                        await subControlMenu('advanceInfoMenu');
+                        await menuBuilderByType('advanceInfoMenu');
                     },
                     destructive: false,
                     show: true,
@@ -1474,7 +1463,7 @@ async function subControlMenu(type) {
                         };
                         data.ota = await getVehicleOtaInfo();
                         await showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
-                        await subControlMenu('advanceInfoMenu');
+                        await menuBuilderByType('advanceInfoMenu');
                     },
                     destructive: false,
                     show: true,
@@ -1505,7 +1494,7 @@ async function subControlMenu(type) {
                     title: 'Back',
                     action: async() => {
                         console.log('(Debug Menu) Back was pressed');
-                        createMainMenu();
+                        menuBuilderByType('mainMenu');
                     },
                     destructive: false,
                     show: true,
@@ -1517,9 +1506,9 @@ async function subControlMenu(type) {
             items = [{
                     title: 'Clear Cached Files',
                     action: async() => {
-                        console.log('(Reset Data Menu) Clear Files was pressed');
+                        console.log('(Reset Menu) Clear Files was pressed');
                         await clearFileManager();
-                        subControlMenu('resetDataMenu');
+                        menuBuilderByType('resetDataMenu');
                     },
                     destructive: true,
                     show: true,
@@ -1527,9 +1516,9 @@ async function subControlMenu(type) {
                 {
                     title: 'Clear Saved Settings',
                     action: async() => {
-                        console.log('(Reset Data Menu) Clear Settings was pressed');
+                        console.log('(Reset Menu) Clear Settings was pressed');
                         await clearKeychain();
-                        await showAlert('Reset Data Menu', 'Saved Settings Cleared\n\nPlease run the script again to re-initialize the app.');
+                        await showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease run the script again to re-initialize the app.');
                     },
                     destructive: true,
                     show: true,
@@ -1537,11 +1526,54 @@ async function subControlMenu(type) {
                 {
                     title: 'Reset Everything',
                     action: async() => {
-                        console.log('(Reset Data Menu) Reset All was pressed');
+                        console.log('(Reset Menu) Reset All was pressed');
                         await clearKeychain();
-                        await showAlert('Reset Data Menu', 'All Files and Settings Cleared\n\nPlease run the script again to re-initialize the app.');
+                        await showAlert('Widget Reset  Menu', 'All Files and Settings Cleared\n\nPlease run the script again to re-initialize the app.');
                     },
                     destructive: true,
+                    show: true,
+                },
+                {
+                    title: 'Back',
+                    action: async() => {
+                        console.log('(Reset Menu) Back was pressed');
+                        menuBuilderByType('mainMenu');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+            ];
+            break;
+        case 'settingsMenu':
+            let mapProvider = await getMapProvider();
+            title = 'Widget Settings';
+            items = [{
+                    title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
+                    action: async() => {
+                        console.log('(Setting Menu) Map Provider pressed');
+                        await toggleMapProvider();
+                        menuBuilderByType('settingsMenu');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
+                    title: 'Reset Menu',
+                    action: async() => {
+                        console.log('(Setting Menu) Clear All Data was pressed');
+                        await menuBuilderByType('resetDataMenu');
+                        // menuBuilderByType('settingsMenu');
+                    },
+                    destructive: true,
+                    show: true,
+                },
+                {
+                    title: `Back`,
+                    action: async() => {
+                        console.log('(Setting Menu) Back was pressed');
+                        menuBuilderByType('mainMenu');
+                    },
+                    destructive: false,
                     show: true,
                 },
             ];
@@ -1566,6 +1598,67 @@ async function subControlMenu(type) {
             // console.log(`(Sub Control Menu) Selected: ${JSON.stringify(menuItem)}`);
             menuItem.action();
         }
+    }
+}
+
+async function requiredPrefsMenu() {
+    try {
+        let user = await getKeychainValue('fpUser');
+        let pass = await getKeychainValue('fpPass');
+        let vin = await getKeychainValue('fpVin');
+        let mapProvider = await getMapProvider();
+
+        let prefsMenu = new Alert();
+        prefsMenu.title = 'Required Settings Missing';
+        prefsMenu.message = 'Please enter you FordPass Credentials and Vehicle VIN.\n\nTap a setting to toggle change\nPress Done to Save.';
+
+        prefsMenu.addTextField('FordPass Email', user || '');
+        prefsMenu.addSecureTextField('FordPass Password', pass || '');
+        prefsMenu.addTextField('Vehicle VIN', vin || '');
+
+        prefsMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //0
+
+        prefsMenu.addAction('Save'); //1
+        prefsMenu.addCancelAction('Cancel'); //2
+
+        let respInd = await prefsMenu.presentAlert();
+        switch (respInd) {
+            case 0:
+                console.log('(Required Prefs Menu) Map Provider pressed');
+                await toggleMapProvider();
+                requiredPrefsMenu();
+                break;
+            case 1:
+                console.log('(Required Prefs Menu) Done was pressed');
+                user = prefsMenu.textFieldValue(0);
+                pass = prefsMenu.textFieldValue(1);
+                vin = prefsMenu.textFieldValue(2);
+                // console.log(`${user} ${pass} ${vin}`);
+
+                if (inputTest(user) && inputTest(pass) && inputTest(vin)) {
+                    await setKeychainValue('fpUser', user);
+                    await setKeychainValue('fpPass', pass);
+                    await setKeychainValue('fpMapProvider', mapProvider);
+                    let vinChk = await vinCheck(vin, true);
+                    console.log(`VIN Number Ok: ${vinChk}`);
+                    if (vinChk) {
+                        await setKeychainValue('fpVin', vin.toUpperCase());
+                        await queryFordPassPrefs(true);
+                        return true;
+                    } else {
+                        // await requiredPrefsMenu();
+                        await prepWidget();
+                    }
+                } else {
+                    await prepWidget();
+                }
+                break;
+            case 2:
+                return false;
+        }
+    } catch (err) {
+        console.log(`(Required Prefs Menu) Error: ${err}`);
+        throw err;
     }
 }
 
@@ -1596,9 +1689,10 @@ async function generateMainInfoTable() {
         tableRows.push(
             await createTableRow(
                 [
+                    await createImageCell(await getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 3 }),
                     await createButtonCell(msgs.length ? `Messages: ${msgs.length}` : '', {
                         align: 'left',
-                        widthWeight: 30,
+                        widthWeight: 27,
                         onTap: async() => {
                             console.log('(Dashboard Menu) View Messages was pressed');
                             await generateMessagesTable(vehicleData, false);
@@ -1611,8 +1705,8 @@ async function generateMainInfoTable() {
                         widthWeight: 30,
                         dismissOnTap: false,
                         onTap: async() => {
-                            console.log(`(Dashboard Menu) Options was pressed`);
-                            createMainMenu();
+                            console.log(`(Dashboard Menu) Menu Button was pressed`);
+                            menuBuilderByType('mainMenu');
                         },
                     }),
                 ], {
@@ -1636,28 +1730,47 @@ async function generateMainInfoTable() {
             }),
         );
 
+        // "summary": [
+        //     { "alertType": "VHA", "alertDescription": "Low Washer Fluid", "alertIdentifier": "E19-374-43", "urgency": "L", "colorCode": "A", "iconName": "ic_washer_fluid", "alertPriority": 1 },
+        //     { "alertType": "MMOTA", "alertDescription": "UPDATE SUCCESSFUL", "alertIdentifier": "MMOTA_UPDATE_SUCCESSFUL", "urgency": null, "colorCode": "G", "iconName": "ic_mmota_alert_update_successful", "alertPriority": 2 }
+        // ]
+
+        vehicleData.firmwareUpdating = true;
+        vehicleData.deepSleepMode = true;
+
         // Vehicle Alerts Section - Creates rows for each summary alert
-        if (vehicleData.alerts && vehicleData.alerts.summary && vehicleData.alerts.summary.length) {
+        if ((vehicleData.alerts && vehicleData.alerts.summary && vehicleData.alerts.summary.length) || vehicleData.firmwareUpdating || vehicleData.deepSleepMode) {
+            let alertsSummary = vehicleData.alerts && vehicleData.alerts.summary && vehicleData.alerts.summary.length ? vehicleData.alerts.summary : [];
+
+            if (vehicleData.deepSleepMode) {
+                alertsSummary.push({ alertType: 'VHA', alertDescription: 'Deep Sleep Active - Low Battery', urgency: 'L', colorCode: 'R', iconName: 'ic_software_updates', alertPriority: 1, noButton: true });
+            }
+            if (vehicleData.firmwareUpdating) {
+                alertsSummary.push({ alertType: 'VHA', alertDescription: 'Firmware Update in Progress', urgency: 'L', colorCode: 'G', iconName: 'ic_software_updates', alertPriority: 1, noButton: true });
+            }
+
             // Creates the Vehicle Alerts Title Row
-            tableRows.push(await createTableRow([await createTextCell(`${vehicleData.alerts.summary.length} Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+            tableRows.push(await createTableRow([await createTextCell(`${alertsSummary.length} Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
             // Creates a single row for each alert in the top 10 of alerts.summary array
-            for (const [i, alert] of vehicleData.alerts.summary.entries()) {
+            for (const [i, alert] of alertsSummary.entries()) {
                 if (i >= 10) {
                     break;
                 }
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                            await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 93, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }),
+                            await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 93, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(9) }),
                         ], {
                             height: 44,
                             dismissOnSelect: false,
-                            onSelect: async() => {
-                                console.log('(Dashboard Menu) Alert Item row was pressed');
-                                // await showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
-                                await generateAlertsTable(vehicleData);
-                            },
+                            onSelect: alert.noButton === undefined || alert.noButton === false ?
+                                async() => {
+                                    console.log('(Dashboard Menu) Alert Item row was pressed');
+                                    // await showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
+                                    await generateAlertsTable(vehicleData);
+                                } :
+                                undefined,
                         },
                     ),
                 );
@@ -1671,8 +1784,8 @@ async function generateMainInfoTable() {
             tableRows.push(
                 await createTableRow(
                     [
-                        await createImageCell(await getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                        await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 75, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                        await createImageCell(await getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                        await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 78, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
                         await createButtonCell('View', {
                             align: 'right',
                             widthWeight: 15,
@@ -1696,8 +1809,8 @@ async function generateMainInfoTable() {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`${vehicleData.lockStatus === 'LOCKED' ? 'unlock_icon' : 'lock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                            await createTextCell('Locks', vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`${vehicleData.lockStatus === 'LOCKED' ? 'unlock_icon' : 'lock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await createTextCell('Locks', vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Unlock', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1714,7 +1827,7 @@ async function generateMainInfoTable() {
                                     await sendVehicleCmd('lock');
                                 },
                             }),
-                        ], { height: 50, dismissOnSelect: false },
+                        ], { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1724,8 +1837,8 @@ async function generateMainInfoTable() {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1752,8 +1865,8 @@ async function generateMainInfoTable() {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                            await createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 75, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 78, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
 
                             await createButtonCell('Start', {
                                 align: 'center',
@@ -1763,7 +1876,7 @@ async function generateMainInfoTable() {
                                     await sendVehicleCmd('horn_and_lights');
                                 },
                             }),
-                        ], { height: 50, dismissOnSelect: false },
+                        ], { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1779,8 +1892,8 @@ async function generateMainInfoTable() {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                            await createTextCell('SecuriAlert', vehicleData.alarmStatus, { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await createTextCell('SecuriAlert', vehicleData.alarmStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1797,7 +1910,7 @@ async function generateMainInfoTable() {
                                     await sendVehicleCmd('guard_mode_off');
                                 },
                             }),
-                        ], { height: 50, dismissOnSelect: false },
+                        ], { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1807,8 +1920,8 @@ async function generateMainInfoTable() {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                            await createTextCell('Zone Lighting', vehicleData.zoneLightingStatus, { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await createTextCell('Zone Lighting', vehicleData.zoneLightingStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1825,7 +1938,7 @@ async function generateMainInfoTable() {
                                     await sendVehicleCmd('zone_lights_off');
                                 },
                             }),
-                        ], { height: 50, dismissOnSelect: false },
+                        ], { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1835,8 +1948,8 @@ async function generateMainInfoTable() {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                            await createTextCell('Trailer Light Check', vehicleData.trailerLightCheckStatus, { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await createTextCell('Trailer Light Check', vehicleData.trailerLightCheckStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1853,7 +1966,7 @@ async function generateMainInfoTable() {
                                     await sendVehicleCmd('trailer_light_check_off');
                                 },
                             }),
-                        ], { height: 50, dismissOnSelect: false },
+                        ], { height: 44, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1863,41 +1976,6 @@ async function generateMainInfoTable() {
     }
 
     await buildTableMenu(tableRows, true, false);
-}
-
-function getAlertColorByCode(code) {
-    switch (code) {
-        case 'A':
-            return '#E96C00';
-        case 'G':
-            return '#008200';
-        case 'R':
-            return '#FF0000';
-        default:
-            return runtimeData.textColor1;
-    }
-}
-
-function getAlertDescByType(type) {
-    switch (type) {
-        case 'VHA':
-            return 'Vehicle Health';
-        case 'MMOTA':
-            return 'OTA Update';
-        default:
-            return '';
-    }
-}
-
-function getMessageDescByType(type) {
-    switch (type) {
-        case 'GENERAL':
-            return 'General';
-        case 'EXTERNALNOTIFICATIONREQUEST':
-            return 'External';
-        default:
-            return '';
-    }
 }
 
 async function generateAlertsTable(vehicleData) {
@@ -1941,31 +2019,89 @@ async function generateAlertsTable(vehicleData) {
     await buildTableMenu(tableRows, true, false);
 }
 
-async function showActionPrompt(title = undefined, msg = undefined, menuItems, showCancel = false) {
-    let prompt = new Alert();
-    prompt.title = title;
-    prompt.message = msg;
-    menuItems.forEach((item, ind) => {
-        if (item.destructive) {
-            prompt.addDestructiveAction(item.title);
-        } else {
-            prompt.addAction(item.title);
-        }
-    });
-    if (showCancel) {
-        prompt.addAction('Cancel');
-    }
+async function generateRecallsTable(vehicleData) {
+    try {
+        let recalls = vehicleData.recallInfo && vehicleData.recallInfo.length && vehicleData.recallInfo[0].recalls && vehicleData.recallInfo[0].recalls.length > 0 ? vehicleData.recallInfo[0].recalls : [];
+        let tableRows = [];
 
-    const respInd = await prompt.presentAlert();
-    // console.log(`showAlert Response: ${respInd}`);
-    if (respInd !== null) {
-        const menuItem = menuItems[respInd];
-        if (menuItem.action) {
-            await menuItem.action();
-            return true;
+        if (recalls.length > 0) {
+            tableRows.push(await createTableRow([await createTextCell(`Vehicle Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+            for (const [i, recall] of recalls.entries()) {
+                let dtTS = recall.nhtsaInfo && recall.nhtsaInfo.recallDate ? new Date(Date.parse(recall.nhtsaInfo.recallDate)) : undefined;
+                let dateStr = dtTS ? dtTS.toLocaleDateString() : undefined;
+                let timeDiff = dtTS ? timeDifference(dtTS) : '';
+                let timestamp = `${dateStr ? ' - ' + dateStr : ''}${timeDiff ? ' (' + timeDiff + ')' : ''}`;
+                let recallType = recall.type ? `${recall.type}` : '';
+                let recallId = recall.id ? `${recallType.length ? '\n' : ''}Recall ID: ${recall.id}` : '';
+                let titleSub = `${recallType}${recallId}${timestamp}`;
+
+                // Creates Recall Header Rows
+                tableRows.push(await createTableRow([await createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: new Color('#E96C00'), height: 10, dismissOnSelect: false }));
+                tableRows.push(
+                    await createTableRow(
+                        [
+                            await createImageCell(await getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 6 }),
+
+                            await createTextCell(recall.title, titleSub, {
+                                align: 'left',
+                                widthWeight: 94,
+                                titleColor: new Color(runtimeData.textColor1),
+                                titleFont: Font.headline(),
+                                subtitleColor: new Color(runtimeData.textColor1),
+                                subtitleFont: Font.regularSystemFont(10),
+                            }),
+                        ], { height: 50, dismissOnSelect: false },
+                    ),
+                );
+
+                // Creates Recall Safety Description Row
+                if (recall.nhtsaInfo && recall.nhtsaInfo.safetyDescription) {
+                    tableRows.push(
+                        await createTableRow([await createTextCell('Safety Description', recall.nhtsaInfo.safetyDescription, { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                            height: getRowHeightByTxtLength(recall.nhtsaInfo.safetyDescription),
+                            dismissOnSelect: false,
+                        }),
+                    );
+                }
+                // Creates Recall Remedy Program Row
+                if (recall.nhtsaInfo && recall.nhtsaInfo.remedyProgram) {
+                    tableRows.push(
+                        await createTableRow([await createTextCell('Remedy Program', recall.nhtsaInfo.remedyProgram, { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                            height: getRowHeightByTxtLength(recall.nhtsaInfo.remedyProgram),
+                            dismissOnSelect: false,
+                        }),
+                    );
+                }
+                // Creates Recall Manufacturer Notes Row
+                if (recall.nhtsaInfo && recall.nhtsaInfo.manufacturerNotes) {
+                    tableRows.push(
+                        await createTableRow([await createTextCell('Manufacturer Notes', recall.nhtsaInfo.manufacturerNotes, { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                            height: getRowHeightByTxtLength(recall.nhtsaInfo.manufacturerNotes),
+                            dismissOnSelect: false,
+                        }),
+                    );
+                }
+                // Creates a blank row
+                tableRows.push(await createTableRow([await createTextCell('', undefined, { align: 'left', widthWeight: 30 })]));
+            }
+        } else {
+            tableRows.push(
+                await createTableRow(
+                    [
+                        await createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
+                        await createTextCell(`${recalls.length} Recalls(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() }),
+                        await createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
+                    ], { height: 44, dismissOnSelect: false },
+                ),
+            );
+
+            tableRows.push(await createTableRow([await createTextCell(textValues().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() })], { height: 44, dismissOnSelect: false }));
         }
+
+        await buildTableMenu(tableRows, false, false);
+    } catch (err) {
+        console.log(`error in generateRecallsTable: ${err}`);
     }
-    return false;
 }
 
 async function generateMessagesTable(vehicleData, unreadOnly = false) {
@@ -1981,42 +2117,114 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
                     [
                         await createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
                         await createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() }),
-                        await createButtonCell('...', {
-                            align: 'right',
-                            widthWeight: 20,
-                            titleFont: Font.title3(),
-                            dismissOnTap: true,
-                            onTap: async() => {
-                                console.log(`(Messages Table) All Message Options was pressed`);
-                                let msgIds = msgs.map((msg) => msg.messageId);
-                                let prmpt = showActionPrompt(
-                                    'All Message Options',
-                                    undefined, [{
-                                            title: 'Mark All Read',
-                                            action: async() => {
-                                                console.log(`(Messages Table) Mark All Messages Read was pressed`);
-                                                let ok = await showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?\n\nMessage List will reload after data is refeshed`, `Mark (${msgIds.length}) Read`, true);
-                                                if (ok) {
-                                                    console.log(`(Messages Table) Marking ${msgIds.length} Messages as Read`);
-                                                    if (await markMultipleUserMessagesRead(msgIds)) {
-                                                        console.log(`(Messages Table) Marked (${msgIds.length}) Messages as Read Successfully`);
-                                                        await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
-                                                    }
+                        await createTextCell('...', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
+                    ], {
+                        height: 40,
+                        dismissOnSelect: true,
+                        onSelect: async() => {
+                            console.log(`(Messages Table) All Message Options was pressed`);
+                            let msgIds = msgs.map((msg) => msg.messageId);
+                            showActionPrompt(
+                                'All Message Options',
+                                undefined, [{
+                                        title: 'Mark All Read',
+                                        action: async() => {
+                                            console.log(`(Messages Table) Mark All Messages Read was pressed`);
+                                            // let ok = await showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?\n\nMessage List will reload after data is refeshed`, `Mark (${msgIds.length}) Read`, true);
+                                            // if (ok) {
+                                            console.log(`(Messages Table) Marking ${msgIds.length} Messages as Read`);
+                                            if (await markMultipleUserMessagesRead(msgIds)) {
+                                                console.log(`(Messages Table) Marked (${msgIds.length}) Messages as Read Successfully`);
+                                                showAlert('Marked Messages as Read Successfully', 'Message List will reload after data is refeshed');
+                                                await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                            }
+                                            // }
+                                        },
+                                        destructive: false,
+                                        show: true,
+                                    },
+                                    {
+                                        title: 'Delete All',
+                                        action: async() => {
+                                            console.log(`(Messages Table) Delete All Messages was pressed`);
+                                            let ok = await showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?\n\nMessage List will reload after data is refeshed', `Delete (${msgIds.length}) Messages`, true);
+                                            if (ok) {
+                                                console.log(`(Messages Table) Deleting ${msgIds.length} Messages`);
+                                                if (await deleteUserMessages([msg.messageId])) {
+                                                    console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
+                                                    showAlert('Deleted Messages Successfully', 'Message List will reload after data is refeshed');
+                                                    await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
                                                 }
+                                            }
+                                        },
+                                        destructive: true,
+                                        show: true,
+                                    },
+                                ],
+                                true,
+                                async() => {
+                                    generateMessagesTable(vehicleData, unreadOnly);
+                                },
+                            );
+                        },
+                    },
+                ),
+            );
+
+            for (const [i, msg] of msgs.entries()) {
+                let dtTS = msg.createdDate ? convertFordDtToLocal(msg.createdDate) : undefined;
+                let timeDiff = dtTS ? timeDifference(dtTS) : '';
+                let timeSubtitle = `${dtTS ? dtTS.toLocaleString() : ''}${timeDiff ? ` (${timeDiff})` : ''}`;
+                // console.log(`(Messages Table) Message ${msg.messageId} created at ${timeSubtitle}`);
+                // Creates Message Header Row
+                tableRows.push(await createTableRow([await createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), height: 10, dismissOnSelect: false }));
+                tableRows.push(
+                    await createTableRow(
+                        [
+                            await createImageCell(await getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 10 }),
+                            await createTextCell(getMessageDescByType(msg.messageType), undefined, { align: 'left', widthWeight: 50, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                            await createTextCell(msg.isRead === false ? 'Unread' : 'Read', undefined, { align: 'right', widthWeight: 20, titleColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), titleFont: Font.body() }),
+                            await createTextCell('...', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
+                        ],
+                        {
+                            height: 40,
+                            dismissOnSelect: true,
+                            onSelect: async () => {
+                                console.log(`(Messages Table) Message Options button was pressed for ${msg.messageId}`);
+                                showActionPrompt(
+                                    'Message Options',
+                                    undefined,
+                                    [
+                                        {
+                                            title: 'Mark as Read',
+                                            action: async () => {
+                                                // console.log(`(Messages Table) Mark Message Read for ${msg.messageId} was pressed`);
+                                                // let ok = await showPrompt(`Message Options`, `Are you sure you want to mark this message as read?\n\nMessage List will reload after data is refeshed`, `Mark Read`, true);
+                                                // if (ok) {
+                                                console.log(`(Messages Table) Marking Message with ID: ${msg.messageId} as Read...`);
+                                                if (await markMultipleUserMessagesRead([msg.messageId])) {
+                                                    console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
+                                                    showAlert('Message marked read successfully', 'Message List will reload after data is refeshed');
+                                                    await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                }
+                                                // }
                                             },
                                             destructive: false,
                                             show: true,
                                         },
                                         {
-                                            title: 'Delete All',
-                                            action: async() => {
-                                                console.log(`(Messages Table) Delete All Messages was pressed`);
-                                                let ok = await showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?\n\nMessage List will reload after data is refeshed', `Delete (${msgIds.length}) Messages`, true);
+                                            title: 'Delete Message',
+                                            action: async () => {
+                                                console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
+                                                let ok = await showPrompt('Delete Message', 'Are you sure you want to delete this message?\n\nMessage List will reload after data is refeshed', 'Delete', true);
                                                 if (ok) {
-                                                    console.log(`(Messages Table) Deleting ${msgIds.length} Messages`);
+                                                    console.log(`(Messages Table) Delete Confirmed for Message ID: ${msg.messageId}`);
                                                     if (await deleteUserMessages([msg.messageId])) {
-                                                        console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
+                                                        console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
+                                                        showAlert('Message deleted successfully', 'Message List will reload after data is refeshed');
                                                         await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                    } else {
+                                                        await generateMessagesTable(vehicleData, unreadOnly);
                                                     }
                                                 }
                                             },
@@ -2025,117 +2233,38 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
                                         },
                                     ],
                                     true,
-                                );
-                                if (!prmpt) {
-                                    await generateMessagesTable(vehicleData, unreadOnly);
-                                }
-                            },
-                        }),
-                    ], { height: 40, dismissOnSelect: false },
-                ),
-            );
-
-            for (const [i, msg] of msgs.entries()) {
-                let dtTS = msg.createdDate ? convertFordDtToLocal(msg.createdDate) : undefined;
-                let timeDiff = dtTS ? timeDifference(dtTS) : '';
-                // Creates Message Header Row
-                tableRows.push(await createTableRow([await createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: msg.isRead === false ? new Color('#008200') : Color.lightGray(), height: 10, dismissOnSelect: false }));
-                tableRows.push(
-                    await createTableRow(
-                        [
-                            await createImageCell(await getFPImage(`ic_message_center_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
-                            await createTextCell(getMessageDescByType(msg.messageType), undefined, { align: 'left', widthWeight: 50, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                            await createTextCell(msg.isRead === false ? 'Unread' : 'Read', undefined, { align: 'right', widthWeight: 20, titleColor: new Color(msg.isRead === false ? '#008200' : runtimeData.textColor1), titleFont: Font.body() }),
-                            await createButtonCell('...', {
-                                align: 'right',
-                                widthWeight: 20,
-                                titleFont: Font.title3(),
-                                dismissOnTap: false,
-                                onTap: async() => {
-                                    console.log(`(Messages Table) Message Options was pressed for ${msg.messageId}`);
-                                    let prmpt = showActionPrompt(
-                                        'Message Options',
-                                        undefined, [{
-                                                title: 'Mark as Read',
-                                                action: async() => {
-                                                    console.log(`(Messages Table) Mark Message Read for ${msg.messageId} was pressed`);
-                                                    let ok = await showPrompt(`Message Options`, `Are you sure you want to mark this message as read?\n\nMessage List will reload after data is refeshed`, `Mark Read`, true);
-                                                    if (ok) {
-                                                        console.log(`(Messages Table) Marking Message Read Message ID: ${msg.messageId}`);
-                                                        if (await markMultipleUserMessagesRead([msg.messageId])) {
-                                                            console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
-                                                            await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
-                                                        }
-                                                    }
-                                                },
-                                                destructive: false,
-                                                show: true,
-                                            },
-                                            {
-                                                title: 'Delete Message',
-                                                action: async() => {
-                                                    console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
-                                                    let ok = await showPrompt('Delete Message', 'Are you sure you want to delete this message?\n\nMessage List will reload after data is refeshed', 'Delete', true);
-                                                    if (ok) {
-                                                        console.log(`(Messages Table) Delete Confirmed for Message ID: ${msg.messageId}`);
-                                                        if (await deleteUserMessages([msg.messageId])) {
-                                                            console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
-                                                            await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
-                                                        } else {
-                                                            await generateMessagesTable(vehicleData, unreadOnly);
-                                                        }
-                                                    }
-                                                },
-                                                destructive: true,
-                                                show: true,
-                                            },
-                                        ],
-                                        true,
-                                    );
-                                    if (!prmpt) {
+                                    async () => {
                                         await generateMessagesTable(vehicleData, unreadOnly);
-                                    }
-                                },
-                            }),
-                        ], { height: 40, dismissOnSelect: false },
+                                    },
+                                );
+                            },
+                        },
                     ),
                 );
 
                 // Creates Message Subject Row
                 tableRows.push(
-                    await createTableRow([await createTextCell(msg.messageSubject, dtTS ? dtTS.toLocaleString() : '' + timeDiff ? ` (${timeDiff})` : '', { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                    await createTableRow([await createTextCell(msg.messageSubject, timeSubtitle, { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
                         height: 44,
                         dismissOnSelect: false,
                     }),
                 );
 
                 // Creates Message Subject and Body Row
-                tableRows.push(await createTableRow([await createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() })], { height: msg.messageBody && msg.messageBody.length ? (msg.messageBody.length / 50).toFixed(0) * 35 : 44, dismissOnSelect: false }));
-
-                // Creates Timestamp text and delete button row
-                // tableRows.push(
-                //     await createTableRow([await createTextCell('Tap to Delete', undefined, { align: 'center', widthWeight: 100, titleColor: new Color('#FF0000'), titleFont: Font.body() })], {
-                //         height: 30,
-                //         dismissOnSelect: true,
-                //         onSelect: async () => {
-                //             console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
-                //             let ok = await showPrompt('Delete Message', 'Are you sure you want to delete this message?\n\nMessage List will reload after data is refeshed', 'Delete', true);
-                //             if (ok) {
-                //                 console.log(`(Messages Table) Delete Confirmed for Message ID: ${msg.messageId}`);
-                //                 if (await deleteUserMessages([msg.messageId])) {
-                //                     console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
-                //                     await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
-                //                 } else {
-                //                     await generateMessagesTable(vehicleData, unreadOnly);
-                //                 }
-                //             }
-                //         },
-                //     }),
-                // );
-                tableRows.push(await createTableRow([await createTextCell('', undefined, { align: 'left', widthWeight: 30 })]));
+                tableRows.push(await createTableRow([await createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() })], { height: getRowHeightByTxtLength(msg.messageBody), dismissOnSelect: false }));
             }
         } else {
-            tableRows.push(await createTableRow([await createTextCell(textValues().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() })], { height: 44, dismissOnSelect: false }));
+            tableRows.push(
+                await createTableRow(
+                    [
+                        await createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
+                        await createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() }),
+                        await createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
+                    ],
+                    { height: 44, dismissOnSelect: false },
+                ),
+            );
+            tableRows.push(await createTableRow([await createTextCell(textValues().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
         }
 
         await buildTableMenu(tableRows, false, false);
@@ -2144,11 +2273,15 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
     }
 }
 
+//*****************************************************************************************************************************
+//*                                              START TABLE HELPER FUNCTIONS
+//*****************************************************************************************************************************
+
 async function buildTableMenu(rows, showSeparators = false, fullscreen = false) {
     // Builds the table object
     let table = new UITable();
     table.showSeparators = showSeparators;
-    rows.forEach(async(row) => {
+    rows.forEach(async (row) => {
         // adds the rows and cells to the table
         table.addRow(row);
     });
@@ -2221,6 +2354,82 @@ function applyTableOptions(src, options) {
     }
     return src;
 }
+
+function getAlertColorByCode(code) {
+    switch (code) {
+        case 'A':
+            return '#E96C00';
+        case 'G':
+            return '#008200';
+        case 'R':
+            return '#FF0000';
+        default:
+            return runtimeData.textColor1;
+    }
+}
+
+function getAlertDescByType(type) {
+    switch (type) {
+        case 'VHA':
+            return 'Vehicle Health';
+        case 'MMOTA':
+            return 'OTA Update';
+        default:
+            return '';
+    }
+}
+
+function getMessageDescByType(type) {
+    switch (type) {
+        case 'GENERAL':
+            return 'General';
+        case 'EXTERNALNOTIFICATIONREQUEST':
+            return 'External';
+        default:
+            return '';
+    }
+}
+
+function getRowHeightByTxtLength(txt) {
+    let result = txt && txt.length ? (txt.length / 75).toFixed(0) * 35 : 0;
+    // console.log(`txt length: ${txt.length} - result: ${result}`);
+    return result < 44 ? 44 : result;
+}
+
+async function showActionPrompt(title = undefined, msg = undefined, menuItems, showCancel = false, cancelFunc = undefined) {
+    let prompt = new Alert();
+    prompt.title = title;
+    prompt.message = msg;
+    menuItems.forEach((item, ind) => {
+        if (item.destructive) {
+            prompt.addDestructiveAction(item.title);
+        } else {
+            prompt.addAction(item.title);
+        }
+    });
+    if (showCancel) {
+        prompt.addAction('Cancel');
+    }
+
+    const respInd = await prompt.presentAlert();
+    // console.log(`showAlert Response: ${respInd}`);
+    if (respInd !== null) {
+        const menuItem = menuItems[respInd];
+        if (respInd > menuItems.length - 1) {
+            console.log('Cancelled');
+            if (cancelFunc) {
+                await cancelFunc();
+            }
+        } else {
+            if (menuItem.action) {
+                await menuItem.action();
+            }
+        }
+    }
+}
+
+//*****************************************************END TABLE HELPER FUNCTIONS********************************************************
+//***************************************************************************************************************************************
 
 async function showDataWebView(title, heading, data, type = undefined) {
     // console.log(`showDataWebView(${title}, ${heading}, ${data})`);
@@ -2314,125 +2523,6 @@ async function showDataWebView(title, heading, data, type = undefined) {
         await wv.present(true);
     } catch (e) {
         console.log(e);
-    }
-}
-
-async function createMainMenu() {
-    const vehicleData = await fetchVehicleData(true);
-    let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : textValues().UIValues.unknown;
-    const mainMenu = new Alert();
-    mainMenu.title = `FordPass Actions`;
-    mainMenu.message = `Widge Version: (${SCRIPT_VERSION})\nVehicle Updated: (${refreshTime})`.trim();
-
-    let menuItems = (await getMainMenuItems(vehicleData)).filter((item) => item.show === true);
-    // console.log(`Menu Items: (${menuItems.length}) ${JSON.stringify(menuItems)}`);
-    menuItems.forEach((item, ind) => {
-        if (item.destructive) {
-            mainMenu.addDestructiveAction(item.title);
-        } else {
-            mainMenu.addAction(item.title);
-        }
-    });
-    const respInd = await mainMenu.presentSheet();
-    if (respInd !== null) {
-        const menuItem = menuItems[respInd];
-        // console.log(`(Main Menu) Selected: ${JSON.stringify(menuItem)}`);
-        menuItem.action();
-    }
-}
-
-async function createSettingMenu() {
-    const settingMenu = new Alert();
-    settingMenu.title = `FordPass Widget Settings`;
-    //settingMenu.message = ``;
-
-    let mapProvider = await getMapProvider();
-    settingMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //0
-    settingMenu.addAction('Advanced Info Menu'); //1
-    settingMenu.addDestructiveAction('Reset Menu'); //2
-    settingMenu.addAction('Back'); //3
-
-    const respInd = await settingMenu.presentSheet();
-    switch (respInd) {
-        case 0:
-            console.log('(Setting Menu) Map Provider pressed');
-            await toggleMapProvider();
-            createSettingMenu();
-            break;
-        case 1:
-            console.log('(Setting Menu) Debug Menu pressed');
-            subControlMenu('advanceInfoMenu');
-            break;
-        case 2:
-            console.log('(Setting Menu) Clear All Data was pressed');
-            await subControlMenu('resetDataMenu');
-            // createSettingMenu();
-            break;
-        case 3:
-            console.log('(Setting Menu) Back was pressed');
-            createMainMenu();
-            break;
-    }
-}
-
-async function requiredPrefsMenu() {
-    try {
-        let user = await getKeychainValue('fpUser');
-        let pass = await getKeychainValue('fpPass');
-        let vin = await getKeychainValue('fpVin');
-        let mapProvider = await getMapProvider();
-
-        let prefsMenu = new Alert();
-        prefsMenu.title = 'Required Settings Missing';
-        prefsMenu.message = 'Please enter you FordPass Credentials and Vehicle VIN.\n\nTap a setting to toggle change\nPress Done to Save.';
-
-        prefsMenu.addTextField('FordPass Email', user || '');
-        prefsMenu.addSecureTextField('FordPass Password', pass || '');
-        prefsMenu.addTextField('Vehicle VIN', vin || '');
-
-        prefsMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //0
-
-        prefsMenu.addAction('Save'); //1
-        prefsMenu.addCancelAction('Cancel'); //2
-
-        let respInd = await prefsMenu.presentAlert();
-        switch (respInd) {
-            case 0:
-                console.log('(Required Prefs Menu) Map Provider pressed');
-                await toggleMapProvider();
-                requiredPrefsMenu();
-                break;
-            case 1:
-                console.log('(Required Prefs Menu) Done was pressed');
-                user = prefsMenu.textFieldValue(0);
-                pass = prefsMenu.textFieldValue(1);
-                vin = prefsMenu.textFieldValue(2);
-                // console.log(`${user} ${pass} ${vin}`);
-
-                if (inputTest(user) && inputTest(pass) && inputTest(vin)) {
-                    await setKeychainValue('fpUser', user);
-                    await setKeychainValue('fpPass', pass);
-                    await setKeychainValue('fpMapProvider', mapProvider);
-                    let vinChk = await vinCheck(vin, true);
-                    console.log(`VIN Number Ok: ${vinChk}`);
-                    if (vinChk) {
-                        await setKeychainValue('fpVin', vin.toUpperCase());
-                        await queryFordPassPrefs(true);
-                        return true;
-                    } else {
-                        // await requiredPrefsMenu();
-                        await prepWidget();
-                    }
-                } else {
-                    await prepWidget();
-                }
-                break;
-            case 2:
-                return false;
-        }
-    } catch (err) {
-        console.log(`(Required Prefs Menu) Error: ${err}`);
-        throw err;
     }
 }
 
@@ -2645,7 +2735,8 @@ async function getVehicleAlerts() {
         'getVehicleAlerts',
         `https://api.mps.ford.com/api/expvehiclealerts/v2/details`,
         'POST',
-        false, {
+        false,
+        {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -2654,7 +2745,8 @@ async function getVehicleAlerts() {
             'auth-token': `${token}`,
             countryCode: country,
             locale: lang,
-        }, {
+        },
+        {
             VIN: vin,
             userAuthorization: 'AUTHORIZED',
             hmiPreferredLanguage: '',
@@ -2901,42 +2993,53 @@ const vehicleCmdConfigs = (vin) => {
     return {
         lock: {
             desc: 'Lock Doors',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                    method: 'PUT',
+                },
+            ],
         },
         unlock: {
             desc: 'Unlock Doors',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                    method: 'DELETE',
+                },
+            ],
         },
         start: {
             desc: 'Remote Start',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                    method: 'PUT',
+                },
+            ],
         },
         stop: {
             desc: 'Remote Stop',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                    method: 'DELETE',
+                },
+            ],
         },
         horn_and_lights: {
             desc: 'Horn & Lights On',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/panic/3`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/panic/3`,
+                    method: 'PUT',
+                },
+            ],
         },
         zone_lights_off: {
             desc: 'Zone Off Zone Lighting (All Lights)',
-            cmds: [{
+            cmds: [
+                {
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'DELETE',
                 },
@@ -2948,7 +3051,8 @@ const vehicleCmdConfigs = (vin) => {
         },
         zone_lights_on: {
             desc: 'Turn On Zone Lighting (All Lights)',
-            cmds: [{
+            cmds: [
+                {
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'PUT',
                 },
@@ -2960,38 +3064,48 @@ const vehicleCmdConfigs = (vin) => {
         },
         guard_mode_on: {
             desc: 'Enable SecuriAlert',
-            cmds: [{
-                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                    method: 'PUT',
+                },
+            ],
         },
         guard_mode_off: {
             desc: 'Disable SecuriAlert',
-            cmds: [{
-                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                    method: 'DELETE',
+                },
+            ],
         },
         trailer_light_check_on: {
             desc: 'Trailer Light Check ON',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
+                    method: 'PUT',
+                },
+            ],
         },
         trailer_light_check_off: {
             desc: 'Trailer Light Check OFF',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
-                method: 'DELETE',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
+                    method: 'DELETE',
+                },
+            ],
         },
         status: {
             desc: 'Refresh Vehicle Status',
-            cmds: [{
-                uri: `${baseUrl}/vehicles/${vin}/status`,
-                method: 'PUT',
-            }, ],
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/status`,
+                    method: 'PUT',
+                },
+            ],
         },
     };
 };
@@ -3254,10 +3368,10 @@ async function fetchVehicleData(loadLocal = false) {
     //tire pressure
     let tpms = vehicleStatus.TPMS;
     vehicleData.tirePressure = {
-        leftFront: await pressureToFixed(tpms.leftFrontTirePressure.value, 1),
-        rightFront: await pressureToFixed(tpms.rightFrontTirePressure.value, 1),
-        leftRear: await pressureToFixed(tpms.outerLeftRearTirePressure.value, 1),
-        rightRear: await pressureToFixed(tpms.outerRightRearTirePressure.value, 1),
+        leftFront: await pressureToFixed(tpms.leftFrontTirePressure.value, 0),
+        rightFront: await pressureToFixed(tpms.rightFrontTirePressure.value, 0),
+        leftRear: await pressureToFixed(tpms.outerLeftRearTirePressure.value, 0),
+        rightRear: await pressureToFixed(tpms.outerRightRearTirePressure.value, 0),
     };
 
     vehicleData.recallInfo = (await getVehicleRecalls()) || [];
@@ -3545,7 +3659,7 @@ async function clearFileManager() {
     console.log('Info: Clearing All Files from Local Directory');
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    fm.listContents(dir).forEach(async(file) => {
+    fm.listContents(dir).forEach(async (file) => {
         await removeLocalData(file);
     });
 }
