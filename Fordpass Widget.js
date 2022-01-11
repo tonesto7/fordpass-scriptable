@@ -425,7 +425,8 @@ if (config.runsInWidget) {
         await Speech.speak(`Siri Command Received ${args.shortcutParameter}`);
         // Create a parser function...
     } else {
-        createMainMenu();
+        // createMainMenu();
+        generateMainInfoTable();
     }
 } else if (config.runsWithSiri || config.runsInActionExtension) {
     // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -1315,43 +1316,25 @@ async function getMainMenuItems(vehicleData) {
             destructive: false,
             show: true,
         },
-        {
-            title: 'View Dashboard',
-            action: async() => {
-                console.log('(Main Menu) View Info was pressed');
-                await generateMainInfoTable(vehicleData);
-            },
-            destructive: false,
-            show: true,
-        },
-        {
-            title: 'Lock Control',
-            action: async() => {
-                console.log('(Main Menu) Lock Control was pressed');
-                await subControlMenu('lockControl');
-            },
-            destructive: true,
-            show: caps && caps.length && caps.includes('DOOR_LOCK_UNLOCK'), //true,
-        },
-        {
-            title: 'Remote Start Control',
-            action: async() => {
-                console.log('(Main Menu) Stop was pressed');
-                await subControlMenu('remoteStartControl');
-            },
-            destructive: false,
-            show: caps && caps.length && caps.includes('REMOTE_START'), //true,
-        },
+        // {
+        //     title: 'View Dashboard',
+        //     action: async() => {
+        //         console.log('(Main Menu) View Info was pressed');
+        //         await generateMainInfoTable(vehicleData);
+        //     },
+        //     destructive: false,
+        //     show: true,
+        // },
 
-        {
-            title: 'Sound Horn/Flash Lights',
-            action: async() => {
-                console.log('(Main Menu) Horn/Lights was pressed');
-                await sendVehicleCmd('horn_and_lights');
-            },
-            destructive: true,
-            show: caps && caps.length && caps.includes('REMOTE_PANIC_ALARM'),
-        },
+        // {
+        //     title: 'Sound Horn/Flash Lights',
+        //     action: async() => {
+        //         console.log('(Main Menu) Horn/Lights was pressed');
+        //         await sendVehicleCmd('horn_and_lights');
+        //     },
+        //     destructive: true,
+        //     show: caps && caps.length && caps.includes('REMOTE_PANIC_ALARM'),
+        // },
         {
             title: 'Force Refresh',
             action: async() => {
@@ -1362,13 +1345,13 @@ async function getMainMenuItems(vehicleData) {
             show: true,
         },
         {
-            title: 'Advanced Controls',
+            title: 'Advanced Info',
             action: async() => {
-                console.log('(Main Menu) Advanced Control was pressed');
-                await subControlMenu('advancedControl');
+                console.log('(Main Menu) Advanced Info was pressed');
+                subControlMenu('advanceInfoMenu');
             },
             destructive: false,
-            show: caps && caps.length && (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES') || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT')),
+            show: true,
         },
         {
             title: 'Widget Settings',
@@ -1451,124 +1434,11 @@ async function subControlMenu(type) {
             ];
             break;
 
-        case 'lockControl':
-            title = 'Lock Control';
-            message = `Lock Status: (${vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked'})`;
-            items = [{
-                    title: 'Lock Vehicle',
-                    action: async() => {
-                        console.log('(Lock Control Menu) Lock was pressed');
-                        await sendVehicleCmd('lock');
-                    },
-                    destructive: false,
-                    show: true,
-                },
-                {
-                    title: 'Unlock Vehicle',
-                    action: async() => {
-                        console.log('(Lock Control Menu) Unlock was pressed');
-                        await sendVehicleCmd('unlock');
-                    },
-                    destructive: true,
-                    show: true,
-                },
-                {
-                    title: 'Back',
-                    action: async() => {
-                        console.log('(Lock Control Menu) Back was pressed');
-                        createMainMenu();
-                    },
-                    destructive: false,
-                    show: true,
-                },
-            ];
-            break;
-        case 'remoteStartControl':
-            title = 'Remote Start Control';
-            let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
-            let remStartDur = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.duration ? vehicleData.remoteStartStatus.duration : undefined;
-            if (remStartOn) {
-                message = `Remote Start Status: (Running)${remStartDur ? `\nDuration: (${remStartDur} min.)` : ''}`;
-            } else {
-                message = 'Remote Start Status: (Not Activated)';
-            }
-            items = [
-                {
-                    title: 'Remote Start (Stop)',
-                    action: async () => {
-                        console.log('(Remote Start Control Menu) Stop was pressed');
-                        await sendVehicleCmd('stop');
-                    },
-                    destructive: false,
-                    show: true,
-                },
-                {
-                    title: 'Remote Start (Run)',
-                    action: async () => {
-                        console.log('(Remote Start Control Menu) Start was pressed');
-                        await sendVehicleCmd('start');
-                    },
-                    destructive: true,
-                    show: true,
-                },
-                {
-                    title: 'Back',
-                    action: async () => {
-                        console.log('(Remote Start Control Menu) Back was pressed');
-                        createMainMenu();
-                    },
-                    destructive: false,
-                    show: true,
-                },
-            ];
-            break;
-        case 'advancedControl':
-            title = 'Advanced Controls';
-            items = [
-                {
-                    title: 'ZoneLighting Control',
-                    action: async () => {
-                        console.log('(Advanced Controls Menu) Zone Lighting was pressed');
-                        await subControlMenu('zoneLighting');
-                    },
-                    destructive: false,
-                    show: caps && caps.length && (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES')),
-                },
-                {
-                    title: 'SecuriAlert Control',
-                    action: async () => {
-                        console.log('(Advanced Controls Menu) SecuriAlert was pressed');
-                        await subControlMenu('securiAlert');
-                    },
-                    destructive: false,
-                    show: caps && caps.length && caps.includes('GUARD_MODE'),
-                },
-                {
-                    title: 'Trailer Lighting Check',
-                    action: async () => {
-                        console.log('(Advanced Controls Menu) Trailer Light Check was pressed');
-                        await subControlMenu('trailerLightCheck');
-                    },
-                    destructive: false,
-                    show: caps && caps.length && caps.includes('TRAILER_LIGHT'),
-                },
-                {
-                    title: 'Back',
-                    action: async () => {
-                        console.log('(Advanced Controls Menu) Back was pressed');
-                        createMainMenu();
-                    },
-                    destructive: false,
-                    show: true,
-                },
-            ];
-            break;
         case 'advanceInfoMenu':
             title = 'Advanced Info Menu';
-            items = [
-                {
+            items = [{
                     title: 'Copy Vehicle Data to Clipboard',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Debug Menu) Copy Data was pressed');
                         let data = await fetchVehicleData(true);
                         data = scrubPersonalData(data);
@@ -1581,7 +1451,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'View OTA API Info',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Debug Menu) OTA Info was pressed');
                         let data = await getVehicleOtaInfo();
                         await showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
@@ -1592,7 +1462,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'View Vehicle Data Output',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Debug Menu) Vehicle Data was pressed');
                         let data = await fetchVehicleData(true);
                         data.userPrefs = {
@@ -1611,7 +1481,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Email Vehicle Data to Developer',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Debug Menu) Email Vehicle Data was pressed');
                         let data = await fetchVehicleData(true);
                         data.otaInfo = await getVehicleOtaInfo();
@@ -1633,7 +1503,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Back',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Debug Menu) Back was pressed');
                         createMainMenu();
                     },
@@ -1644,10 +1514,9 @@ async function subControlMenu(type) {
             break;
         case 'resetDataMenu':
             title = 'Reset Data Menu';
-            items = [
-                {
+            items = [{
                     title: 'Clear Cached Files',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Reset Data Menu) Clear Files was pressed');
                         await clearFileManager();
                         subControlMenu('resetDataMenu');
@@ -1657,7 +1526,7 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Clear Saved Settings',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Reset Data Menu) Clear Settings was pressed');
                         await clearKeychain();
                         await showAlert('Reset Data Menu', 'Saved Settings Cleared\n\nPlease run the script again to re-initialize the app.');
@@ -1667,111 +1536,12 @@ async function subControlMenu(type) {
                 },
                 {
                     title: 'Reset Everything',
-                    action: async () => {
+                    action: async() => {
                         console.log('(Reset Data Menu) Reset All was pressed');
                         await clearKeychain();
                         await showAlert('Reset Data Menu', 'All Files and Settings Cleared\n\nPlease run the script again to re-initialize the app.');
                     },
                     destructive: true,
-                    show: true,
-                },
-            ];
-            break;
-        case 'zoneLighting':
-            title = 'Zone Lighting Control';
-            message = '';
-            items = [
-                {
-                    title: 'Turn On All ZoneLighting',
-                    action: async () => {
-                        console.log('(Zone Lighting Menu) On was pressed');
-                        await sendVehicleCmd('zone_lights_on');
-                    },
-                    destructive: false,
-                    show: true,
-                },
-                {
-                    title: 'Turn Off All ZoneLighting',
-                    action: async () => {
-                        console.log('(Zone Lighting Menu) Off was pressed');
-                        await sendVehicleCmd('zone_lights_off');
-                    },
-                    destructive: false,
-                    show: true,
-                },
-                {
-                    title: 'Back',
-                    action: async () => {
-                        console.log('(Zone Lighting Menu) Back was pressed');
-                        subControlMenu('advancedControl');
-                    },
-                    destructive: false,
-                    show: true,
-                },
-            ];
-            break;
-        case 'securiAlert':
-            title = 'SecuriAlert Control';
-            message = '';
-            items = [
-                {
-                    title: 'Disable SecuriAlert',
-                    action: async () => {
-                        console.log('(SecuriAlert Menu) Off was pressed');
-                        await sendVehicleCmd('guard_mode_off');
-                    },
-                    destructive: true,
-                    show: true,
-                },
-                {
-                    title: 'Enable SecuriAlert',
-                    action: async () => {
-                        console.log('(SecuriAlert Menu) On was pressed');
-                        await sendVehicleCmd('guard_mode_on');
-                    },
-                    destructive: false,
-                    show: true,
-                },
-                {
-                    title: 'Back',
-                    action: async () => {
-                        console.log('(SecuriAlert Menu) Back was pressed');
-                        subControlMenu('advancedControl');
-                    },
-                    destructive: false,
-                    show: true,
-                },
-            ];
-            break;
-        case 'trailerLightCheck':
-            title = 'Trailer Lighting Check Control';
-            message = '';
-            items = [
-                {
-                    title: 'Turn On Trailer Light Check',
-                    action: async () => {
-                        console.log('(Trailer Lighting Menu) On was pressed');
-                        await sendVehicleCmd('trailer_light_check_on');
-                    },
-                    destructive: true,
-                    show: true,
-                },
-                {
-                    title: 'Turn Off Trailer Light Check',
-                    action: async () => {
-                        console.log('(Trailer Lighting Menu) Off was pressed');
-                        await sendVehicleCmd('trailer_light_check_off');
-                    },
-                    destructive: false,
-                    show: true,
-                },
-                {
-                    title: 'Back',
-                    action: async () => {
-                        console.log('(Trailer Lighting Menu) Back was pressed');
-                        subControlMenu('advancedControl');
-                    },
-                    destructive: false,
                     show: true,
                 },
             ];
@@ -1799,7 +1569,8 @@ async function subControlMenu(type) {
     }
 }
 
-async function generateMainInfoTable(vehicleData) {
+async function generateMainInfoTable() {
+    const vehicleData = await fetchVehicleData(true);
     const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
     const distanceMultiplier = (await useMetricUnits()) ? 1 : 0.621371; // distance multiplier
     const distanceUnit = (await useMetricUnits()) ? 'km' : 'mi'; // unit of length
@@ -1828,24 +1599,28 @@ async function generateMainInfoTable(vehicleData) {
                     await createButtonCell(msgs.length ? `Messages: ${msgs.length}` : '', {
                         align: 'left',
                         widthWeight: 30,
-                        onTap: async () => {
+                        onTap: async() => {
                             console.log('(Dashboard Menu) View Messages was pressed');
                             await generateMessagesTable(vehicleData, false);
                         },
                     }),
 
                     await createTextCell(vehicleData.info.vehicle.vehicleType, undefined, { align: 'center', widthWeight: 40, dismissOnTap: false, titleColor: new Color(runtimeData.textWhite), subtitleColor: new Color('#5A65C0'), titleFont: Font.title2(), subtitleFont: Font.subheadline() }),
-                    await createButtonCell(vehicleData.recallInfo && vehicleData.recallInfo[0] && vehicleData.recallInfo[0].recalls && vehicleData.recallInfo[0].recalls.length ? `Recalls: ${vehicleData.recallInfo[0].recalls.length}` : '', {
+                    await createButtonCell('Menu', {
                         align: 'right',
                         widthWeight: 30,
-                        onTap: async () => {
-                            console.log('(Dashboard Menu) View Recalls was pressed');
-                            // await sendVehicleCmd('unlock');
-                            await generateRecallTable(vehicleData);
+                        dismissOnTap: false,
+                        onTap: async() => {
+                            console.log(`(Dashboard Menu) Options was pressed`);
+                            createMainMenu();
                         },
                     }),
-                ],
-                { backgroundColor: new Color(headerColor), height: 30, isHeader: true, dismissOnSelect: false },
+                ], {
+                    backgroundColor: new Color(headerColor),
+                    height: 30,
+                    isHeader: true,
+                    dismissOnSelect: false,
+                },
             ),
         );
 
@@ -1875,11 +1650,10 @@ async function generateMainInfoTable(vehicleData) {
                         [
                             await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
                             await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 93, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(7) }),
-                        ],
-                        {
+                        ], {
                             height: 44,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Dashboard Menu) Alert Item row was pressed');
                                 // await showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
                                 await generateAlertsTable(vehicleData);
@@ -1897,18 +1671,17 @@ async function generateMainInfoTable(vehicleData) {
             tableRows.push(
                 await createTableRow(
                     [
-                        await createImageCell(await getFPImage(`ic_message_center_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                        await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 78, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                        await createImageCell(await getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                        await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 75, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
                         await createButtonCell('View', {
                             align: 'right',
                             widthWeight: 15,
-                            onTap: async () => {
+                            onTap: async() => {
                                 console.log('(Dashboard Menu) View Unread Messages was pressed');
                                 await generateMessagesTable(vehicleData, true);
                             },
                         }),
-                    ],
-                    { height: 44, dismissOnSelect: false },
+                    ], { height: 44, dismissOnSelect: false },
                 ),
             );
         }
@@ -1923,12 +1696,12 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`${vehicleData.lockStatus === 'LOCKED' ? 'unlock_icon' : 'lock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                            await createTextCell('Locks', vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`${vehicleData.lockStatus === 'LOCKED' ? 'unlock_icon' : 'lock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                            await createTextCell('Locks', vehicleData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Unlock', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) Lock was pressed');
                                     await sendVehicleCmd('unlock');
                                 },
@@ -1936,13 +1709,12 @@ async function generateMainInfoTable(vehicleData) {
                             await createButtonCell('Lock', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) Lock was pressed');
                                     await sendVehicleCmd('lock');
                                 },
                             }),
-                        ],
-                        { height: 44, dismissOnSelect: false },
+                        ], { height: 50, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1952,12 +1724,12 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) Stop was pressed');
                                     await sendVehicleCmd('stop');
                                 },
@@ -1965,13 +1737,33 @@ async function generateMainInfoTable(vehicleData) {
                             await createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) Start was pressed');
                                     await sendVehicleCmd('start');
                                 },
                             }),
-                        ],
-                        { height: 44, dismissOnSelect: false },
+                        ], { height: 44, dismissOnSelect: false },
+                    ),
+                );
+            }
+
+            // Generates the Horn/Lights Control Row
+            if (caps.includes('REMOTE_PANIC_ALARM')) {
+                tableRows.push(
+                    await createTableRow(
+                        [
+                            await createImageCell(await getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                            await createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 75, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+
+                            await createButtonCell('Start', {
+                                align: 'center',
+                                widthWeight: 15,
+                                onTap: async() => {
+                                    console.log('(Dashboard Menu) Horn/Lights was pressed');
+                                    await sendVehicleCmd('horn_and_lights');
+                                },
+                            }),
+                        ], { height: 50, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1987,12 +1779,12 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                            await createTextCell('SecuriAlert', vehicleData.alarmStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                            await createTextCell('SecuriAlert', vehicleData.alarmStatus, { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) SecuriAlert Enable was pressed');
                                     await sendVehicleCmd('guard_mode_on');
                                 },
@@ -2000,13 +1792,12 @@ async function generateMainInfoTable(vehicleData) {
                             await createButtonCell('Disable', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) SecuriAlert Disable was pressed');
                                     await sendVehicleCmd('guard_mode_off');
                                 },
                             }),
-                        ],
-                        { height: 44, dismissOnSelect: false },
+                        ], { height: 50, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2016,12 +1807,12 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                            await createTextCell('Zone Lighting', vehicleData.zoneLightingStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                            await createTextCell('Zone Lighting', vehicleData.zoneLightingStatus, { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) Zone Lighting Enable was pressed');
                                     await sendVehicleCmd('zone_lights_on');
                                 },
@@ -2029,13 +1820,12 @@ async function generateMainInfoTable(vehicleData) {
                             await createButtonCell('Disable', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) Zone Lighting Disable was pressed');
                                     await sendVehicleCmd('zone_lights_off');
                                 },
                             }),
-                        ],
-                        { height: 44, dismissOnSelect: false },
+                        ], { height: 50, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2045,12 +1835,12 @@ async function generateMainInfoTable(vehicleData) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                            await createTextCell('Trailer Light Check', vehicleData.alarmStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createImageCell(await getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 10 }),
+                            await createTextCell('Trailer Light Check', vehicleData.trailerLightCheckStatus, { align: 'left', widthWeight: 60, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vehicleData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
                             await createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) Trailer Light Check Start was pressed');
                                     await sendVehicleCmd('trailer_light_check_on');
                                 },
@@ -2058,13 +1848,12 @@ async function generateMainInfoTable(vehicleData) {
                             await createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 15,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard Menu) Trailer Light Check Stop was pressed');
                                     await sendVehicleCmd('trailer_light_check_off');
                                 },
                             }),
-                        ],
-                        { height: 44, dismissOnSelect: false },
+                        ], { height: 50, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2197,16 +1986,14 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
                             widthWeight: 20,
                             titleFont: Font.title3(),
                             dismissOnTap: true,
-                            onTap: async () => {
+                            onTap: async() => {
                                 console.log(`(Messages Table) All Message Options was pressed`);
                                 let msgIds = msgs.map((msg) => msg.messageId);
                                 let prmpt = showActionPrompt(
                                     'All Message Options',
-                                    undefined,
-                                    [
-                                        {
+                                    undefined, [{
                                             title: 'Mark All Read',
-                                            action: async () => {
+                                            action: async() => {
                                                 console.log(`(Messages Table) Mark All Messages Read was pressed`);
                                                 let ok = await showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?\n\nMessage List will reload after data is refeshed`, `Mark (${msgIds.length}) Read`, true);
                                                 if (ok) {
@@ -2222,7 +2009,7 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
                                         },
                                         {
                                             title: 'Delete All',
-                                            action: async () => {
+                                            action: async() => {
                                                 console.log(`(Messages Table) Delete All Messages was pressed`);
                                                 let ok = await showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?\n\nMessage List will reload after data is refeshed', `Delete (${msgIds.length}) Messages`, true);
                                                 if (ok) {
@@ -2244,8 +2031,7 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
                                 }
                             },
                         }),
-                    ],
-                    { height: 40, dismissOnSelect: false },
+                    ], { height: 40, dismissOnSelect: false },
                 ),
             );
 
@@ -2265,15 +2051,13 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
                                 widthWeight: 20,
                                 titleFont: Font.title3(),
                                 dismissOnTap: false,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log(`(Messages Table) Message Options was pressed for ${msg.messageId}`);
                                     let prmpt = showActionPrompt(
                                         'Message Options',
-                                        undefined,
-                                        [
-                                            {
+                                        undefined, [{
                                                 title: 'Mark as Read',
-                                                action: async () => {
+                                                action: async() => {
                                                     console.log(`(Messages Table) Mark Message Read for ${msg.messageId} was pressed`);
                                                     let ok = await showPrompt(`Message Options`, `Are you sure you want to mark this message as read?\n\nMessage List will reload after data is refeshed`, `Mark Read`, true);
                                                     if (ok) {
@@ -2289,7 +2073,7 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
                                             },
                                             {
                                                 title: 'Delete Message',
-                                                action: async () => {
+                                                action: async() => {
                                                     console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
                                                     let ok = await showPrompt('Delete Message', 'Are you sure you want to delete this message?\n\nMessage List will reload after data is refeshed', 'Delete', true);
                                                     if (ok) {
@@ -2313,8 +2097,7 @@ async function generateMessagesTable(vehicleData, unreadOnly = false) {
                                     }
                                 },
                             }),
-                        ],
-                        { height: 40, dismissOnSelect: false },
+                        ], { height: 40, dismissOnSelect: false },
                     ),
                 );
 
@@ -2365,7 +2148,7 @@ async function buildTableMenu(rows, showSeparators = false, fullscreen = false) 
     // Builds the table object
     let table = new UITable();
     table.showSeparators = showSeparators;
-    rows.forEach(async (row) => {
+    rows.forEach(async(row) => {
         // adds the rows and cells to the table
         table.addRow(row);
     });
@@ -2862,8 +2645,7 @@ async function getVehicleAlerts() {
         'getVehicleAlerts',
         `https://api.mps.ford.com/api/expvehiclealerts/v2/details`,
         'POST',
-        false,
-        {
+        false, {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -2872,8 +2654,7 @@ async function getVehicleAlerts() {
             'auth-token': `${token}`,
             countryCode: country,
             locale: lang,
-        },
-        {
+        }, {
             VIN: vin,
             userAuthorization: 'AUTHORIZED',
             hmiPreferredLanguage: '',
@@ -3120,53 +2901,42 @@ const vehicleCmdConfigs = (vin) => {
     return {
         lock: {
             desc: 'Lock Doors',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                method: 'PUT',
+            }, ],
         },
         unlock: {
             desc: 'Unlock Doors',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
-                    method: 'DELETE',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                method: 'DELETE',
+            }, ],
         },
         start: {
             desc: 'Remote Start',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                method: 'PUT',
+            }, ],
         },
         stop: {
             desc: 'Remote Stop',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
-                    method: 'DELETE',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                method: 'DELETE',
+            }, ],
         },
         horn_and_lights: {
             desc: 'Horn & Lights On',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/panic/3`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/panic/3`,
+                method: 'PUT',
+            }, ],
         },
         zone_lights_off: {
             desc: 'Zone Off Zone Lighting (All Lights)',
-            cmds: [
-                {
+            cmds: [{
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'DELETE',
                 },
@@ -3178,8 +2948,7 @@ const vehicleCmdConfigs = (vin) => {
         },
         zone_lights_on: {
             desc: 'Turn On Zone Lighting (All Lights)',
-            cmds: [
-                {
+            cmds: [{
                     uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                     method: 'PUT',
                 },
@@ -3191,48 +2960,38 @@ const vehicleCmdConfigs = (vin) => {
         },
         guard_mode_on: {
             desc: 'Enable SecuriAlert',
-            cmds: [
-                {
-                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                method: 'PUT',
+            }, ],
         },
         guard_mode_off: {
             desc: 'Disable SecuriAlert',
-            cmds: [
-                {
-                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                    method: 'DELETE',
-                },
-            ],
+            cmds: [{
+                uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                method: 'DELETE',
+            }, ],
         },
         trailer_light_check_on: {
             desc: 'Trailer Light Check ON',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
+                method: 'PUT',
+            }, ],
         },
         trailer_light_check_off: {
             desc: 'Trailer Light Check OFF',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
-                    method: 'DELETE',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
+                method: 'DELETE',
+            }, ],
         },
         status: {
             desc: 'Refresh Vehicle Status',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/status`,
-                    method: 'PUT',
-                },
-            ],
+            cmds: [{
+                uri: `${baseUrl}/vehicles/${vin}/status`,
+                method: 'PUT',
+            }, ],
         },
     };
 };
@@ -3786,7 +3545,7 @@ async function clearFileManager() {
     console.log('Info: Clearing All Files from Local Directory');
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    fm.listContents(dir).forEach(async (file) => {
+    fm.listContents(dir).forEach(async(file) => {
         await removeLocalData(file);
     });
 }
