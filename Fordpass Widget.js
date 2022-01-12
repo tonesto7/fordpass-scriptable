@@ -128,8 +128,6 @@ Changelog:
         
 // Todo: 
     - add runtime remaining to remote start output
-    - add deep sleep and firmware updates to alerts section of the dashboard menu
-    - detail zone lighting items enabled when enabled
     - add charge scheduling to dashboard menu
     - use OTA info to show when an update is available or pending.
     - add other vehicle status info (tire, oil, battery) to the dashboard
@@ -139,7 +137,7 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '1.5.0';
-const SCRIPT_TS = '2022-01-11 19:00:00';
+const SCRIPT_TS = '2022-01-12 08:00:00';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -1694,7 +1692,7 @@ async function generateMainInfoTable() {
                         align: 'left',
                         widthWeight: 27,
                         onTap: async() => {
-                            console.log('(Dashboard Menu) View Messages was pressed');
+                            console.log('(Dashboard) View Messages was pressed');
                             await generateMessagesTable(vehicleData, false);
                         },
                     }),
@@ -1705,7 +1703,7 @@ async function generateMainInfoTable() {
                         widthWeight: 30,
                         dismissOnTap: false,
                         onTap: async() => {
-                            console.log(`(Dashboard Menu) Menu Button was pressed`);
+                            console.log(`(Dashboard) Menu Button was pressed`);
                             menuBuilderByType('mainMenu');
                         },
                     }),
@@ -1730,20 +1728,15 @@ async function generateMainInfoTable() {
             }),
         );
 
-        // "summary": [
-        //     { "alertType": "VHA", "alertDescription": "Low Washer Fluid", "alertIdentifier": "E19-374-43", "urgency": "L", "colorCode": "A", "iconName": "ic_washer_fluid", "alertPriority": 1 },
-        //     { "alertType": "MMOTA", "alertDescription": "UPDATE SUCCESSFUL", "alertIdentifier": "MMOTA_UPDATE_SUCCESSFUL", "urgency": null, "colorCode": "G", "iconName": "ic_mmota_alert_update_successful", "alertPriority": 2 }
-        // ]
-
-        vehicleData.firmwareUpdating = true;
-        vehicleData.deepSleepMode = true;
+        // vehicleData.firmwareUpdating = true;
+        // vehicleData.deepSleepMode = true;
 
         // Vehicle Alerts Section - Creates rows for each summary alert
         if ((vehicleData.alerts && vehicleData.alerts.summary && vehicleData.alerts.summary.length) || vehicleData.firmwareUpdating || vehicleData.deepSleepMode) {
             let alertsSummary = vehicleData.alerts && vehicleData.alerts.summary && vehicleData.alerts.summary.length ? vehicleData.alerts.summary : [];
 
             if (vehicleData.deepSleepMode) {
-                alertsSummary.push({ alertType: 'VHA', alertDescription: 'Deep Sleep Active - Low Battery', urgency: 'L', colorCode: 'R', iconName: 'ic_software_updates', alertPriority: 1, noButton: true });
+                alertsSummary.push({ alertType: 'VHA', alertDescription: 'Deep Sleep Active - Low Battery', urgency: 'L', colorCode: 'R', iconName: 'battery_12v', alertPriority: 1, noButton: true });
             }
             if (vehicleData.firmwareUpdating) {
                 alertsSummary.push({ alertType: 'VHA', alertDescription: 'Firmware Update in Progress', urgency: 'L', colorCode: 'G', iconName: 'ic_software_updates', alertPriority: 1, noButton: true });
@@ -1766,7 +1759,7 @@ async function generateMainInfoTable() {
                             dismissOnSelect: false,
                             onSelect: alert.noButton === undefined || alert.noButton === false ?
                                 async() => {
-                                    console.log('(Dashboard Menu) Alert Item row was pressed');
+                                    console.log('(Dashboard) Alert Item row was pressed');
                                     // await showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
                                     await generateAlertsTable(vehicleData);
                                 } :
@@ -1790,7 +1783,7 @@ async function generateMainInfoTable() {
                             align: 'right',
                             widthWeight: 15,
                             onTap: async() => {
-                                console.log('(Dashboard Menu) View Unread Messages was pressed');
+                                console.log('(Dashboard) View Unread Messages was pressed');
                                 await generateMessagesTable(vehicleData, true);
                             },
                         }),
@@ -1815,15 +1808,17 @@ async function generateMainInfoTable() {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Lock was pressed');
-                                    await sendVehicleCmd('unlock');
+                                    console.log('(Dashboard) Lock was pressed');
+                                    if (await showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
+                                        await sendVehicleCmd('unlock');
+                                    }
                                 },
                             }),
                             await createButtonCell('Lock', {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Lock was pressed');
+                                    console.log('(Dashboard) Lock was pressed');
                                     await sendVehicleCmd('lock');
                                 },
                             }),
@@ -1843,7 +1838,7 @@ async function generateMainInfoTable() {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Stop was pressed');
+                                    console.log('(Dashboard) Stop was pressed');
                                     await sendVehicleCmd('stop');
                                 },
                             }),
@@ -1851,8 +1846,10 @@ async function generateMainInfoTable() {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Start was pressed');
-                                    await sendVehicleCmd('start');
+                                    console.log('(Dashboard) Start was pressed');
+                                    if (await showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
+                                        await sendVehicleCmd('start');
+                                    }
                                 },
                             }),
                         ], { height: 44, dismissOnSelect: false },
@@ -1872,8 +1869,10 @@ async function generateMainInfoTable() {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Horn/Lights was pressed');
-                                    await sendVehicleCmd('horn_and_lights');
+                                    console.log('(Dashboard) Horn/Lights was pressed');
+                                    if (await showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
+                                        await sendVehicleCmd('horn_and_lights');
+                                    }
                                 },
                             }),
                         ], { height: 44, dismissOnSelect: false },
@@ -1898,7 +1897,7 @@ async function generateMainInfoTable() {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) SecuriAlert Enable was pressed');
+                                    console.log('(Dashboard) SecuriAlert Enable was pressed');
                                     await sendVehicleCmd('guard_mode_on');
                                 },
                             }),
@@ -1906,8 +1905,10 @@ async function generateMainInfoTable() {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) SecuriAlert Disable was pressed');
-                                    await sendVehicleCmd('guard_mode_off');
+                                    console.log('(Dashboard) SecuriAlert Disable was pressed');
+                                    if (await showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
+                                        await sendVehicleCmd('guard_mode_off');
+                                    }
                                 },
                             }),
                         ], { height: 44, dismissOnSelect: false },
@@ -1926,16 +1927,114 @@ async function generateMainInfoTable() {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Zone Lighting Enable was pressed');
-                                    await sendVehicleCmd('zone_lights_on');
+                                    console.log('(Dashboard) Zone Lighting On Button was pressed');
+                                    showActionPrompt(
+                                        'Zone Lighting On Menu',
+                                        undefined, [{
+                                                title: 'Front Zone',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone Front On was pressed`);
+                                                    await sendVehicleCmd('zone_lights_front_on');
+                                                },
+                                                destructive: false,
+                                                show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                            },
+                                            {
+                                                title: 'Rear Zone',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone Rear On was pressed`);
+                                                    await sendVehicleCmd('zone_lights_rear_on');
+                                                },
+                                                destructive: false,
+                                                show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                            },
+                                            {
+                                                title: 'Left Zone',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone Left On was pressed`);
+                                                    await sendVehicleCmd('zone_lights_left_on');
+                                                },
+                                                destructive: false,
+                                                show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                            },
+                                            {
+                                                title: 'Right Zone',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone Right On was pressed`);
+                                                    await sendVehicleCmd('zone_lights_right_on');
+                                                },
+                                                destructive: false,
+                                                show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                            },
+                                            {
+                                                title: 'All Zones',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone All On was pressed`);
+                                                    await sendVehicleCmd('zone_lights_all_on');
+                                                },
+                                                destructive: false,
+                                                show: true,
+                                            },
+                                        ],
+                                        true,
+                                    );
                                 },
                             }),
                             await createButtonCell('Disable', {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Zone Lighting Disable was pressed');
-                                    await sendVehicleCmd('zone_lights_off');
+                                    console.log('(Dashboard) Zone Lighting Off Button was pressed');
+                                    showActionPrompt(
+                                        'Zone Lighting Off',
+                                        undefined, [{
+                                                title: 'Front Zone',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone Front Off was pressed`);
+                                                    await sendVehicleCmd('zone_lights_front_off');
+                                                },
+                                                destructive: false,
+                                                show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                            },
+                                            {
+                                                title: 'Rear Zone',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone Rear Off was pressed`);
+                                                    await sendVehicleCmd('zone_lights_rear_off');
+                                                },
+                                                destructive: false,
+                                                show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                            },
+                                            {
+                                                title: 'Left Zone',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone Left Off was pressed`);
+                                                    await sendVehicleCmd('zone_lights_left_off');
+                                                },
+                                                destructive: false,
+                                                show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                            },
+                                            {
+                                                title: 'Right Zone',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone Right Off was pressed`);
+                                                    await sendVehicleCmd('zone_lights_right_off');
+                                                },
+                                                destructive: false,
+                                                show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                            },
+                                            {
+                                                title: 'All Zones',
+                                                action: async() => {
+                                                    console.log(`(Dashboard) Zone All Off was pressed`);
+                                                    await sendVehicleCmd('zone_lights_all_off');
+                                                },
+                                                destructive: false,
+                                                show: true,
+                                            },
+                                        ],
+                                        true,
+                                    );
                                 },
                             }),
                         ], { height: 44, dismissOnSelect: false },
@@ -1954,15 +2053,17 @@ async function generateMainInfoTable() {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Trailer Light Check Start was pressed');
-                                    await sendVehicleCmd('trailer_light_check_on');
+                                    console.log('(Dashboard) Trailer Light Check Start was pressed');
+                                    if (await showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
+                                        await sendVehicleCmd('trailer_light_check_on');
+                                    }
                                 },
                             }),
                             await createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 15,
                                 onTap: async() => {
-                                    console.log('(Dashboard Menu) Trailer Light Check Stop was pressed');
+                                    console.log('(Dashboard) Trailer Light Check Stop was pressed');
                                     await sendVehicleCmd('trailer_light_check_off');
                                 },
                             }),
@@ -2394,6 +2495,21 @@ function getRowHeightByTxtLength(txt) {
     let result = txt && txt.length ? (txt.length / 75).toFixed(0) * 35 : 0;
     // console.log(`txt length: ${txt.length} - result: ${result}`);
     return result < 44 ? 44 : result;
+}
+
+async function showYesNoPrompt(title = undefined, msg = undefined) {
+    let prompt = new Alert();
+    prompt.title = title;
+    prompt.message = msg;
+    prompt.addDestructiveAction('Yes');
+    prompt.addAction('No');
+    const respInd = await prompt.presentAlert();
+    switch (respInd) {
+        case 0:
+            return true;
+        case 1:
+            return false;
+    }
 }
 
 async function showActionPrompt(title = undefined, msg = undefined, menuItems, showCancel = false, cancelFunc = undefined) {
@@ -2987,10 +3103,10 @@ async function makeFordRequest(desc, url, method, json = false, headerOverride =
     }
 }
 
-const vehicleCmdConfigs = (vin) => {
+const vehicleCmdConfigs = (vin, param2 = undefined) => {
     const baseUrl = 'https://usapi.cv.ford.com/api';
     const guardUrl = 'https://api.mps.ford.com/api';
-    return {
+    let cmds = {
         lock: {
             desc: 'Lock Doors',
             cmds: [
@@ -3032,32 +3148,6 @@ const vehicleCmdConfigs = (vin) => {
             cmds: [
                 {
                     uri: `${baseUrl}/vehicles/${vin}/panic/3`,
-                    method: 'PUT',
-                },
-            ],
-        },
-        zone_lights_off: {
-            desc: 'Zone Off Zone Lighting (All Lights)',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
-                    method: 'DELETE',
-                },
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/0/zonelighting`,
-                    method: 'DELETE',
-                },
-            ],
-        },
-        zone_lights_on: {
-            desc: 'Turn On Zone Lighting (All Lights)',
-            cmds: [
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
-                    method: 'PUT',
-                },
-                {
-                    uri: `${baseUrl}/vehicles/${vin}/0/zonelighting`,
                     method: 'PUT',
                 },
             ],
@@ -3108,6 +3198,37 @@ const vehicleCmdConfigs = (vin) => {
             ],
         },
     };
+    ['all:0', 'front:1', 'rear:3', 'left:4', 'right:2'].forEach((zone) => {
+        let [zoneName, zoneNum] = zone.split(':');
+        cmds[`zone_lights_${zoneName}_on`] = {
+            desc: `Turn On Zone Lighting (${zoneName.charAt(0).toUpperCase() + zoneName.slice(1)})`,
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
+                    method: 'PUT',
+                },
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/${zoneNum}/zonelighting`,
+                    method: 'PUT',
+                },
+            ],
+        };
+        cmds[`zone_lights_${zoneName}_off`] = {
+            desc: `Turn Off Zone Lighting (${zoneName.charAt(0).toUpperCase() + zoneName.slice(1)})`,
+            cmds: [
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
+                    method: 'DELETE',
+                },
+                {
+                    uri: `${baseUrl}/vehicles/${vin}/${zoneNum}/zonelighting`,
+                    method: 'DELETE',
+                },
+            ],
+        };
+    });
+    // console.log(JSON.stringify(cmds, null, 2));
+    return cmds;
 };
 
 async function sendVehicleCmd(cmd_type = '') {
@@ -3305,9 +3426,10 @@ async function fetchVehicleData(loadLocal = false) {
     // Remote Start status
     vehicleData.remoteStartStatus = {
         running: vehicleStatus.remoteStartStatus ? (vehicleStatus.remoteStartStatus.value === 0 ? false : true) : false,
-        duration: vehicleStatus.remoteStart && vehicleStatus.remoteStart.remoteStartDuration ? vehicleStatus.remoteStart.remoteStartDuration.value : 0,
+        runtime: vehicleStatus.remoteStart && vehicleStatus.remoteStart.remoteStartDuration ? vehicleStatus.remoteStart.remoteStartDuration : 0,
+        runtimeLeft: vehicleStatus.remoteStart && vehicleStatus.remoteStart.remoteStartTime ? vehicleStatus.remoteStart.remoteStartTime : undefined,
     };
-    // console.log(`Remote Start Status: ${JSON.stringify(vehicleStatus.remoteStart)}`);
+    console.log(`Remote Start Status: ${JSON.stringify(vehicleStatus.remoteStart)}`);
 
     // Alarm status
     vehicleData.alarmStatus = vehicleStatus.alarm ? (vehicleStatus.alarm.value === 'SET' ? 'On' : 'Off') : 'Off';
