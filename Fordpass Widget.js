@@ -1889,10 +1889,10 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`${vData.lockStatus === 'LOCKED' ? 'unlock_icon' : 'lock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 59, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Unlock', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Lock was pressed');
                                     if (await showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
@@ -1902,7 +1902,7 @@ async function generateMainInfoTable(update = false) {
                             }),
                             await createButtonCell('Lock', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Lock was pressed');
                                     await sendVehicleCmd('lock');
@@ -1919,10 +1919,10 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 59, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Stop', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Stop was pressed');
                                     await sendVehicleCmd('stop');
@@ -1930,7 +1930,7 @@ async function generateMainInfoTable(update = false) {
                             }),
                             await createButtonCell('Start', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Start was pressed');
                                     if (await showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
@@ -1949,11 +1949,11 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 78, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 76, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
 
                             await createButtonCell('Start', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Horn/Lights was pressed');
                                     if (await showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
@@ -1978,10 +1978,10 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 59, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) SecuriAlert Enable was pressed');
                                     await sendVehicleCmd('guard_mode_on');
@@ -1989,7 +1989,7 @@ async function generateMainInfoTable(update = false) {
                             }),
                             await createButtonCell('Disable', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) SecuriAlert Disable was pressed');
                                     if (await showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
@@ -2008,10 +2008,10 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 59, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Zone Lighting On Button was pressed');
                                     showActionPrompt(
@@ -2068,7 +2068,7 @@ async function generateMainInfoTable(update = false) {
                             }),
                             await createButtonCell('Disable', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Zone Lighting Off Button was pressed');
                                     showActionPrompt(
@@ -2134,10 +2134,10 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, { align: 'left', widthWeight: 59, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Start', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Trailer Light Check Start was pressed');
                                     if (await showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
@@ -2147,7 +2147,7 @@ async function generateMainInfoTable(update = false) {
                             }),
                             await createButtonCell('Stop', {
                                 align: 'center',
-                                widthWeight: 15,
+                                widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Trailer Light Check Stop was pressed');
                                     await sendVehicleCmd('trailer_light_check_off');
