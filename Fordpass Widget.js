@@ -28,99 +28,10 @@
 
 /**************
 Changelog:
-    v1.0.0:
-        - Newly Remastered version of Damians Scriptable widget with a new look and feel
-    v1.0.1:
-        - Added remote start to ignition status and remote stop to running status
-    v1.0.2:
-        - Merged in changes from @yuxinli915 pull request
-        - Added an vehicle selector to allow quick selection of vehicle icon and name
-    v1.0.3:
-        - Removed the need to store your login and vehicle info in the script. You will now be prompted for it when the script runs. and it will be stored securely in the apple keychain.
-            If you ever need to clear it then just tap on the widget and select settings from the menu and select clear all data. On the next run it prompt you to enter the info again.
-        - More code cleanup and added some comments
-        - dynamic menu items now show up based on the vehicle capabilities (only filters out zone lighting if it is not supported... for now)
-        - Moved widget settings to a settings menu so you no longer need to edit the file
-    v1.0.4: 
-        - Fixed bugs for the first time run
-        - Updated the list of selectable vehicle types.
-    v1.0.5: 
-        - Fixed bugs with tire pressure showing as an object instead of a number
-    v1.0.6: 
-        - Fixes for invalid vehicle types
-    v1.1.0: 
-        - Fixes for login failures.
-        - Pulls in your vehicle image from ford.
-        - pulls in vehicle capabilties from ford.
-        - Many other improvements to support future features.
-    v1.1.1: 
-        - Initial support of Electric Vehicles (battery charge, and range)
-        - Added screen size detection to adjust the font size on iphones with smaller displays. (Will be used later to fine tune the padding of the widget).
-        - Added a version check to show you on the widget and main menu if there is a new version available.
-        - Low Voltage Battery Text now shows up as a red when it is low.
-        - Status Text is displays at the bottom of the widget. When vehicle is in deep sleep mode, firmware update is in progress, or the vehicle is in a low voltage battery state, the status text will be displayed.
-        - Fixed bug in using metric and defining psi tire pressure
-        - Tweak the padding of the widget to make it more consistent.
-        - Fixed tire pressure font so it matches the rest of the widget.
-    v1.2.0: 
-        - Added support for advanced commands like securialert, and likely any future commands.
-        - Updated navigation labels and menus so that you can go back to previous menus instead of exiting each time
-        - Refactored the entire authentication mechinism to get the new token required for more advanced commands and data
-        - Added a debug menu under the widget settings menu.  It will allow you to save all vehicle data to your device clipboard for easy sharing with me or others.
-        - Added a rough OTA API page under the debug menu as well.
-        - Added a rough Vehicle Data page under the debug menu as well.
-        - Lot's of fixes
-    v1.2.1: 
-        - Tweaked the way door status is handled.  Hopefully eliminating some errors and removing read door entries on 2-door vehicles.
-        - Fixed some bugs in the debug menu
-    v1.2.2: 
-        - Added in a personal data scrubber to remove personal data from the data shown in the debug menu.  Cleans VIN, address, long & lat position.
-    v1.2.3:
-        - Added in a placeholder image for vehicles that don't have an image.
-        - Fixed a bug for the using psi tire pressure and metric units.
-        - Automatically determine measurement units like distance, pressure, and locale from your Ford account. This should allow support for users outside north america.
-        - Added Light/Dark mode to ota and vehicle data pages.
-    v1.3.0:
-        - Modified the VIN field to store VIN as an uppercase string.
-        - Added additional VIN format validations to setup prompt (Makes sure it's the right length and doesn't have any special characters).
-        - Fixes and additional error handling for reported issues in the forums.
-        - Modified the widget timestamp to reflect the last time the vehicle checked in and matches the last communication in the FordPass App (It's more descriptive now as well)
-        - Added the ability to hardcode an id into the script to allow for multiple instances for multiple vehicles. See the SCRIPT_ID in the script header (Not fully tested).
-        - Reworked the way all the window, door, and tire details are generated.  They should now be laid out symmetrically.
-        - Tire pressure numbers will change color based on different pressures states for low or critical. (see the widgetConfig.tirePressureThresholds parameter in the script header to define custom values)
-        - Restructured the bottom of the widget to display events like low battery, deep sleep, firmware update, and any other errors.  (It's also on a different line than the timestamp now).
-        - Updated the widget generation logic to support the different iOS widget layouts [small, medium, large, extraLarge] (Actually layout changes coming soon).
-        - Started working on the small widget layout working (needs a lot more work)
-    v1.3.1:
-        - Fixes for Oil Life showing no data.
-        - Fixes for timestamp offset.
-        - Shows warning for Low Oil Life and low oil.
-        - Fixed issue with advanced control menu going to wrong sections when only certain items were shown due to the vehicle capabilities.a
-        - Fixed the Alerts not allowed in widget error (this is really shown because the saved VIN is invalid)
-        - Fixed repeated login prompt because of the deviceLanguage variable missing from the setUserPrefs call.  Removed the requirement as it's not being used right now 
-    v1.3.2:
-        - Fixed issues with distance and pressure units not matching those set in Fordpass app settings. (Only refreshes when values are missing and every 5 minutes)
-        - Fixed vehicle image when multiple versions of the script are selected.
-        - Fixed status message left offset when there were any messages.
-        - Fixed some unhandled variables errors.
-        - Updated the WebView titles to remind users that their personal info (VIN, address, position, etc) has been scrubbed from the data they are viewing.
-    v1.3.3:
-        - Fix for some vehicles reporting rear windows with a status of undefined and showing open in the widget.
-        - Fix for some vehicles not having the windows status for front windows.
-        - Mores fixes to handle undefined values in the vehicle data.
-    v1.4.0:
-        - Fixed local vehicle data file to support multiple instances.
-        - Fixed data scrubber to scrub out relevantVin keys.
-        - Removed the low oil life warning for now.
-        - Menu optimization to reduce the number of menu items. Lock and remote start are now submenus and they are officially only shown to supported vehicles.
-        - Added Horn/Lights control to the main menu for supported vehicles.
-        - Fixed a lot of the text and image alignment in the widget.
-        - Reworked the small widget to not show text on labels with icons.
-        - Added door and window status to small widget
-    v1.5.0:
+    v2.0.0:
         - Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%;
         - Removed vehicle odometer from the widget UI to save space (moved it to the dashboard menu section)
-        - Modified the margins of the widget to be more consistent and be better on small screens and widgets.
+        - Modified the margins of the widget to be more consistent and be better on small screens and small widgets.
         - Renamed debug menu to advanced info menu.
         - Added new option to advanced info menu to allow emailing your anonymous vehicle data to me 
             (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything)
@@ -133,7 +44,9 @@ Changelog:
     - add other vehicle status info (tire, oil, battery) to the dashboard
     - Show notifications for specific events or errors (like low battery, low oil, ota updates)
     - add support for right hand drive (driver side windows, and doors etc.)
-        
+    - add option to define dark or light mode.
+    - add whats new popover table for updates (popover after main table loads) | Need to store last version in the keychain
+    
 **************/
 
 const SCRIPT_VERSION = '1.5.0';
@@ -156,7 +69,7 @@ console.log(`OSDarkMode: ${darkMode}`);
 // console.log(`IsSmallDisplay: ${isSmallDisplay}`);
 // console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.height}`);
 // console.log(`Device Info | Model: ${Device.model()} | OSVersion: ${Device.systemVersion()}`);
-// let keychainMigration = await performKeychainMigration()
+
 //******************************************************************
 //* Customize Widget Options
 //******************************************************************
@@ -1087,13 +1000,39 @@ async function createDoorElement(srcField, vData, countOnly = false, wSize = 'me
     srcField.addSpacer(offset);
 }
 
-function getOpenDoors(doors) {
-    if (doors) {
-        let open = doors.map((door, i) => door === false);
-        console.log('open: ', open);
-        return;
+function getOpenItems(items) {
+    let openItems = [];
+    if (items && items.length) {
+        Object.entries(doors)
+            .filter(([_, v]) => v)
+            .map(([k, _]) => k)
+            .forEach((k) => {
+                switch (k) {
+                    case 'driverFront':
+                        openItems.push('DF');
+                        break;
+                    case 'passFront':
+                        openItems.push('PF');
+                        break;
+                    case 'leftRear':
+                        openItems.push('LR');
+                        break;
+                    case 'rightRear':
+                        openItems.push('RR');
+                        break;
+                    case 'hood':
+                        openItems.push('HD');
+                        break;
+                    case 'tailgate':
+                        openItems.push('TG');
+                        break;
+                    case 'innerTailgate':
+                        openItems.push('ITG');
+                        break;
+                }
+            });
     }
-    return;
+    return openItems;
 }
 
 async function createWindowElement(srcField, vData, countOnly = false, wSize = 'medium') {
@@ -1122,7 +1061,7 @@ async function createWindowElement(srcField, vData, countOnly = false, wSize = '
         let col1 = await createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
         let col1row1 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
         await createText(col1row1, 'LF (', styles.normTxt);
-        await createText(col1row1, vData.statusWindows['driverFront'] ? textValues().symbols.open : textValues().symbols.closed, vData.statusWindows['driverFront'] ? styles.statOpen : styles.statClosed);
+        await createText(col1row1, vData.statusWindows.driverFront ? textValues().symbols.open : textValues().symbols.closed, vData.statusWindows['driverFront'] ? styles.statOpen : styles.statClosed);
         await createText(col1row1, ')', styles.normTxt);
 
         let col2 = await createColumn(dataRow1Fld, { '*setPadding': [0, 3, 0, 3] });
@@ -1677,6 +1616,7 @@ async function generateMainInfoTable(update = false) {
     const recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
     const msgsUnread = msgs && msgs.length ? msgs.filter((msg) => msg.isRead === false) : [];
     const headerColor = '#13233F';
+    const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
 
     let tableRows = [];
 
@@ -1686,7 +1626,7 @@ async function generateMainInfoTable(update = false) {
             await createTableRow(
                 [
                     await createImageCell(await getFPImage(`ic_message_center_notification_dark.png`), { align: 'left', widthWeight: 3 }),
-                    await createButtonCell(msgs.length ? `Messages: ${msgs.length}` : '', {
+                    await createButtonCell(msgs.length ? `${msgs.length}` : '', {
                         align: 'left',
                         widthWeight: 27,
                         onTap: async() => {
@@ -1718,13 +1658,13 @@ async function generateMainInfoTable(update = false) {
         tableRows.push(await createTableRow([await createImageCell(await getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 1 })], { backgroundColor: new Color(headerColor), height: 70, dismissOnSelect: false }));
 
         // Header Section - Row 3: Shows vehicle odometer and vehicle recalls button
-        let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : textValues().UIValues.unknown;
+        let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : textValues().UIValues.unknown;
         tableRows.push(
             await createTableRow(
                 [
                     await createTextCell('', undefined, { align: 'left', widthWeight: 30 }),
                     await createTextCell(odometerVal, undefined, { align: 'center', widthWeight: 40, titleColor: new Color(runtimeData.textWhite), titleFont: Font.body() }),
-                    await createTextCell(refreshTime, undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textColor1), titleFont: Font.regularSystemFont(9) }),
+                    await createTextCell(refreshTime, undefined, { align: 'right', widthWeight: 30, titleColor: new Color(runtimeData.textWhite), titleFont: Font.regularSystemFont(9) }),
                 ], {
                     backgroundColor: new Color(headerColor),
                     height: 20,
@@ -1753,7 +1693,9 @@ async function generateMainInfoTable(update = false) {
         // Vehicle Recalls Section - Creates rows for each summary recall
         if (recalls && recalls.length) {
             // Creates the Vehicle Recalls Title Row
-            tableRows.push(await createTableRow([await createTextCell(`${recalls.length} Vehicle Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+            tableRows.push(
+                await createTableRow([await createTextCell(`${recalls.length} Vehicle Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 30, isHeader: true, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) }),
+            );
             // Creates a single row for each recall in the top 10 of recalls array
             for (const [i, recall] of recalls.entries()) {
                 if (i >= 10) {
@@ -1767,6 +1709,7 @@ async function generateMainInfoTable(update = false) {
                         ], {
                             height: 44,
                             dismissOnSelect: false,
+                            cellSpacing: 5,
                             onSelect: async() => {
                                 console.log('(Dashboard) Recall Item row was pressed');
                                 await generateRecallsTable(vData);
@@ -1827,7 +1770,9 @@ async function generateMainInfoTable(update = false) {
             }
 
             // Creates the Vehicle Alerts Title Row
-            tableRows.push(await createTableRow([await createTextCell(`${alertsSummary.length} Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+            tableRows.push(
+                await createTableRow([await createTextCell(`${alertsSummary.length} Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 30, isHeader: true, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) }),
+            );
             // Creates a single row for each alert in the top 10 of alerts.summary array
             for (const [i, alert] of alertsSummary.entries()) {
                 if (i >= 10) {
@@ -1841,6 +1786,7 @@ async function generateMainInfoTable(update = false) {
                         ], {
                             height: 44,
                             dismissOnSelect: false,
+                            cellSpacing: 5,
                             onSelect: alert.noButton === undefined || alert.noButton === false ?
                                 async() => {
                                     console.log('(Dashboard) Alert Item row was pressed');
@@ -1856,7 +1802,7 @@ async function generateMainInfoTable(update = false) {
 
         // Unread Messages Section - Displays a count of unread messages and a button to view all messages
         if (msgsUnread.length) {
-            tableRows.push(await createTableRow([await createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+            tableRows.push(await createTableRow([await createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 30, isHeader: true, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) }));
 
             tableRows.push(
                 await createTableRow(
@@ -1864,14 +1810,22 @@ async function generateMainInfoTable(update = false) {
                         await createImageCell(await getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                         await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 78, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
                         await createButtonCell('View', {
-                            align: 'right',
+                            align: 'center',
                             widthWeight: 15,
                             onTap: async() => {
                                 console.log('(Dashboard) View Unread Messages was pressed');
                                 await generateMessagesTable(vData, true);
                             },
                         }),
-                    ], { height: 44, dismissOnSelect: false },
+                    ], {
+                        height: 44,
+                        dismissOnSelect: false,
+                        cellSpacing: 5,
+                        onSelect: async() => {
+                            console.log('(Dashboard) View Unread Messages was pressed');
+                            await generateMessagesTable(vData, true);
+                        },
+                    },
                 ),
             );
         }
@@ -1879,52 +1833,55 @@ async function generateMainInfoTable(update = false) {
         // Vehicle Status & Controls Section - (tire pressure, oil life, etc.) Remote Start and Door Locks
         if (vData.tirePressure || vData.statusWindows || vData.statusDoors || (caps && caps.length && (caps.includes('DOOR_LOCK_UNLOCK') || caps.includes('REMOTE_START') || caps.includes('REMOTE_PANIC_ALARM')))) {
             const styles = {
-                normTxt: { titleFont: Font.regularSystemFont(9), titleColor: new Color(runtimeData.textColor2) },
-                statOpen: { titleFont: Font.regularSystemFont(9), titleColor: new Color('#FF5733') },
-                statClosed: { titleFont: Font.regularSystemFont(9), titleColor: new Color('#5A65C0') },
+                open: new Color('#FF5733'),
+                closed: new Color('#5A65C0'),
             };
             let pressureUnits = await getKeychainValue('fpPressureUnits');
             let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
 
             // Creates the Status & Remote Controls Header Row
-            tableRows.push(await createTableRow([await createTextCell('Vehicle Status & Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+            tableRows.push(await createTableRow([await createTextCell('Vehicle Status & Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 30, isHeader: true, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) }));
             let statusCells = [];
-            // Tire Pressure Cells
-            // getTirePressureStyle(vData.tirePressure.leftFront, unitTxt))
+
             // Creates the status label rows for the tire pressure, doors, windows
-            getOpenDoors(vData.statusDoors);
+            const openDoors = getOpenItems(vData.statusDoors);
+            const openWindows = getOpenItems(vData.statusWindows);
+            console.log(`openDoors: ${JSON.stringify(openDoors)}`);
+            console.log(`openWindows: ${JSON.stringify(openWindows)}`);
             tableRows.push(
                 await createTableRow(
                     [
-                        await createTextCell('Doors', undefined, { align: 'center', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                        await createTextCell('Windows', undefined, { align: 'center', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                        await createTextCell(`Tires (${unitTxt})`, undefined, { align: 'center', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                        await createTextCell('', undefined, { align: 'center', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                    ], { height: 44, dismissOnSelect: false },
+                        // Door Status Cells
+                        await createImageCell(await getImage(`door_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                        await createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', { align: 'left', widthWeight: 26, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.headline(), subtitleColor: styles[openDoors.length ? 'open' : 'closed'], subtitleFont: Font.subheadline() }),
+                        // Window Status Cells
+                        await createImageCell(await getFPImage(`res_0x7f0800a0_ic_control_windows_down_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                        await createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
+                            align: 'left',
+                            widthWeight: 26,
+                            dismissOnTap: false,
+                            titleColor: new Color(runtimeData.textColor1),
+
+                            titleFont: Font.headline(),
+                            subtitleColor: styles[openDoors.length ? 'open' : 'closed'],
+                            subtitleFont: Font.subheadline(),
+                        }),
+                        // Tire Pressure Cells
+                        await createImageCell(await getFPImage(`ic_tire_pressure_monitoring_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                        await createTextCell(`Tires (${unitTxt})`, `${vData.tirePressure.leftFront} | ${vData.tirePressure.rightFront}\n${vData.tirePressure.leftRear} | ${vData.tirePressure.rightRear}`, {
+                            align: 'left',
+                            widthWeight: 26,
+                            dismissOnTap: false,
+                            titleColor: new Color(runtimeData.textColor1),
+                            titleFont: Font.headline(),
+                            subtitleColor: new Color(runtimeData.textColor1),
+                            subtitleFont: Font.regularSystemFont(9),
+                        }),
+                        // await createTextCell('', undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                        // await createTextCell('', undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                    ], { height: 45, cellSpacing: 5, dismissOnSelect: false },
                 ),
             );
-            tableRows.push(
-                await createTableRow(
-                    [
-                        // Door Cells
-                        await createTextCell(vData.tirePressure.leftFront, undefined, { align: 'center', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                        await createTextCell('Windows', undefined, { align: 'center', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                        await createTextCell(`Tires (${unitTxt})`, undefined, { align: 'center', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                        await createTextCell('', undefined, { align: 'center', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
-                    ], { height: 44, dismissOnSelect: false },
-                ),
-            );
-            statusCells.push(
-                await createTextCell(`Tires (${unitTxt})`, `${vData.tirePressure.leftFront} | ${vData.tirePressure.rightFront}\n${vData.tirePressure.leftRear} | ${vData.tirePressure.rightRear}`, {
-                    align: 'center',
-                    widthWeight: 33,
-                    titleColor: new Color(runtimeData.textColor1),
-                    titleFont: Font.body(),
-                    subtitleColor: new Color(runtimeData.textColor1),
-                    subtitleFont: Font.regularSystemFont(9),
-                }),
-            );
-            tableRows.push(await createTableRow(statusCells, { height: 50, dismissOnSelect: false }));
 
             // Generates the Lock Control Row
             if (caps && caps.length && caps.includes('DOOR_LOCK_UNLOCK')) {
@@ -1932,7 +1889,7 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`${vData.lockStatus === 'LOCKED' ? 'unlock_icon' : 'lock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Unlock', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1951,7 +1908,7 @@ async function generateMainInfoTable(update = false) {
                                     await sendVehicleCmd('lock');
                                 },
                             }),
-                        ], { height: 44, dismissOnSelect: false },
+                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1962,7 +1919,7 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -1981,7 +1938,7 @@ async function generateMainInfoTable(update = false) {
                                     }
                                 },
                             }),
-                        ], { height: 44, dismissOnSelect: false },
+                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -1992,7 +1949,7 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 78, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 78, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
 
                             await createButtonCell('Start', {
                                 align: 'center',
@@ -2004,7 +1961,7 @@ async function generateMainInfoTable(update = false) {
                                     }
                                 },
                             }),
-                        ], { height: 44, dismissOnSelect: false },
+                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2013,7 +1970,7 @@ async function generateMainInfoTable(update = false) {
         // Advanced Controls Section - Zone Lighting, SecuriAlert, Trailer Lights (if available)
         if (caps && caps.length && (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES' || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT')))) {
             // Creates the Advanced Controls Header Text
-            tableRows.push(await createTableRow([await createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+            tableRows.push(await createTableRow([await createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() })], { height: 30, isHeader: true, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) }));
 
             // Generates the SecuriAlert Control Row
             if (caps.includes('GUARD_MODE')) {
@@ -2021,7 +1978,7 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -2040,7 +1997,7 @@ async function generateMainInfoTable(update = false) {
                                     }
                                 },
                             }),
-                        ], { height: 44, dismissOnSelect: false },
+                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2051,7 +2008,7 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -2166,7 +2123,7 @@ async function generateMainInfoTable(update = false) {
                                     );
                                 },
                             }),
-                        ], { height: 44, dismissOnSelect: false },
+                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2177,7 +2134,7 @@ async function generateMainInfoTable(update = false) {
                     await createTableRow(
                         [
                             await createImageCell(await getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.title3(), subtitleFont: Font.headline() }),
+                            await createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, { align: 'left', widthWeight: 63, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 15,
@@ -2196,7 +2153,7 @@ async function generateMainInfoTable(update = false) {
                                     await sendVehicleCmd('trailer_light_check_off');
                                 },
                             }),
-                        ], { height: 44, dismissOnSelect: false },
+                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
