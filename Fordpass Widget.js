@@ -1,5 +1,12 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: car;
+// This script was downloaded using FordWidgetTool.
+// Do not remove these lines, if you want to benefit from automatic updates.
+// source: https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Fordpass%20Widget.js; docs: https://github.com/tonesto7/fordpass-scriptable#readme; hash: 898792870;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
 // always-run-in-app: true; icon-color: blue;
 // icon-glyph: car;
 
@@ -36,12 +43,20 @@ Changelog:
         - Added new option to advanced info menu to allow emailing your anonymous vehicle data to me 
             (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything)
         
-        
-// Todo: 
+// Todo: This Release (v2.0.0)) 
     - add runtime remaining to remote start output
-    - add charge scheduling to dashboard menu
     - use OTA info to show when an update is available or pending.
     - Show notifications for specific events or errors (like low battery, low oil, ota updates)
+    - add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
+    - setup up daily schedule that makes sure the doors are locked at certain time of day.
+    - add voice interface from siri shortcut
+        * generate list of actionable commands based on capability
+        * generate list of request command info available (are the doors locked, is the vehicle on, current fuel level, etc)
+        * handle context and tense of command
+
+// Todo: Next Release (Post 2.0.x)
+    - add support for other languages
+    - add charge scheduling to dashboard menu
     - add support for right hand drive (driver side windows, and doors etc.)
     - add option to define dark or light mode (this might not work because the UI is driven based on OS theme)
     
@@ -60,7 +75,7 @@ const changelog = {
 };
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/01/13, 10:00 pm';
+const SCRIPT_TS = '2022/01/14, 10:00 am';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -343,11 +358,24 @@ if (config.runsInWidget) {
 } else if (config.runsInApp || config.runsFromHomeScreen) {
     // Show alert with current data (if running script in app)
     if (args.shortcutParameter) {
-        await showAlert('shortcutParameter: ', JSON.stringify(args.shortcutParameter));
-        await Speech.speak(`Siri Command Received ${args.shortcutParameter}`);
+        // await showAlert('shortcutParameter: ', JSON.stringify(args.shortcutParameter));
         // Create a parser function...
+        await Speech.speak(await parseIncomingSiriCommand(args.shortcutParameter));
     } else {
         await generateMainInfoTable();
+        // const timer = new Timer();
+        // timer.invalidate();
+        // timer.schedule(10000, true, async() => {
+        //     await createNotification('Test Notification', 'This is a test notification', 'This is a test notification body', {
+        //         identifier: 'testNotification',
+        //         threadIdentifier: 'testThread',
+        //         sound: 'piano_success',
+        //         addAction: [
+        //             { title: 'Test Button 1', url: `scriptable:///run?scriptName=${Script.name()}`, destructive: false },
+        //             { title: 'Test Button 2', url: `scriptable:///run?scriptName=FordWidgetTool`, detructive: true },
+        //         ],
+        //     });
+        // });
     }
 } else if (config.runsWithSiri || config.runsInActionExtension) {
     // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -726,6 +754,85 @@ async function showPrompt(alertTitle, AlertMsg, okTitle, okRed = false) {
         case 1:
             return false;
     }
+}
+
+async function createNotification(title, subtitle, body, options = {}) {
+    let notif = new Notification();
+    notif.title = title;
+    notif.subtitle = subtitle;
+    notif.body = body;
+    if (options && Object.keys(options).length > 0) {
+        // Options:
+        // - identifier: string
+        // - threadIdentifier: string // Identifier for grouping the notification.
+        // - sound: 'default', 'accept', 'alert', 'complete', 'event', 'failure', 'piano_error', 'piano_success', 'popup'
+        // - openUrl: 'url'
+        // - badge: 'number'
+        // - userInfo: {string: any} // Store any custom information for the notification. This can be accessed from the Notification.opened property
+        // - nextTriggerDate: Date // Returns The date and time when the notification will be triggered.
+        // - scriptName: string // The name of the script to be executed when the notification is tapped.
+        // - actions: [{title: string, url: string}] // An array of actions for the notification.
+        // - addAction(title: string, url: string, destructive: bool) // Add an action button to the notification. (max 10 actions)
+        // - current() // Notification a script is running in.
+        // - setTriggerDate(date: Date) // Set the date and time when the notification will be triggered.
+        // - setDailyTrigger(hour: number, minute: number, repeats: bool) // Set the time of day when the notification will be triggered.
+        // - setWeeklyTrigger(weekday: number, hour: number, minute: number, repeats: bool) // Set the day of the week and time of day when the notification will be triggered.
+        for (const [key, value] of Object.entries(options)) {
+            // console.log(key, value);
+            if (value !== undefined) {
+                switch (key) {
+                    case 'addAction':
+                        if (value.length > 0) {
+                            for (const [i, action] of value.entries()) {
+                                if (i < 10) {
+                                    notif.addAction(action.title, action.url);
+                                }
+                            }
+                        }
+                        break;
+                    case 'setTriggerDate':
+                        if (value instanceof Date) {
+                            notif.setTriggerDate(value);
+                        }
+                        break;
+                    case 'setDailyTrigger':
+                        if (value && value.hour && value.minute) {
+                            notif.setDailyTrigger(value.hour, value.minute, value.repeats === true);
+                        }
+                        break;
+                    case 'setWeeklyTrigger':
+                        if (value && value.weekday && value.hour && value.minute) {
+                            notif.setWeeklyTrigger(value.weekday, value.hour, value.minute, value.repeats === true);
+                        }
+                        break;
+                    default:
+                        notif[key] = value;
+                        break;
+                }
+            }
+        }
+    }
+    await notif.schedule();
+}
+
+async function getPendingNotification() {
+    return Notification.allPending();
+}
+
+async function getDeliveredNotification() {
+    return Notification.allDelivered();
+}
+
+async function removePendingNotification(identifier) {
+    return await Notification.removePending(identifier);
+}
+
+async function removeAllPendingNotification() {
+    return await Notification.removeAllPending();
+}
+
+async function removeAllDeliveredNotification() {
+    return await Notification.removeAllDelivered();
 }
 
 function getBgGradient() {
@@ -1266,6 +1373,26 @@ async function menuBuilderByType(type) {
                     show: true,
                 },
                 {
+                    title: 'Notification Test',
+                    action: async() => {
+                        console.log('(Main Menu) Notification test was pressed');
+                        let currentDT = new Date();
+                        let newDT = new Date(currentDT.getTime() + 2 * 1000);
+                        await createNotification('Test Notification', 'This is a test notification', 'This is a test notification body', {
+                            identifier: 'testNotification',
+                            threadIdentifier: 'testThread',
+                            sound: 'piano_success',
+                            // setTriggerDate: newDT,
+                            addAction: [
+                                { title: 'Test Button 1', url: `scriptable:///run?scriptName=${Script.name()}`, destructive: false },
+                                { title: 'Test Button 2', url: `scriptable:///run?scriptName=FordWidgetTool`, detructive: true },
+                            ],
+                        });
+                    },
+                    destructive: true,
+                    show: true,
+                },
+                {
                     title: 'Request Vehicle Refresh',
                     action: async() => {
                         console.log('(Main Menu) Refresh was pressed');
@@ -1729,8 +1856,8 @@ async function generateMainInfoTable(update = false) {
         tableRows.push(
             await createTableRow(
                 [
-                    await createImageCell(!isEV ? await getImage(`ev_battery_dark_menu.png`) : await getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                    await createTextCell(!isEV ? 'Charge' : 'Fuel', `${lvlValue}%`, { align: 'left', widthWeight: 45, titleColor: new Color(runtimeData.textWhite), titleFont: Font.headline(), subtitleColor: new Color(runtimeData.textWhite), subtitleFont: Font.subheadline() }),
+                    await createImageCell(isEV ? await getImage(`ev_battery_dark_menu.png`) : await getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
+                    await createTextCell(isEV ? 'Charge' : 'Fuel', `${lvlValue}%`, { align: 'left', widthWeight: 45, titleColor: new Color(runtimeData.textWhite), titleFont: Font.headline(), subtitleColor: new Color(runtimeData.textWhite), subtitleFont: Font.subheadline() }),
                     await createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
                 ], {
                     backgroundColor: new Color(headerColor),
@@ -2366,7 +2493,7 @@ async function generateMessagesTable(vData, unreadOnly = false) {
                     [
                         await createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
                         await createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() }),
-                        await createTextCell('...', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
+                        await createTextCell('All', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
                     ], {
                         height: 40,
                         dismissOnSelect: true,
@@ -2545,7 +2672,7 @@ async function generateWhatsNewTable() {
         let verTs = new Date(Date.parse(SCRIPT_TS));
         tableRows.push(
             await createTableRow([await createTextCell(`${SCRIPT_VERSION} Changes`, verTs.toLocaleString(), { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title1(), subtitleColor: Color.darkGray(), subtitleFont: Font.subheadline(10) })], {
-                height: 44,
+                height: 50,
                 isHeader: true,
                 dismissOnSelect: false,
             }),
@@ -4291,6 +4418,108 @@ function isNewerVersion(oldVer, newVer) {
         console.error(`isNewerVersion Error: ${e}`);
     }
     return false;
+}
+
+// [
+//     'CEN_LAST_MILE',
+//     'CEN_OFFBOARD_SEARCH',
+//     'DISTANCE_TO_EMPTY_TCU',
+//     'DOOR_LOCK_UNLOCK',
+//     'EVCS_CHARGE_LOCATIONS_AND_CHARGE_TIMES',
+//     'EVCS_DEPARTURE_TIMES',
+//     'EVCS_NOTIFICATIONS_SETTINGS',
+//     'EVCS_STATION_FINDER',
+//     'EVCS_TRIP_AND_CHARGE_LOGS',
+//     'EVCS_TRIP_READY_NOTIFICATION',
+//     'EVCS_UTILITY_RATE_SERVICES',
+//     'EVCS_VEHICLE_STATUS_EXTENDED',
+//     'EV_FUEL',
+//     'EV_OFF_PLUG_PRECONDITIONING',
+//     'EV_SMART_CHARGING',
+//     'EV_TRIP_PLANNER',
+//     'EXTEND',
+//     'FRUNK',
+//     'FUEL_TCU',
+//     'GEO_FENCING',
+//     'GUARD_MODE',
+//     'ODOMETER_TCU',
+//     'OIL_LIFE_TCU',
+//     'PAAK',
+//     'POWER_LIFTGATE',
+//     'REMOTE_PANIC_ALARM',
+//     'REMOTE_START',
+//     'TPMS_TCU',
+//     'VEHICLE_HEALTH_REPORTING',
+//     'VEHICLE_LOCATOR',
+//     'VHA2.0_TCU',
+//     'WIFI_DATA_USAGE',
+//     'WIFI_HOTSPOT',
+//     'WIFI_SSID_PASSWORD';
+//     'CEN_LAST_MILE',
+//     'CEN_OFFBOARD_SEARCH',
+//     'CEN_SEND_TO_CAR',
+//     'DISTANCE_TO_EMPTY_TCU',
+//     'DOOR_LOCK_UNLOCK',
+//     'EXTEND',
+//     'FUEL_TCU',
+//     'GEO_FENCING',
+//     'GUARD_MODE',
+//     'ODOMETER_TCU',
+//     'OIL_LIFE',
+//     'OIL_LIFE_TCU',
+//     'POWER_LIFTGATE',
+//     'REMOTE_START',
+//     'SCHEDULED_START',
+//     'TPMS_TCU',
+//     'TRAILER_LIGHT',
+//     'VEHICLE_HEALTH_REPORTING',
+//     'VEHICLE_LOCATOR',
+//     'VHA2.0_TCU',
+//     'WIFI_DATA_USAGE',
+//     'WIFI_HOTSPOT',
+//     'WIFI_SSID_PASSWORD',
+//     'ZONE_LIGHTING_FOUR_ZONES',
+// ]
+
+const voiceIntentTree = {
+    requests: { prefixs: ['is', 'are'] },
+    commands: { prefixs: ['stop', 'start'] },
+};
+
+async function getAvailableRequests() {
+    const vData = await fetchVehicleData(true);
+    const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
+    let cmds = [];
+    let reqs = [];
+    if (caps.length) {
+        for (const [i, cap] of caps.entries()) {
+            switch (cap) {
+                case 'REMOTE_START':
+                    cmds.concat(['start', 'stop']);
+                    break;
+                case 'REMOTE_PANIC_ALARM':
+                    cmds.concat(['horn', 'panic']);
+                    break;
+                case 'DOOR_LOCK_UNLOCK':
+                    cmds.concat(['lock', 'unlock']);
+                    break;
+                case 'GUARD_MODE':
+                    cmds.concat(['guard', 'alarm']);
+                    break;
+            }
+        }
+    }
+
+    return { cmds: cmds, reqs: reqs };
+}
+
+async function parseIncomingSiriCommand(cmdStr) {
+    let words = cmdStr.split(' ');
+    let availableReqs = await getAvailableRequests();
+    console.log(`availableReqs: ${JSON.stringify(availableReqs)}`);
+    console.log(`parseIncomingSiriCommand: ${cmdStr}`);
+    console.log(`words: ${JSON.stringify(words)}`);
+    return `Siri Command Received ${cmdStr}`;
 }
 
 //************************************************* END UTILITY FUNCTIONS ********************************************************
