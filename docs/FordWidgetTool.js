@@ -1,10 +1,10 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: orange; icon-glyph: magic;
+// icon-color: blue; icon-glyph: magic;
 
 // This is based on the scriptdude installer https://github.com/kevinkub/scriptdu.de script and modified to manage the Ford Widget script
 
-const SCRIPT_VERSION = '1.1.0';
+const SCRIPT_VERSION = '1.2.0';
 const useBeta = false;
 const scriptSrcUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/${useBeta ? 'beta' : 'main'}/Fordpass%20Widget.js`;
 const scriptName = 'Fordpass Widget';
@@ -25,6 +25,20 @@ class WidgetInstaller {
         return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
     }
 
+    async getDocUrl() {
+        const releaseMode = await this.getReleaseMode();
+        return releaseMode === 'beta' ? scriptDocsUrl.replace('#readme', '/blob/beta/README.md') : scriptDocsUrl;
+    }
+
+    async getSrcUrl() {
+        const releaseMode = await this.getReleaseMode();
+        return releaseMode === 'beta' ? scriptSrcUrl.replace('main', 'beta') : scriptSrcUrl;
+    }
+
+    async getReleaseMode() {
+        return (await wI.getKeychainValue('releaseMode')) || 'public';
+    }
+
     async showAlert(title, message) {
         let alert = new Alert();
         alert.title = title;
@@ -37,6 +51,32 @@ class WidgetInstaller {
                 // console.log(`${title} alert was cleared...`);
                 return true;
         }
+    }
+
+    async toggleReleaseMode() {
+        let releaseMode = await this.getReleaseMode();
+        await this.setKeychainValue('releaseMode', releaseMode === 'beta' ? 'public' : 'beta');
+    }
+
+    async getKeychainValue(key) {
+        try {
+            if (await Keychain.contains(key)) {
+                return await Keychain.get(key);
+            }
+        } catch (e) {
+            console.log(`getKeychainValue(${key}) Error: ${e}`);
+        }
+        return null;
+    }
+
+    async setKeychainValue(key, value) {
+        if (key && value) {
+            await Keychain.set(key, value);
+        }
+    }
+
+    async hasKeychainValue(key) {
+        return await Keychain.contains(key);
     }
 
     // removes a keychain value pair based on the key and id
@@ -55,7 +95,7 @@ class WidgetInstaller {
             await this.removeKeychainValue(keys[key], id);
         }
         let files2Del = [`vehicle_image${id === 0 ? '' : id}.png`, `vehicle_data_${id === 0 ? '' : id}.json`];
-        files2Del.forEach(async (file) => {
+        files2Del.forEach(async(file) => {
             let filePath = this.localFileManager.joinPath(this.localDocDirectory, file);
             if (await this.localFileManager.fileExists(filePath)) {
                 console.log('Info: Deleting file: ' + file);
@@ -252,127 +292,148 @@ class WidgetInstaller {
 
 const wI = new WidgetInstaller();
 
-async function getMenuItems(type, showExit = false) {
-    let items = [];
-    let filesFnd = await wI.getAllInstances();
-    switch (type) {
-        case 'main':
-            items = [
-                {
-                    title: `Update ${filesFnd.length} Instance${filesFnd.length > 1 ? 's' : ''}`,
-                    action: async () => {
-                        console.log('(Main Menu) Update Ford Widgets was pressed');
-                        await wI.updateScripts(scriptName, scriptSrcUrl, scriptDocsUrl, scriptGlyph, scriptColor);
-                    },
-                    destructive: true,
-                    show: true,
-                },
-                {
-                    title: 'Create New Instance',
-                    action: async () => {
-                        console.log('(Main Menu) Update Ford Widgets was pressed');
-                        await wI.newScript(scriptName, scriptSrcUrl, scriptDocsUrl, scriptGlyph, scriptColor);
-                    },
-                    destructive: false,
-                    show: true,
-                },
-                {
-                    title: 'Remove Instances',
-                    action: async () => {
-                        console.log('(Main Menu) Instances Removal was pressed');
-                        await createMenu('removal');
-                    },
-                    destructive: true,
-                    show: true,
-                },
-                {
-                    title: 'Exit',
-                    action: async () => {
-                        console.log(`(${type} Menu) Exit was pressed`);
-                    },
-                    destructive: false,
-                    show: true,
-                },
-            ];
-            break;
-
-        case 'removal':
-            if (filesFnd.length) {
-                for (const i in filesFnd) {
-                    items.push({
-                        title: filesFnd[i],
-                        action: async () => {
-                            console.log(`(Removal Menu) ${filesFnd[i]} was pressed`);
-                            await wI.removeInstance(filesFnd[i]);
-                            await wI.showAlert('Widget Tool - Instance Removal', `${filesFnd[i]} Instance removed...`);
-                            createMenu('main');
+async function menuBuilderByType(type) {
+    try {
+        let title = undefined;
+        let message = undefined;
+        const releaseMode = await wI.getReleaseMode();
+        let items = [];
+        let filesFnd = await wI.getAllInstances();
+        switch (type) {
+            case 'main':
+                title = `FordWidget Tool Menu`;
+                message = `Tool Version: (${SCRIPT_VERSION})\nRelease Mode: (${releaseMode.toUpperCase()})`;
+                items = [{
+                        title: `Update ${filesFnd.length} Instance${filesFnd.length > 1 ? 's' : ''}`,
+                        action: async() => {
+                            console.log('(Main Menu) Update Ford Widgets was pressed');
+                            await wI.updateScripts(scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), scriptGlyph, scriptColor);
                         },
                         destructive: true,
                         show: true,
-                    });
+                    },
+                    {
+                        title: 'Create New Instance',
+                        action: async() => {
+                            console.log('(Main Menu) Update Ford Widgets was pressed');
+                            await wI.newScript(scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), scriptGlyph, scriptColor);
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                    {
+                        title: 'Remove Instances',
+                        action: async() => {
+                            console.log('(Main Menu) Instances Removal was pressed');
+                            await menuBuilderByType('removal');
+                        },
+                        destructive: true,
+                        show: true,
+                    },
+                    {
+                        title: 'Settings',
+                        action: async() => {
+                            console.log('(Main Menu) Settings was pressed');
+                            menuBuilderByType('setting');
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                    {
+                        title: 'Exit',
+                        action: async() => {
+                            console.log(`(${type} Menu) Exit was pressed`);
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                ];
+                break;
+            case 'setting':
+                title = `Settings Menu`;
+                message = ``;
+                items = [{
+                        title: `Release Mode: ${releaseMode}`,
+                        action: async() => {
+                            console.log(`(${type} Menu) Toggle Release Mode was pressed`);
+                            await wI.toggleReleaseMode();
+                            menuBuilderByType('setting');
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                    {
+                        title: 'Back',
+                        action: async() => {
+                            console.log(`(${type} Menu) Back was pressed`);
+                            await this.menuBuilderByType('main');
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                ];
+                break;
+            case 'removal':
+                title = `Instance Removal Menu`;
+                message = `Tap on an instance to delete it and remove all data`;
+                if (filesFnd.length) {
+                    for (const i in filesFnd) {
+                        items.push({
+                            title: filesFnd[i],
+                            action: async() => {
+                                console.log(`(Removal Menu) ${filesFnd[i]} was pressed`);
+                                await wI.removeInstance(filesFnd[i]);
+                                await wI.showAlert('Widget Tool - Instance Removal', `${filesFnd[i]} Instance removed...`);
+                                menuBuilderByType('main');
+                            },
+                            destructive: true,
+                            show: true,
+                        });
+                    }
                 }
-            }
-            items.push(
-                {
+                items.push({
                     title: 'Remove All Instances',
-                    action: async () => {
+                    action: async() => {
                         console.log(`(Removal Menu) Remove All was pressed`);
                         await wI.removeAllInstances();
                         await wI.showAlert('Widget Tool - Instances Removal', `All ${filesFnd.length} Instances were removed`);
-                        createMenu('main');
+                        menuBuilderByType('main');
                     },
                     destructive: true,
                     show: filesFnd.length ? true : false,
-                },
-                {
+                }, {
                     title: 'Back',
-                    action: async () => {
+                    action: async() => {
                         console.log(`(${type} Menu) Back was pressed`);
-                        await createMenu('main');
+                        await menuBuilderByType('main');
                     },
                     destructive: false,
                     show: true,
-                },
-            );
-            break;
-    }
-    return items;
-}
-
-async function createMenu(type, showExit = false) {
-    const menu = new Alert();
-    menu.title = '';
-    menu.message = '';
-    let menuItems = [];
-    try {
-        switch (type) {
-            case 'main':
-                menu.title = `FordWidget Tool Menu`;
-                menu.message = `Tool Version: (${SCRIPT_VERSION})`;
-                menuItems = (await getMenuItems(type, showExit)).filter((item) => item.show === true);
-                break;
-            case 'removal':
-                menu.title = `Instance Removal Menu`;
-                menu.message = `Tap on an instance to delete it and remove all data`;
-                menuItems = (await getMenuItems(type, showExit)).filter((item) => item.show === true);
+                }, );
                 break;
         }
-        // console.log(`Menu Items: (${menuItems.length}) ${JSON.stringify(menuItems)}`);
-        menuItems.forEach((item, ind) => {
-            if (item.destructive) {
-                menu.addDestructiveAction(item.title);
-            } else {
-                menu.addAction(item.title);
+        if (title.length > 0 && items.length > 0) {
+            let menuItems = items.filter((item) => item.show === true);
+            // console.log(`subcontrol menuItems(${menuItems.length}): ${JSON.stringify(menuItems)}`);
+            const menu = new Alert();
+            menu.title = title;
+            menu.message = message;
+            menuItems.forEach((item, ind) => {
+                if (item.destructive) {
+                    menu.addDestructiveAction(item.title);
+                } else {
+                    menu.addAction(item.title);
+                }
+            });
+            const respInd = await menu.presentSheet();
+            if (respInd !== null) {
+                const menuItem = menuItems[respInd];
+                // console.log(`(Sub Control Menu) Selected: ${JSON.stringify(menuItem)}`);
+                menuItem.action();
             }
-        });
-        const respInd = await menu.presentSheet();
-        if (respInd !== null) {
-            const menuItem = menuItems[respInd];
-            // console.log(`(Main Menu) Selected: ${JSON.stringify(menuItem)}`);
-            menuItem.action();
         }
     } catch (e) {
-        console.log(`createMenu | Error: ${e}`);
+        console.log(`menuBuilderByType | Error: ${e}`);
     }
 }
 
@@ -381,10 +442,10 @@ if (config.runsInApp || config.runsFromHomeScreen) {
     // console.log('start | fnd: ' + fnd.length);
     if (fnd.length < 1) {
         console.log('start | no scripts found creating new one');
-        await wI.newScript(scriptName, scriptSrcUrl, scriptDocsUrl, scriptGlyph, scriptColor);
+        await wI.newScript(scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), scriptGlyph, scriptColor);
     } else {
         console.log('start | showing Main Menu');
         // console.log(JSON.stringify(await wI.getFileDetails(fnd[0])));
-        createMenu('main', true);
+        menuBuilderByType('main');
     }
 }
