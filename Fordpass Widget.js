@@ -50,11 +50,7 @@ Changelog:
     - Show notifications for specific events or errors (like low battery, low oil, ota updates)
     - add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
     - setup up daily schedule that makes sure the doors are locked at certain time of day.
-    - add voice interface from siri shortcut
-        * generate list of actionable commands based on capability
-        * generate list of request command info available (are the doors locked, is the vehicle on, current fuel level, etc)
-        * handle context and tense of command
-        * use remove and reload to rebuild message table after remove or reading
+
     - Create widgets with less details and larger image.
 
 // Todo: Next Release (Post 2.0.x)
@@ -62,6 +58,10 @@ Changelog:
     - add charge scheduling to dashboard menu
     - add support for right hand drive (driver side windows, and doors etc.)
     - add option to define dark or light mode (this might not work because the UI is driven based on OS theme)
+    - add voice interface using siri shortcut
+        * generate list of actionable commands based on capability
+        * generate list of request command info available (are the doors locked, is the vehicle on, current fuel level, etc)
+        * handle context and tense of command
     
 **************/
 const changelog = {
@@ -309,6 +309,17 @@ const sizeMap = {
     },
 };
 
+// class FordPassWidget {
+//     constructor() {
+//         this.localFileManager = FileManager.local();
+//         this.localDocDirectory = this.localFileManager.documentsDirectory();
+//         this.icloudFileManager = FileManager.iCloud();
+//         this.icloudDocDirectory = this.icloudFileManager.documentsDirectory();
+//         this.tableMap = {}
+//     }
+
+// }
+
 //******************************************************************************
 //* Main Widget Code - ONLY make changes if you know what you are doing!!
 //******************************************************************************
@@ -371,7 +382,9 @@ async function generateWidget(size, data) {
 let fordData = await prepWidget();
 if (fordData === null) return;
 
-const mainTable = new UITable();
+// Table Map Object - Used to map the data to the table
+let tableMap = {};
+let timerMap = {};
 
 if (config.runsInWidget) {
     await generateWidget(runningWidgetSize, fordData);
@@ -1415,6 +1428,17 @@ async function menuBuilderByType(type) {
                     show: true,
                 },
                 {
+                    title: 'Timer Test',
+                    action: async() => {
+                        console.log('(Main Menu) timer test was pressed');
+                        await createTimer('timerTest', 5000, true, async() => {
+                            console.log('Timer Test');
+                        });
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
                     title: 'Request Vehicle Refresh',
                     action: async() => {
                         console.log('(Main Menu) Refresh was pressed');
@@ -1767,6 +1791,19 @@ async function requiredPrefsMenu() {
     }
 }
 
+async function scheduleMainTableRefresh(interval) {
+    await createTimer(
+        'mainTableRefresh',
+        interval,
+        false,
+        async() => {
+            console.log('(Main Table Refresh) Timer Fired');
+            await generateMainInfoTable(true);
+        },
+        true,
+    );
+}
+
 async function generateMainInfoTable(update = false) {
     const vData = await fetchVehicleData(true);
     const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
@@ -1783,11 +1820,11 @@ async function generateMainInfoTable(update = false) {
 
     let ignStatus = '';
     if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
-        ignStatus = `Remote Start (ON)`;
-    } else if (vData.ignitionStatus !== undefined) {
-        ignStatus = vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1);
+        createRemoteStartStatusTimer();
+        ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
     } else {
-        textValues().errorMessages.noData;
+        stopTimer('remoteStartStatus');
+        ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : textValues().errorMessages.noData;
     }
     let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : textValues().UIValues.unknown;
     const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : textValues().errorMessages.noData;
@@ -1883,7 +1920,7 @@ async function generateMainInfoTable(update = false) {
             await createTableRow(
                 [
                     await createImageCell(isEV ? await getImage(`ev_battery_dark_menu.png`) : await getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                    await createTextCell(isEV ? 'Charge' : 'Fuel', lvlValue < 0 || lvlValue > 100 ? `--` : `${lvlValue}%`, { align: 'left', widthWeight: 45, titleColor: new Color(runtimeData.textWhite), titleFont: Font.headline(), subtitleColor: new Color(runtimeData.textWhite), subtitleFont: Font.subheadline() }),
+                    await createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, { align: 'left', widthWeight: 45, titleColor: new Color(runtimeData.textWhite), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.subheadline() }),
                     await createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
                 ], {
                     backgroundColor: new Color(headerColor),
@@ -1892,27 +1929,8 @@ async function generateMainInfoTable(update = false) {
                 },
             ),
         );
-        // Header Section - Row 5: Shows distance to E value for fuel and EV
-        tableRows.push(
-            await createTableRow(
-                [await createTextCell('', undefined, { align: 'center', widthWeight: 5 }), await createTextCell(dteString, undefined, { align: 'left', widthWeight: 45, titleColor: Color.lightGray(), titleFont: Font.subheadline(), subtitleColor: Color.lightGray() }), await createTextCell('', undefined, { align: 'center', widthWeight: 50 })], {
-                    backgroundColor: new Color(headerColor),
-                    height: 20,
-                    dismissOnSelect: false,
-                },
-            ),
-        );
 
-        // Header Section - Row 6: Create blank row for spacing
-        // tableRows.push(
-        //     await createTableRow([await createTextCell('', undefined, { align: 'center', widthWeight: 30 }), await createTextCell(``, undefined, { align: 'center', widthWeight: 40, titleColor: new Color(runtimeData.textWhite), titleFont: Font.subheadline() }), await createTextCell('', undefined, { align: 'center', widthWeight: 30 })], {
-        //         backgroundColor: new Color(headerColor),
-        //         height: 20,
-        //         dismissOnSelect: false,
-        //     }),
-        // );
-
-        // Header Section - Row 7: Shows vehicle checkin timestamp
+        // Header Section - Row 5: Shows vehicle checkin timestamp
         tableRows.push(
             await createTableRow(
                 [
@@ -2143,7 +2161,7 @@ async function generateMainInfoTable(update = false) {
                                     }
                                 },
                             }),
-                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                        ], { height: ignStatus.length > 17 ? 64 : 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2366,10 +2384,9 @@ async function generateMainInfoTable(update = false) {
     } catch (err) {
         console.error(`Error in generateMainInfoTable: ${err}`);
     }
-    if (update) {
-        await updateMainTableMenu(tableRows, false);
-    } else {
-        await buildMainTableMenu(tableRows, false, false);
+
+    await generateTableMenu('main', tableRows, false, false, update);
+    if (!update) {
         let lastVersion = await getKeychainValue('fpScriptVersion');
         if (lastVersion !== SCRIPT_VERSION) {
             await generateWhatsNewTable();
@@ -2431,7 +2448,7 @@ async function generateAlertsTable(vData) {
         }
     }
 
-    await buildTableMenu(tableRows, false, false);
+    await generateTableMenu('alerts', tableRows, false, false);
 }
 
 async function generateRecallsTable(vData) {
@@ -2513,13 +2530,13 @@ async function generateRecallsTable(vData) {
             tableRows.push(await createTableRow([await createTextCell(textValues().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() })], { height: 44, dismissOnSelect: false }));
         }
 
-        await buildTableMenu(tableRows, false, false);
+        await generateTableMenu('recalls', tableRows, false, false);
     } catch (err) {
         console.log(`error in generateRecallsTable: ${err}`);
     }
 }
 
-async function generateMessagesTable(vData, unreadOnly = false) {
+async function generateMessagesTable(vData, unreadOnly = false, update = false) {
     try {
         let msgs = vData.messages && vData.messages && vData.messages && vData.messages.length ? vData.messages : messageTest || [];
         msgs = unreadOnly ? msgs.filter((msg) => msg.isRead === false) : msgs;
@@ -2535,7 +2552,7 @@ async function generateMessagesTable(vData, unreadOnly = false) {
                         await createTextCell('All', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
                     ], {
                         height: 40,
-                        dismissOnSelect: true,
+                        dismissOnSelect: false,
                         onSelect: async() => {
                             console.log(`(Messages Table) All Message Options was pressed`);
                             let msgIds = msgs.map((msg) => msg.messageId);
@@ -2545,13 +2562,13 @@ async function generateMessagesTable(vData, unreadOnly = false) {
                                         title: 'Mark All Read',
                                         action: async() => {
                                             console.log(`(Messages Table) Mark All Messages Read was pressed`);
-                                            let ok = await showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?\n\nMessage List will reload after data is refeshed`, `Mark (${msgIds.length}) Read`, true);
+                                            let ok = await showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?`, `Mark (${msgIds.length}) Read`, true);
                                             if (ok) {
                                                 console.log(`(Messages Table) Marking ${msgIds.length} Messages as Read`);
                                                 if (await markMultipleUserMessagesRead(msgIds)) {
                                                     console.log(`(Messages Table) Marked (${msgIds.length}) Messages as Read Successfully`);
                                                     showAlert('Marked Messages as Read Successfully', 'Message List will reload after data is refeshed');
-                                                    await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                    await generateMessagesTable(await fetchVehicleData(false), unreadOnly, true);
                                                     generateMainInfoTable(true);
                                                 }
                                             }
@@ -2563,13 +2580,13 @@ async function generateMessagesTable(vData, unreadOnly = false) {
                                         title: 'Delete All',
                                         action: async() => {
                                             console.log(`(Messages Table) Delete All Messages was pressed`);
-                                            let ok = await showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?\n\nMessage List will reload after data is refeshed', `Delete (${msgIds.length}) Messages`, true);
+                                            let ok = await showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?', `Delete (${msgIds.length}) Messages`, true);
                                             if (ok) {
                                                 console.log(`(Messages Table) Deleting ${msgIds.length} Messages`);
                                                 if (await deleteUserMessages([msg.messageId])) {
                                                     console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
                                                     showAlert('Deleted Messages Successfully', 'Message List will reload after data is refeshed');
-                                                    await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                    await generateMessagesTable(await fetchVehicleData(false), unreadOnly, true);
                                                     generateMainInfoTable(true);
                                                 }
                                             }
@@ -2605,7 +2622,7 @@ async function generateMessagesTable(vData, unreadOnly = false) {
                         ],
                         {
                             height: 40,
-                            dismissOnSelect: true,
+                            dismissOnSelect: false,
                             onSelect: async () => {
                                 console.log(`(Messages Table) Message Options button was pressed for ${msg.messageId}`);
                                 showActionPrompt(
@@ -2619,7 +2636,7 @@ async function generateMessagesTable(vData, unreadOnly = false) {
                                                 if (await markMultipleUserMessagesRead([msg.messageId])) {
                                                     console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
                                                     showAlert('Message marked read successfully', 'Message List will reload after data is refeshed');
-                                                    await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                    await generateMessagesTable(await fetchVehicleData(false), unreadOnly, true);
                                                     generateMainInfoTable(true);
                                                 }
                                             },
@@ -2630,13 +2647,13 @@ async function generateMessagesTable(vData, unreadOnly = false) {
                                             title: 'Delete Message',
                                             action: async () => {
                                                 console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
-                                                let ok = await showPrompt('Delete Message', 'Are you sure you want to delete this message?\n\nMessage List will reload after data is refeshed', 'Delete', true);
+                                                let ok = await showPrompt('Delete Message', 'Are you sure you want to delete this message?', 'Delete', true);
                                                 if (ok) {
                                                     console.log(`(Messages Table) Delete Confirmed for Message ID: ${msg.messageId}`);
                                                     if (await deleteUserMessages([msg.messageId])) {
                                                         console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
                                                         showAlert('Message deleted successfully', 'Message List will reload after data is refeshed');
-                                                        await generateMessagesTable(await fetchVehicleData(false), unreadOnly);
+                                                        await generateMessagesTable(await fetchVehicleData(false), unreadOnly, true);
                                                         generateMainInfoTable(true);
                                                         up;
                                                     } else {
@@ -2682,8 +2699,7 @@ async function generateMessagesTable(vData, unreadOnly = false) {
             );
             tableRows.push(await createTableRow([await createTextCell(textValues().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
         }
-
-        await buildTableMenu(tableRows, false, false);
+        await generateTableMenu('messages', tableRows, false, false, update);
     } catch (e) {
         console.error(`generateMessagesTable() error: ${e}`);
     }
@@ -2730,35 +2746,29 @@ async function generateWhatsNewTable() {
         tableRows.push(await createTableRow([await createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
     }
 
-    await buildTableMenu(tableRows, false, false);
+    await generateTableMenu('whatsNew', tableRows, false, false);
 }
 
 async function generateAboutTable() {
-    let verTs = new Date(Date.parse(SCRIPT_TS));
     let tableRows = [];
 
     tableRows.push(
-        await createTableRow([await createTextCell(`Fordpass Widget`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title1() })], {
-            height: 30,
+        await createTableRow([await createTextCell(`Fordpass Widget`, `${SCRIPT_VERSION}`, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title1(), subtitleColor: Color.darkGray(), subtitleFont: Font.subheadline() })], {
+            height: 80,
             isHeader: true,
             dismissOnSelect: false,
         }),
     );
-    tableRows.push(
-        await createTableRow([await createTextCell(`${SCRIPT_VERSION}`, `${verTs.toLocaleString()}`, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: Color.gray(), titleFont: Font.headline(), subtitleColor: Color.darkGray(), subtitleFont: Font.subheadline() })], {
-            height: 44,
-            dismissOnSelect: false,
-        }),
-    );
 
-    tableRows.push(await createTableRow([await createTextCell('Author', `${textValues().about.author}`, { align: 'center', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body(), subtitleColor: Color.darkGray(), subtitleFont: Font.subheadline(10) })], { height: 20, dismissOnSelect: false }));
+    tableRows.push(await createTableRow([await createTextCell('Author:', `${textValues().about.author}`, { align: 'left', widthWeight: 100, titleColor: new Color(runtimeData.textColor1), titleFont: Font.headline(), subtitleColor: Color.darkGray(), subtitleFont: Font.subheadline() })], { height: 44, dismissOnSelect: false }));
 
     tableRows.push(
         await createTableRow(
             [
-                await createButtonCell(`${textValues().about.authorGithub}`, undefined, {
-                    align: 'center',
-                    widthWeight: 100,
+                await createTextCell('Project Repo:', undefined, { align: 'left', widthWeight: 40, titleColor: new Color(runtimeData.textColor1), titleFont: Font.headline() }),
+                await createButtonCell(`GitHub Repo`, {
+                    align: 'right',
+                    widthWeight: 60,
                     titleColor: new Color(runtimeData.textColor1),
                     titleFont: Font.body(),
                     onTap: async () => {
@@ -2766,53 +2776,89 @@ async function generateAboutTable() {
                     },
                 }),
             ],
-            { height: 20, dismissOnSelect: false },
+            { height: 44, dismissOnSelect: false },
         ),
     );
 
-    await buildTableMenu(tableRows, false, false);
+    tableRows.push(
+        await createTableRow(
+            [
+                await createTextCell('Donations:', undefined, { align: 'left', widthWeight: 20, titleColor: new Color(runtimeData.textColor1), titleFont: Font.headline(), subtitleColor: Color.darkGray(), subtitleFont: Font.body() }),
+                await createButtonCell(`Link`, {
+                    align: 'right',
+                    widthWeight: 80,
+                    titleColor: new Color(runtimeData.textColor1),
+                    titleFont: Font.body(),
+                    onTap: async () => {
+                        Safari.open(`${textValues().about.donationUrl}`);
+                    },
+                }),
+            ],
+            { height: 60, dismissOnSelect: false },
+        ),
+    );
+
+    await generateTableMenu('about', tableRows, false, false);
 }
 
 //*****************************************************************************************************************************
 //*                                              START TABLE HELPER FUNCTIONS
 //*****************************************************************************************************************************
 
-async function buildMainTableMenu(rows, showSeparators = false, fullscreen = false) {
-    mainTable.showSeparators = showSeparators;
-    rows.forEach(async (row) => {
-        // adds the rows and cells to the table
-        mainTable.addRow(row);
-    });
-    mainTable.present(fullscreen);
+async function getTable(tableName) {
+    if (await tableExists(tableName)) {
+        return tableMap[tableName];
+    }
+    tableMap[tableName] = new UITable();
+    return tableMap[tableName];
 }
 
-async function updateMainTableMenu(rows, showSeparators = false) {
-    console.log('updating main table');
-    mainTable.removeAllRows();
-    mainTable.showSeparators = showSeparators;
-    rows.forEach(async (row) => {
-        mainTable.updateRow(row);
-    });
-    mainTable.reload;
+async function removeTable(tableName) {
+    if (await tableExists(tableName)) {
+        delete tableMap[tableName];
+    }
+    return;
 }
 
-async function reloadMainTable() {
-    mainTable.reload();
+async function tableExists(tableName) {
+    return tableMap[tableName] !== undefined && tableMap[tableName] instanceof Object;
 }
 
-async function clearMainTable() {
-    mainTable.removeAllRows();
+async function generateTableMenu(tableName, rows, showSeparators = false, fullscreen = false, update = false) {
+    try {
+        const exists = await tableExists(tableName);
+        let table = await getTable(tableName);
+        if (exists) {
+            await table.removeAllRows();
+        }
+        console.log(`${exists ? 'Updating' : 'Creating'} ${tableName} Table and ${update ? 'Reloading' : 'Presenting'}`);
+        table.showSeparators = showSeparators;
+        rows.forEach(async (row) => {
+            await table.addRow(row);
+        });
+        if (update) {
+            await table.reload();
+        } else {
+            await table.present(fullscreen);
+        }
+    } catch (e) {
+        console.error(`generateTableMenu() error: ${e}`);
+    }
 }
 
-async function buildTableMenu(rows, showSeparators = false, fullscreen = false) {
-    // Builds the table object
-    let table = new UITable();
-    table.showSeparators = showSeparators;
-    rows.forEach(async (row) => {
-        // adds the rows and cells to the table
-        table.addRow(row);
-    });
-    table.present(fullscreen);
+async function reloadTable(tableName) {
+    let table = await getTable(tableName);
+    await table.reload();
+}
+
+async function showTable(tableName, fullscreen = false) {
+    let table = await getTable(tableName);
+    await table.present(fullscreen);
+}
+
+async function clearTable() {
+    let table = await getTable(tableName);
+    await table.removeAllRows();
 }
 
 async function createTableRow(cells, options) {
@@ -3746,6 +3792,15 @@ async function sendVehicleCmd(cmd_type = '') {
                 if (isLastCmd) {
                     console.log(`sendVehicleCmd(${cmd_type}) | Sent Successfully`);
                     await showAlert(outMsg.title, outMsg.message);
+                    await createTimer(
+                        'vehicleDataRefresh',
+                        10000,
+                        false,
+                        async () => {
+                            await fetchVehicleData(false);
+                        },
+                        true,
+                    );
                 }
             }
         } catch (e) {
@@ -4296,6 +4351,54 @@ async function createEmailObject(data, attachJson = false) {
 //********************************************************************************************************************************
 // ***********************************************START UTILITY FUNCTIONS ********************************************************
 //********************************************************************************************************************************
+
+async function getTimer(timerName) {
+    if (timerMap[timerName]) {
+        return timerMap[timerName];
+    }
+    let timer = Timer;
+    timerMap[timerName] = timer;
+    return timerMap[timerName];
+}
+
+async function stopTimer(timerName) {
+    if (timerMap[timerName]) {
+        try {
+            timerMap[timerName].invalidate();
+        } catch (e) {
+            console.log(`stopTimer Error: Could Not Stop Timer | ${e}`);
+        }
+        delete timerMap[timerName];
+    }
+}
+
+async function createTimer(name, interval, repeat = false, actions, clearExisting = false) {
+    let timer = await getTimer(name);
+    if (clearExisting) {
+        await stopTimer(name);
+        timer = await getTimer(name);
+    }
+
+    if (timer && interval && actions) {
+        timer.schedule(10000, repeat, actions);
+    } else {
+        console.log(`createTimer Error: Could Not Create Timer | Name: ${name} | Interval: ${interval} | Repeat: ${repeat} | Actions: ${actions}`);
+    }
+}
+
+async function createRemoteStartStatusTimer() {
+    await createTimer(
+        'remoteStartStatus',
+        30000,
+        false,
+        async () => {
+            console.log('(Remote Start Status) Timer fired');
+            await fetchVehicleData(true);
+            await generateMainInfoTable(true);
+        },
+        true,
+    );
+}
 
 async function getPosition(data) {
     let loc = await Location.reverseGeocode(parseFloat(data.gps.latitude), parseFloat(data.gps.longitude));
