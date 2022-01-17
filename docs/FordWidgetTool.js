@@ -5,13 +5,8 @@
 // This is based on the scriptdude installer https://github.com/kevinkub/scriptdu.de script and modified to manage the Ford Widget script
 
 const SCRIPT_VERSION = '1.2.0';
-const useBeta = false;
-const scriptSrcUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/${useBeta ? 'beta' : 'main'}/Fordpass%20Widget.js`;
-const scriptName = 'Fordpass Widget';
-const scriptDocsUrl = 'https://github.com/tonesto7/fordpass-scriptable#readme';
-const scriptGlyph = 'car';
-const scriptColor = 'blue';
 const maxSupportedInstance = 10;
+const configUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/docs/config.json`;
 
 class WidgetInstaller {
     constructor() {
@@ -19,20 +14,82 @@ class WidgetInstaller {
         this.localDocDirectory = this.localFileManager.documentsDirectory();
         this.icloudFileManager = FileManager.iCloud();
         this.icloudDocDirectory = this.icloudFileManager.documentsDirectory();
+        this.scriptConfig = {
+            scriptName: 'Fordpass Widget',
+            scriptColor: 'blue',
+            scriptGlyph: 'car',
+            sourceUrl: 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js',
+            docsUrl: 'https://github.com/tonesto7/fordpass-scriptable#readme',
+            cleanup: {
+                keys: ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits', 'fpSpeedUnits'],
+                files: [
+                    'gas-station_dark.png',
+                    'gas-station_light.png',
+                    'lock_dark.png',
+                    'lock_light.png',
+                    'tire_dark.png',
+                    'tire_light.png',
+                    'unlock_dark.png',
+                    'unlock_light.png',
+                    'battery_dark.png',
+                    'battery_light.png',
+                    'door_dark.png',
+                    'door_light.png',
+                    'window_dark.png',
+                    'window_light.png',
+                    'oil_dark.png',
+                    'oil_light.png',
+                    'key_dark.png',
+                    'key_light.png',
+                    'location_dark.png',
+                    'location_light.png',
+                    'ev_battery_dark.png',
+                    'ev_battery_light.png',
+                    'ev_plug_dark.png',
+                    'ev_plug_light.png',
+                    'vehicle_image.png',
+                    'fp_vehicleData.json',
+                ],
+            },
+        };
     }
 
     hashCode(input) {
         return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
     }
 
+    async getScriptConfig() {
+        let req = new Request(await this.getConfigUrl());
+        req.headers = {
+            'Content-Type': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+        };
+        req.method = 'GET';
+        req.timeoutInterval = 10;
+        try {
+            let data = await req.loadJSON();
+            if (data && data.scriptName) {
+                this.scriptConfig = data;
+            }
+        } catch (e) {
+            console.log(`getScriptConfig Error: Could Not Load Config File | ${e}`);
+        }
+    }
+
+    async getConfigUrl() {
+        const releaseMode = await this.getReleaseMode();
+        return releaseMode === 'beta' ? configUrl.replace('main', 'beta') : configUrl;
+    }
+
     async getDocUrl() {
         const releaseMode = await this.getReleaseMode();
-        return releaseMode === 'beta' ? scriptDocsUrl.replace('#readme', '/blob/beta/README.md') : scriptDocsUrl;
+        return releaseMode === 'beta' ? this.scriptConfig.docsUrl.replace('#readme', '/blob/beta/README.md') : this.scriptConfig.docsUrl;
     }
 
     async getSrcUrl() {
         const releaseMode = await this.getReleaseMode();
-        return releaseMode === 'beta' ? scriptSrcUrl.replace('main', 'beta') : scriptSrcUrl;
+        return releaseMode === 'beta' ? this.scriptConfig.scriptUrl.replace('main', 'beta') : this.scriptConfig.scriptUrl;
     }
 
     async getReleaseMode() {
@@ -90,7 +147,7 @@ class WidgetInstaller {
     // removes a script, its keychain, and files based on the id
     async clearDataForId(id) {
         console.log('Info: Clearing Keychain and File Data for ID: ' + id);
-        const keys = ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits', 'fpSpeedUnits'];
+        const keys = this.scriptConfig.cleanup.keys;
         for (const key in keys) {
             await this.removeKeychainValue(keys[key], id);
         }
@@ -111,34 +168,7 @@ class WidgetInstaller {
         for (let i = 0; i < fnd.length; i++) {
             await this.removeInstance(fnd[i]);
         }
-        const files = [
-            'gas-station_dark.png',
-            'gas-station_light.png',
-            'lock_dark.png',
-            'lock_light.png',
-            'tire_dark.png',
-            'tire_light.png',
-            'unlock_dark.png',
-            'unlock_light.png',
-            'battery_dark.png',
-            'battery_light.png',
-            'door_dark.png',
-            'door_light.png',
-            'window_dark.png',
-            'window_light.png',
-            'oil_dark.png',
-            'oil_light.png',
-            'key_dark.png',
-            'key_light.png',
-            'location_dark.png',
-            'location_light.png',
-            'ev_battery_dark.png',
-            'ev_battery_light.png',
-            'ev_plug_dark.png',
-            'ev_plug_light.png',
-            'vehicle_image.png',
-            'fp_vehicleData.json',
-        ];
+        const files = this.scriptConfig.cleanup.files;
         for (let i = 0; i < files.length; i++) {
             let filePath = this.localFileManager.joinPath(this.localDocDirectory, files[i]);
             if (await this.localFileManager.fileExists(filePath)) {
@@ -168,7 +198,7 @@ class WidgetInstaller {
         // console.log('getAllInstances');
         let fnd = [];
         for (let i = 0; i < 10; i++) {
-            let n = i >= 1 ? `${scriptName} ${i + 1}` : scriptName;
+            let n = i >= 1 ? `${this.scriptConfig.scriptName} ${i + 1}` : this.scriptConfig.scriptName;
             let file = this.icloudFileManager.joinPath(this.icloudDocDirectory, n + '.js');
             if (await this.icloudFileManager.fileExists(file)) {
                 fnd.push(n);
@@ -180,7 +210,7 @@ class WidgetInstaller {
     async getNextInstanceId() {
         let miss = [];
         for (let i = 0; i < maxSupportedInstance; i++) {
-            let n = i >= 1 ? `${scriptName} ${i + 1}` : scriptName;
+            let n = i >= 1 ? `${this.scriptConfig.scriptName} ${i + 1}` : this.scriptConfig.scriptName;
             let file = this.icloudFileManager.joinPath(this.icloudDocDirectory, n + '.js');
             if (!(await this.icloudFileManager.fileExists(file))) {
                 miss.push(i);
@@ -291,6 +321,7 @@ class WidgetInstaller {
 }
 
 const wI = new WidgetInstaller();
+await wI.getScriptConfig();
 
 async function menuBuilderByType(type) {
     try {
@@ -307,7 +338,7 @@ async function menuBuilderByType(type) {
                         title: `Update ${filesFnd.length} Instance${filesFnd.length > 1 ? 's' : ''}`,
                         action: async() => {
                             console.log('(Main Menu) Update Ford Widgets was pressed');
-                            await wI.updateScripts(scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), scriptGlyph, scriptColor);
+                            await wI.updateScripts(this.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), this.scriptConfig.scriptGlyph, this.scriptConfig.scriptColor);
                         },
                         destructive: true,
                         show: true,
@@ -316,7 +347,7 @@ async function menuBuilderByType(type) {
                         title: 'Create New Instance',
                         action: async() => {
                             console.log('(Main Menu) Update Ford Widgets was pressed');
-                            await wI.newScript(scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), scriptGlyph, scriptColor);
+                            await wI.newScript(this.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), this.scriptConfig.scriptGlyph, this.scriptConfig.scriptColor);
                         },
                         destructive: false,
                         show: true,
@@ -442,7 +473,7 @@ if (config.runsInApp || config.runsFromHomeScreen) {
     // console.log('start | fnd: ' + fnd.length);
     if (fnd.length < 1) {
         console.log('start | no scripts found creating new one');
-        await wI.newScript(scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), scriptGlyph, scriptColor);
+        await wI.newScript(this.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), this.scriptConfig.scriptGlyph, this.scriptConfig.scriptColor);
     } else {
         console.log('start | showing Main Menu');
         // console.log(JSON.stringify(await wI.getFileDetails(fnd[0])));
