@@ -1,5 +1,7 @@
 {
     "scriptName": "Fordpass Widget",
+    "scriptColor": "blue",
+    "scriptGlyph": "car",
     "sourceUrl": "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js",
     "docsUrl": "https://github.com/tonesto7/fordpass-scriptable#readme",
     "cleanup": {
