@@ -49,11 +49,12 @@ Changelog:
     - move OTA info to table view.
     - Show notifications for specific events or errors (like low battery, low oil, ota updates)
     - add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
-    - setup up daily schedule that makes sure the doors are locked at certain time of day.
-
+    
+    
     - Create widgets with less details and larger image.
 
 // Todo: Next Release (Post 2.0.x)
+- setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
     - add support for other languages
     - add charge scheduling to dashboard menu
     - add support for right hand drive (driver side windows, and doors etc.)
@@ -64,6 +65,7 @@ Changelog:
         * handle context and tense of command
     
 **************/
+
 const changelog = {
     '2.0.0': [
         { type: 'u', desc: 'Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%.' },
@@ -78,7 +80,7 @@ const changelog = {
 };
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/01/16, 6:00 pm';
+const SCRIPT_TS = '2022/01/17, 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -190,15 +192,13 @@ const textValues = (str) => {
             email: 'purer_06_fidget@icloud.com',
             donationsDesc: 'If you like this widget, please consider making a donation to the author.\n\nYou can do so by clicking the button below.',
             donationUrl: 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HWBN4LB9NMHZ4',
-            helpVideoUrls: [{
-                    title: 'Installing the Widget',
-                    url: 'https://tonesto7.github.io/fordpass-scriptable/videos/install_demo.mp4',
-                },
-                {
+            documentationUrl: 'https://github.com/tonesto7/fordpass-scriptable#readme',
+            helpVideos: {
+                setup: {
                     title: 'Setup the Widget',
                     url: 'https://tonesto7.github.io/fordpass-scriptable/videos/setup_demo.mp4',
                 },
-            ],
+            },
         },
     };
 };
@@ -309,17 +309,6 @@ const sizeMap = {
     },
 };
 
-// class FordPassWidget {
-//     constructor() {
-//         this.localFileManager = FileManager.local();
-//         this.localDocDirectory = this.localFileManager.documentsDirectory();
-//         this.icloudFileManager = FileManager.iCloud();
-//         this.icloudDocDirectory = this.icloudFileManager.documentsDirectory();
-//         this.tableMap = {}
-//     }
-
-// }
-
 //******************************************************************************
 //* Main Widget Code - ONLY make changes if you know what you are doing!!
 //******************************************************************************
@@ -396,19 +385,6 @@ if (config.runsInWidget) {
         await Speech.speak(await parseIncomingSiriCommand(args.shortcutParameter));
     } else {
         generateMainInfoTable();
-        // const timer = new Timer();
-        // timer.invalidate();
-        // timer.schedule(10000, true, async() => {
-        //     await createNotification('Test Notification', 'This is a test notification', 'This is a test notification body', {
-        //         identifier: 'testNotification',
-        //         threadIdentifier: 'testThread',
-        //         sound: 'piano_success',
-        //         addAction: [
-        //             { title: 'Test Button 1', url: `scriptable:///run?scriptName=${Script.name()}`, destructive: false },
-        //             { title: 'Test Button 2', url: `scriptable:///run?scriptName=FordWidgetTool`, detructive: true },
-        //         ],
-        //     });
-        // });
     }
 } else if (config.runsWithSiri || config.runsInActionExtension) {
     // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -1407,32 +1383,23 @@ async function menuBuilderByType(type) {
                     destructive: false,
                     show: true,
                 },
-                {
-                    title: 'Notification Test',
-                    action: async() => {
-                        console.log('(Main Menu) Notification test was pressed');
-                        let currentDT = new Date();
-                        let newDT = new Date(currentDT.getTime() + 2 * 1000);
-                        await createNotification('Test Notification', 'This is a test notification', 'This is a test notification body', {
-                            identifier: 'testNotification',
-                            threadIdentifier: 'testThread',
-                            sound: 'piano_success',
-                            // setTriggerDate: newDT,
-                            addAction: [
-                                { title: 'Test Button 1', url: `scriptable:///run?scriptName=${Script.name()}`, destructive: false },
-                                { title: 'Test Button 2', url: `scriptable:///run?scriptName=FordWidgetTool`, detructive: true },
-                            ],
-                        });
-                    },
-                    destructive: true,
-                    show: true,
-                },
+
                 {
                     title: 'Timer Test',
                     action: async() => {
                         console.log('(Main Menu) timer test was pressed');
                         await createTimer('timerTest', 5000, true, async() => {
                             console.log('Timer Test');
+                            await createNotification('Test Notification', 'This is a test notification', 'This is a test notification body', {
+                                identifier: 'testNotification',
+                                threadIdentifier: 'testThread',
+                                sound: 'piano_success',
+                                // setTriggerDate: newDT,
+                                addAction: [
+                                    { title: 'Test Button 1', url: `scriptable:///run?scriptName=${Script.name()}`, destructive: false },
+                                    { title: 'Test Button 2', url: `scriptable:///run?scriptName=FordWidgetTool`, detructive: true },
+                                ],
+                            });
                         });
                     },
                     destructive: false,
@@ -1695,6 +1662,14 @@ async function menuBuilderByType(type) {
                     destructive: true,
                     show: true,
                 },
+                {
+                    title: 'View Scriptable Settings',
+                    action: async() => {
+                        await Safari.open(URLScheme.forOpeningScriptSettings());
+                    },
+                    destructive: false,
+                    show: true,
+                },
 
                 {
                     title: `Back`,
@@ -1746,9 +1721,11 @@ async function requiredPrefsMenu() {
         prefsMenu.addTextField('Vehicle VIN', vin || '');
 
         prefsMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //0
+        prefsMenu.addAction('View Documentation'); //1
+        prefsMenu.addAction('Watch Setup Video'); //2
 
-        prefsMenu.addAction('Save'); //1
-        prefsMenu.addCancelAction('Cancel'); //2
+        prefsMenu.addAction('Save'); //3
+        prefsMenu.addCancelAction('Cancel'); //4
 
         let respInd = await prefsMenu.presentAlert();
         switch (respInd) {
@@ -1758,6 +1735,16 @@ async function requiredPrefsMenu() {
                 requiredPrefsMenu();
                 break;
             case 1:
+                console.log('(Required Prefs Menu) View Documentation pressed');
+                await Safari.openInApp(textValues().about.documentationUrl);
+                requiredPrefsMenu();
+                break;
+            case 2:
+                console.log('(Required Prefs Menu) Map Provider pressed');
+                await Safari.openInApp(textValues().about.helpVideos.setup.url);
+                requiredPrefsMenu();
+                break;
+            case 3:
                 console.log('(Required Prefs Menu) Done was pressed');
                 user = prefsMenu.textFieldValue(0);
                 pass = prefsMenu.textFieldValue(1);
@@ -1782,7 +1769,7 @@ async function requiredPrefsMenu() {
                     await prepWidget();
                 }
                 break;
-            case 2:
+            case 4:
                 return false;
         }
     } catch (err) {
@@ -1797,7 +1784,23 @@ async function scheduleMainTableRefresh(interval) {
         interval,
         false,
         async() => {
-            console.log('(Main Table Refresh) Timer Fired');
+            console.log('(Main Table) Refresh Timer Fired');
+            await fetchVehicleData(false);
+            await generateMainInfoTable(true);
+        },
+        false,
+    );
+}
+
+async function createRemoteStartStatusTimer() {
+    console.log('createRemoteStartStatusTimer');
+    await createTimer(
+        'remoteStartStatus',
+        60000,
+        false,
+        async() => {
+            console.log('(Remote Start Status) Timer fired');
+            await fetchVehicleData(false);
             await generateMainInfoTable(true);
         },
         true,
@@ -1820,8 +1823,8 @@ async function generateMainInfoTable(update = false) {
 
     let ignStatus = '';
     if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
-        createRemoteStartStatusTimer();
         ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
+        createRemoteStartStatusTimer();
     } else {
         stopTimer('remoteStartStatus');
         ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : textValues().errorMessages.noData;
@@ -1870,20 +1873,31 @@ async function generateMainInfoTable(update = false) {
             ),
         );
 
-        // Header Section - Row 2: Displays the Vehicle Image in center and doors on the left and windows on the right
+        // Header Section - Row 2: Shows tire pressure label and unit
+        tableRows.push(
+            await createTableRow(
+                [await createTextCell('', undefined, { align: 'center', widthWeight: 30 }), await createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(runtimeData.textWhite), subtitleFont: Font.subheadline() }), await createTextCell('', undefined, { align: 'center', widthWeight: 30 })], {
+                    backgroundColor: new Color(headerColor),
+                    height: 20,
+                    dismissOnSelect: false,
+                },
+            ),
+        );
+
+        // Header Section - Row 3: Displays the Vehicle Image in center and doors on the left and windows on the right
         const openDoors = getOpenItems(vData.statusDoors); //['LF', 'RR', 'HD'];
         const openWindows = getOpenItems(vData.statusWindows); //['LF', 'RR', 'HD'];
-        console.log(`openDoors: ${JSON.stringify(openDoors)}`);
-        console.log(`openWindows: ${JSON.stringify(openWindows)}`);
+        // console.log(`openDoors: ${JSON.stringify(openDoors)}`);
+        // console.log(`openWindows: ${JSON.stringify(openWindows)}`);
         tableRows.push(
             await createTableRow(
                 [
                     // Door Status Cells
                     await createImageCell(await getImage(`door_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                     await createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', { align: 'left', widthWeight: 25, dismissOnTap: false, titleColor: new Color(runtimeData.textWhite), titleFont: Font.headline(), subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'), subtitleFont: Font.subheadline() }),
-                    await createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\nRF: ${vData.tirePressure.leftRear} `, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(runtimeData.textWhite), titleFont: Font.mediumSystemFont(9) }),
+                    await createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(runtimeData.textWhite), titleFont: Font.mediumSystemFont(9) }),
                     await createImageCell(await getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 20 }),
-                    await createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(runtimeData.textWhite), titleFont: Font.mediumSystemFont(9) }),
+                    await createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(runtimeData.textWhite), titleFont: Font.mediumSystemFont(9) }),
                     // Window Status Cells
                     await createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                         align: 'right',
@@ -1897,19 +1911,8 @@ async function generateMainInfoTable(update = false) {
                     await createImageCell(await getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                 ], {
                     backgroundColor: new Color(headerColor),
-                    height: 70,
+                    height: 100,
                     cellSpacing: 0,
-                    dismissOnSelect: false,
-                },
-            ),
-        );
-
-        // Header Section - Row 3: Shows tire pressure label and unit
-        tableRows.push(
-            await createTableRow(
-                [await createTextCell('', undefined, { align: 'center', widthWeight: 30 }), await createTextCell(`Tires: (${tireUnit})`, undefined, { align: 'center', widthWeight: 40, titleColor: new Color(runtimeData.textWhite), titleFont: Font.subheadline() }), await createTextCell('', undefined, { align: 'center', widthWeight: 30 })], {
-                    backgroundColor: new Color(headerColor),
-                    height: 10,
                     dismissOnSelect: false,
                 },
             ),
@@ -2079,7 +2082,7 @@ async function generateMainInfoTable(update = false) {
                 await createTableRow(
                     [
                         await createImageCell(await getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                        await createTextCell(`Unread Message(s)`, undefined, { align: 'left', widthWeight: 76, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body() }),
+                        await createTextCell(`Unread Message${msgsUnread.length > 1 ? 's' : ''}: (${msgsUnread.length})`, undefined, { align: 'left', widthWeight: 76, titleColor: new Color(runtimeData.textColor1), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(9) }),
                         await createButtonCell('View', {
                             align: 'center',
                             widthWeight: 17,
@@ -2111,7 +2114,7 @@ async function generateMainInfoTable(update = false) {
                 tableRows.push(
                     await createTableRow(
                         [
-                            await createImageCell(await getFPImage(`${vData.lockStatus === 'LOCKED' ? 'unlock_icon' : 'lock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await createImageCell(await getFPImage(`${vData.lockStatus === 'LOCKED' ? 'lock_icon' : 'unlock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                             await createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', { align: 'left', widthWeight: 59, titleColor: new Color(runtimeData.textColor1), subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
                             await createButtonCell('Unlock', {
                                 align: 'center',
@@ -2831,7 +2834,7 @@ async function generateTableMenu(tableName, rows, showSeparators = false, fullsc
         if (exists) {
             await table.removeAllRows();
         }
-        console.log(`${exists ? 'Updating' : 'Creating'} ${tableName} Table and ${update ? 'Reloading' : 'Presenting'}`);
+        // console.log(`${exists ? 'Updating' : 'Creating'} ${tableName} Table and ${update ? 'Reloading' : 'Presenting'}`);
         table.showSeparators = showSeparators;
         rows.forEach(async (row) => {
             await table.addRow(row);
@@ -3710,7 +3713,7 @@ const vehicleCmdConfigs = (vin, param2 = undefined) => {
     return cmds;
 };
 
-async function sendVehicleCmd(cmd_type = '') {
+async function sendVehicleCmd(cmd_type = '', mainMenuRefresh = true) {
     let authMsg = await checkAuth('sendVehicleCmd(' + cmd_type + ')');
     if (authMsg) {
         console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
@@ -3794,10 +3797,15 @@ async function sendVehicleCmd(cmd_type = '') {
                     await showAlert(outMsg.title, outMsg.message);
                     await createTimer(
                         'vehicleDataRefresh',
-                        10000,
+                        15000,
                         false,
                         async () => {
+                            console.log('sendVehicleCmd: Refreshing Vehicle Data after 10 seconds');
                             await fetchVehicleData(false);
+                            if (mainMenuRefresh) {
+                                console.log('sendVehicleCmd: Reloading Main Menu Content');
+                                await generateMainInfoTable(true);
+                            }
                         },
                         true,
                     );
@@ -3819,7 +3827,7 @@ async function fetchVehicleData(loadLocal = false) {
     }
 
     //fetch data from server
-    console.log('fetchVehicleData: Fetching Vehicle Data from Ford Servers...');
+    console.log('Fetching Vehicle Data from Ford Servers...');
     let statusData = await getVehicleStatus();
 
     // console.log(`statusData: ${JSON.stringify(statusData)}`);
@@ -3914,10 +3922,11 @@ async function fetchVehicleData(loadLocal = false) {
     // Remote Start status
     vehicleData.remoteStartStatus = {
         running: vehicleStatus.remoteStartStatus ? (vehicleStatus.remoteStartStatus.value === 0 ? false : true) : false,
+        runningTs: vehicleStatus.remoteStartStatus ? vehicleStatus.remoteStartStatus.timestamp : undefined,
         runtime: vehicleStatus.remoteStart && vehicleStatus.remoteStart.remoteStartDuration ? vehicleStatus.remoteStart.remoteStartDuration : 0,
         runtimeLeft: vehicleStatus.remoteStart && vehicleStatus.remoteStart.remoteStartTime ? vehicleStatus.remoteStart.remoteStartTime : undefined,
     };
-    console.log(`Remote Start Status: ${JSON.stringify(vehicleStatus.remoteStart)}`);
+    // console.log(`Remote Start Status: ${JSON.stringify(vehicleStatus.remoteStart)}`);
 
     // Alarm status
     vehicleData.alarmStatus = vehicleStatus.alarm ? (vehicleStatus.alarm.value === 'SET' ? 'On' : 'Off') : 'Off';
@@ -3992,8 +4001,8 @@ async function fetchVehicleData(loadLocal = false) {
 
     vehicleData.lastRefresh = convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
     vehicleData.lastRefreshElapsed = timeDifference(convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
-    console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
-    console.log(`timeSince: ${vehicleData.lastRefreshElapsed}`);
+    // console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
+    console.log(`Last Vehicle Checkin: ${vehicleData.lastRefreshElapsed}`);
 
     // await getVehicleImage(vehicleData.info.vehicle.modelYear, true, 1);
     // await getVehicleImage(vehicleData.info.vehicle.modelYear, true, 2);
@@ -4122,7 +4131,7 @@ async function requiredPrefsOk(keys) {
 
 async function clearKeychain() {
     console.log('Info: Clearing All Widget Data from Keychain');
-    const keys = ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits', 'fpSpeedUnits'];
+    const keys = ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits', 'fpSpeedUnits', 'fpScriptVersion'];
     for (const key in keys) {
         await removeKeychainValue(keys[key]);
     }
@@ -4230,10 +4239,11 @@ async function loadImage(imgUrl) {
 }
 
 function saveDataToLocal(data) {
-    console.log('FileManager: Saving New Vehicle Data to Local Storage...');
+    console.log('FileManager: Saving Vehicle Data to Local Storage...');
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
-    let path = fm.joinPath(dir, 'fp_vehicleData.json');
+    let fileName = SCRIPT_ID !== null && SCRIPT_ID !== undefined && SCRIPT_ID > 0 ? `$fp_vehicleData_${SCRIPT_ID}.json` : 'fp_vehicleData.json';
+    let path = fm.joinPath(dir, fileName);
     if (fm.fileExists(path)) {
         fm.remove(path);
     } //clean old data
@@ -4241,7 +4251,7 @@ function saveDataToLocal(data) {
 }
 
 function readLocalData() {
-    console.log('FileManager: Retrieving Vehicle Data from Local Storage...');
+    console.log('FileManager: Retrieving Vehicle Data from Local Cache...');
     let fileName = SCRIPT_ID !== null && SCRIPT_ID !== undefined && SCRIPT_ID > 0 ? `$fp_vehicleData_${SCRIPT_ID}.json` : 'fp_vehicleData.json';
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
@@ -4272,7 +4282,7 @@ function isLocalDataFreshEnough() {
 }
 
 async function clearFileManager() {
-    console.log('Info: Clearing All Files from Local Directory');
+    console.log('FileManager: Clearing All Files from Local Cache...');
     let fm = FileManager.local();
     let dir = fm.documentsDirectory();
     fm.listContents(dir).forEach(async (file) => {
@@ -4292,15 +4302,19 @@ async function getReleaseNotes(url, locale) {
     req.timeoutInterval = 10;
     let data = await req.loadString();
     let cmdResp = req.response;
-    if (cmdResp.statusCode === 200 && data) {
-        let json = JSON.parse(data);
-        // console.log(JSON.stringify(json));
-        let rTextFnd = json.filter((r) => r.LanguageCodeMobileApp && r.LanguageCodeMobileApp === locale);
-        // console.log(`rTextFnd: ${JSON.stringify(rTextFnd)}`);
-        if (rTextFnd && rTextFnd[0] && rTextFnd[0].Text) {
-            // console.log(rTextFnd[0].Text);
-            return rTextFnd[0].Text;
+    try {
+        if (cmdResp.statusCode === 200 && data) {
+            let json = JSON.parse(data);
+            // console.log(JSON.stringify(json));
+            let rTextFnd = json.filter((r) => r.LanguageCodeMobileApp && r.LanguageCodeMobileApp === locale);
+            // console.log(`rTextFnd: ${JSON.stringify(rTextFnd)}`);
+            if (rTextFnd && rTextFnd[0] && rTextFnd[0].Text) {
+                // console.log(rTextFnd[0].Text);
+                return rTextFnd[0].Text;
+            }
         }
+    } catch (e) {
+        console.error(`getReleaseNotes Error: Could Not Load Release Notes. ${e}`);
     }
     return undefined;
 }
@@ -4362,42 +4376,24 @@ async function getTimer(timerName) {
 }
 
 async function stopTimer(timerName) {
-    if (timerMap[timerName]) {
-        try {
-            timerMap[timerName].invalidate();
-        } catch (e) {
-            console.log(`stopTimer Error: Could Not Stop Timer | ${e}`);
-        }
-        delete timerMap[timerName];
+    try {
+        timerMap[timerName].invalidate();
+    } catch (e) {
+        // console.log(`stopTimer Error: Could Not Stop Timer | ${e}`);
     }
+    delete timerMap[timerName];
 }
 
 async function createTimer(name, interval, repeat = false, actions, clearExisting = false) {
-    let timer = await getTimer(name);
-    if (clearExisting) {
+    if (clearExisting && timerMap[name]) {
         await stopTimer(name);
-        timer = await getTimer(name);
     }
-
+    let timer = await getTimer(name);
     if (timer && interval && actions) {
         timer.schedule(10000, repeat, actions);
     } else {
         console.log(`createTimer Error: Could Not Create Timer | Name: ${name} | Interval: ${interval} | Repeat: ${repeat} | Actions: ${actions}`);
     }
-}
-
-async function createRemoteStartStatusTimer() {
-    await createTimer(
-        'remoteStartStatus',
-        30000,
-        false,
-        async () => {
-            console.log('(Remote Start Status) Timer fired');
-            await fetchVehicleData(true);
-            await generateMainInfoTable(true);
-        },
-        true,
-    );
 }
 
 async function getPosition(data) {
@@ -4451,7 +4447,7 @@ function convertFordDtToLocal(src) {
     }
 }
 
-function timeDifference(prevTime) {
+function timeDifference(prevTime, asObj = false) {
     const now = new Date().getTime();
     const min = 60 * 1000;
     const hour = min * 60;
@@ -4479,6 +4475,20 @@ function timeDifference(prevTime) {
         let d = Math.round(elap / year);
         return `${d} ${textValues().UIValues.year}${d > 1 ? textValues().UIValues.plural : ''} ${textValues().UIValues.subsequentAdverb}`;
     }
+}
+
+function getElapsedMinutes(prevTime) {
+    const now = new Date().getTime();
+    const min = 60 * 1000;
+    const hour = min * 60;
+    const elap = now - prevTime;
+    if (elap < min) {
+        let d = Math.round(elap / 1000);
+        return 0;
+    } else if (elap < hour) {
+        return Math.round(elap / min);
+    }
+    return 60;
 }
 
 async function pressureToFixed(pressure, digits) {
