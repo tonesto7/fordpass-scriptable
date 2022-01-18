@@ -284,9 +284,7 @@ class WidgetInstaller {
                 console.log(`Wrote Scipt With ID: ${newId}`);
             }
             let hash = this.hashCode(code);
-            let codeToStore = Data.fromString(
-                `// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\n// Do not remove these lines, if you want to benefit from automatic updates.\n// source: ${sourceUrl}; docs: ${docsUrl}; hash: ${hash};\n\n${code}`,
-            );
+            let codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\nhash: ${hash};\n\n${code}`);
             let filePath = this.icloudFileManager.joinPath(this.icloudDocDirectory, name + '.js');
             this.icloudFileManager.write(filePath, codeToStore);
             return true;
