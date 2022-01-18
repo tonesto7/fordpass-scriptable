@@ -71,7 +71,7 @@ const changelog = {
 };
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/01/17, 6:00 pm';
+const SCRIPT_TS = '2022/01/18   , 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 const LATEST_VERSION = await getLatestScriptVersion();
 const updateAvailable = isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
@@ -98,7 +98,7 @@ const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
-    screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
+    screenShotMode: true, // Places a dummy address in the widget for anonymous screenshots.
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     tirePressureThresholds: {
@@ -1368,6 +1368,7 @@ async function collectAllData(scrub = false) {
 async function menuBuilderByType(type) {
     const vehicleData = await fetchVehicleData(true);
     // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
+    const typeDesc = capitalizeStr(type);
     let title = undefined;
     let message = undefined;
     let items = [];
@@ -1376,10 +1377,11 @@ async function menuBuilderByType(type) {
         case 'main':
             title = `Widget Menu`;
             message = `Widget Version: (${SCRIPT_VERSION})`.trim();
-            items = [{
+            items = [
+                {
                     title: 'View Widget',
-                    action: async() => {
-                        console.log(`(${type} Menu) View Widget was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) View Widget was pressed`);
                         menuBuilderByType('widgetView');
                         // const w = await generateWidget('medium', fordData);
                         // await w.presentMedium();
@@ -1389,8 +1391,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Request Refresh',
-                    action: async() => {
-                        console.log(`(${type} Menu) Refresh was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Refresh was pressed`);
                         if (await showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
                             await sendVehicleCmd('status');
                         }
@@ -1400,8 +1402,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Settings',
-                    action: async() => {
-                        console.log(`(${type} Menu) Settings was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Settings was pressed`);
                         menuBuilderByType('settings');
                     },
                     destructive: false,
@@ -1409,8 +1411,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Help & Info',
-                    action: async() => {
-                        console.log(`(${type} Menu) Help & Info was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Help & Info was pressed`);
                         await menuBuilderByType('helpInfo');
                     },
                     destructive: false,
@@ -1418,8 +1420,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Close',
-                    action: async() => {
-                        console.log(`(${type} Menu) Close was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Close was pressed`);
                     },
                     destructive: false,
                     show: true,
@@ -1429,10 +1431,11 @@ async function menuBuilderByType(type) {
 
         case 'helpInfo':
             title = `Help & About`;
-            items = [{
+            items = [
+                {
                     title: 'Recent Changes',
-                    action: async() => {
-                        console.log(`(${type} Menu) About was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) About was pressed`);
                         await generateRecentChangesTable();
                         menuBuilderByType('helpInfo');
                     },
@@ -1441,8 +1444,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'View Documentation',
-                    action: async() => {
-                        console.log(`(${type} Menu) Small Widget was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Small Widget was pressed`);
                         await Safari.openInApp(textValues().about.documentationUrl);
                         menuBuilderByType('helpInfo');
                     },
@@ -1451,8 +1454,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Report Issues',
-                    action: async() => {
-                        console.log(`(${type} Menu) Report Issues was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Report Issues was pressed`);
                         await Safari.openInApp(textValues().about.issuesUrl);
                         menuBuilderByType('helpInfo');
                     },
@@ -1461,8 +1464,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Donate',
-                    action: async() => {
-                        console.log(`(${type} Menu) Donate was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Donate was pressed`);
                         await Safari.open(textValues().about.donationUrl);
                         menuBuilderByType('helpInfo');
                     },
@@ -1471,8 +1474,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Diagnostics',
-                    action: async() => {
-                        console.log(`(${type} Menu) Diagnostics was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Diagnostics was pressed`);
                         await menuBuilderByType('diagnostics');
                     },
                     destructive: false,
@@ -1480,8 +1483,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
-                        console.log(`(${type} Menu) Back was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Back was pressed`);
                         menuBuilderByType('main');
                     },
                     destructive: false,
@@ -1492,10 +1495,11 @@ async function menuBuilderByType(type) {
             break;
         case 'widgetView':
             title = 'View Widget';
-            items = [{
+            items = [
+                {
                     title: 'Small',
-                    action: async() => {
-                        console.log(`(${type} Menu) Small Widget was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Small Widget was pressed`);
                         const w = await generateWidget('small', fordData);
                         await w.presentSmall();
                     },
@@ -1504,8 +1508,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Medium',
-                    action: async() => {
-                        console.log(`(${type} Menu) Medium Widget was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Medium Widget was pressed`);
                         const w = await generateWidget('medium', fordData);
                         await w.presentMedium();
                     },
@@ -1514,8 +1518,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Large',
-                    action: async() => {
-                        console.log(`(${type} Menu) Large Widget was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Large Widget was pressed`);
                         const w = await generateWidget('large', fordData);
                         await w.presentLarge();
                     },
@@ -1524,8 +1528,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Extra-Large',
-                    action: async() => {
-                        console.log(`(${type} Menu) Extra-Large Widget was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Extra-Large Widget was pressed`);
                         const w = await generateWidget('extraLarge', fordData);
                         await w.presentExtraLarge();
                     },
@@ -1534,8 +1538,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
-                        console.log(`(${type} Menu) Back was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Back was pressed`);
                         menuBuilderByType('main');
                     },
                     destructive: false,
@@ -1546,10 +1550,11 @@ async function menuBuilderByType(type) {
 
         case 'diagnostics':
             title = 'Diagnostics Menu';
-            items = [{
+            items = [
+                {
                     title: 'View OTA API Info',
-                    action: async() => {
-                        console.log(`(${type} Menu) View OTA Info was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) View OTA Info was pressed`);
                         let data = await getVehicleOtaInfo();
                         await showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
                         menuBuilderByType('diagnostics');
@@ -1559,17 +1564,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'View All Data',
-                    action: async() => {
-                        console.log(`(${type} Menu) View All Data was pressed`);
-                        let data = await fetchVehicleData(true);
-                        data.otaInfo = await getVehicleOtaInfo();
-                        data.userPrefs = {
-                            country: await getKeychainValue('fpCountry'),
-                            timeZone: await getKeychainValue('fpTz'),
-                            language: await getKeychainValue('fpLanguage'),
-                            unitOfDistance: await getKeychainValue('fpDistanceUnits'),
-                            unitOfPressure: await getKeychainValue('fpPressureUnits'),
-                        };
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) View All Data was pressed`);
                         let data = await collectAllData(false);
                         await showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
                         menuBuilderByType('diagnostics');
@@ -1579,8 +1575,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Copy All Data to Clipboard',
-                    action: async() => {
-                        console.log(`(${type} Menu) Copy Data was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Copy Data was pressed`);
                         let data = await collectAllData(true);
                         await Pasteboard.copyString(JSON.stringify(data, null, 4));
                         await showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
@@ -1591,8 +1587,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Send Data to Developer',
-                    action: async() => {
-                        console.log(`(${type} Menu) Email Vehicle Data was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
                         let data = await collectAllData(true);
                         await createEmailObject(data, true);
                     },
@@ -1601,8 +1597,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
-                        console.log(`(${type} Menu) Back was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Back was pressed`);
                         menuBuilderByType('main');
                     },
                     destructive: false,
@@ -1612,10 +1608,11 @@ async function menuBuilderByType(type) {
             break;
         case 'reset':
             title = 'Reset Data Menu';
-            items = [{
+            items = [
+                {
                     title: 'Clear Cached Files/Images',
-                    action: async() => {
-                        console.log(`(${type} Menu) Clear Files/Images was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Clear Files/Images was pressed`);
                         await clearFileManager();
                         await showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
                         // menuBuilderByType('reset');
@@ -1626,8 +1623,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Clear Login Info',
-                    action: async() => {
-                        console.log(`(${type} Menu) Clear Login Info was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Clear Login Info was pressed`);
                         if (await showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
                             await clearKeychain();
                             await showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease run the script again to re-initialize the widget.');
@@ -1641,8 +1638,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Reset Everything',
-                    action: async() => {
-                        console.log(`(${type} Menu) Reset Everything was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Reset Everything was pressed`);
                         if (await showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
                             await clearKeychain();
                             await clearFileManager();
@@ -1657,8 +1654,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'Back',
-                    action: async() => {
-                        console.log(`(${type} Menu) Back was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Back was pressed`);
                         menuBuilderByType('main');
                     },
                     destructive: false,
@@ -1668,11 +1665,13 @@ async function menuBuilderByType(type) {
             break;
         case 'settings':
             let mapProvider = await getMapProvider();
+            let widgetStyle = await getWidgetStyle();
             title = 'Widget Settings';
-            items = [{
+            items = [
+                {
                     title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
-                    action: async() => {
-                        console.log(`(${type} Menu) Map Provider pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Map Provider pressed`);
                         await toggleMapProvider();
                         menuBuilderByType('settings');
                     },
@@ -1680,9 +1679,19 @@ async function menuBuilderByType(type) {
                     show: true,
                 },
                 {
+                    title: `Widget Style: ${capitalizeStr(widgetStyle)}`,
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Widget Style pressed`);
+                        await widgetStyleSelector('medium');
+                        menuBuilderByType('settings');
+                    },
+                    destructive: false,
+                    show: true,
+                },
+                {
                     title: 'Reset Login/File Options',
-                    action: async() => {
-                        console.log(`(${type} Menu) Clear All Data was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Clear All Data was pressed`);
                         menuBuilderByType('reset');
                         // menuBuilderByType('settings');
                     },
@@ -1691,8 +1700,8 @@ async function menuBuilderByType(type) {
                 },
                 {
                     title: 'View Scriptable Settings',
-                    action: async() => {
-                        console.log(`(${type} Menu) View Scriptable Settings was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) View Scriptable Settings was pressed`);
                         await Safari.open(URLScheme.forOpeningScriptSettings());
                     },
                     destructive: false,
@@ -1701,8 +1710,8 @@ async function menuBuilderByType(type) {
 
                 {
                     title: `Back`,
-                    action: async() => {
-                        console.log(`(${type} Menu) Back was pressed`);
+                    action: async () => {
+                        console.log(`(${typeDesc} Menu) Back was pressed`);
                         menuBuilderByType('main');
                     },
                     destructive: false,
@@ -1811,7 +1820,7 @@ async function scheduleMainTableRefresh(interval) {
         'mainTableRefresh',
         interval,
         false,
-        async() => {
+        async () => {
             console.log('(Main Table) Refresh Timer Fired');
             await fetchVehicleData(false);
             await generateMainInfoTable(true);
@@ -1826,7 +1835,7 @@ async function createRemoteStartStatusTimer() {
         'remoteStartStatus',
         60000,
         false,
-        async() => {
+        async () => {
             console.log('(Remote Start Status) Timer fired');
             await fetchVehicleData(false);
             await generateMainInfoTable(true);
@@ -1876,7 +1885,7 @@ async function generateMainInfoTable(update = false) {
                     await createButtonCell(msgs.length ? `${msgs.length}` : '', {
                         align: 'left',
                         widthWeight: 27,
-                        onTap: async() => {
+                        onTap: async () => {
                             console.log('(Dashboard) View Messages was pressed');
                             await generateMessagesTable(vData, false);
                         },
@@ -1887,12 +1896,13 @@ async function generateMainInfoTable(update = false) {
                         align: 'right',
                         widthWeight: 30,
                         dismissOnTap: false,
-                        onTap: async() => {
+                        onTap: async () => {
                             console.log(`(Dashboard) Menu Button was pressed`);
                             menuBuilderByType('main');
                         },
                     }),
-                ], {
+                ],
+                {
                     backgroundColor: new Color(headerColor),
                     height: 40,
                     isHeader: true,
@@ -1904,7 +1914,8 @@ async function generateMainInfoTable(update = false) {
         // Header Section - Row 2: Shows tire pressure label and unit
         tableRows.push(
             await createTableRow(
-                [await createTextCell('', undefined, { align: 'center', widthWeight: 30 }), await createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(runtimeData.textWhite), subtitleFont: Font.subheadline() }), await createTextCell('', undefined, { align: 'center', widthWeight: 30 })], {
+                [await createTextCell('', undefined, { align: 'center', widthWeight: 30 }), await createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(runtimeData.textWhite), subtitleFont: Font.subheadline() }), await createTextCell('', undefined, { align: 'center', widthWeight: 30 })],
+                {
                     backgroundColor: new Color(headerColor),
                     height: 20,
                     dismissOnSelect: false,
@@ -1937,7 +1948,8 @@ async function generateMainInfoTable(update = false) {
                         subtitleFont: Font.subheadline(),
                     }),
                     await createImageCell(await getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
-                ], {
+                ],
+                {
                     backgroundColor: new Color(headerColor),
                     height: 100,
                     cellSpacing: 0,
@@ -1953,7 +1965,8 @@ async function generateMainInfoTable(update = false) {
                     await createImageCell(isEV ? await getImage(`ev_battery_dark_menu.png`) : await getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
                     await createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, { align: 'left', widthWeight: 45, titleColor: new Color(runtimeData.textWhite), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.subheadline() }),
                     await createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
-                ], {
+                ],
+                {
                     backgroundColor: new Color(headerColor),
                     height: 40,
                     dismissOnSelect: false,
@@ -1968,7 +1981,8 @@ async function generateMainInfoTable(update = false) {
                     // await createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
                     await createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: new Color(runtimeData.textWhite), titleFont: Font.regularSystemFont(9) }),
                     // await createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
-                ], {
+                ],
+                {
                     backgroundColor: new Color(headerColor),
                     height: 20,
                     dismissOnSelect: false,
@@ -1979,34 +1993,39 @@ async function generateMainInfoTable(update = false) {
         let update = false;
         if (widgetConfig.showTestUIStuff) {
             vData.alerts = {
-                vha: [{
-                    alertIdentifier: 'E19-374-43',
-                    activityId: '91760a25-5e8a-48f8-9f10-41392781e0d7',
-                    eventTimeStamp: '1/6/2022 12:3:4 AM',
-                    colorCode: 'A',
-                    iconName: 'ic_washer_fluid',
-                    activeAlertBody: {
-                        headline: 'Low Washer Fluid',
-                        formattedBody: "<div class='accordion' id='SymptomHeader'><h2 class='toggle'><b>What Is Happening?</b></h2><div class='content' id='SymptomHeaderDesc'><p>Low windshield washer fluid.</p></div><h2 class='toggle' id='CustomerActionHeader'><b>What Should I Do?</b></h2><div class='content' id='CustomerActionHeaderDesc'><p>Check the windshield washer reservoir. Add washer fluid as needed.</p></div></div>",
-                        wilcode: '600E19',
-                        dtccode: '',
+                vha: [
+                    {
+                        alertIdentifier: 'E19-374-43',
+                        activityId: '91760a25-5e8a-48f8-9f10-41392781e0d7',
+                        eventTimeStamp: '1/6/2022 12:3:4 AM',
+                        colorCode: 'A',
+                        iconName: 'ic_washer_fluid',
+                        activeAlertBody: {
+                            headline: 'Low Washer Fluid',
+                            formattedBody:
+                                "<div class='accordion' id='SymptomHeader'><h2 class='toggle'><b>What Is Happening?</b></h2><div class='content' id='SymptomHeaderDesc'><p>Low windshield washer fluid.</p></div><h2 class='toggle' id='CustomerActionHeader'><b>What Should I Do?</b></h2><div class='content' id='CustomerActionHeaderDesc'><p>Check the windshield washer reservoir. Add washer fluid as needed.</p></div></div>",
+                            wilcode: '600E19',
+                            dtccode: '',
+                        },
+                        hmiAlertBody: null,
                     },
-                    hmiAlertBody: null,
-                }, ],
-                mmota: [{
-                    alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL',
-                    inhibitRequired: false,
-                    dateTimeStamp: '1641426296850',
-                    releaseNotesUrl: 'http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185',
-                    colorCode: 'G',
-                    iconName: 'ic_mmota_alert_update_successful',
-                    scheduleRequired: false,
-                    wifiRequired: false,
-                    consentRequired: false,
-                    vehicleTime: '23:44',
-                    vehicleDate: '2022-01-05',
-                    updateDisplayTime: null,
-                }, ],
+                ],
+                mmota: [
+                    {
+                        alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL',
+                        inhibitRequired: false,
+                        dateTimeStamp: '1641426296850',
+                        releaseNotesUrl: 'http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185',
+                        colorCode: 'G',
+                        iconName: 'ic_mmota_alert_update_successful',
+                        scheduleRequired: false,
+                        wifiRequired: false,
+                        consentRequired: false,
+                        vehicleTime: '23:44',
+                        vehicleDate: '2022-01-05',
+                        updateDisplayTime: null,
+                    },
+                ],
                 summary: [
                     { alertType: 'VHA', alertDescription: 'Low Washer Fluid', alertIdentifier: 'E19-374-43', urgency: 'L', colorCode: 'A', iconName: 'ic_washer_fluid', alertPriority: 1 },
                     { alertType: 'MMOTA', alertDescription: 'UPDATE SUCCESSFUL', alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL', urgency: null, colorCode: 'G', iconName: 'ic_mmota_alert_update_successful', alertPriority: 2 },
@@ -2024,7 +2043,7 @@ async function generateMainInfoTable(update = false) {
                 await createTableRow([await createTextCell(`New Widget Update Available (v${LATEST_VERSION})`, 'Tap here to update', { align: 'center', widthWeight: 100, titleColor: new Color('#b605fc'), titleFont: Font.subheadline(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(9) })], {
                     height: 40,
                     dismissOnSelect: false,
-                    onSelect: async() => {
+                    onSelect: async () => {
                         console.log('(Main Menu) Update Widget was pressed');
                         let callback = new CallbackURL('scriptable:///run');
                         callback.addParameter('scriptName', 'FordWidgetTool');
@@ -2048,11 +2067,12 @@ async function generateMainInfoTable(update = false) {
                         [
                             await createImageCell(await getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                             await createTextCell(recall.title, recall.type + '\n' + recall.id, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(9) }),
-                        ], {
+                        ],
+                        {
                             height: 44,
                             dismissOnSelect: false,
                             cellSpacing: 5,
-                            onSelect: async() => {
+                            onSelect: async () => {
                                 console.log('(Dashboard) Recall Item row was pressed');
                                 await generateRecallsTable(vData);
                             },
@@ -2085,17 +2105,19 @@ async function generateMainInfoTable(update = false) {
                         [
                             await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                             await createTextCell(alert.alertDescription, getAlertDescByType(alert.alertType), { align: 'left', widthWeight: 93, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.body(), subtitleColor: new Color(runtimeData.textColor1), subtitleFont: Font.regularSystemFont(9) }),
-                        ], {
+                        ],
+                        {
                             height: 44,
                             dismissOnSelect: false,
                             cellSpacing: 5,
-                            onSelect: alert.noButton === undefined || alert.noButton === false ?
-                                async() => {
-                                    console.log('(Dashboard) Alert Item row was pressed');
-                                    // await showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
-                                    await generateAlertsTable(vData);
-                                } :
-                                undefined,
+                            onSelect:
+                                alert.noButton === undefined || alert.noButton === false
+                                    ? async () => {
+                                          console.log('(Dashboard) Alert Item row was pressed');
+                                          // await showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
+                                          await generateAlertsTable(vData);
+                                      }
+                                    : undefined,
                         },
                     ),
                 );
@@ -2114,16 +2136,17 @@ async function generateMainInfoTable(update = false) {
                         await createButtonCell('View', {
                             align: 'center',
                             widthWeight: 17,
-                            onTap: async() => {
+                            onTap: async () => {
                                 console.log('(Dashboard) View Unread Messages was pressed');
                                 await generateMessagesTable(vData, true);
                             },
                         }),
-                    ], {
+                    ],
+                    {
                         height: 44,
                         dismissOnSelect: false,
                         cellSpacing: 5,
-                        onSelect: async() => {
+                        onSelect: async () => {
                             console.log('(Dashboard) View Unread Messages was pressed');
                             await generateMessagesTable(vData, true);
                         },
@@ -2147,7 +2170,7 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Unlock', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Lock was pressed');
                                     if (await showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
                                         await sendVehicleCmd('unlock');
@@ -2157,12 +2180,13 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Lock', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Lock was pressed');
                                     await sendVehicleCmd('lock');
                                 },
                             }),
-                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                        ],
+                        { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2177,7 +2201,7 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Stop was pressed');
                                     await sendVehicleCmd('stop');
                                 },
@@ -2185,14 +2209,15 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Start was pressed');
                                     if (await showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
                                         await sendVehicleCmd('start');
                                     }
                                 },
                             }),
-                        ], { height: ignStatus.length > 17 ? 64 : 44, cellSpacing: 5, dismissOnSelect: false },
+                        ],
+                        { height: ignStatus.length > 17 ? 64 : 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2208,14 +2233,15 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Horn/Lights was pressed');
                                     if (await showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
                                         await sendVehicleCmd('horn_and_lights');
                                     }
                                 },
                             }),
-                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                        ],
+                        { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2236,7 +2262,7 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) SecuriAlert Enable was pressed');
                                     await sendVehicleCmd('guard_mode_on');
                                 },
@@ -2244,14 +2270,15 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Disable', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) SecuriAlert Disable was pressed');
                                     if (await showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
                                         await sendVehicleCmd('guard_mode_off');
                                     }
                                 },
                             }),
-                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                        ],
+                        { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2266,13 +2293,15 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Zone Lighting On Button was pressed');
                                     showActionPrompt(
                                         'Zone Lighting On Menu',
-                                        undefined, [{
+                                        undefined,
+                                        [
+                                            {
                                                 title: 'Front Zone',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone Front On was pressed`);
                                                     await sendVehicleCmd('zone_lights_front_on');
                                                 },
@@ -2281,7 +2310,7 @@ async function generateMainInfoTable(update = false) {
                                             },
                                             {
                                                 title: 'Rear Zone',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone Rear On was pressed`);
                                                     await sendVehicleCmd('zone_lights_rear_on');
                                                 },
@@ -2290,7 +2319,7 @@ async function generateMainInfoTable(update = false) {
                                             },
                                             {
                                                 title: 'Left Zone',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone Left On was pressed`);
                                                     await sendVehicleCmd('zone_lights_left_on');
                                                 },
@@ -2299,7 +2328,7 @@ async function generateMainInfoTable(update = false) {
                                             },
                                             {
                                                 title: 'Right Zone',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone Right On was pressed`);
                                                     await sendVehicleCmd('zone_lights_right_on');
                                                 },
@@ -2308,7 +2337,7 @@ async function generateMainInfoTable(update = false) {
                                             },
                                             {
                                                 title: 'All Zones',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone All On was pressed`);
                                                     await sendVehicleCmd('zone_lights_all_on');
                                                 },
@@ -2323,13 +2352,15 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Disable', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Zone Lighting Off Button was pressed');
                                     showActionPrompt(
                                         'Zone Lighting Off',
-                                        undefined, [{
+                                        undefined,
+                                        [
+                                            {
                                                 title: 'Front Zone',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone Front Off was pressed`);
                                                     await sendVehicleCmd('zone_lights_front_off');
                                                 },
@@ -2338,7 +2369,7 @@ async function generateMainInfoTable(update = false) {
                                             },
                                             {
                                                 title: 'Rear Zone',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone Rear Off was pressed`);
                                                     await sendVehicleCmd('zone_lights_rear_off');
                                                 },
@@ -2347,7 +2378,7 @@ async function generateMainInfoTable(update = false) {
                                             },
                                             {
                                                 title: 'Left Zone',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone Left Off was pressed`);
                                                     await sendVehicleCmd('zone_lights_left_off');
                                                 },
@@ -2356,7 +2387,7 @@ async function generateMainInfoTable(update = false) {
                                             },
                                             {
                                                 title: 'Right Zone',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone Right Off was pressed`);
                                                     await sendVehicleCmd('zone_lights_right_off');
                                                 },
@@ -2365,7 +2396,7 @@ async function generateMainInfoTable(update = false) {
                                             },
                                             {
                                                 title: 'All Zones',
-                                                action: async() => {
+                                                action: async () => {
                                                     console.log(`(Dashboard) Zone All Off was pressed`);
                                                     await sendVehicleCmd('zone_lights_all_off');
                                                 },
@@ -2377,7 +2408,8 @@ async function generateMainInfoTable(update = false) {
                                     );
                                 },
                             }),
-                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                        ],
+                        { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2392,7 +2424,7 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Trailer Light Check Start was pressed');
                                     if (await showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
                                         await sendVehicleCmd('trailer_light_check_on');
@@ -2402,12 +2434,13 @@ async function generateMainInfoTable(update = false) {
                             await createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 17,
-                                onTap: async() => {
+                                onTap: async () => {
                                     console.log('(Dashboard) Trailer Light Check Stop was pressed');
                                     await sendVehicleCmd('trailer_light_check_off');
                                 },
                             }),
-                        ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                        ],
+                        { height: 44, cellSpacing: 5, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2447,7 +2480,8 @@ async function generateAlertsTable(vData) {
                             subtitleColor: Color.darkGray(),
                             subtitleFont: Font.regularSystemFont(9),
                         }),
-                    ], { height: 40, dismissOnSelect: false },
+                    ],
+                    { height: 40, dismissOnSelect: false },
                 ),
             );
         }
@@ -2471,7 +2505,8 @@ async function generateAlertsTable(vData) {
                     [
                         await createImageCell(await getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
                         await createTextCell(title, timeDiff, { align: 'left', widthWeight: 93, titleColor: new Color(getAlertColorByCode(alert.colorCode)), titleFont: Font.headline(), subtitleColor: Color.darkGray(), subtitleFont: Font.regularSystemFont(9) }),
-                    ], { height: 44, dismissOnSelect: false },
+                    ],
+                    { height: 44, dismissOnSelect: false },
                 ),
             );
 
@@ -2513,7 +2548,8 @@ async function generateRecallsTable(vData) {
                                 subtitleColor: new Color(runtimeData.textColor1),
                                 subtitleFont: Font.regularSystemFont(10),
                             }),
-                        ], { height: 50, dismissOnSelect: false },
+                        ],
+                        { height: 50, dismissOnSelect: false },
                     ),
                 );
 
@@ -2554,7 +2590,8 @@ async function generateRecallsTable(vData) {
                         await createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
                         await createTextCell(`${recalls.length} Recalls(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() }),
                         await createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
-                    ], { height: 44, dismissOnSelect: false },
+                    ],
+                    { height: 44, dismissOnSelect: false },
                 ),
             );
 
@@ -2581,17 +2618,20 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
                         await createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
                         await createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title2() }),
                         await createTextCell('All', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
-                    ], {
+                    ],
+                    {
                         height: 40,
                         dismissOnSelect: false,
-                        onSelect: async() => {
+                        onSelect: async () => {
                             console.log(`(Messages Table) All Message Options was pressed`);
                             let msgIds = msgs.map((msg) => msg.messageId);
                             showActionPrompt(
                                 'All Message Options',
-                                undefined, [{
+                                undefined,
+                                [
+                                    {
                                         title: 'Mark All Read',
-                                        action: async() => {
+                                        action: async () => {
                                             console.log(`(Messages Table) Mark All Messages Read was pressed`);
                                             let ok = await showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?`, `Mark (${msgIds.length}) Read`, true);
                                             if (ok) {
@@ -2609,7 +2649,7 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
                                     },
                                     {
                                         title: 'Delete All',
-                                        action: async() => {
+                                        action: async () => {
                                             console.log(`(Messages Table) Delete All Messages was pressed`);
                                             let ok = await showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?', `Delete (${msgIds.length}) Messages`, true);
                                             if (ok) {
@@ -2627,7 +2667,7 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
                                     },
                                 ],
                                 true,
-                                async() => {
+                                async () => {
                                     generateMessagesTable(vData, unreadOnly);
                                 },
                             );
@@ -2757,7 +2797,7 @@ async function generateRecentChangesTable() {
     if (changes && (changes.updated.length || changes.added.length || changes.removed.length || changes.fixed.length)) {
         let verTs = new Date(Date.parse(SCRIPT_TS));
         tableRows.push(
-            await createTableRow([await createTextCell(`${SCRIPT_VERSION} Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title1(), subtitleColor: Color.darkGray(), subtitleFont: Font.subheadline(10) })], {
+            await createTableRow([await createTextCell(`${SCRIPT_VERSION} Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title1() })], {
                 height: 50,
                 isHeader: true,
                 dismissOnSelect: false,
@@ -2790,6 +2830,60 @@ async function generateRecentChangesTable() {
     }
 
     await generateTableMenu('recentChanges', tableRows, false, false);
+}
+
+async function widgetStyleSelector() {
+    let widgetStyle = await getWidgetStyle();
+    // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
+    let tableRows = [];
+    tableRows.push(
+        await createTableRow(
+            [await createTextCell(`Widget Styles`, `This page will show an example of each widget size and type\nTap on type to set it.`, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title1(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })],
+            {
+                height: 70,
+                dismissOnSelect: false,
+            },
+        ),
+    );
+    for (const [i, size] of ['small', 'medium'].entries()) {
+        tableRows.push(
+            await createTableRow([await createTextCell(`${capitalizeStr(size)}`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.title3() })], {
+                height: 30,
+                isHeader: true,
+                dismissOnSelect: false,
+            }),
+        );
+        for (const [i, style] of ['simple', 'detailed'].entries()) {
+            // console.log(`Style: ${style} | Image: ${size}_${style}.png`);
+            tableRows.push(
+                await createTableRow(
+                    [
+                        await createTextCell(`(${capitalizeStr(style)})`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: new Color(runtimeData.textColor1), titleFont: Font.subheadline() }),
+                        await createImageCell(await getImage(`${size}_${style}.png`), { align: 'center', widthWeight: 60 }),
+                        await createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
+                    ],
+                    {
+                        height: 150,
+                        dismissOnSelect: true,
+                        backgroundColor: widgetStyle === style ? Color.lightGray() : undefined,
+                        onSelect: async () => {
+                            console.log(`Setting WidgetStyle to ${style}`);
+                            await setWidgetStyle(style);
+                            await widgetStyleSelector(size);
+                        },
+                    },
+                ),
+            );
+        }
+        tableRows.push(
+            await createTableRow([await createTextCell(``, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false })], {
+                height: 30,
+                dismissOnSelect: false,
+            }),
+        );
+    }
+
+    await generateTableMenu('widgetStyles', tableRows, false, false);
 }
 
 //*****************************************************************************************************************************
@@ -4084,6 +4178,14 @@ async function setKeychainValue(key, value) {
     }
 }
 
+async function getWidgetStyle() {
+    return (await getKeychainValue('fpWidgetStyle')) || 'detailed';
+}
+
+async function setWidgetStyle(style) {
+    return await setKeychainValue('fpWidgetStyle', style);
+}
+
 function hasKeychainValue(key) {
     return Keychain.contains(key);
 }
@@ -4550,6 +4652,10 @@ function scrubPersonalData(data) {
 
 function inputTest(val) {
     return val !== '' && val !== null && val !== undefined;
+}
+
+function capitalizeStr(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // Shamelessly borrowed from WidgetMarkup.js by @rafaelgandi
