@@ -1152,6 +1152,10 @@ async function createTireElement(srcField, vData, wSize = 'medium') {
     let offset = 0;
     let titleFld = await createRow(srcField);
     let pressureUnits = await getKeychainValue('fpPressureUnits');
+    if (pressureUnits === null) {
+        console.log("fpPressureUnits not set");
+        return
+    }
     let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
     await createTitle(titleFld, `tirePressure||${unitTxt}`, wSize);
 
@@ -2522,7 +2526,7 @@ async function fetchVehicleData(loadLocal = false) {
 
     // console.log(`statusData: ${JSON.stringify(statusData)}`);
     let vehicleData = new Object();
-    if (statusData == textValues().errorMessages.invalidGrant || statusData == textValues().errorMessages.connectionErrorOrVin || statusData == textValues().errorMessages.unknownError || statusData == textValues().errorMessages.noVin || statusData == textValues().errorMessages.noCredentials) {
+    if (typeof statusData.vehiclestatus == "undefined" || statusData == textValues().errorMessages.invalidGrant || statusData == textValues().errorMessages.connectionErrorOrVin || statusData == textValues().errorMessages.unknownError || statusData == textValues().errorMessages.noVin || statusData == textValues().errorMessages.noCredentials) {
         // console.log('fetchVehicleData | Error: ' + statusData);
         let localData = readLocalData();
         if (localData) {
