@@ -1384,6 +1384,7 @@ async function menuBuilderByType(type) {
                     destructive: false,
                     show: true,
                 },
+
                 {
                     title: 'Request Refresh',
                     action: async() => {
