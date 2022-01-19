@@ -3,6 +3,21 @@
     "scriptColor": "blue",
     "scriptGlyph": "car",
     "sourceUrl": "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js",
+    "sourceModules": [
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Class.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Alerts.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Files.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_FordCommands.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_FordRequests.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Keychain.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Menus.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Notifications.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_ShortcutParser.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Statics.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Tables.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Timers.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/beta/Modules/FPW_Utils.js"
+    ],
     "docsUrl": "https://github.com/tonesto7/fordpass-scriptable#readme",
     "cleanup": {
         "keys": ["fpToken", "fpToken2", "fpUsername", "fpUser", "fpPass", "fpPassword", "fpVin", "fpUseMetricUnits", "fpScriptVersion", "fpUsePsi", "fpVehicleType", "fpMapProvider", "fpCat1Token", "fpTokenExpiresAt", "fpCountry", "fpDeviceLanguage", "fpLanguage", "fpTz", "fpPressureUnits", "fpDistanceUnits", "fpSpeedUnits"],
