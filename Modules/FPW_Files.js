@@ -11,41 +11,81 @@ module.exports = class FPW_Files {
             return await req.loadImage();
         } catch (e) {
             console.log(`loadImage Error: Could Not Load Image from ${imgUrl}.`);
+            this.appendToLogFile(`loadImage Error: Could Not Load Image from ${imgUrl}.`);
             return undefined;
         }
     }
 
     async saveDataToLocal(data) {
         console.log('FileManager: Saving Vehicle Data to Local Storage...');
-        let fm = FileManager.local();
-        let dir = fm.documentsDirectory();
-        let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
-        let path = fm.joinPath(dir, fileName);
-        if (await fm.fileExists(path)) {
-            await fm.remove(path);
-        } //clean old data
-        await fm.writeString(path, JSON.stringify(data));
+        try {
+            let fm = FileManager.local();
+            let dir = fm.documentsDirectory();
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
+            let path = fm.joinPath(dir, fileName);
+            if (await fm.fileExists(path)) {
+                await fm.remove(path);
+            } //clean old data
+            await fm.writeString(path, JSON.stringify(data));
+        } catch (e) {
+            console.log(`saveDataToLocal Error: ${e}`);
+            this.appendToLogFile(`saveDataToLocal Error: ${e}`);
+        }
     }
 
     async readLocalData() {
         // console.log('FileManager: Retrieving Vehicle Data from Local Cache...');
-        let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
-        let fm = FileManager.local();
-        let dir = fm.documentsDirectory();
-        let path = fm.joinPath(dir, fileName);
-        if (fm.fileExists(path)) {
-            let localData = fm.readString(path);
-            return JSON.parse(localData);
+        try {
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
+            let fm = FileManager.local();
+            let dir = fm.documentsDirectory();
+            let path = fm.joinPath(dir, fileName);
+            if (fm.fileExists(path)) {
+                let localData = fm.readString(path);
+                return JSON.parse(localData);
+            }
+        } catch (e) {
+            console.log(`readLocalData Error: ${e}`);
+            this.appendToLogFile(`readLocalData Error: ${e}`);
         }
         return null;
     }
 
+    async appendToLogFile(txt) {
+        console.log('appendToLogFile: Saving Data to Log...');
+        try {
+            let fm = FileManager.iCloud();
+            const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_log_${this.SCRIPT_ID}.log` : 'fp_log.log';
+            let path = fm.joinPath(logDir, fileName);
+            if (!(await fm.isDirectory(logDir))) {
+                console.log('Creating Logs directory...');
+                await fm.createDirectory(logDir);
+            }
+            let logText = '';
+            if (await fm.fileExists(path)) {
+                logText = await fm.readString(path);
+                logText += '\n[' + new Date().toLocaleString() + '] - ' + txt.toString();
+            } else {
+                logText = '[' + new Date().toLocaleString() + '] - ' + txt.toString();
+            }
+            await fm.writeString(path, logText);
+        } catch (e) {
+            console.log(`appendToLogFile Error: ${e}`);
+        }
+    }
+
     async removeLocalData(filename) {
-        let fm = FileManager.local();
-        let dir = fm.documentsDirectory();
-        let path = fm.joinPath(dir, filename);
-        if (await fm.fileExists(path)) {
-            await fm.remove(path);
+        try {
+            let fm = FileManager.local();
+            let dir = fm.documentsDirectory();
+            let path = fm.joinPath(dir, filename);
+            if (await fm.fileExists(path)) {
+                await fm.remove(path);
+            }
+        } catch (e) {
+            console.log(`removeLocalData Error: ${e}`);
+            this.appendToLogFile(`removeLocalData Error: ${e}`);
         }
     }
 
@@ -60,11 +100,16 @@ module.exports = class FPW_Files {
 
     async clearFileManager() {
         console.log('FileManager: Clearing All Files from Local Cache...');
-        let fm = FileManager.local();
-        let dir = fm.documentsDirectory();
-        fm.listContents(dir).forEach(async(file) => {
-            await this.removeLocalData(file);
-        });
+        try {
+            let fm = FileManager.local();
+            let dir = fm.documentsDirectory();
+            fm.listContents(dir).forEach(async(file) => {
+                await this.removeLocalData(file);
+            });
+        } catch (e) {
+            console.log(`clearFileManager Error: ${e}`);
+            this.appendToLogFile(`clearFileManager Error: ${e}`);
+        }
     }
 
     //************************************************** END FILE MANAGEMENT FUNCTIONS************************************************
@@ -105,6 +150,7 @@ module.exports = class FPW_Files {
             }
         } catch (e) {
             console.log(`getImage(${image}) Error: ${e}`);
+            this.appendToLogFile(`getImage(${image}) Error: ${e}`);
             return null;
         }
     }
@@ -150,6 +196,7 @@ module.exports = class FPW_Files {
                 }
             } catch (e) {
                 console.error(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
+                this.appendToLogFile(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
                 return await this.getImage('placeholder.png');
             }
         }

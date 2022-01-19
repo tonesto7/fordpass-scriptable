@@ -115,49 +115,67 @@ const runningWidgetSize = config.widgetFamily;
 // console.log(`IsSmallDisplay: ${fpw.isSmallDisplay}`);
 // console.log(`ScreenSize: Width: ${fpw.screenSize.width} | Height: ${fpw.screenSize.height}`);
 // console.log(`Device Info | Model: ${fpw.deviceModel} | OSVersion: ${fpw.deviceSystemVersion}`);
-
-//******************************************************************************
-//* Main Widget Code - ONLY make changes if you know what you are doing!!
-//******************************************************************************
-
 // console.log(`ScriptURL: ${URLScheme.forRunningScript()}`);
 // console.log(`Script QueryParams: ${args.queryParameter}`);
 // console.log(`Script WidgetParams: ${args.widgetParameter}`);
 
+//******************************************************************************
+//* Main Widget Code - ONLY make changes if you know what you are doing!!
+//******************************************************************************
+// class Widget extends FPW {
+//     constructor(id, version, ts, config) {}
+// }
 async function prepWidget() {
-    if (widgetConfig.clearKeychainOnNextRun) {
-        await fpw.kc.clearKeychain();
-    }
-    if (widgetConfig.clearFileManagerOnNextRun) {
-        await fpw.files.clearFileManager();
-    }
-    await fpw.kc.vinFix();
-    let reqOk = await fpw.kc.requiredPrefsOk(fpw.kc.prefKeys().core);
-    // console.log(`reqOk: ${reqOk}`);
-    if (!reqOk) {
-        let prompt = await requiredPrefsMenu();
-        console.log(`Prefs Menu Prompt Result: ${prompt}`);
-        if (!prompt) {
-            console.log('Login, VIN, or Prefs not set... User cancelled!!!');
-            return null;
+    try {
+        if (widgetConfig.clearKeychainOnNextRun) {
+            await fpw.kc.clearSettings();
         }
-    }
-    await fpw.fordRequests.queryFordPassPrefs(false);
+        if (widgetConfig.clearFileManagerOnNextRun) {
+            await fpw.files.clearFileManager();
+        }
+        // Tries to fix the format of the VIN field (Makes sure they are capitalized)
+        await fpw.kc.vinFix();
 
-    let vehicleData = await fpw.fordRequests.fetchVehicleData();
-    // console.log(`vehicleData: ${JSON.stringify(vehicleData)}`);
-    return vehicleData;
+        let frcPrefs = false;
+        let reqOk = await fpw.kc.requiredPrefsOk(fpw.kc.prefKeys().core);
+        // console.log(`reqOk: ${reqOk}`);
+        if (!reqOk) {
+            let prompt = await requiredPrefsMenu();
+            // console.log(`(prepWidget) Prefs Menu Prompt Result: ${prompt}`);
+            if (!prompt) {
+                console.log('(prepWidget) Login, VIN, or Prefs not set... | User cancelled!!!');
+                return null;
+            } else {
+                frcPrefs = true;
+            }
+        }
+        // console.log('(prepWidget) Checking for token...');
+        const cAuth = await fpw.fordRequests.checkAuth();
+        // console.log(`(prepWidget) CheckAuth Result: ${cAuth}`);
+
+        // console.log(`(prepWidget) Checking User Prefs | Force: (${frcPrefs})`);
+        const fPrefs = await fpw.fordRequests.queryFordPassPrefs(frcPrefs);
+        // console.log(`(prepWidget) User Prefs Result: ${fPrefs}`);
+
+        // console.log('(prepWidget) Fetching Vehicle Data...');
+        const vData = await fpw.fordRequests.fetchVehicleData();
+        return vData;
+    } catch (err) {
+        console.log(`(prepWidget) Error: ${err}`);
+        fpw.appendToLogFile(`prepWidget() Error: ${err}`);
+        return null;
+    }
 }
 
 async function generateWidget(size, data) {
     let w = null;
     try {
         const wStyle = await fpw.kc.getWidgetStyle();
-        console.log(`wStyle: ${wStyle}`);
+        // console.log(`wStyle: ${wStyle}`);
 
         switch (size) {
             case 'small':
-                w = wStyle === 'simple' ? await createSmallSimpleWidget(data) : await createSmallWidget(data);
+                w = wStyle === 'simple' ? await createSmallWidget(data) : await createSmallWidget(data);
                 break;
             case 'large':
                 w = await createLargeWidget(data);
@@ -165,19 +183,21 @@ async function generateWidget(size, data) {
             case 'extraLarge':
                 w = await createExtraLargeWidget(data);
                 break;
+
             default:
-                w = wStyle === 'simple' ? await createMediumSimpleWidget(data) : await createMediumWidget(data);
+                // w = wStyle === 'simple' ? await createMediumSimpleWidget(data) : await createMediumWidget(data);
+                w = await createMediumWidget(data);
                 break;
         }
         if (w === null) {
             return;
         }
-        Script.setWidget(w);
         w.setPadding(0, 5, 0, 1);
-
-        w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+        Script.setWidget(w);
+        // w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
     } catch (e) {
         console.log(`generateWidget Error: ${e}`);
+        fpw.appendToLogFile(`generateWidget() Error: ${e}`);
     }
     return w;
 }
@@ -185,29 +205,48 @@ async function generateWidget(size, data) {
 let fordData = await prepWidget();
 if (fordData === null) return;
 
-// Table Map Object - Used to map the data to the table
-let tableMap = {};
-let timerMap = {};
-
-if (config.runsInWidget) {
-    await generateWidget(runningWidgetSize, fordData);
-} else if (config.runsInApp || config.runsFromHomeScreen) {
-    // Show alert with current data (if running script in app)
-    if (args.shortcutParameter) {
-        // await fpw.alerts.showAlert('shortcutParameter: ', JSON.stringify(args.shortcutParameter));
-        // Create a parser function...
-        await Speech.speak(await parseIncomingSiriCommand(args.shortcutParameter));
+try {
+    if (config.runsInWidget) {
+        console.log('(generateWidget) Running in Widget...');
+        await generateWidget(runningWidgetSize, fordData);
+    } else if (config.runsInApp || config.runsFromHomeScreen) {
+        // Show alert with current data (if running script in app)
+        if (args.shortcutParameter) {
+            // Create a parser function...
+            await Speech.speak(await parseIncomingSiriCommand(args.shortcutParameter));
+        } else {
+            // await(await generateWidget('medium', fordData)).presentMedium();
+            await generateMainInfoTable();
+        }
+    } else if (config.runsWithSiri || config.runsInActionExtension) {
+        // console.log('runsWithSiri: ' + config.runsWithSiri);
+        // console.log('runsInActionExtension: ' + config.runsInActionExtension);
     } else {
-        await generateWidget('medium', fordData);
-        generateMainInfoTable();
+        await generateWidget(runningWidgetSize, fordData);
     }
-} else if (config.runsWithSiri || config.runsInActionExtension) {
-    // console.log('runsWithSiri: ' + config.runsWithSiri);
-    // console.log('runsInActionExtension: ' + config.runsInActionExtension);
-} else {
-    await generateWidget(runningWidgetSize, fordData);
+} catch (e) {
+    console.log(`rootCode | Error: ${e}`);
+    fpw.appendToLogFile(`rootCode | Error: ${e}`);
 }
 Script.complete();
+
+async function testWidget(data) {
+    const widget = new ListWidget();
+    widget.backgroundGradient = fpw.statics.getBgGradient();
+
+    try {
+        let mainStack = widget.addStack();
+        mainStack.layoutVertically();
+        mainStack.setPadding(0, 0, 0, 0);
+
+        let contentStack = mainStack.addStack();
+        await createText(contentStack, 'This is a test', { font: Font.boldSystemFont(13), textColor: new Color('#000000'), lineLimit: 1 });
+        contentStack.layoutHorizontally();
+    } catch (e) {
+        console.log(`testWidget Error: ${e}`);
+        fpw.appendToLogFile(`testWidget() Error: ${e}`);
+    }
+}
 
 //*****************************************************************************************************************************
 //*                                              START WIDGET UI ELEMENT FUNCTIONS
@@ -283,7 +322,8 @@ async function createSmallWidget(vData) {
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
-        console.error(`createSmallWidget Error ${e}`);
+        console.error(`createSmallWidget() Error ${e}`);
+        fpw.appendToLogFile(`createSmallWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -310,7 +350,8 @@ async function createRangeElements(srcField, vehicleData, wSize = 'medium') {
         await createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 });
         srcField.addSpacer(3);
     } catch (e) {
-        console.error(`createFuelRangeElements error ${e}`);
+        console.error(`createFuelRangeElements() Error: ${e}`);
+        fpw.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
     }
 }
 
@@ -393,7 +434,8 @@ async function createMediumSimpleWidget(vData) {
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
-        console.error(`createMediumWidget Error ${e}`);
+        console.error(`createMediumSimpleWidget() Error: ${e}`);
+        fpw.appendToLogFile(`createMediumSimpleWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -483,7 +525,8 @@ async function createMediumWidget(vData) {
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
-        console.error(`createMediumWidget Error ${e}`);
+        console.error(`createMediumWidget() Error: ${e}`);
+        fpw.appendToLogFile(`createMediumWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -573,7 +616,8 @@ async function createLargeWidget(vData) {
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
-        console.error(`createLargeWidget Error ${e}`);
+        console.error(`createLargeWidget() Error: ${e}`);
+        fpw.appendToLogFile(`createLargeWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -663,7 +707,8 @@ async function createExtraLargeWidget(vData) {
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
-        console.error(`createExtraLargeWidget Error ${e}`);
+        console.error(`createExtraLargeWidget() Error: ${e}`);
+        fpw.appendToLogFile(`createExtraLargeWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -806,7 +851,8 @@ async function createFuelRangeElements(srcField, vehicleData, wSize = 'medium') 
         await createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 });
         srcField.addSpacer(3);
     } catch (e) {
-        console.error(`createFuelRangeElements error ${e}`);
+        console.error(`createFuelRangeElements() Error: ${e}`);
+        fpw.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
     }
 }
 
@@ -821,7 +867,8 @@ async function createBatteryElement(srcField, vehicleData, wSize = 'medium') {
         await createText(elem, value, { font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 });
         srcField.addSpacer(3);
     } catch (e) {
-        console.error(`createBatteryElement error ${e}`);
+        console.error(`createBatteryElement() Error: ${e}`);
+        fpw.appendToLogFile(`createBatteryElement() Error: ${e}`);
     }
 }
 
@@ -1052,7 +1099,7 @@ async function createTireElement(srcField, vData, wSize = 'medium') {
     };
     let offset = 0;
     let titleFld = await createRow(srcField);
-    let pressureUnits = await fpw.kc.getKeychainValue('fpPressureUnits');
+    let pressureUnits = await fpw.kc.getSettingVal('fpPressureUnits');
     let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
     await createTitle(titleFld, `tirePressure||${unitTxt}`, wSize);
 
@@ -1187,11 +1234,11 @@ async function collectAllData(scrub = false) {
     let data = await fpw.fordRequests.fetchVehicleData(true);
     data.otaInfo = await fpw.fordRequests.getVehicleOtaInfo();
     data.userPrefs = {
-        country: await fpw.kc.getKeychainValue('fpCountry'),
-        timeZone: await fpw.kc.getKeychainValue('fpTz'),
-        language: await fpw.kc.getKeychainValue('fpLanguage'),
-        unitOfDistance: await fpw.kc.getKeychainValue('fpDistanceUnits'),
-        unitOfPressure: await fpw.kc.getKeychainValue('fpPressureUnits'),
+        country: await fpw.kc.getSettingVal('fpCountry'),
+        timeZone: await fpw.kc.getSettingVal('fpTz'),
+        language: await fpw.kc.getSettingVal('fpLanguage'),
+        unitOfDistance: await fpw.kc.getSettingVal('fpDistanceUnits'),
+        unitOfPressure: await fpw.kc.getSettingVal('fpPressureUnits'),
     };
     // data.userDetails = await fpw.fordRequests.getAllUserData();
     return scrub ? fpw.utils.scrubPersonalData(data) : data;
@@ -1419,6 +1466,7 @@ async function menuBuilderByType(type) {
                         console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
                         let data = await collectAllData(true);
                         await fpw.utils.createEmailObject(data, true);
+                        menuBuilderByType('diagnostics');
                     },
                     destructive: true,
                     show: true,
@@ -1443,7 +1491,7 @@ async function menuBuilderByType(type) {
                         await fpw.files.clearFileManager();
                         await fpw.alerts.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
                         // menuBuilderByType('reset');
-                        this.close();
+                        this.quit();
                     },
                     destructive: true,
                     show: true,
@@ -1453,9 +1501,9 @@ async function menuBuilderByType(type) {
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Clear Login Info was pressed`);
                         if (await fpw.alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
-                            await fpw.kc.clearKeychain();
-                            await fpw.alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease run the script again to re-initialize the widget.');
-                            this.close();
+                            await fpw.kc.clearSettings();
+                            await fpw.alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease close out the menus and restart the script again to re-initialize the widget.');
+                            this.quit();
                         } else {
                             menuBuilderByType('reset');
                         }
@@ -1468,10 +1516,10 @@ async function menuBuilderByType(type) {
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Reset Everything was pressed`);
                         if (await fpw.alerts.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
-                            await fpw.kc.clearKeychain();
+                            await fpw.kc.clearSettings();
                             await fpw.files.clearFileManager();
-                            await fpw.alerts.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nPlease run the script again to re-initialize the app.');
-                            this.close();
+                            await fpw.alerts.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nClose out the menus and restart the app.');
+                            // fpw.utils.openScriptable();
                         } else {
                             menuBuilderByType('reset');
                         }
@@ -1568,11 +1616,11 @@ async function menuBuilderByType(type) {
     }
 }
 
-async function requiredPrefsMenu() {
+async function requiredPrefsMenu(user = null, pass = null, vin = null) {
     try {
-        let user = await fpw.kc.getKeychainValue('fpUser');
-        let pass = await fpw.kc.getKeychainValue('fpPass');
-        let vin = await fpw.kc.getKeychainValue('fpVin');
+        user = user || (await fpw.kc.getSettingVal('fpUser'));
+        pass = pass || (await fpw.kc.getSettingVal('fpPass'));
+        vin = vin || (await fpw.kc.getSettingVal('fpVin'));
         let mapProvider = await fpw.kc.getMapProvider();
 
         let prefsMenu = new Alert();
@@ -1591,21 +1639,24 @@ async function requiredPrefsMenu() {
         prefsMenu.addCancelAction('Cancel'); //4
 
         let respInd = await prefsMenu.presentAlert();
+        user = prefsMenu.textFieldValue(0);
+        pass = prefsMenu.textFieldValue(1);
+        vin = prefsMenu.textFieldValue(2);
         switch (respInd) {
             case 0:
                 console.log('(Required Prefs Menu) Map Provider pressed');
                 await fpw.kc.toggleMapProvider();
-                requiredPrefsMenu();
+                return await requiredPrefsMenu(user, pass, vin);
                 break;
             case 1:
                 console.log('(Required Prefs Menu) View Documentation pressed');
                 await Safari.openInApp(fpw.statics.textMap().about.documentationUrl);
-                requiredPrefsMenu();
+                return await requiredPrefsMenu(user, pass, vin);
                 break;
             case 2:
                 console.log('(Required Prefs Menu) Map Provider pressed');
                 await Safari.openInApp(fpw.statics.textMap().about.helpVideos.setup.url);
-                requiredPrefsMenu();
+                return await requiredPrefsMenu(user, pass, vin);
                 break;
             case 3:
                 console.log('(Required Prefs Menu) Done was pressed');
@@ -1615,14 +1666,15 @@ async function requiredPrefsMenu() {
                 // console.log(`${user} ${pass} ${vin}`);
 
                 if (fpw.utils.inputTest(user) && fpw.utils.inputTest(pass) && fpw.utils.inputTest(vin)) {
-                    await fpw.kc.setKeychainValue('fpUser', user);
-                    await fpw.kc.setKeychainValue('fpPass', pass);
-                    await fpw.kc.setKeychainValue('fpMapProvider', mapProvider);
+                    await fpw.kc.setSettingVal('fpUser', user);
+                    await fpw.kc.setSettingVal('fpPass', pass);
+                    await fpw.kc.setSettingVal('fpMapProvider', mapProvider);
                     let vinChk = await fpw.kc.vinCheck(vin, true);
                     console.log(`VIN Number Ok: ${vinChk}`);
                     if (vinChk) {
-                        await fpw.kc.setKeychainValue('fpVin', vin.toUpperCase());
-                        await fpw.fordRequests.queryFordPassPrefs(true);
+                        await fpw.kc.setSettingVal('fpVin', vin.toUpperCase());
+                        // await fpw.fordRequests.checkAuth();
+                        // await fpw.fordRequests.queryFordPassPrefs(true);
                         return true;
                     } else {
                         // await requiredPrefsMenu();
@@ -1674,7 +1726,7 @@ async function generateMainInfoTable(update = false) {
     const vData = await fpw.fordRequests.fetchVehicleData(true);
     const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
     const isEV = vData.evVehicle === true;
-    const pressureUnits = await fpw.kc.getKeychainValue('fpPressureUnits');
+    const pressureUnits = await fpw.kc.getSettingVal('fpPressureUnits');
     const distanceMultiplier = (await fpw.kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
     const distanceUnit = (await fpw.kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
     const tireUnit = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
@@ -2173,7 +2225,7 @@ async function generateMainInfoTable(update = false) {
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Zone Lighting On Button was pressed');
-                                    fpw.alerts.showActionPrompt(
+                                    await fpw.alerts.showActionPrompt(
                                         'Zone Lighting On Menu',
                                         undefined, [{
                                                 title: 'Front Zone',
@@ -2230,7 +2282,7 @@ async function generateMainInfoTable(update = false) {
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Zone Lighting Off Button was pressed');
-                                    fpw.alerts.showActionPrompt(
+                                    await fpw.alerts.showActionPrompt(
                                         'Zone Lighting Off',
                                         undefined, [{
                                                 title: 'Front Zone',
@@ -2325,15 +2377,18 @@ async function generateMainInfoTable(update = false) {
             }
         }
     } catch (err) {
-        console.error(`Error in generateMainInfoTable: ${err}`);
+        console.error(`generateMainInfoTable() Error: ${err}`);
+        fpw.appendToLogFile(`generateMainInfoTable() Error: ${err}`);
     }
 
     await fpw.tables.generateTableMenu('main', tableRows, false, fpw.isPhone, update);
     if (!update) {
-        let lastVersion = await fpw.kc.getKeychainValue('fpScriptVersion');
-        if (lastVersion !== SCRIPT_VERSION) {
-            await generateRecentChangesTable();
-            await fpw.kc.setKeychainValue('fpScriptVersion', SCRIPT_VERSION);
+        let lastVersion = await fpw.kc.getSettingVal('fpScriptVersion');
+        let reqOk = await fpw.kc.requiredPrefsOk(fpw.kc.prefKeys().core);
+        // console.log(`(Dashboard) Last Version: ${lastVersion}`);
+        if (reqOk && lastVersion !== SCRIPT_VERSION) {
+            generateRecentChangesTable();
+            await fpw.kc.setSettingVal('fpScriptVersion', SCRIPT_VERSION);
         }
     }
 }
@@ -2375,7 +2430,7 @@ async function generateAlertsTable(vData) {
 
             let releaseNotes;
             if (alert.releaseNotesUrl) {
-                let locale = (await fpw.kc.getKeychainValue('fpLanguage')) || Device.locale().replace('_', '-');
+                let locale = (await fpw.kc.getSettingVal('fpLanguage')) || Device.locale().replace('_', '-');
                 releaseNotes = await fpw.utils.getReleaseNotes(alert.releaseNotesUrl, locale);
             }
             tableRows.push(
@@ -2475,7 +2530,8 @@ async function generateRecallsTable(vData) {
 
         await fpw.tables.generateTableMenu('recalls', tableRows, false, false);
     } catch (err) {
-        console.log(`error in generateRecallsTable: ${err}`);
+        console.log(`generateRecallsTable() Error: ${err}`);
+        fpw.appendToLogFile(`generateRecallsTable() Error: ${err}`);
     }
 }
 
@@ -2499,7 +2555,7 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
                         onSelect: async() => {
                             console.log(`(Messages Table) All Message Options was pressed`);
                             let msgIds = msgs.map((msg) => msg.messageId);
-                            fpw.alerts.showActionPrompt(
+                            await fpw.alerts.showActionPrompt(
                                 'All Message Options',
                                 undefined, [{
                                         title: 'Mark All Read',
@@ -2568,7 +2624,7 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
                             dismissOnSelect: false,
                             onSelect: async () => {
                                 console.log(`(Messages Table) Message Options button was pressed for ${msg.messageId}`);
-                                fpw.alerts.showActionPrompt(
+                                await fpw.alerts.showActionPrompt(
                                     'Message Options',
                                     undefined,
                                     [
@@ -2645,21 +2701,7 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
         await fpw.tables.generateTableMenu('messages', tableRows, false, fpw.isPhone, update);
     } catch (e) {
         console.error(`generateMessagesTable() error: ${e}`);
-    }
-}
-
-function getChangeLabelColorAndNameByType(type) {
-    switch (type) {
-        case 'added':
-            return { name: 'Added', color: new Color('#008200') };
-        case 'updated':
-            return { name: 'Updated', color: new Color('#FF6700') };
-        case 'removed':
-            return { name: 'Removed', color: new Color('#FF0000') };
-        case 'fixed':
-            return { name: 'Fixed', color: new Color('#b605fc') };
-        default:
-            return { name: '', color: new Color(fpw.statics.colorMap.textColor1) };
+        fpw.appendToLogFile(`generateMessagesTable() error: ${e}`);
     }
 }
 
@@ -2677,8 +2719,8 @@ async function generateRecentChangesTable() {
         );
         for (const [i, type] of ['added', 'fixed', 'updated', 'removed'].entries()) {
             if (changes[type].length) {
-                console.log(`(Whats New Table) ${type} changes: ${changes[type].length}`);
-                let { name, color } = getChangeLabelColorAndNameByType(type);
+                // console.log(`(RecentChanges Table) ${type} changes: ${changes[type].length}`);
+                let { name, color } = fpw.tables.getChangeLabelColorAndNameByType(type);
                 tableRows.push(
                     await fpw.tables.createTableRow([await fpw.tables.createTextCell(`${name}`, undefined, { align: 'left', widthWeight: 100, titleColor: color, titleFont: Font.title2() })], {
                         height: 30,
@@ -2686,7 +2728,7 @@ async function generateRecentChangesTable() {
                     }),
                 );
                 for (const [index, change] of changes[type].entries()) {
-                    console.log(`(Whats New Table) ${type} change: ${change}`);
+                    // console.log(`(RecentChanges Table) ${type} change: ${change}`);
                     let rowH = Math.ceil(change.length / 70) * (65 / 2);
                     tableRows.push(
                         await fpw.tables.createTableRow([await fpw.tables.createTextCell(`\u2022 ${change}`, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.body() })], {
@@ -2816,6 +2858,7 @@ async function checkModules() {
         }
     } catch (error) {
         console.error(`(checkModules) ${error}`);
+        fpw.files.appendToLogFile(`(checkModules) ${error}`);
         return undefined;
     }
 }
