@@ -40,6 +40,7 @@ Changelog:
     - Show notifications for specific events or errors (like low battery, low oil, ota updates)
     - add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
     - Create widgets with less details and larger image.
+    - Change module storage from iCloud to local storage.
 
 // Todo: Next Release (Post 2.0.x)
 - setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
@@ -91,18 +92,20 @@ const widgetConfig = {
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
     useBetaModules: true,
+    useLocalModules: false,
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
     showTestUIStuff: false,
 };
 
-const chkModules = await checkModules();
-const FPW = importModule('/FPWModules/FPW_Class.js');
+const FPW = await getModules(widgetConfig.useLocalModules);
 const fpw = new FPW(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
 
 const LATEST_VERSION = await fpw.utils.getLatestScriptVersion();
 const updateAvailable = fpw.utils.isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
 console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${updateAvailable} | Latest Version: ${LATEST_VERSION}`);
+
+fpw.files.appendToLogFile('Widget Started');
 
 //************************************************************************* */
 //*                  Device Detail Functions
@@ -162,7 +165,7 @@ async function prepWidget() {
         return vData;
     } catch (err) {
         console.log(`(prepWidget) Error: ${err}`);
-        fpw.appendToLogFile(`prepWidget() Error: ${err}`);
+        fpw.files.appendToLogFile(`prepWidget() Error: ${err}`);
         return null;
     }
 }
@@ -197,7 +200,7 @@ async function generateWidget(size, data) {
         // w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
     } catch (e) {
         console.log(`generateWidget Error: ${e}`);
-        fpw.appendToLogFile(`generateWidget() Error: ${e}`);
+        fpw.files.appendToLogFile(`generateWidget() Error: ${e}`);
     }
     return w;
 }
@@ -226,7 +229,7 @@ try {
     }
 } catch (e) {
     console.log(`rootCode | Error: ${e}`);
-    fpw.appendToLogFile(`rootCode | Error: ${e}`);
+    fpw.files.appendToLogFile(`rootCode | Error: ${e}`);
 }
 Script.complete();
 
@@ -244,7 +247,7 @@ async function testWidget(data) {
         contentStack.layoutHorizontally();
     } catch (e) {
         console.log(`testWidget Error: ${e}`);
-        fpw.appendToLogFile(`testWidget() Error: ${e}`);
+        fpw.files.appendToLogFile(`testWidget() Error: ${e}`);
     }
 }
 
@@ -323,7 +326,7 @@ async function createSmallWidget(vData) {
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createSmallWidget() Error ${e}`);
-        fpw.appendToLogFile(`createSmallWidget() Error: ${e}`);
+        fpw.files.appendToLogFile(`createSmallWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -351,7 +354,7 @@ async function createRangeElements(srcField, vehicleData, wSize = 'medium') {
         srcField.addSpacer(3);
     } catch (e) {
         console.error(`createFuelRangeElements() Error: ${e}`);
-        fpw.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
+        fpw.files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
     }
 }
 
@@ -435,7 +438,7 @@ async function createMediumSimpleWidget(vData) {
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createMediumSimpleWidget() Error: ${e}`);
-        fpw.appendToLogFile(`createMediumSimpleWidget() Error: ${e}`);
+        fpw.files.appendToLogFile(`createMediumSimpleWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -526,7 +529,7 @@ async function createMediumWidget(vData) {
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createMediumWidget() Error: ${e}`);
-        fpw.appendToLogFile(`createMediumWidget() Error: ${e}`);
+        fpw.files.appendToLogFile(`createMediumWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -617,7 +620,7 @@ async function createLargeWidget(vData) {
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createLargeWidget() Error: ${e}`);
-        fpw.appendToLogFile(`createLargeWidget() Error: ${e}`);
+        fpw.files.appendToLogFile(`createLargeWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -708,7 +711,7 @@ async function createExtraLargeWidget(vData) {
         await createTimeStampElement(timestampRow, vehicleData, wSize);
     } catch (e) {
         console.error(`createExtraLargeWidget() Error: ${e}`);
-        fpw.appendToLogFile(`createExtraLargeWidget() Error: ${e}`);
+        fpw.files.appendToLogFile(`createExtraLargeWidget() Error: ${e}`);
     }
     return widget;
 }
@@ -852,7 +855,7 @@ async function createFuelRangeElements(srcField, vehicleData, wSize = 'medium') 
         srcField.addSpacer(3);
     } catch (e) {
         console.error(`createFuelRangeElements() Error: ${e}`);
-        fpw.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
+        fpw.files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
     }
 }
 
@@ -868,7 +871,7 @@ async function createBatteryElement(srcField, vehicleData, wSize = 'medium') {
         srcField.addSpacer(3);
     } catch (e) {
         console.error(`createBatteryElement() Error: ${e}`);
-        fpw.appendToLogFile(`createBatteryElement() Error: ${e}`);
+        fpw.files.appendToLogFile(`createBatteryElement() Error: ${e}`);
     }
 }
 
@@ -2378,7 +2381,7 @@ async function generateMainInfoTable(update = false) {
         }
     } catch (err) {
         console.error(`generateMainInfoTable() Error: ${err}`);
-        fpw.appendToLogFile(`generateMainInfoTable() Error: ${err}`);
+        fpw.files.appendToLogFile(`generateMainInfoTable() Error: ${err}`);
     }
 
     await fpw.tables.generateTableMenu('main', tableRows, false, fpw.isPhone, update);
@@ -2531,7 +2534,7 @@ async function generateRecallsTable(vData) {
         await fpw.tables.generateTableMenu('recalls', tableRows, false, false);
     } catch (err) {
         console.log(`generateRecallsTable() Error: ${err}`);
-        fpw.appendToLogFile(`generateRecallsTable() Error: ${err}`);
+        fpw.files.appendToLogFile(`generateRecallsTable() Error: ${err}`);
     }
 }
 
@@ -2701,7 +2704,7 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
         await fpw.tables.generateTableMenu('messages', tableRows, false, fpw.isPhone, update);
     } catch (e) {
         console.error(`generateMessagesTable() error: ${e}`);
-        fpw.appendToLogFile(`generateMessagesTable() error: ${e}`);
+        fpw.files.appendToLogFile(`generateMessagesTable() error: ${e}`);
     }
 }
 
@@ -2810,8 +2813,8 @@ async function widgetStyleSelector() {
     await fpw.tables.generateTableMenu('widgetStyles', tableRows, false, false);
 }
 
-async function checkModules() {
-    const fm = FileManager.iCloud();
+async function getModules(useLocal = false) {
+    const fm = useLocal ? FileManager.local() : FileManager.iCloud();
     // Load the modules
     const modules = [
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Class.js',
@@ -2844,21 +2847,22 @@ async function checkModules() {
                 let req = new Request(url);
                 let code = await req.loadString();
                 available.push(fileName);
-                let codeToStore = Data.fromString(`//This module was downloaded using FordWidgetTool.\n\n${code}`);
+                const header = `//This module was downloaded using FordWidgetTool.\n\n`;
+                let codeToStore = Data.fromString(`${header}${code.replace(/header/g, header)}`);
                 console.log(`Required Module Missing... Downloading ${fileName}`);
                 await fm.write(filePath, codeToStore);
             } else {
                 available.push(fileName);
             }
         }
-        // return;
         if (available.length === modules.length) {
             console.log(`All Required Modules (${modules.length}) Found!`);
-            // return importModule(fm.joinPath(modulePath, 'FPW_Class.js'));
+            const m = importModule(fm.joinPath(modulePath, 'FPW_Class.js'));
+            return m;
         }
     } catch (error) {
-        console.error(`(checkModules) ${error}`);
-        fpw.files.appendToLogFile(`(checkModules) ${error}`);
+        console.error(`(getModules) ${error}`);
+        fpw.files.appendToLogFile(`(getModules) ${error}`);
         return undefined;
     }
 }

@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Files {
     constructor(fpw) {
         this.fpw = fpw;
@@ -66,8 +68,10 @@ module.exports = class FPW_Files {
             if (await fm.fileExists(path)) {
                 logText = await fm.readString(path);
                 logText += '\n[' + new Date().toLocaleString() + '] - ' + txt.toString();
+                console.log(logText);
             } else {
                 logText = '[' + new Date().toLocaleString() + '] - ' + txt.toString();
+                console.log(logText);
             }
             await fm.writeString(path, logText);
         } catch (e) {

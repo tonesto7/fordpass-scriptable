@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_FordRequests {
     constructor(fpw) {
         this.fpw = fpw;
@@ -115,6 +117,7 @@ module.exports = class FPW_FordRequests {
             }
         } catch (e) {
             console.log(`fetchToken Error: ${e}`);
+            this.files.appendToLogFile(`fetchToken() Error: ${e}`);
             if (e.error && e.error == 'invalid_grant') {
                 return this.statics.textMap().errorMessages.invalidGrant;
             }
@@ -161,7 +164,8 @@ module.exports = class FPW_FordRequests {
                 await this.fetchToken();
             }
         } catch (e) {
-            console.log(`refreshMpsToken Error: ${e}`);
+            console.log(`refreshToken() Error: ${e}`);
+            this.files.appendToLogFile(`refreshToken() Error: ${e}`);
             if (e.error && e.error == 'invalid_grant') {
                 return this.statics.textMap().errorMessages.invalidGrant;
             }
@@ -401,6 +405,7 @@ module.exports = class FPW_FordRequests {
                         return true;
                     } catch (e) {
                         console.log(`queryFordPassPrefs SET Error: ${e}`);
+                        this.files.appendToLogFile(`queryFordPassPrefs() SET Error: ${e}`);
                         return false;
                     }
                 } else {
@@ -411,6 +416,7 @@ module.exports = class FPW_FordRequests {
             }
         } catch (e) {
             console.error(`queryFordPassPrefs Error: ${e}`);
+            this.files.appendToLogFile(`queryFordPassPrefs() Error: ${e}`);
             return false;
         }
     }
@@ -494,6 +500,7 @@ module.exports = class FPW_FordRequests {
             return data;
         } catch (e) {
             console.log(`makeFordRequest | ${desc} | Error: ${e}`);
+            this.files.appendToLogFile(`makeFordRequest(${desc}) Error: ${e}`);
             return this.statics.textMap().errorMessages.unknownError;
         }
     }

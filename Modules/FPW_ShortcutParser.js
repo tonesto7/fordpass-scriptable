@@ -1,5 +1,7 @@
 //This module was downloaded using FordWidgetTool.
 
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_ShortcutParser {
     constructor(fpw) {
         this.fpw = fpw;

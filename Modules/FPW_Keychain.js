@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Keychain {
     constructor(fpw) {
         this.fpw = fpw;
@@ -67,6 +69,7 @@ module.exports = class FPW_Keychain {
             }
         } catch (e) {
             console.log(`getSettingVal(${key}) Error: ${e}`);
+            this.fpw.files.appendToLogFile(`getSettingVal(${key}) Error: ${e}`);
         }
         return null;
     }

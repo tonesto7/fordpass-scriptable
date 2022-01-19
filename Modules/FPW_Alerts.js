@@ -1,5 +1,3 @@
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_Alerts {
     constructor(fpw) {
         this.fpw = fpw;

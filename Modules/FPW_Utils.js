@@ -1,5 +1,7 @@
 //This module was downloaded using FordWidgetTool.
 
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Utils {
     constructor(fpw) {
         // console.log(`FPW_Utils.js: constructor()`);
@@ -44,6 +46,7 @@ module.exports = class FPW_Utils {
             }
         } catch (e) {
             console.error(`getReleaseNotes Error: Could Not Load Release Notes. ${e}`);
+            this.fpw.files.appendToLogFile(`getReleaseNotes Error: Could Not Load Release Notes. ${e}`);
         }
         return undefined;
     }
@@ -62,6 +65,7 @@ module.exports = class FPW_Utils {
             return ver && ver.version ? ver.version.replace('v', '') : undefined;
         } catch (e) {
             console.log(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
+            this.fpw.files.appendToLogFile(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
         }
     }
 
@@ -136,6 +140,7 @@ module.exports = class FPW_Utils {
             return dto;
         } catch (e) {
             console.log(`convertFordDtToLocal Error: ${e}`);
+            this.fpw.files.appendToLogFile(`convertFordDtToLocal Error: ${e}`);
         }
     }
 
@@ -304,6 +309,7 @@ module.exports = class FPW_Utils {
             }
         } catch (e) {
             console.error(`isNewerVersion Error: ${e}`);
+            this.fpw.files.appendToLogFile(`isNewerVersion Error: ${e}`);
         }
         return false;
     }

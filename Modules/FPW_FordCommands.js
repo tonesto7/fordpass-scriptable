@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_FordCommands {
     constructor(fpw) {
         this.fpw = fpw;
@@ -189,6 +191,7 @@ module.exports = class FPW_FordCommands {
                 if (wasError) {
                     if (errMsg) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
+                        this.fpw.files.appendToLogFile(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
                     }
                     if (outMsg.message !== '') {
                         await this.alerts.showAlert(outMsg.title, outMsg.message);
@@ -215,7 +218,8 @@ module.exports = class FPW_FordCommands {
                     }
                 }
             } catch (e) {
-                console.log(`sendVehicleCmd Catch Error: ${e}`);
+                console.log(`sendVehicleCmd() Catch Error: ${e}`);
+                this.fpw.files.appendToLogFile(`sendVehicleCmd() Catch Error: ${e}`);
                 return;
             }
         }

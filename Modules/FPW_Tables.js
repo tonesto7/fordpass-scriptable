@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 let tableMap = {};
 
 module.exports = class FPW_Tables {
@@ -51,6 +53,7 @@ module.exports = class FPW_Tables {
             }
         } catch (e) {
             console.error(`generateTableMenu() error: ${e}`);
+            this.fpw.files.appendToLogFile(`generateTableMenu() error: ${e}`);
         }
     }
 
@@ -89,6 +92,7 @@ module.exports = class FPW_Tables {
             return cell;
         } catch (err) {
             console.error(`Error creating text cell: ${err}`);
+            this.fpw.files.appendToLogFile(`Error creating text cell: ${err}`);
         }
     }
 
@@ -101,6 +105,7 @@ module.exports = class FPW_Tables {
             return cell;
         } catch (err) {
             console.error(`Error creating image cell: ${err}`);
+            this.fpw.files.appendToLogFile(`Error creating image cell: ${err}`);
         }
     }
 
@@ -113,6 +118,7 @@ module.exports = class FPW_Tables {
             return cell;
         } catch (err) {
             console.error(`Error creating button cell: ${err}`);
+            this.fpw.files.appendToLogFile(`Error creating button cell: ${err}`);
         }
     }
 
@@ -132,6 +138,7 @@ module.exports = class FPW_Tables {
             }
         } catch (err) {
             console.error(`Error applying options: ${err}`);
+            this.fpw.files.appendToLogFile(`Error applying options: ${err}`);
         }
         return src;
     }
@@ -290,7 +297,8 @@ module.exports = class FPW_Tables {
             // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
             await wv.present(true);
         } catch (e) {
-            console.log(e);
+            console.log(`showDataWebView() | Error: ${e}`);
+            this.fpw.files.appendToLogFile(`showDataWebView() | Error: ${e}`);
         }
     }
 };

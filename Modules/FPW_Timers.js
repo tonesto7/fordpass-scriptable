@@ -1,5 +1,7 @@
 //This module was downloaded using FordWidgetTool.
 
+//This module was downloaded using FordWidgetTool.
+
 let timerMap = {};
 module.exports = class FPW_Timers {
     constructor(fpw) {
