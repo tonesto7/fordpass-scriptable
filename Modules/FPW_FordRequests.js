@@ -415,6 +415,28 @@ module.exports = class FPW_FordRequests {
         }
     }
 
+    // NOT WORKING YET (CORS ISSUE)
+    async getEarlyAccessInfo() {
+        const token = await this.kc.getKeychainValue('fpToken2');
+        const vin = await this.kc.getKeychainValue('fpVin');
+        let request = new Request(`https://fsm-service-fordbeta-prod.apps.pd01.useast.cf.ford.com/api/earlyAccess/eapMemberInfo`);
+        request.headers = {
+            'Content-Type': 'application/json',
+            Accept: '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.48 Safari/537.36 Edg/98.0.1108.23',
+            'Application-Id': '515d7c8a-8f55-49e9-991c-1800f5c20983',
+            // Origin: 'https://www.earlyaccess.ford.com/',
+            // Referer: 'https://www.earlyaccess.ford.com/',
+            'auth-token': `${token}`,
+        };
+        request.method = 'GET';
+        request.timeoutInterval = 20;
+        let data = await request.loadString();
+
+        console.log('getEarlyAccessInfo: ' + JSON.stringify(data));
+    }
+
     async getAllUserData() {
         let data = await this.makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
         // console.log('user data: ' + JSON.stringify(data));
@@ -658,22 +680,16 @@ module.exports = class FPW_FordRequests {
         vehicleData.fordpassRewardsInfo = await this.getFordpassRewardsInfo();
         // console.log(`Fordpass Rewards Info: ${JSON.stringify(vehicleData.fordpassRewardsInfo)}`);
 
+        // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();
+
         vehicleData.lastRefresh = this.utils.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
         vehicleData.lastRefreshElapsed = this.utils.timeDifference(this.utils.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
         // console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
         console.log(`Last Vehicle Checkin: ${vehicleData.lastRefreshElapsed}`);
 
-        // await this.files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 1);
-        // await this.files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 2);
-        // await this.files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 3);
-        // await this.files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 4);
-        // await this.files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 5);
-
-        // console.log(JSON.stringify(vehicleData));
-
         //save data to local store
         this.files.saveDataToLocal(vehicleData);
-
+        // console.log(JSON.stringify(vehicleData));
         return vehicleData;
     }
 };
