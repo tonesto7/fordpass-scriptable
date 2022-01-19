@@ -1,8 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
-// This script was downloaded using FordWidgetTool.
-// hash: 898792870;
 
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
@@ -21,8 +19,7 @@
  * Based off the work of others:
  *  - The original Fordpass Scriptable script by Damian Schablowsky  <dschablowsky.dev@gmail.com> (https://github.com/dschablowsky/FordPassWidget)
  *  - Api Logic based on ffpass from https://github.com/d4v3y0rk - thanks a lot for the work!
- *  - WidgetMarkup.js by @rafaelgandi (https://github.com/rafaelgandi/WidgetMarkup-Scriptable)
- *
+ *  - Borrowed a couple method mapping functions from WidgetMarkup.js by @rafaelgandi (https://github.com/rafaelgandi/WidgetMarkup-Scriptable)
  *
  * IMPORTANT NOTE: This widget will only work with vehicles that show up in the FordPassFordPass app!
  */
@@ -93,32 +90,31 @@ const widgetConfig = {
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
+    useBetaModules: true,
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
     showTestUIStuff: false,
 };
 
-const FPClass = importModule('/FPWModules/FPW_Class.js');
-const fpClass = new FPClass(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
+const chkModules = await checkModules();
+const FPW = importModule('/FPWModules/FPW_Class.js');
+const fpw = new FPW(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
 
-const LATEST_VERSION = await fpClass.utils.getLatestScriptVersion();
-const updateAvailable = fpClass.utils.isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
+const LATEST_VERSION = await fpw.utils.getLatestScriptVersion();
+const updateAvailable = fpw.utils.isNewerVersion(SCRIPT_VERSION, LATEST_VERSION);
 console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${updateAvailable} | Latest Version: ${LATEST_VERSION}`);
 
 //************************************************************************* */
 //*                  Device Detail Functions
 //************************************************************************* */
-const screenSize = Device.screenResolution();
-const isSmallDisplay = screenSize.width < 1200 === true;
 const darkMode = Device.isUsingDarkAppearance();
 const runningWidgetSize = config.widgetFamily;
-const isPhone = Device.isPhone();
-const isPad = Device.isPad();
+
 // console.log('---------------DEVICE INFO ----------------');
-// console.log(`OSDarkMode: ${darkMode}`);
-// console.log(`IsSmallDisplay: ${isSmallDisplay}`);
-// console.log(`ScreenSize: Width: ${screenSize.width} | Height: ${screenSize.height}`);
-// console.log(`Device Info | Model: ${Device.model()} | OSVersion: ${Device.systemVersion()}`);
+// console.log(`OSDarkMode: ${fpw.darkMode}`);
+// console.log(`IsSmallDisplay: ${fpw.isSmallDisplay}`);
+// console.log(`ScreenSize: Width: ${fpw.screenSize.width} | Height: ${fpw.screenSize.height}`);
+// console.log(`Device Info | Model: ${fpw.deviceModel} | OSVersion: ${fpw.deviceSystemVersion}`);
 
 //******************************************************************************
 //* Main Widget Code - ONLY make changes if you know what you are doing!!
@@ -130,13 +126,13 @@ const isPad = Device.isPad();
 
 async function prepWidget() {
     if (widgetConfig.clearKeychainOnNextRun) {
-        await fpClass.kc.clearKeychain();
+        await fpw.kc.clearKeychain();
     }
     if (widgetConfig.clearFileManagerOnNextRun) {
-        await fpClass.files.clearFileManager();
+        await fpw.files.clearFileManager();
     }
-    await fpClass.kc.vinFix();
-    let reqOk = await fpClass.kc.requiredPrefsOk(fpClass.kc.prefKeys().core);
+    await fpw.kc.vinFix();
+    let reqOk = await fpw.kc.requiredPrefsOk(fpw.kc.prefKeys().core);
     // console.log(`reqOk: ${reqOk}`);
     if (!reqOk) {
         let prompt = await requiredPrefsMenu();
@@ -146,38 +142,43 @@ async function prepWidget() {
             return null;
         }
     }
-    await fpClass.fordRequests.queryFordPassPrefs(false);
+    await fpw.fordRequests.queryFordPassPrefs(false);
 
-    let vehicleData = await fpClass.fordRequests.fetchVehicleData();
+    let vehicleData = await fpw.fordRequests.fetchVehicleData();
     // console.log(`vehicleData: ${JSON.stringify(vehicleData)}`);
     return vehicleData;
 }
 
 async function generateWidget(size, data) {
-    const wStyle = await fpClass.kc.getWidgetStyle();
-    console.log(`wStyle: ${wStyle}`);
     let w = null;
-    switch (size) {
-        case 'small':
-            w = wStyle === 'simple' ? await createSmallSimpleWidget(data) : await createSmallWidget(data);
-            break;
-        case 'large':
-            w = await createLargeWidget(data);
-            break;
-        case 'extraLarge':
-            w = await createExtraLargeWidget(data);
-            break;
-        default:
-            w = wStyle === 'simple' ? await createMediumSimpleWidget(data) : await createMediumWidget(data);
-            break;
-    }
-    if (w === null) {
-        return;
-    }
-    Script.setWidget(w);
-    w.setPadding(0, 5, 0, 1);
+    try {
+        const wStyle = await fpw.kc.getWidgetStyle();
+        console.log(`wStyle: ${wStyle}`);
 
-    w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+        switch (size) {
+            case 'small':
+                w = wStyle === 'simple' ? await createSmallSimpleWidget(data) : await createSmallWidget(data);
+                break;
+            case 'large':
+                w = await createLargeWidget(data);
+                break;
+            case 'extraLarge':
+                w = await createExtraLargeWidget(data);
+                break;
+            default:
+                w = wStyle === 'simple' ? await createMediumSimpleWidget(data) : await createMediumWidget(data);
+                break;
+        }
+        if (w === null) {
+            return;
+        }
+        Script.setWidget(w);
+        w.setPadding(0, 5, 0, 1);
+
+        w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+    } catch (e) {
+        console.log(`generateWidget Error: ${e}`);
+    }
     return w;
 }
 
@@ -193,11 +194,11 @@ if (config.runsInWidget) {
 } else if (config.runsInApp || config.runsFromHomeScreen) {
     // Show alert with current data (if running script in app)
     if (args.shortcutParameter) {
-        // await fpClass.alertNotify.showAlert('shortcutParameter: ', JSON.stringify(args.shortcutParameter));
+        // await fpw.alerts.showAlert('shortcutParameter: ', JSON.stringify(args.shortcutParameter));
         // Create a parser function...
         await Speech.speak(await parseIncomingSiriCommand(args.shortcutParameter));
     } else {
-        await (await generateWidget('medium', fordData)).presentMedium();
+        await generateWidget('medium', fordData);
         generateMainInfoTable();
     }
 } else if (config.runsWithSiri || config.runsInActionExtension) {
@@ -217,7 +218,7 @@ async function createSmallWidget(vData) {
     const wSize = 'small';
     // Defines the Widget Object
     const widget = new ListWidget();
-    widget.backgroundGradient = fpClass.statics.getBgGradient();
+    widget.backgroundGradient = fpw.statics.getBgGradient();
 
     try {
         let mainStack = widget.addStack();
@@ -233,7 +234,7 @@ async function createSmallWidget(vData) {
         let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
         // Vehicle Logo
-        await createVehicleImageElement(mainCol1, vehicleData, fpClass.statics.sizeMap[wSize].logoSize.w, fpClass.statics.sizeMap[wSize].logoSize.h);
+        await createVehicleImageElement(mainCol1, vehicleData, fpw.statics.sizeMap[wSize].logoSize.w, fpw.statics.sizeMap[wSize].logoSize.h);
 
         // Creates the Vehicle Logo, Odometer, Fuel/Battery and Distance Info Elements
         await createFuelRangeElements(mainCol1, vehicleData, wSize);
@@ -293,20 +294,20 @@ async function createRangeElements(srcField, vehicleData, wSize = 'medium') {
         let lvlValue = !isEV ? (vehicleData.fuelLevel ? vehicleData.fuelLevel : 0) : vehicleData.evBatteryLevel ? vehicleData.evBatteryLevel : 0;
         let dteValue = !isEV ? (vehicleData.distanceToEmpty ? vehicleData.distanceToEmpty : null) : vehicleData.evDistanceToEmpty ? vehicleData.evDistanceToEmpty : null;
         let dtePostfix = isEV ? 'Range' : 'to E';
-        let distanceMultiplier = (await fpClass.kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-        let distanceUnit = (await fpClass.kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+        let distanceMultiplier = (await fpw.kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+        let distanceUnit = (await fpw.kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
 
         // Fuel/Battery Section
         let elemCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
 
         // Fuel/Battery Level BAR
         let barRow = await createRow(elemCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-        await createImage(barRow, await createProgressBar(lvlValue ? lvlValue : 50, vehicleData, wSize), { '*centerAlignImage': null, imageSize: new Size(fpClass.statics.sizeMap[wSize].barGauge.w, fpClass.statics.sizeMap[wSize].barGauge.h + 3) });
+        await createImage(barRow, await createProgressBar(lvlValue ? lvlValue : 50, vehicleData, wSize), { '*centerAlignImage': null, imageSize: new Size(fpw.statics.sizeMap[wSize].barGauge.w, fpw.statics.sizeMap[wSize].barGauge.h + 3) });
 
         // Distance/Range to Empty
         let dteRow = await createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
-        let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : fpClass.statics.textMap().errorMessages.noData;
-        await createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpClass.statics.colorMap.textColor2), lineLimit: 1 });
+        let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : fpw.statics.textMap().errorMessages.noData;
+        await createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 });
         srcField.addSpacer(3);
     } catch (e) {
         console.error(`createFuelRangeElements error ${e}`);
@@ -319,7 +320,7 @@ async function createMediumSimpleWidget(vData) {
 
     // Defines the Widget Object
     const widget = new ListWidget();
-    widget.backgroundGradient = fpClass.statics.getBgGradient();
+    widget.backgroundGradient = fpw.statics.getBgGradient();
     try {
         let mainStack = widget.addStack();
         mainStack.layoutVertically();
@@ -403,7 +404,7 @@ async function createMediumWidget(vData) {
 
     // Defines the Widget Object
     const widget = new ListWidget();
-    widget.backgroundGradient = fpClass.statics.getBgGradient();
+    widget.backgroundGradient = fpw.statics.getBgGradient();
     try {
         let mainStack = widget.addStack();
         mainStack.layoutVertically();
@@ -417,7 +418,7 @@ async function createMediumWidget(vData) {
         let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
         // Vehicle Logo
-        await createVehicleImageElement(mainCol1, vehicleData, fpClass.statics.sizeMap[wSize].logoSize.w, fpClass.statics.sizeMap[wSize].logoSize.h);
+        await createVehicleImageElement(mainCol1, vehicleData, fpw.statics.sizeMap[wSize].logoSize.w, fpw.statics.sizeMap[wSize].logoSize.h);
 
         // Creates the Odometer, Fuel/Battery and Distance Info Elements
         await createFuelRangeElements(mainCol1, vehicleData, wSize);
@@ -492,7 +493,7 @@ async function createLargeWidget(vData) {
     const wSize = 'large';
     // Defines the Widget Object
     const widget = new ListWidget();
-    widget.backgroundGradient = fpClass.statics.getBgGradient();
+    widget.backgroundGradient = fpw.statics.getBgGradient();
     try {
         let mainStack = widget.addStack();
         mainStack.layoutVertically();
@@ -507,7 +508,7 @@ async function createLargeWidget(vData) {
         let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
         // Vehicle Logo
-        await createVehicleImageElement(mainCol1, vehicleData, fpClass.statics.sizeMap[wSize].logoSize.w, fpClass.statics.sizeMap[wSize].logoSize.h);
+        await createVehicleImageElement(mainCol1, vehicleData, fpw.statics.sizeMap[wSize].logoSize.w, fpw.statics.sizeMap[wSize].logoSize.h);
 
         // Creates the Odometer, Fuel/Battery and Distance Info Elements
         await createFuelRangeElements(mainCol1, vehicleData, wSize);
@@ -582,7 +583,7 @@ async function createExtraLargeWidget(vData) {
     const wSize = 'extraLarge';
     // Defines the Widget Object
     const widget = new ListWidget();
-    widget.backgroundGradient = fpClass.statics.getBgGradient();
+    widget.backgroundGradient = fpw.statics.getBgGradient();
     try {
         let mainStack = widget.addStack();
         mainStack.layoutVertically();
@@ -597,7 +598,7 @@ async function createExtraLargeWidget(vData) {
         let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
         // Vehicle Logo
-        await createVehicleImageElement(mainCol1, vehicleData, fpClass.statics.sizeMap[wSize].logoSize.w, fpClass.statics.sizeMap[wSize].logoSize.h);
+        await createVehicleImageElement(mainCol1, vehicleData, fpw.statics.sizeMap[wSize].logoSize.w, fpw.statics.sizeMap[wSize].logoSize.h);
 
         // Creates the Odometer, Fuel/Battery and Distance Info Elements
         await createFuelRangeElements(mainCol1, vehicleData, wSize);
@@ -671,7 +672,7 @@ async function createColumn(srcField, styles = {}) {
     let col = srcField.addStack();
     col.layoutVertically();
     if (styles && Object.keys(styles).length > 0) {
-        fpClass.utils._mapMethodsAndCall(col, styles);
+        fpw.utils._mapMethodsAndCall(col, styles);
     }
 
     return col;
@@ -681,7 +682,7 @@ async function createRow(srcField, styles = {}) {
     let row = srcField.addStack();
     row.layoutHorizontally();
     if (styles && Object.keys(styles).length > 0) {
-        fpClass.utils._mapMethodsAndCall(row, styles);
+        fpw.utils._mapMethodsAndCall(row, styles);
     }
 
     return row;
@@ -690,7 +691,7 @@ async function createRow(srcField, styles = {}) {
 async function createText(srcField, text, styles = {}) {
     let txt = srcField.addText(text);
     if (styles && Object.keys(styles).length > 0) {
-        fpClass.utils._mapMethodsAndCall(txt, styles);
+        fpw.utils._mapMethodsAndCall(txt, styles);
     }
     return txt;
 }
@@ -698,25 +699,25 @@ async function createText(srcField, text, styles = {}) {
 async function createImage(srcField, image, styles = {}) {
     let _img = srcField.addImage(image);
     if (styles && Object.keys(styles).length > 0) {
-        fpClass.utils._mapMethodsAndCall(_img, styles);
+        fpw.utils._mapMethodsAndCall(_img, styles);
     }
     return _img;
 }
 
 async function createTitle(headerField, titleText, wSize = 'medium', hideTitleForSmall = false) {
     let titleParams = titleText.split('||');
-    let icon = fpClass.statics.iconMap[titleParams[0]];
+    let icon = fpw.statics.iconMap[titleParams[0]];
     let titleStack = await headerField.addStack({ '*centerAlignContent': null });
     if (icon !== undefined) {
         titleStack.layoutHorizontally();
-        let imgFile = await fpClass.files.getImage(icon.toString());
-        await createImage(titleStack, imgFile, { imageSize: new Size(fpClass.statics.sizeMap[wSize].iconSize.w, fpClass.statics.sizeMap[wSize].iconSize.h) });
+        let imgFile = await fpw.files.getImage(icon.toString());
+        await createImage(titleStack, imgFile, { imageSize: new Size(fpw.statics.sizeMap[wSize].iconSize.w, fpw.statics.sizeMap[wSize].iconSize.h) });
     }
     // console.log(`titleParams(${titleText}): ${titleParams}`);
     if (titleText && titleText.length && !hideTitleForSmall) {
         titleStack.addSpacer(2);
-        let title = titleParams.length > 1 ? fpClass.statics.textMap(titleParams[1]).elemHeaders[titleParams[0]] : fpClass.statics.textMap().elemHeaders[titleParams[0]];
-        await createText(titleStack, title + ':', { font: Font.boldSystemFont(fpClass.statics.sizeMap[wSize].titleFontSize), textColor: new Color(fpClass.statics.colorMap.textColor1), lineLimit: 1 });
+        let title = titleParams.length > 1 ? fpw.statics.textMap(titleParams[1]).elemHeaders[titleParams[0]] : fpw.statics.textMap().elemHeaders[titleParams[0]];
+        await createText(titleStack, title + ':', { font: Font.boldSystemFont(fpw.statics.sizeMap[wSize].titleFontSize), textColor: new Color(fpw.statics.colorMap.textColor1), lineLimit: 1 });
     }
 }
 
@@ -724,22 +725,22 @@ async function createProgressBar(percent, vData, wSize = 'medium') {
     // percent = 12;
     const isEV = vData.evVehicle === true;
     let fillLevel = percent > 100 ? 100 : percent;
-    const barWidth = fpClass.statics.sizeMap[wSize].barGauge.w;
+    const barWidth = fpw.statics.sizeMap[wSize].barGauge.w;
     const context = new DrawContext();
-    context.size = new Size(barWidth, fpClass.statics.sizeMap[wSize].barGauge.h + 3);
+    context.size = new Size(barWidth, fpw.statics.sizeMap[wSize].barGauge.h + 3);
     context.opaque = false;
     context.respectScreenScale = true;
 
     // Bar Background Gradient
     const lvlBgPath = new Path();
-    lvlBgPath.addRoundedRect(new Rect(0, 0, barWidth, fpClass.statics.sizeMap[wSize].barGauge.h), 3, 2);
+    lvlBgPath.addRoundedRect(new Rect(0, 0, barWidth, fpw.statics.sizeMap[wSize].barGauge.h), 3, 2);
     context.addPath(lvlBgPath);
     context.setFillColor(Color.lightGray());
     context.fillPath();
 
     // Bar Level Background
     const lvlBarPath = new Path();
-    lvlBarPath.addRoundedRect(new Rect(0, 0, (barWidth * fillLevel) / 100, fpClass.statics.sizeMap[wSize].barGauge.h), 3, 2);
+    lvlBarPath.addRoundedRect(new Rect(0, 0, (barWidth * fillLevel) / 100, fpw.statics.sizeMap[wSize].barGauge.h), 3, 2);
     context.addPath(lvlBarPath);
     let barColor = isEV ? '#94ef4a' : '#619ded';
     if (percent >= 0 && percent <= 10) {
@@ -751,7 +752,7 @@ async function createProgressBar(percent, vData, wSize = 'medium') {
     context.fillPath();
 
     let xPos = barWidth / 2 - 20;
-    context.setFont(Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].barGauge.fs));
+    context.setFont(Font.mediumSystemFont(fpw.statics.sizeMap[wSize].barGauge.fs));
     context.setTextColor(Color.black());
 
     // if (fillLevel > 75) {
@@ -759,7 +760,7 @@ async function createProgressBar(percent, vData, wSize = 'medium') {
     // }
     const icon = isEV ? String.fromCodePoint('0x1F50B') : '\u26FD';
     const lvlStr = fillLevel < 0 || fillLevel > 100 ? '--' : `${fillLevel}%`;
-    context.drawTextInRect(`${icon} ${lvlStr}`, new Rect(xPos, fpClass.statics.sizeMap[wSize].barGauge.h / fpClass.statics.sizeMap[wSize].barGauge.fs, fpClass.statics.sizeMap[wSize].barGauge.w, fpClass.statics.sizeMap[wSize].barGauge.h));
+    context.drawTextInRect(`${icon} ${lvlStr}`, new Rect(xPos, fpw.statics.sizeMap[wSize].barGauge.h / fpw.statics.sizeMap[wSize].barGauge.fs, fpw.statics.sizeMap[wSize].barGauge.w, fpw.statics.sizeMap[wSize].barGauge.h));
     context.setTextAlignedCenter();
     return await context.getImage();
 }
@@ -767,7 +768,7 @@ async function createProgressBar(percent, vData, wSize = 'medium') {
 async function createVehicleImageElement(srcField, vData, width, height) {
     let logoRow = await createRow(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
     if (vData.info !== undefined && vData.info.vehicle !== undefined) {
-        await createImage(logoRow, await fpClass.files.getVehicleImage(vData.info.vehicle.modelYear), { imageSize: new Size(width, height), '*centerAlignImage': null });
+        await createImage(logoRow, await fpw.files.getVehicleImage(vData.info.vehicle.modelYear), { imageSize: new Size(width, height), '*centerAlignImage': null });
         srcField.addSpacer(3);
     }
     // return srcField;
@@ -779,8 +780,8 @@ async function createFuelRangeElements(srcField, vehicleData, wSize = 'medium') 
         let lvlValue = !isEV ? (vehicleData.fuelLevel ? vehicleData.fuelLevel : 0) : vehicleData.evBatteryLevel ? vehicleData.evBatteryLevel : 0;
         let dteValue = !isEV ? (vehicleData.distanceToEmpty ? vehicleData.distanceToEmpty : null) : vehicleData.evDistanceToEmpty ? vehicleData.evDistanceToEmpty : null;
         let dtePostfix = isEV ? 'Range' : 'to E';
-        let distanceMultiplier = (await fpClass.kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-        let distanceUnit = (await fpClass.kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+        let distanceMultiplier = (await fpw.kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+        let distanceUnit = (await fpw.kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
         // console.log('isEV: ' + isEV);
         // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
         // console.log(`distanceToEmpty: ${vehicleData.distanceToEmpty}`);
@@ -793,16 +794,16 @@ async function createFuelRangeElements(srcField, vehicleData, wSize = 'medium') 
         let elemCol = await createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
 
         // // Vehicle Logo
-        // await createVehicleImageElement(elemCol, vehicleData, fpClass.statics.sizeMap[wSize].logoSize.w, fpClass.statics.sizeMap[wSize].logoSize.h);
+        // await createVehicleImageElement(elemCol, vehicleData, fpw.statics.sizeMap[wSize].logoSize.w, fpw.statics.sizeMap[wSize].logoSize.h);
 
         // Fuel/Battery Level BAR
         let barRow = await createRow(elemCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-        await createImage(barRow, await createProgressBar(lvlValue ? lvlValue : 50, vehicleData, wSize), { '*centerAlignImage': null, imageSize: new Size(fpClass.statics.sizeMap[wSize].barGauge.w, fpClass.statics.sizeMap[wSize].barGauge.h + 3) });
+        await createImage(barRow, await createProgressBar(lvlValue ? lvlValue : 50, vehicleData, wSize), { '*centerAlignImage': null, imageSize: new Size(fpw.statics.sizeMap[wSize].barGauge.w, fpw.statics.sizeMap[wSize].barGauge.h + 3) });
 
         // Distance to Empty
         let dteRow = await createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
-        let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : fpClass.statics.textMap().errorMessages.noData;
-        await createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpClass.statics.colorMap.textColor2), lineLimit: 1 });
+        let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : fpw.statics.textMap().errorMessages.noData;
+        await createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 });
         srcField.addSpacer(3);
     } catch (e) {
         console.error(`createFuelRangeElements error ${e}`);
@@ -812,12 +813,12 @@ async function createFuelRangeElements(srcField, vehicleData, wSize = 'medium') 
 async function createBatteryElement(srcField, vehicleData, wSize = 'medium') {
     try {
         let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
-        await createTitle(elem, 'batteryStatus', wSize, isSmallDisplay || wSize === 'small');
+        await createTitle(elem, 'batteryStatus', wSize, fpw.isSmallDisplay || wSize === 'small');
         elem.addSpacer(2);
         let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
         // console.log(`batteryLevel: ${value}`);
         let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
-        await createText(elem, value, { font: Font.regularSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(fpClass.statics.colorMap.textColor2), lineLimit: 1 });
+        await createText(elem, value, { font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 });
         srcField.addSpacer(3);
     } catch (e) {
         console.error(`createBatteryElement error ${e}`);
@@ -826,38 +827,38 @@ async function createBatteryElement(srcField, vehicleData, wSize = 'medium') {
 
 async function createOilElement(srcField, vData, wSize = 'medium') {
     const styles = {
-        normal: { font: Font.regularSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpClass.statics.colorMap.textColor2), lineLimit: 1 },
-        warning: { font: Font.regularSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color('#FF6700'), lineLimit: 1 },
-        critical: { font: Font.regularSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color('#DE1738'), lineLimit: 1 },
+        normal: { font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 },
+        warning: { font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color('#FF6700'), lineLimit: 1 },
+        critical: { font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color('#DE1738'), lineLimit: 1 },
     };
     let elem = await createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
-    await createTitle(elem, 'oil', wSize, isSmallDisplay || wSize === 'small');
+    await createTitle(elem, 'oil', wSize, fpw.isSmallDisplay || wSize === 'small');
     elem.addSpacer(2);
     let txtStyle = styles.normal;
     if (vData.oilLife && vData.oilLife >= 0 && vData.oilLife <= 25) {
         txtStyle = styles.warning;
     }
     // console.log(`oilLife: ${vData.oilLife}`);
-    let text = vData.oilLife ? `${vData.oilLife}%` : fpClass.statics.textMap().errorMessages.noData;
+    let text = vData.oilLife ? `${vData.oilLife}%` : fpw.statics.textMap().errorMessages.noData;
     await createText(elem, text, txtStyle);
     srcField.addSpacer(3);
 }
 
 async function createEvChargeElement(srcField, vehicleData, wSize = 'medium') {
     let elem = await createRow(srcField, { '*layoutHorizontally': null });
-    await createTitle(elem, 'evChargeStatus', wSize, isSmallDisplay || wSize === 'small');
+    await createTitle(elem, 'evChargeStatus', wSize, fpw.isSmallDisplay || wSize === 'small');
     elem.addSpacer(2);
-    let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : fpClass.statics.textMap().errorMessages.noData;
+    let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : fpw.statics.textMap().errorMessages.noData;
     // console.log(`battery charge: ${value}`);
-    await createText(elem, value, { font: Font.regularSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpClass.statics.colorMap.textColor2), lineLimit: 1 });
+    await createText(elem, value, { font: Font.regularSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 });
     srcField.addSpacer(3);
 }
 
 async function createDoorElement(srcField, vData, countOnly = false, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(fpClass.statics.colorMap.textColor2), lineLimit: 1 },
-        statOpen: { font: Font.heavySystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        statClosed: { font: Font.heavySystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        normTxt: { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 },
+        statOpen: { font: Font.heavySystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        statClosed: { font: Font.heavySystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
         offset: 5,
     };
 
@@ -869,19 +870,19 @@ async function createDoorElement(srcField, vData, countOnly = false, wSize = 'me
     let dataRow1Fld = await createRow(srcField);
 
     if (countOnly) {
-        let value = fpClass.statics.textMap().errorMessages.noData;
+        let value = fpw.statics.textMap().errorMessages.noData;
         // let allDoorsCnt = Object.values(vData.statusDoors).filter((door) => door !== null).length;
         let countOpen;
         if (vData.statusDoors) {
             countOpen = Object.values(vData.statusDoors).filter((door) => door === true).length;
-            value = countOpen == 0 ? fpClass.statics.textMap().UIValues.closed : `${countOpen} ${fpClass.statics.textMap().UIValues.open}`;
+            value = countOpen == 0 ? fpw.statics.textMap().UIValues.closed : `${countOpen} ${fpw.statics.textMap().UIValues.open}`;
         }
         await createText(dataRow1Fld, value, countOpen > 0 ? styles.statOpen : styles.statClosed);
     } else {
         let col1 = await createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
         let col1row1 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
         await createText(col1row1, 'LF (', styles.normTxt);
-        await createText(col1row1, vData.statusDoors.driverFront ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusDoors.driverFront ? styles.statOpen : styles.statClosed);
+        await createText(col1row1, vData.statusDoors.driverFront ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusDoors.driverFront ? styles.statOpen : styles.statClosed);
         await createText(col1row1, ')', styles.normTxt);
 
         let col2 = await createColumn(dataRow1Fld, { '*setPadding': [0, 3, 0, 3] });
@@ -891,14 +892,14 @@ async function createDoorElement(srcField, vData, countOnly = false, wSize = 'me
         let col3 = await createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
         let col3row1 = await createRow(col3, { '*setPadding': [0, 0, 0, 0] });
         await createText(col3row1, 'RF (', styles.normTxt);
-        await createText(col3row1, vData.statusDoors.passFront ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusDoors.passFront ? styles.statOpen : styles.statClosed);
+        await createText(col3row1, vData.statusDoors.passFront ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusDoors.passFront ? styles.statOpen : styles.statClosed);
         await createText(col3row1, ')', styles.normTxt);
 
         // Creates the second row of status elements for LR and RR
         if (vData.statusDoors.leftRear !== null && vData.statusDoors.rightRear !== null) {
             let col1row2 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
             await createText(col1row2, `LR (`, styles.normTxt);
-            await createText(col1row2, vData.statusDoors.leftRear ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusDoors.leftRear ? styles.statOpen : styles.statClosed);
+            await createText(col1row2, vData.statusDoors.leftRear ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusDoors.leftRear ? styles.statOpen : styles.statClosed);
             await createText(col1row2, ')', styles.normTxt);
 
             let col2row2 = await createRow(col2, {});
@@ -906,18 +907,18 @@ async function createDoorElement(srcField, vData, countOnly = false, wSize = 'me
 
             let col3row2 = await createRow(col3, { '*setPadding': [0, 0, 0, 0] });
             await createText(col3row2, `RR (`, styles.normTxt);
-            await createText(col3row2, vData.statusDoors.rightRear ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusDoors.rightRear ? styles.statOpen : styles.statClosed);
+            await createText(col3row2, vData.statusDoors.rightRear ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusDoors.rightRear ? styles.statOpen : styles.statClosed);
             await createText(col3row2, ')', styles.normTxt);
         }
 
         async function getHoodStatusElem(stkElem, data, center = false) {
             await createText(stkElem, `${center ? '       ' : ''}HD (`, styles.normTxt);
-            await createText(stkElem, data.statusDoors.hood ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusDoors.hood ? styles.statOpen : styles.statClosed);
+            await createText(stkElem, data.statusDoors.hood ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusDoors.hood ? styles.statOpen : styles.statClosed);
             await createText(stkElem, ')', styles.normTxt);
         }
         async function getTailgateStatusElem(stkElem, data, center = false) {
             await createText(stkElem, `${center ? '       ' : ''}TG (`, styles.normTxt);
-            await createText(stkElem, data.statusDoors.tailgate ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusDoors.tailgate ? styles.statOpen : styles.statClosed);
+            await createText(stkElem, data.statusDoors.tailgate ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusDoors.tailgate ? styles.statOpen : styles.statClosed);
             await createText(stkElem, ')', styles.normTxt);
         }
 
@@ -985,9 +986,9 @@ function getOpenItems(items) {
 
 async function createWindowElement(srcField, vData, countOnly = false, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(fpClass.statics.colorMap.textColor2) },
-        statOpen: { font: Font.heavySystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
-        statClosed: { font: Font.heavySystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
+        normTxt: { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(fpw.statics.colorMap.textColor2) },
+        statOpen: { font: Font.heavySystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
+        statClosed: { font: Font.heavySystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
         offset: 10,
     };
 
@@ -998,18 +999,18 @@ async function createWindowElement(srcField, vData, countOnly = false, wSize = '
     // Creates the first row of status elements for LF and RF
     let dataRow1Fld = await createRow(srcField);
     if (countOnly) {
-        let value = fpClass.statics.textMap().errorMessages.noData;
+        let value = fpw.statics.textMap().errorMessages.noData;
         let countOpen;
         if (vData.statusWindows) {
             countOpen = Object.values(vData.statusWindows).filter((window) => window === true).length;
-            value = countOpen == 0 ? fpClass.statics.textMap().UIValues.closed : `${countOpenWindows} ${fpClass.statics.textMap().UIValues.open}`;
+            value = countOpen == 0 ? fpw.statics.textMap().UIValues.closed : `${countOpenWindows} ${fpw.statics.textMap().UIValues.open}`;
         }
         await createText(dataRow1Fld, value, countOpen > 0 ? styles.statOpen : styles.statClosed);
     } else {
         let col1 = await createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
         let col1row1 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
         await createText(col1row1, 'LF (', styles.normTxt);
-        await createText(col1row1, vData.statusWindows.driverFront ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusWindows['driverFront'] ? styles.statOpen : styles.statClosed);
+        await createText(col1row1, vData.statusWindows.driverFront ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusWindows['driverFront'] ? styles.statOpen : styles.statClosed);
         await createText(col1row1, ')', styles.normTxt);
 
         let col2 = await createColumn(dataRow1Fld, { '*setPadding': [0, 3, 0, 3] });
@@ -1019,14 +1020,14 @@ async function createWindowElement(srcField, vData, countOnly = false, wSize = '
         let col3 = await createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
         let col3row1 = await createRow(col3, { '*setPadding': [0, 0, 0, 0] });
         await createText(col3row1, 'RF (', styles.normTxt);
-        await createText(col3row1, vData.statusWindows['passFront'] ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusWindows['passFront'] ? styles.statOpen : styles.statClosed);
+        await createText(col3row1, vData.statusWindows['passFront'] ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusWindows['passFront'] ? styles.statOpen : styles.statClosed);
         await createText(col3row1, ')', styles.normTxt);
 
         // Creates the second row of status elements for LR and RR
         if (vData.statusWindows.driverRear !== null && vData.statusWindows.passRear !== null) {
             let col1row2 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
             await createText(col1row2, `LR (`, styles.normTxt);
-            await createText(col1row2, vData.statusWindows.driverRear ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusWindows.driverRear ? styles.statOpen : styles.statClosed);
+            await createText(col1row2, vData.statusWindows.driverRear ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusWindows.driverRear ? styles.statOpen : styles.statClosed);
             await createText(col1row2, ')', styles.normTxt);
 
             let col2row2 = await createRow(col2, {});
@@ -1034,7 +1035,7 @@ async function createWindowElement(srcField, vData, countOnly = false, wSize = '
 
             let col3row2 = await createRow(col3, { '*setPadding': [0, 0, 0, 0] });
             await createText(col3row2, `RR (`, styles.normTxt);
-            await createText(col3row2, vData.statusWindows.passRear ? fpClass.statics.textMap().symbols.open : fpClass.statics.textMap().symbols.closed, vData.statusWindows.passRear ? styles.statOpen : styles.statClosed);
+            await createText(col3row2, vData.statusWindows.passRear ? fpw.statics.textMap().symbols.open : fpw.statics.textMap().symbols.closed, vData.statusWindows.passRear ? styles.statOpen : styles.statClosed);
             await createText(col3row2, ')', styles.normTxt);
         }
 
@@ -1047,11 +1048,11 @@ async function createWindowElement(srcField, vData, countOnly = false, wSize = '
 
 async function createTireElement(srcField, vData, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(fpClass.statics.colorMap.textColor2) },
+        normTxt: { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(fpw.statics.colorMap.textColor2) },
     };
     let offset = 0;
     let titleFld = await createRow(srcField);
-    let pressureUnits = await fpClass.kc.getKeychainValue('fpPressureUnits');
+    let pressureUnits = await fpw.kc.getKeychainValue('fpPressureUnits');
     let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
     await createTitle(titleFld, `tirePressure||${unitTxt}`, wSize);
 
@@ -1059,21 +1060,21 @@ async function createTireElement(srcField, vData, wSize = 'medium') {
     // Row 1 - Tire Pressure Left Front amd Right Front
     let col1 = await createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
     let col1row1 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-    await createText(col1row1, vData.tirePressure.leftFront, fpClass.utils.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
+    await createText(col1row1, vData.tirePressure.leftFront, fpw.utils.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
     let col2 = await createColumn(dataFld, { '*setPadding': [0, 3, 0, 3] });
     let col2row1 = await createRow(col2, { '*setPadding': [0, 0, 0, 0] });
     await createText(col2row1, '|', styles.normTxt);
     let col3 = await createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
     let col3row1 = await createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-    await createText(col3row1, vData.tirePressure.rightFront, fpClass.utils.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
+    await createText(col3row1, vData.tirePressure.rightFront, fpw.utils.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
 
     // Row 2 - Tire Pressure Left Rear amd Right Rear
     let col1row2 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-    await createText(col1row2, vData.tirePressure.leftRear, fpClass.utils.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
+    await createText(col1row2, vData.tirePressure.leftRear, fpw.utils.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
     let col2row2 = await createRow(col2, { '*setPadding': [0, 0, 0, 0] });
     await createText(col2row2, '|', styles.normTxt);
     let col3row2 = await createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-    await createText(col3row2, vData.tirePressure.rightRear, fpClass.utils.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
+    await createText(col3row2, vData.tirePressure.rightRear, fpw.utils.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
 
     srcField.addSpacer(offset);
 }
@@ -1084,31 +1085,31 @@ async function createPositionElement(srcField, vehicleData, wSize = 'medium') {
     await createTitle(titleFld, 'position', wSize);
 
     let dataFld = await createRow(srcField);
-    let url = (await fpClass.kc.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
-    let value = vehicleData.position ? (widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vehicleData.position}`) : fpClass.statics.textMap().errorMessages.noData;
-    await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(fpClass.statics.colorMap.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
+    let url = (await fpw.kc.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
+    let value = vehicleData.position ? (widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vehicleData.position}`) : fpw.statics.textMap().errorMessages.noData;
+    await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
 }
 
 async function createLockStatusElement(srcField, vehicleData, wSize = 'medium') {
     const styles = {
-        unlocked: { font: Font.heavySystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-        locked: { font: Font.heavySystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+        unlocked: { font: Font.heavySystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
+        locked: { font: Font.heavySystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
     };
     let offset = 2;
     let titleFld = await createRow(srcField);
     await createTitle(titleFld, 'lockStatus', wSize);
     titleFld.addSpacer(2);
     let dataFld = await createRow(srcField);
-    let value = vehicleData.lockStatus ? vehicleData.lockStatus.toLowerCase().charAt(0).toUpperCase() + vehicleData.lockStatus.toLowerCase().slice(1) : fpClass.statics.textMap().errorMessages.noData;
+    let value = vehicleData.lockStatus ? vehicleData.lockStatus.toLowerCase().charAt(0).toUpperCase() + vehicleData.lockStatus.toLowerCase().slice(1) : fpw.statics.textMap().errorMessages.noData;
     await createText(dataFld, value, vehicleData.lockStatus !== undefined && vehicleData.lockStatus === 'LOCKED' ? styles.locked : styles.unlocked);
     srcField.addSpacer(offset);
 }
 
 async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'medium') {
     const styles = {
-        on: { font: Font.heavySystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
-        off: { font: Font.heavySystemFont(fpClass.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
+        on: { font: Font.heavySystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
+        off: { font: Font.heavySystemFont(fpw.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
     };
     let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
     let status = '';
@@ -1117,7 +1118,7 @@ async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'mediu
     } else if (vehicleData.ignitionStatus !== undefined) {
         status = vehicleData.ignitionStatus.charAt(0).toUpperCase() + vehicleData.ignitionStatus.slice(1); //vehicleData.ignitionStatus.toUpperCase();
     } else {
-        fpClass.statics.textMap().errorMessages.noData;
+        fpw.statics.textMap().errorMessages.noData;
     }
     let offset = 2;
     let titleFld = await createRow(srcField);
@@ -1131,7 +1132,7 @@ async function createIgnitionStatusElement(srcField, vehicleData, wSize = 'mediu
 async function createTimeStampElement(stk, vehicleData, wSize = 'medium') {
     // stk.setPadding(topOffset, leftOffset, bottomOffset, rightOffset);
     // Creates the Refresh Label to show when the data was last updated from Ford
-    let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : fpClass.statics.textMap().UIValues.unknown;
+    let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : fpw.statics.textMap().UIValues.unknown;
     await createText(stk, 'Updated: ' + refreshTime, { font: Font.mediumSystemFont(8), textColor: Color.lightGray(), lineLimit: 1 });
     return stk;
 }
@@ -1145,36 +1146,36 @@ async function createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
     // Creates Elements to display any errors in red at the bottom of the widget
     if (vData.error) {
         // stk.addSpacer(5);
-        await createText(stk, vData.error ? 'Error: ' + vData.error : '', { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.red() });
+        await createText(stk, vData.error ? 'Error: ' + vData.error : '', { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.red() });
     } else {
         if (cnt < maxMsgs && !vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') {
             stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 12V Battery Low`, { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.red(), lineLimit: 1 });
+            await createText(stk, `\u2022 12V Battery Low`, { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.red(), lineLimit: 1 });
             cnt++;
         }
         // if (cnt < maxMsgs && !vData.evVehicle && vData.oilLow) {
         //     stk.addSpacer(cnt > 0 ? 5 : 0);
-        //     await createText(stk, `\u2022 Oil Reporting Low`, { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.red(), lineLimit: 1 });
+        //     await createText(stk, `\u2022 Oil Reporting Low`, { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.red(), lineLimit: 1 });
         //     cnt++;
         // }
         if (cnt < maxMsgs && vData.deepSleepMode) {
             stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 Deep Sleep Mode`, { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
+            await createText(stk, `\u2022 Deep Sleep Mode`, { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
             cnt++;
         }
         if (cnt < maxMsgs && vData.firmwareUpdating) {
             stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.green(), lineLimit: 1 });
+            await createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.green(), lineLimit: 1 });
             cnt++;
         }
         if (cnt < maxMsgs && updateAvailable) {
             stk.addSpacer(cnt > 0 ? 5 : 0);
-            await createText(stk, `\u2022 Script Update: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
+            await createText(stk, `\u2022 Script Update: v${LATEST_VERSION}`, { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
             cnt++;
         }
     }
     if (!hasStatusMsg()) {
-        await createText(stk, `     `, { font: Font.mediumSystemFont(fpClass.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpClass.statics.colorMap.textColor2), lineLimit: 1 });
+        await createText(stk, `     `, { font: Font.mediumSystemFont(fpw.statics.sizeMap[wSize].fontSizeSmall), textColor: new Color(fpw.statics.colorMap.textColor2), lineLimit: 1 });
     }
     return stk;
 }
@@ -1183,23 +1184,23 @@ async function createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
 //***************************************************************************************************************************************
 
 async function collectAllData(scrub = false) {
-    let data = await fpClass.fordRequests.fetchVehicleData(true);
-    data.otaInfo = await fpClass.fordRequests.getVehicleOtaInfo();
+    let data = await fpw.fordRequests.fetchVehicleData(true);
+    data.otaInfo = await fpw.fordRequests.getVehicleOtaInfo();
     data.userPrefs = {
-        country: await fpClass.kc.getKeychainValue('fpCountry'),
-        timeZone: await fpClass.kc.getKeychainValue('fpTz'),
-        language: await fpClass.kc.getKeychainValue('fpLanguage'),
-        unitOfDistance: await fpClass.kc.getKeychainValue('fpDistanceUnits'),
-        unitOfPressure: await fpClass.kc.getKeychainValue('fpPressureUnits'),
+        country: await fpw.kc.getKeychainValue('fpCountry'),
+        timeZone: await fpw.kc.getKeychainValue('fpTz'),
+        language: await fpw.kc.getKeychainValue('fpLanguage'),
+        unitOfDistance: await fpw.kc.getKeychainValue('fpDistanceUnits'),
+        unitOfPressure: await fpw.kc.getKeychainValue('fpPressureUnits'),
     };
-    // data.userDetails = await fpClass.fordRequests.getAllUserData();
-    return scrub ? fpClass.utils.scrubPersonalData(data) : data;
+    // data.userDetails = await fpw.fordRequests.getAllUserData();
+    return scrub ? fpw.utils.scrubPersonalData(data) : data;
 }
 
 async function menuBuilderByType(type) {
-    const vehicleData = await fpClass.fordRequests.fetchVehicleData(true);
+    const vehicleData = await fpw.fordRequests.fetchVehicleData(true);
     // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
-    const typeDesc = fpClass.utils.capitalizeStr(type);
+    const typeDesc = fpw.utils.capitalizeStr(type);
     let title = undefined;
     let message = undefined;
     let items = [];
@@ -1223,8 +1224,8 @@ async function menuBuilderByType(type) {
                     title: 'Request Refresh',
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Refresh was pressed`);
-                        if (await fpClass.alertNotify.showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
-                            await fpClass.fordCommands.sendVehicleCmd('status');
+                        if (await fpw.alerts.showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
+                            await fpw.fordCommands.sendVehicleCmd('status');
                         }
                     },
                     destructive: true,
@@ -1275,7 +1276,7 @@ async function menuBuilderByType(type) {
                     title: 'View Documentation',
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Small Widget was pressed`);
-                        await Safari.openInApp(fpClass.statics.textMap().about.documentationUrl);
+                        await Safari.openInApp(fpw.statics.textMap().about.documentationUrl);
                         menuBuilderByType('helpInfo');
                     },
                     destructive: false,
@@ -1285,7 +1286,7 @@ async function menuBuilderByType(type) {
                     title: 'Report Issues',
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Report Issues was pressed`);
-                        await Safari.openInApp(fpClass.statics.textMap().about.issuesUrl);
+                        await Safari.openInApp(fpw.statics.textMap().about.issuesUrl);
                         menuBuilderByType('helpInfo');
                     },
                     destructive: false,
@@ -1295,7 +1296,7 @@ async function menuBuilderByType(type) {
                     title: 'Donate',
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Donate was pressed`);
-                        await Safari.open(fpClass.statics.textMap().about.donationUrl);
+                        await Safari.open(fpw.statics.textMap().about.donationUrl);
                         menuBuilderByType('helpInfo');
                     },
                     destructive: false,
@@ -1362,7 +1363,7 @@ async function menuBuilderByType(type) {
                         await w.presentExtraLarge();
                     },
                     destructive: false,
-                    show: Device.isPad(),
+                    show: fpw.isPad,
                 },
                 {
                     title: 'Back',
@@ -1382,8 +1383,8 @@ async function menuBuilderByType(type) {
                     title: 'View OTA API Info',
                     action: async() => {
                         console.log(`(${typeDesc} Menu) View OTA Info was pressed`);
-                        let data = await fpClass.fordRequests.getVehicleOtaInfo();
-                        await fpClass.tables.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
+                        let data = await fpw.fordRequests.getVehicleOtaInfo();
+                        await fpw.tables.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
                         menuBuilderByType('diagnostics');
                     },
                     destructive: false,
@@ -1394,7 +1395,7 @@ async function menuBuilderByType(type) {
                     action: async() => {
                         console.log(`(${typeDesc} Menu) View All Data was pressed`);
                         let data = await collectAllData(false);
-                        await fpClass.tables.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
+                        await fpw.tables.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
                         menuBuilderByType('diagnostics');
                     },
                     destructive: false,
@@ -1406,7 +1407,7 @@ async function menuBuilderByType(type) {
                         console.log(`(${typeDesc} Menu) Copy Data was pressed`);
                         let data = await collectAllData(true);
                         await Pasteboard.copyString(JSON.stringify(data, null, 4));
-                        await fpClass.alertNotify.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
+                        await fpw.alerts.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
                         menuBuilderByType('diagnostics');
                     },
                     destructive: false,
@@ -1417,7 +1418,7 @@ async function menuBuilderByType(type) {
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
                         let data = await collectAllData(true);
-                        await fpClass.utils.createEmailObject(data, true);
+                        await fpw.utils.createEmailObject(data, true);
                     },
                     destructive: true,
                     show: true,
@@ -1439,8 +1440,8 @@ async function menuBuilderByType(type) {
                     title: 'Clear Cached Files/Images',
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Clear Files/Images was pressed`);
-                        await fpClass.files.clearFileManager();
-                        await fpClass.alertNotify.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
+                        await fpw.files.clearFileManager();
+                        await fpw.alerts.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
                         // menuBuilderByType('reset');
                         this.close();
                     },
@@ -1451,9 +1452,9 @@ async function menuBuilderByType(type) {
                     title: 'Clear Login Info',
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Clear Login Info was pressed`);
-                        if (await fpClass.alertNotify.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
-                            await fpClass.kc.clearKeychain();
-                            await fpClass.alertNotify.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease run the script again to re-initialize the widget.');
+                        if (await fpw.alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
+                            await fpw.kc.clearKeychain();
+                            await fpw.alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease run the script again to re-initialize the widget.');
                             this.close();
                         } else {
                             menuBuilderByType('reset');
@@ -1466,10 +1467,10 @@ async function menuBuilderByType(type) {
                     title: 'Reset Everything',
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Reset Everything was pressed`);
-                        if (await fpClass.alertNotify.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
-                            await fpClass.kc.clearKeychain();
-                            await fpClass.files.clearFileManager();
-                            await fpClass.alertNotify.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nPlease run the script again to re-initialize the app.');
+                        if (await fpw.alerts.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
+                            await fpw.kc.clearKeychain();
+                            await fpw.files.clearFileManager();
+                            await fpw.alerts.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nPlease run the script again to re-initialize the app.');
                             this.close();
                         } else {
                             menuBuilderByType('reset');
@@ -1490,21 +1491,21 @@ async function menuBuilderByType(type) {
             ];
             break;
         case 'settings':
-            let mapProvider = await fpClass.kc.getMapProvider();
-            let widgetStyle = await fpClass.kc.getWidgetStyle();
+            let mapProvider = await fpw.kc.getMapProvider();
+            let widgetStyle = await fpw.kc.getWidgetStyle();
             title = 'Widget Settings';
             items = [{
                     title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Map Provider pressed`);
-                        await fpClass.kc.toggleMapProvider();
+                        await fpw.kc.toggleMapProvider();
                         menuBuilderByType('settings');
                     },
                     destructive: false,
                     show: true,
                 },
                 {
-                    title: `Widget Style: ${fpClass.utils.capitalizeStr(widgetStyle)}`,
+                    title: `Widget Style: ${fpw.utils.capitalizeStr(widgetStyle)}`,
                     action: async() => {
                         console.log(`(${typeDesc} Menu) Widget Style pressed`);
                         await widgetStyleSelector('medium');
@@ -1569,10 +1570,10 @@ async function menuBuilderByType(type) {
 
 async function requiredPrefsMenu() {
     try {
-        let user = await fpClass.kc.getKeychainValue('fpUser');
-        let pass = await fpClass.kc.getKeychainValue('fpPass');
-        let vin = await fpClass.kc.getKeychainValue('fpVin');
-        let mapProvider = await fpClass.kc.getMapProvider();
+        let user = await fpw.kc.getKeychainValue('fpUser');
+        let pass = await fpw.kc.getKeychainValue('fpPass');
+        let vin = await fpw.kc.getKeychainValue('fpVin');
+        let mapProvider = await fpw.kc.getMapProvider();
 
         let prefsMenu = new Alert();
         prefsMenu.title = 'Required Settings Missing';
@@ -1593,17 +1594,17 @@ async function requiredPrefsMenu() {
         switch (respInd) {
             case 0:
                 console.log('(Required Prefs Menu) Map Provider pressed');
-                await fpClass.kc.toggleMapProvider();
+                await fpw.kc.toggleMapProvider();
                 requiredPrefsMenu();
                 break;
             case 1:
                 console.log('(Required Prefs Menu) View Documentation pressed');
-                await Safari.openInApp(fpClass.statics.textMap().about.documentationUrl);
+                await Safari.openInApp(fpw.statics.textMap().about.documentationUrl);
                 requiredPrefsMenu();
                 break;
             case 2:
                 console.log('(Required Prefs Menu) Map Provider pressed');
-                await Safari.openInApp(fpClass.statics.textMap().about.helpVideos.setup.url);
+                await Safari.openInApp(fpw.statics.textMap().about.helpVideos.setup.url);
                 requiredPrefsMenu();
                 break;
             case 3:
@@ -1613,15 +1614,15 @@ async function requiredPrefsMenu() {
                 vin = prefsMenu.textFieldValue(2);
                 // console.log(`${user} ${pass} ${vin}`);
 
-                if (fpClass.utils.inputTest(user) && fpClass.utils.inputTest(pass) && fpClass.utils.inputTest(vin)) {
-                    await fpClass.kc.setKeychainValue('fpUser', user);
-                    await fpClass.kc.setKeychainValue('fpPass', pass);
-                    await fpClass.kc.setKeychainValue('fpMapProvider', mapProvider);
-                    let vinChk = await fpClass.kc.vinCheck(vin, true);
+                if (fpw.utils.inputTest(user) && fpw.utils.inputTest(pass) && fpw.utils.inputTest(vin)) {
+                    await fpw.kc.setKeychainValue('fpUser', user);
+                    await fpw.kc.setKeychainValue('fpPass', pass);
+                    await fpw.kc.setKeychainValue('fpMapProvider', mapProvider);
+                    let vinChk = await fpw.kc.vinCheck(vin, true);
                     console.log(`VIN Number Ok: ${vinChk}`);
                     if (vinChk) {
-                        await fpClass.kc.setKeychainValue('fpVin', vin.toUpperCase());
-                        await fpClass.fordRequests.queryFordPassPrefs(true);
+                        await fpw.kc.setKeychainValue('fpVin', vin.toUpperCase());
+                        await fpw.fordRequests.queryFordPassPrefs(true);
                         return true;
                     } else {
                         // await requiredPrefsMenu();
@@ -1641,13 +1642,13 @@ async function requiredPrefsMenu() {
 }
 
 async function scheduleMainTableRefresh(interval) {
-    await fpClass.timers.createTimer(
+    await fpw.timers.createTimer(
         'mainTableRefresh',
         interval,
         false,
         async() => {
             console.log('(Main Table) Refresh Timer Fired');
-            await fpClass.fordRequests.fetchVehicleData(false);
+            await fpw.fordRequests.fetchVehicleData(false);
             await generateMainInfoTable(true);
         },
         false,
@@ -1656,13 +1657,13 @@ async function scheduleMainTableRefresh(interval) {
 
 async function createRemoteStartStatusTimer() {
     console.log('createRemoteStartStatusTimer');
-    await fpClass.timers.createTimer(
+    await fpw.timers.createTimer(
         'remoteStartStatus',
         60000,
         false,
         async() => {
             console.log('(Remote Start Status) Timer fired');
-            await fpClass.fordRequests.fetchVehicleData(false);
+            await fpw.fordRequests.fetchVehicleData(false);
             await generateMainInfoTable(true);
         },
         true,
@@ -1670,29 +1671,29 @@ async function createRemoteStartStatusTimer() {
 }
 
 async function generateMainInfoTable(update = false) {
-    const vData = await fpClass.fordRequests.fetchVehicleData(true);
+    const vData = await fpw.fordRequests.fetchVehicleData(true);
     const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
     const isEV = vData.evVehicle === true;
-    const pressureUnits = await fpClass.kc.getKeychainValue('fpPressureUnits');
-    const distanceMultiplier = (await fpClass.kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-    const distanceUnit = (await fpClass.kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+    const pressureUnits = await fpw.kc.getKeychainValue('fpPressureUnits');
+    const distanceMultiplier = (await fpw.kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+    const distanceUnit = (await fpw.kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
     const tireUnit = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
     const dtePostfix = isEV ? 'Range' : 'to E';
 
     let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
     let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
-    let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : fpClass.statics.textMap().errorMessages.noData;
+    let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : fpw.statics.textMap().errorMessages.noData;
 
     let ignStatus = '';
     if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
         ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
         createRemoteStartStatusTimer();
     } else {
-        fpClass.timers.stopTimer('remoteStartStatus');
-        ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : fpClass.statics.textMap().errorMessages.noData;
+        fpw.timers.stopTimer('remoteStartStatus');
+        ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : fpw.statics.textMap().errorMessages.noData;
     }
-    let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : fpClass.statics.textMap().UIValues.unknown;
-    const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : fpClass.statics.textMap().errorMessages.noData;
+    let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : fpw.statics.textMap().UIValues.unknown;
+    const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : fpw.statics.textMap().errorMessages.noData;
     const msgs = vData.messages && vData.messages.length ? vData.messages : [];
     const recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
     const msgsUnread = msgs && msgs.length ? msgs.filter((msg) => msg.isRead === false) : [];
@@ -1704,10 +1705,10 @@ async function generateMainInfoTable(update = false) {
     try {
         // Header Section - Row 1: vehicle messages, vehicle type, vehicle alerts
         tableRows.push(
-            await fpClass.tables.createTableRow(
+            await fpw.tables.createTableRow(
                 [
-                    await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_message_center_notification_dark.png`), { align: 'left', widthWeight: 3 }),
-                    await fpClass.tables.createButtonCell(msgs.length ? `${msgs.length}` : '', {
+                    await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_message_center_notification_dark.png`), { align: 'left', widthWeight: 3 }),
+                    await fpw.tables.createButtonCell(msgs.length ? `${msgs.length}` : '', {
                         align: 'left',
                         widthWeight: 27,
                         onTap: async() => {
@@ -1716,8 +1717,8 @@ async function generateMainInfoTable(update = false) {
                         },
                     }),
 
-                    await fpClass.tables.createTextCell(vData.info.vehicle.vehicleType, odometerVal, { align: 'center', widthWeight: 40, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textWhite), subtitleColor: Color.lightGray(), titleFont: Font.title3(), subtitleFont: Font.footnote() }),
-                    await fpClass.tables.createButtonCell('Menu', {
+                    await fpw.tables.createTextCell(vData.info.vehicle.vehicleType, odometerVal, { align: 'center', widthWeight: 40, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textWhite), subtitleColor: Color.lightGray(), titleFont: Font.title3(), subtitleFont: Font.footnote() }),
+                    await fpw.tables.createButtonCell('Menu', {
                         align: 'right',
                         widthWeight: 30,
                         dismissOnTap: false,
@@ -1737,11 +1738,11 @@ async function generateMainInfoTable(update = false) {
 
         // Header Section - Row 2: Shows tire pressure label and unit
         tableRows.push(
-            await fpClass.tables.createTableRow(
+            await fpw.tables.createTableRow(
                 [
-                    await fpClass.tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
-                    await fpClass.tables.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(fpClass.statics.colorMap.textWhite), subtitleFont: Font.subheadline() }),
-                    await fpClass.tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                    await fpw.tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                    await fpw.tables.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(fpw.statics.colorMap.textWhite), subtitleFont: Font.subheadline() }),
+                    await fpw.tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
                 ], {
                     backgroundColor: new Color(headerColor),
                     height: 20,
@@ -1756,33 +1757,33 @@ async function generateMainInfoTable(update = false) {
         // console.log(`openDoors: ${JSON.stringify(openDoors)}`);
         // console.log(`openWindows: ${JSON.stringify(openWindows)}`);
         tableRows.push(
-            await fpClass.tables.createTableRow(
+            await fpw.tables.createTableRow(
                 [
                     // Door Status Cells
-                    await fpClass.tables.createImageCell(await fpClass.files.getImage(`door_dark_menu.png`), { align: 'center', widthWeight: 5 }),
-                    await fpClass.tables.createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', {
+                    await fpw.tables.createImageCell(await fpw.files.getImage(`door_dark_menu.png`), { align: 'center', widthWeight: 5 }),
+                    await fpw.tables.createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', {
                         align: 'left',
                         widthWeight: 25,
                         dismissOnTap: false,
-                        titleColor: new Color(fpClass.statics.colorMap.textWhite),
+                        titleColor: new Color(fpw.statics.colorMap.textWhite),
                         titleFont: Font.headline(),
                         subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
                         subtitleFont: Font.subheadline(),
                     }),
-                    await fpClass.tables.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(fpClass.statics.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
-                    await fpClass.tables.createImageCell(await fpClass.files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 20 }),
-                    await fpClass.tables.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(fpClass.statics.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
+                    await fpw.tables.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(fpw.statics.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
+                    await fpw.tables.createImageCell(await fpw.files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 20 }),
+                    await fpw.tables.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(fpw.statics.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
                     // Window Status Cells
-                    await fpClass.tables.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
+                    await fpw.tables.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                         align: 'right',
                         widthWeight: 25,
                         dismissOnTap: false,
-                        titleColor: new Color(fpClass.statics.colorMap.textWhite),
+                        titleColor: new Color(fpw.statics.colorMap.textWhite),
                         titleFont: Font.headline(),
                         subtitleColor: new Color(openWindows.length ? '#FF5733' : '#5A65C0'),
                         subtitleFont: Font.subheadline(),
                     }),
-                    await fpClass.tables.createImageCell(await fpClass.files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
+                    await fpw.tables.createImageCell(await fpw.files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                 ], {
                     backgroundColor: new Color(headerColor),
                     height: 100,
@@ -1794,11 +1795,11 @@ async function generateMainInfoTable(update = false) {
 
         // Header Section - Row 4: Shows fuel/EV battery level and range
         tableRows.push(
-            await fpClass.tables.createTableRow(
+            await fpw.tables.createTableRow(
                 [
-                    await fpClass.tables.createImageCell(isEV ? await fpClass.files.getImage(`ev_battery_dark_menu.png`) : await fpClass.files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                    await fpClass.tables.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, { align: 'left', widthWeight: 45, titleColor: new Color(fpClass.statics.colorMap.textWhite), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.subheadline() }),
-                    await fpClass.tables.createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
+                    await fpw.tables.createImageCell(isEV ? await fpw.files.getImage(`ev_battery_dark_menu.png`) : await fpw.files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
+                    await fpw.tables.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, { align: 'left', widthWeight: 45, titleColor: new Color(fpw.statics.colorMap.textWhite), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.subheadline() }),
+                    await fpw.tables.createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
                 ], {
                     backgroundColor: new Color(headerColor),
                     height: 40,
@@ -1809,11 +1810,11 @@ async function generateMainInfoTable(update = false) {
 
         // Header Section - Row 5: Shows vehicle checkin timestamp
         tableRows.push(
-            await fpClass.tables.createTableRow(
+            await fpw.tables.createTableRow(
                 [
-                    // await fpClass.tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
-                    await fpClass.tables.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: new Color(fpClass.statics.colorMap.textWhite), titleFont: Font.regularSystemFont(9) }),
-                    // await fpClass.tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
+                    // await fpw.tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
+                    await fpw.tables.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textWhite), titleFont: Font.regularSystemFont(9) }),
+                    // await fpw.tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
                 ], {
                     backgroundColor: new Color(headerColor),
                     height: 20,
@@ -1867,8 +1868,8 @@ async function generateMainInfoTable(update = false) {
         // Script Update Available Row
         if (update || updateAvailable) {
             tableRows.push(
-                await fpClass.tables.createTableRow(
-                    [await fpClass.tables.createTextCell(`New Widget Update Available (v${LATEST_VERSION})`, 'Tap here to update', { align: 'center', widthWeight: 100, titleColor: new Color('#b605fc'), titleFont: Font.subheadline(), subtitleColor: new Color(fpClass.statics.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) })], {
+                await fpw.tables.createTableRow(
+                    [await fpw.tables.createTextCell(`New Widget Update Available (v${LATEST_VERSION})`, 'Tap here to update', { align: 'center', widthWeight: 100, titleColor: new Color('#b605fc'), titleFont: Font.subheadline(), subtitleColor: new Color(fpw.statics.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) })], {
                         height: 40,
                         dismissOnSelect: false,
                         onSelect: async() => {
@@ -1886,7 +1887,7 @@ async function generateMainInfoTable(update = false) {
         if (recalls && recalls.length) {
             // Creates the Vehicle Recalls Title Row
             tableRows.push(
-                await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() })], {
+                await fpw.tables.createTableRow([await fpw.tables.createTextCell(`Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() })], {
                     height: 30,
                     isHeader: true,
                     dismissOnSelect: false,
@@ -1899,10 +1900,10 @@ async function generateMainInfoTable(update = false) {
                     break;
                 }
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await fpClass.tables.createTextCell(recall.title, recall.type + '\n' + recall.id, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.body(), subtitleColor: new Color(fpClass.statics.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) }),
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await fpw.tables.createTextCell(recall.title, recall.type + '\n' + recall.id, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.body(), subtitleColor: new Color(fpw.statics.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) }),
                         ], {
                             height: 44,
                             dismissOnSelect: false,
@@ -1930,7 +1931,7 @@ async function generateMainInfoTable(update = false) {
 
             // Creates the Vehicle Alerts Title Row
             tableRows.push(
-                await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() })], {
+                await fpw.tables.createTableRow([await fpw.tables.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() })], {
                     height: 30,
                     isHeader: true,
                     dismissOnSelect: false,
@@ -1943,15 +1944,15 @@ async function generateMainInfoTable(update = false) {
                     break;
                 }
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await fpClass.tables.createTextCell(alert.alertDescription, fpClass.tables.getAlertDescByType(alert.alertType), {
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await fpw.tables.createTextCell(alert.alertDescription, fpw.tables.getAlertDescByType(alert.alertType), {
                                 align: 'left',
                                 widthWeight: 93,
-                                titleColor: new Color(fpClass.tables.getAlertColorByCode(alert.colorCode)),
+                                titleColor: new Color(fpw.tables.getAlertColorByCode(alert.colorCode)),
                                 titleFont: Font.body(),
-                                subtitleColor: new Color(fpClass.statics.colorMap.textColor1),
+                                subtitleColor: new Color(fpw.statics.colorMap.textColor1),
                                 subtitleFont: Font.regularSystemFont(9),
                             }),
                         ], {
@@ -1961,7 +1962,7 @@ async function generateMainInfoTable(update = false) {
                             onSelect: alert.noButton === undefined || alert.noButton === false ?
                                 async() => {
                                     console.log('(Dashboard) Alert Item row was pressed');
-                                    // await fpClass.alertNotify.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
+                                    // await fpw.alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
                                     await generateAlertsTable(vData);
                                 } :
                                 undefined,
@@ -1974,7 +1975,7 @@ async function generateMainInfoTable(update = false) {
         // Unread Messages Section - Displays a count of unread messages and a button to view all messages
         if (msgsUnread.length) {
             tableRows.push(
-                await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() })], {
+                await fpw.tables.createTableRow([await fpw.tables.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() })], {
                     height: 30,
                     isHeader: true,
                     dismissOnSelect: false,
@@ -1983,18 +1984,18 @@ async function generateMainInfoTable(update = false) {
             );
 
             tableRows.push(
-                await fpClass.tables.createTableRow(
+                await fpw.tables.createTableRow(
                     [
-                        await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                        await fpClass.tables.createTextCell(`Unread Message${msgsUnread.length > 1 ? 's' : ''}: (${msgsUnread.length})`, undefined, {
+                        await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                        await fpw.tables.createTextCell(`Unread Message${msgsUnread.length > 1 ? 's' : ''}: (${msgsUnread.length})`, undefined, {
                             align: 'left',
                             widthWeight: 76,
-                            titleColor: new Color(fpClass.statics.colorMap.textColor1),
+                            titleColor: new Color(fpw.statics.colorMap.textColor1),
                             titleFont: Font.body(),
-                            subtitleColor: new Color(fpClass.statics.colorMap.textColor1),
+                            subtitleColor: new Color(fpw.statics.colorMap.textColor1),
                             subtitleFont: Font.regularSystemFont(9),
                         }),
-                        await fpClass.tables.createButtonCell('View', {
+                        await fpw.tables.createButtonCell('View', {
                             align: 'center',
                             widthWeight: 17,
                             onTap: async() => {
@@ -2019,7 +2020,7 @@ async function generateMainInfoTable(update = false) {
         if (caps && caps.length && (caps.includes('DOOR_LOCK_UNLOCK') || caps.includes('REMOTE_START') || caps.includes('REMOTE_PANIC_ALARM'))) {
             // Creates the Status & Remote Controls Header Row
             tableRows.push(
-                await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() })], {
+                await fpw.tables.createTableRow([await fpw.tables.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() })], {
                     height: 30,
                     isHeader: true,
                     dismissOnSelect: false,
@@ -2030,33 +2031,33 @@ async function generateMainInfoTable(update = false) {
             // Generates the Lock Control Row
             if (caps.includes('DOOR_LOCK_UNLOCK')) {
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`${vData.lockStatus === 'LOCKED' ? 'lock_icon' : 'unlock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await fpClass.tables.createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', {
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`${vData.lockStatus === 'LOCKED' ? 'lock_icon' : 'unlock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await fpw.tables.createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', {
                                 align: 'left',
                                 widthWeight: 59,
-                                titleColor: new Color(fpClass.statics.colorMap.textColor1),
+                                titleColor: new Color(fpw.statics.colorMap.textColor1),
                                 subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'),
                                 titleFont: Font.headline(),
                                 subtitleFont: Font.subheadline(),
                             }),
-                            await fpClass.tables.createButtonCell('Unlock', {
+                            await fpw.tables.createButtonCell('Unlock', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Lock was pressed');
-                                    if (await fpClass.alertNotify.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
-                                        await fpClass.fordCommands.sendVehicleCmd('unlock');
+                                    if (await fpw.alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
+                                        await fpw.fordCommands.sendVehicleCmd('unlock');
                                     }
                                 },
                             }),
-                            await fpClass.tables.createButtonCell('Lock', {
+                            await fpw.tables.createButtonCell('Lock', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Lock was pressed');
-                                    await fpClass.fordCommands.sendVehicleCmd('lock');
+                                    await fpw.fordCommands.sendVehicleCmd('lock');
                                 },
                             }),
                         ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
@@ -2067,25 +2068,25 @@ async function generateMainInfoTable(update = false) {
             // Generates the Remote Start Control Row
             if (caps.includes('REMOTE_START')) {
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await fpClass.tables.createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 59, titleColor: new Color(fpClass.statics.colorMap.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
-                            await fpClass.tables.createButtonCell('Stop', {
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await fpw.tables.createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 59, titleColor: new Color(fpw.statics.colorMap.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await fpw.tables.createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Stop was pressed');
-                                    await fpClass.fordCommands.sendVehicleCmd('stop');
+                                    await fpw.fordCommands.sendVehicleCmd('stop');
                                 },
                             }),
-                            await fpClass.tables.createButtonCell('Start', {
+                            await fpw.tables.createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Start was pressed');
-                                    if (await fpClass.alertNotify.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
-                                        await fpClass.fordCommands.sendVehicleCmd('start');
+                                    if (await fpw.alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
+                                        await fpw.fordCommands.sendVehicleCmd('start');
                                     }
                                 },
                             }),
@@ -2097,18 +2098,18 @@ async function generateMainInfoTable(update = false) {
             // Generates the Horn/Lights Control Row
             if (caps.includes('REMOTE_PANIC_ALARM')) {
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await fpClass.tables.createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 76, titleColor: new Color(fpClass.statics.colorMap.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await fpw.tables.createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 76, titleColor: new Color(fpw.statics.colorMap.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
 
-                            await fpClass.tables.createButtonCell('Start', {
+                            await fpw.tables.createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Horn/Lights was pressed');
-                                    if (await fpClass.alertNotify.showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
-                                        await fpClass.fordCommands.sendVehicleCmd('horn_and_lights');
+                                    if (await fpw.alerts.showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
+                                        await fpw.fordCommands.sendVehicleCmd('horn_and_lights');
                                     }
                                 },
                             }),
@@ -2122,7 +2123,7 @@ async function generateMainInfoTable(update = false) {
         if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES' || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT'))) {
             // Creates the Advanced Controls Header Text
             tableRows.push(
-                await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() })], {
+                await fpw.tables.createTableRow([await fpw.tables.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() })], {
                     height: 30,
                     isHeader: true,
                     dismissOnSelect: false,
@@ -2133,25 +2134,25 @@ async function generateMainInfoTable(update = false) {
             // Generates the SecuriAlert Control Row
             if (caps.includes('GUARD_MODE')) {
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await fpClass.tables.createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 59, titleColor: new Color(fpClass.statics.colorMap.textColor1), subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
-                            await fpClass.tables.createButtonCell('Enable', {
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await fpw.tables.createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 59, titleColor: new Color(fpw.statics.colorMap.textColor1), subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await fpw.tables.createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) SecuriAlert Enable was pressed');
-                                    await fpClass.fordCommands.sendVehicleCmd('guard_mode_on');
+                                    await fpw.fordCommands.sendVehicleCmd('guard_mode_on');
                                 },
                             }),
-                            await fpClass.tables.createButtonCell('Disable', {
+                            await fpw.tables.createButtonCell('Disable', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) SecuriAlert Disable was pressed');
-                                    if (await fpClass.alertNotify.showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
-                                        await fpClass.fordCommands.sendVehicleCmd('guard_mode_off');
+                                    if (await fpw.alerts.showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
+                                        await fpw.fordCommands.sendVehicleCmd('guard_mode_off');
                                     }
                                 },
                             }),
@@ -2163,22 +2164,22 @@ async function generateMainInfoTable(update = false) {
             // Generates the Zone Lighting Control Row
             if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES')) {
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await fpClass.tables.createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 59, titleColor: new Color(fpClass.statics.colorMap.textColor1), subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
-                            await fpClass.tables.createButtonCell('Enable', {
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await fpw.tables.createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 59, titleColor: new Color(fpw.statics.colorMap.textColor1), subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                            await fpw.tables.createButtonCell('Enable', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Zone Lighting On Button was pressed');
-                                    fpClass.alertNotify.showActionPrompt(
+                                    fpw.alerts.showActionPrompt(
                                         'Zone Lighting On Menu',
                                         undefined, [{
                                                 title: 'Front Zone',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone Front On was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_front_on');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_front_on');
                                                 },
                                                 destructive: false,
                                                 show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -2187,7 +2188,7 @@ async function generateMainInfoTable(update = false) {
                                                 title: 'Rear Zone',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone Rear On was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_rear_on');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_rear_on');
                                                 },
                                                 destructive: false,
                                                 show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -2196,7 +2197,7 @@ async function generateMainInfoTable(update = false) {
                                                 title: 'Left Zone',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone Left On was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_left_on');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_left_on');
                                                 },
                                                 destructive: false,
                                                 show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -2205,7 +2206,7 @@ async function generateMainInfoTable(update = false) {
                                                 title: 'Right Zone',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone Right On was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_right_on');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_right_on');
                                                 },
                                                 destructive: false,
                                                 show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -2214,7 +2215,7 @@ async function generateMainInfoTable(update = false) {
                                                 title: 'All Zones',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone All On was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_all_on');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_all_on');
                                                 },
                                                 destructive: false,
                                                 show: true,
@@ -2224,18 +2225,18 @@ async function generateMainInfoTable(update = false) {
                                     );
                                 },
                             }),
-                            await fpClass.tables.createButtonCell('Disable', {
+                            await fpw.tables.createButtonCell('Disable', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Zone Lighting Off Button was pressed');
-                                    fpClass.alertNotify.showActionPrompt(
+                                    fpw.alerts.showActionPrompt(
                                         'Zone Lighting Off',
                                         undefined, [{
                                                 title: 'Front Zone',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone Front Off was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_front_off');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_front_off');
                                                 },
                                                 destructive: false,
                                                 show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -2244,7 +2245,7 @@ async function generateMainInfoTable(update = false) {
                                                 title: 'Rear Zone',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone Rear Off was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_rear_off');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_rear_off');
                                                 },
                                                 destructive: false,
                                                 show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -2253,7 +2254,7 @@ async function generateMainInfoTable(update = false) {
                                                 title: 'Left Zone',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone Left Off was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_left_off');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_left_off');
                                                 },
                                                 destructive: false,
                                                 show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -2262,7 +2263,7 @@ async function generateMainInfoTable(update = false) {
                                                 title: 'Right Zone',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone Right Off was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_right_off');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_right_off');
                                                 },
                                                 destructive: false,
                                                 show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -2271,7 +2272,7 @@ async function generateMainInfoTable(update = false) {
                                                 title: 'All Zones',
                                                 action: async() => {
                                                     console.log(`(Dashboard) Zone All Off was pressed`);
-                                                    await fpClass.fordCommands.sendVehicleCmd('zone_lights_all_off');
+                                                    await fpw.fordCommands.sendVehicleCmd('zone_lights_all_off');
                                                 },
                                                 destructive: false,
                                                 show: true,
@@ -2289,33 +2290,33 @@ async function generateMainInfoTable(update = false) {
             // Generates the Trailer Light Check Control Row
             if (caps.includes('TRAILER_LIGHT')) {
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await fpClass.tables.createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, {
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await fpw.tables.createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, {
                                 align: 'left',
                                 widthWeight: 59,
-                                titleColor: new Color(fpClass.statics.colorMap.textColor1),
+                                titleColor: new Color(fpw.statics.colorMap.textColor1),
                                 subtitleColor: new Color(vData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'),
                                 titleFont: Font.headline(),
                                 subtitleFont: Font.subheadline(),
                             }),
-                            await fpClass.tables.createButtonCell('Start', {
+                            await fpw.tables.createButtonCell('Start', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Trailer Light Check Start was pressed');
-                                    if (await fpClass.alertNotify.showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
-                                        await fpClass.fordCommands.sendVehicleCmd('trailer_light_check_on');
+                                    if (await fpw.alerts.showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
+                                        await fpw.fordCommands.sendVehicleCmd('trailer_light_check_on');
                                     }
                                 },
                             }),
-                            await fpClass.tables.createButtonCell('Stop', {
+                            await fpw.tables.createButtonCell('Stop', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) Trailer Light Check Stop was pressed');
-                                    await fpClass.fordCommands.sendVehicleCmd('trailer_light_check_off');
+                                    await fpw.fordCommands.sendVehicleCmd('trailer_light_check_off');
                                 },
                             }),
                         ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
@@ -2327,12 +2328,12 @@ async function generateMainInfoTable(update = false) {
         console.error(`Error in generateMainInfoTable: ${err}`);
     }
 
-    await fpClass.tables.generateTableMenu('main', tableRows, false, isPhone, update);
+    await fpw.tables.generateTableMenu('main', tableRows, false, fpw.isPhone, update);
     if (!update) {
-        let lastVersion = await fpClass.kc.getKeychainValue('fpScriptVersion');
+        let lastVersion = await fpw.kc.getKeychainValue('fpScriptVersion');
         if (lastVersion !== SCRIPT_VERSION) {
             await generateRecentChangesTable();
-            await fpClass.kc.setKeychainValue('fpScriptVersion', SCRIPT_VERSION);
+            await fpw.kc.setKeychainValue('fpScriptVersion', SCRIPT_VERSION);
         }
     }
 }
@@ -2343,17 +2344,17 @@ async function generateAlertsTable(vData) {
 
     let tableRows = [];
     if (vhaAlerts.length > 0) {
-        tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`Vehicle Health Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() })], { height: 20, isHeader: true, dismissOnSelect: false }));
+        tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell(`Vehicle Health Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() })], { height: 20, isHeader: true, dismissOnSelect: false }));
         for (const [i, alert] of vhaAlerts.entries()) {
-            let dtTS = alert.eventTimeStamp ? fpClass.utils.convertFordDtToLocal(alert.eventTimeStamp) : undefined;
+            let dtTS = alert.eventTimeStamp ? fpw.utils.convertFordDtToLocal(alert.eventTimeStamp) : undefined;
             tableRows.push(
-                await fpClass.tables.createTableRow(
+                await fpw.tables.createTableRow(
                     [
-                        await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                        await fpClass.tables.createTextCell(alert.activeAlertBody.headline || fpClass.statics.textMap().errorMessages.noData, dtTS ? fpClass.utils.timeDifference(dtTS) : '', {
+                        await fpw.tables.createImageCell(await fpw.files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                        await fpw.tables.createTextCell(alert.activeAlertBody.headline || fpw.statics.textMap().errorMessages.noData, dtTS ? fpw.utils.timeDifference(dtTS) : '', {
                             align: 'left',
                             widthWeight: 93,
-                            titleColor: new Color(fpClass.tables.getAlertColorByCode(alert.colorCode)),
+                            titleColor: new Color(fpw.tables.getAlertColorByCode(alert.colorCode)),
                             titleFont: Font.headline(),
                             subtitleColor: Color.darkGray(),
                             subtitleFont: Font.regularSystemFont(9),
@@ -2365,34 +2366,32 @@ async function generateAlertsTable(vData) {
     }
 
     if (otaAlerts.length > 0) {
-        tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], { height: 20, dismissOnSelect: false }));
-        tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`OTA Update Alerts`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() })], { height: 20, isHeader: true, dismissOnSelect: false }));
+        tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], { height: 20, dismissOnSelect: false }));
+        tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell(`OTA Update Alerts`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() })], { height: 20, isHeader: true, dismissOnSelect: false }));
         for (const [i, alert] of otaAlerts.entries()) {
-            let dtTS = alert.vehicleDate && alert.vehicleTime ? fpClass.utils.convertFordDtToLocal(`${alert.vehicleDate} ${alert.vehicleTime}`) : undefined;
-            let timeDiff = dtTS ? fpClass.utils.timeDifference(dtTS) : '';
+            let dtTS = alert.vehicleDate && alert.vehicleTime ? fpw.utils.convertFordDtToLocal(`${alert.vehicleDate} ${alert.vehicleTime}`) : undefined;
+            let timeDiff = dtTS ? fpw.utils.timeDifference(dtTS) : '';
             let title = alert.alertIdentifier ? alert.alertIdentifier.replace('MMOTA_', '').split('_').join(' ') : undefined;
 
             let releaseNotes;
             if (alert.releaseNotesUrl) {
-                let locale = (await fpClass.kc.getKeychainValue('fpLanguage')) || Device.locale().replace('_', '-');
-                releaseNotes = await fpClass.utils.getReleaseNotes(alert.releaseNotesUrl, locale);
+                let locale = (await fpw.kc.getKeychainValue('fpLanguage')) || Device.locale().replace('_', '-');
+                releaseNotes = await fpw.utils.getReleaseNotes(alert.releaseNotesUrl, locale);
             }
             tableRows.push(
-                await fpClass.tables.createTableRow(
+                await fpw.tables.createTableRow(
                     [
-                        await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
-                        await fpClass.tables.createTextCell(title, timeDiff, { align: 'left', widthWeight: 93, titleColor: new Color(fpClass.tables.getAlertColorByCode(alert.colorCode)), titleFont: Font.headline(), subtitleColor: Color.darkGray(), subtitleFont: Font.regularSystemFont(9) }),
+                        await fpw.tables.createImageCell(await fpw.files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
+                        await fpw.tables.createTextCell(title, timeDiff, { align: 'left', widthWeight: 93, titleColor: new Color(fpw.tables.getAlertColorByCode(alert.colorCode)), titleFont: Font.headline(), subtitleColor: Color.darkGray(), subtitleFont: Font.regularSystemFont(9) }),
                     ], { height: 44, dismissOnSelect: false },
                 ),
             );
 
-            tableRows.push(
-                await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(releaseNotes, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.regularSystemFont(12) })], { height: fpClass.tables.getRowHeightByTxtLength(releaseNotes), dismissOnSelect: false }),
-            );
+            tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell(releaseNotes, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.regularSystemFont(12) })], { height: fpw.tables.getRowHeightByTxtLength(releaseNotes), dismissOnSelect: false }));
         }
     }
 
-    await fpClass.tables.generateTableMenu('alerts', tableRows, false, false);
+    await fpw.tables.generateTableMenu('alerts', tableRows, false, false);
 }
 
 async function generateRecallsTable(vData) {
@@ -2401,29 +2400,29 @@ async function generateRecallsTable(vData) {
         let tableRows = [];
 
         if (recalls.length > 0) {
-            tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`Vehicle Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+            tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell(`Vehicle Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
             for (const [i, recall] of recalls.entries()) {
                 let dtTS = recall.nhtsaInfo && recall.nhtsaInfo.recallDate ? new Date(Date.parse(recall.nhtsaInfo.recallDate)) : undefined;
                 let dateStr = dtTS ? dtTS.toLocaleDateString() : undefined;
-                let timeDiff = dtTS ? fpClass.utils.timeDifference(dtTS) : '';
+                let timeDiff = dtTS ? fpw.utils.timeDifference(dtTS) : '';
                 let timestamp = `${dateStr ? ' - ' + dateStr : ''}${timeDiff ? ' (' + timeDiff + ')' : ''}`;
                 let recallType = recall.type ? `${recall.type}` : '';
                 let recallId = recall.id ? `${recallType.length ? '\n' : ''}Recall ID: ${recall.id}` : '';
                 let titleSub = `${recallType}${recallId}${timestamp}`;
 
                 // Creates Recall Header Rows
-                tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: new Color('#E96C00'), height: 10, dismissOnSelect: false }));
+                tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: new Color('#E96C00'), height: 10, dismissOnSelect: false }));
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 6 }),
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 6 }),
 
-                            await fpClass.tables.createTextCell(recall.title, titleSub, {
+                            await fpw.tables.createTextCell(recall.title, titleSub, {
                                 align: 'left',
                                 widthWeight: 94,
-                                titleColor: new Color(fpClass.statics.colorMap.textColor1),
+                                titleColor: new Color(fpw.statics.colorMap.textColor1),
                                 titleFont: Font.headline(),
-                                subtitleColor: new Color(fpClass.statics.colorMap.textColor1),
+                                subtitleColor: new Color(fpw.statics.colorMap.textColor1),
                                 subtitleFont: Font.regularSystemFont(10),
                             }),
                         ], { height: 50, dismissOnSelect: false },
@@ -2433,19 +2432,17 @@ async function generateRecallsTable(vData) {
                 // Creates Recall Safety Description Row
                 if (recall.nhtsaInfo && recall.nhtsaInfo.safetyDescription) {
                     tableRows.push(
-                        await fpClass.tables.createTableRow(
-                            [await fpClass.tables.createTextCell('Safety Description', recall.nhtsaInfo.safetyDescription, { align: 'left', widthWeight: 100, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
-                                height: fpClass.tables.getRowHeightByTxtLength(recall.nhtsaInfo.safetyDescription),
-                                dismissOnSelect: false,
-                            },
-                        ),
+                        await fpw.tables.createTableRow([await fpw.tables.createTextCell('Safety Description', recall.nhtsaInfo.safetyDescription, { align: 'left', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                            height: fpw.tables.getRowHeightByTxtLength(recall.nhtsaInfo.safetyDescription),
+                            dismissOnSelect: false,
+                        }),
                     );
                 }
                 // Creates Recall Remedy Program Row
                 if (recall.nhtsaInfo && recall.nhtsaInfo.remedyProgram) {
                     tableRows.push(
-                        await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('Remedy Program', recall.nhtsaInfo.remedyProgram, { align: 'left', widthWeight: 100, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
-                            height: fpClass.tables.getRowHeightByTxtLength(recall.nhtsaInfo.remedyProgram),
+                        await fpw.tables.createTableRow([await fpw.tables.createTextCell('Remedy Program', recall.nhtsaInfo.remedyProgram, { align: 'left', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                            height: fpw.tables.getRowHeightByTxtLength(recall.nhtsaInfo.remedyProgram),
                             dismissOnSelect: false,
                         }),
                     );
@@ -2453,32 +2450,30 @@ async function generateRecallsTable(vData) {
                 // Creates Recall Manufacturer Notes Row
                 if (recall.nhtsaInfo && recall.nhtsaInfo.manufacturerNotes) {
                     tableRows.push(
-                        await fpClass.tables.createTableRow(
-                            [await fpClass.tables.createTextCell('Manufacturer Notes', recall.nhtsaInfo.manufacturerNotes, { align: 'left', widthWeight: 100, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
-                                height: fpClass.tables.getRowHeightByTxtLength(recall.nhtsaInfo.manufacturerNotes),
-                                dismissOnSelect: false,
-                            },
-                        ),
+                        await fpw.tables.createTableRow([await fpw.tables.createTextCell('Manufacturer Notes', recall.nhtsaInfo.manufacturerNotes, { align: 'left', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                            height: fpw.tables.getRowHeightByTxtLength(recall.nhtsaInfo.manufacturerNotes),
+                            dismissOnSelect: false,
+                        }),
                     );
                 }
                 // Creates a blank row
-                tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('', undefined, { align: 'left', widthWeight: 30 })]));
+                tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell('', undefined, { align: 'left', widthWeight: 30 })]));
             }
         } else {
             tableRows.push(
-                await fpClass.tables.createTableRow(
+                await fpw.tables.createTableRow(
                     [
-                        await fpClass.tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
-                        await fpClass.tables.createTextCell(`${recalls.length} Recalls(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() }),
-                        await fpClass.tables.createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
+                        await fpw.tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
+                        await fpw.tables.createTextCell(`${recalls.length} Recalls(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() }),
+                        await fpw.tables.createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
                     ], { height: 44, dismissOnSelect: false },
                 ),
             );
 
-            tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(fpClass.statics.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.body() })], { height: 44, dismissOnSelect: false }));
+            tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell(fpw.statics.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.body() })], { height: 44, dismissOnSelect: false }));
         }
 
-        await fpClass.tables.generateTableMenu('recalls', tableRows, false, false);
+        await fpw.tables.generateTableMenu('recalls', tableRows, false, false);
     } catch (err) {
         console.log(`error in generateRecallsTable: ${err}`);
     }
@@ -2493,30 +2488,30 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
 
         if (msgs.length > 0) {
             tableRows.push(
-                await fpClass.tables.createTableRow(
+                await fpw.tables.createTableRow(
                     [
-                        await fpClass.tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
-                        await fpClass.tables.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() }),
-                        await fpClass.tables.createTextCell('All', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
+                        await fpw.tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
+                        await fpw.tables.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() }),
+                        await fpw.tables.createTextCell('All', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
                     ], {
                         height: 40,
                         dismissOnSelect: false,
                         onSelect: async() => {
                             console.log(`(Messages Table) All Message Options was pressed`);
                             let msgIds = msgs.map((msg) => msg.messageId);
-                            fpClass.alerts.showActionPrompt(
+                            fpw.alerts.showActionPrompt(
                                 'All Message Options',
                                 undefined, [{
                                         title: 'Mark All Read',
                                         action: async() => {
                                             console.log(`(Messages Table) Mark All Messages Read was pressed`);
-                                            let ok = await fpClass.alerts.showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?`, `Mark (${msgIds.length}) Read`, true);
+                                            let ok = await fpw.alerts.showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?`, `Mark (${msgIds.length}) Read`, true);
                                             if (ok) {
                                                 console.log(`(Messages Table) Marking ${msgIds.length} Messages as Read`);
-                                                if (await fpClass.fordRequests.markMultipleUserMessagesRead(msgIds)) {
+                                                if (await fpw.fordRequests.markMultipleUserMessagesRead(msgIds)) {
                                                     console.log(`(Messages Table) Marked (${msgIds.length}) Messages as Read Successfully`);
-                                                    fpClass.alerts.showAlert('Marked Messages as Read Successfully', 'Message List will reload after data is refeshed');
-                                                    await generateMessagesTable(await fpClass.fordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                    fpw.alerts.showAlert('Marked Messages as Read Successfully', 'Message List will reload after data is refeshed');
+                                                    await generateMessagesTable(await fpw.fordRequests.fetchVehicleData(false), unreadOnly, true);
                                                     generateMainInfoTable(true);
                                                 }
                                             }
@@ -2528,13 +2523,13 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
                                         title: 'Delete All',
                                         action: async() => {
                                             console.log(`(Messages Table) Delete All Messages was pressed`);
-                                            let ok = await fpClass.alerts.showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?', `Delete (${msgIds.length}) Messages`, true);
+                                            let ok = await fpw.alerts.showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?', `Delete (${msgIds.length}) Messages`, true);
                                             if (ok) {
                                                 console.log(`(Messages Table) Deleting ${msgIds.length} Messages`);
-                                                if (await fpClass.fordRequests.deleteUserMessages([msg.messageId])) {
+                                                if (await fpw.fordRequests.deleteUserMessages([msg.messageId])) {
                                                     console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
-                                                    fpClass.alerts.showAlert('Deleted Messages Successfully', 'Message List will reload after data is refeshed');
-                                                    await generateMessagesTable(await fpClass.fordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                    fpw.alerts.showAlert('Deleted Messages Successfully', 'Message List will reload after data is refeshed');
+                                                    await generateMessagesTable(await fpw.fordRequests.fetchVehicleData(false), unreadOnly, true);
                                                     generateMainInfoTable(true);
                                                 }
                                             }
@@ -2554,26 +2549,26 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
             );
 
             for (const [i, msg] of msgs.entries()) {
-                let dtTS = msg.createdDate ? fpClass.utils.convertFordDtToLocal(msg.createdDate) : undefined;
-                let timeDiff = dtTS ? fpClass.utils.timeDifference(dtTS) : '';
+                let dtTS = msg.createdDate ? fpw.utils.convertFordDtToLocal(msg.createdDate) : undefined;
+                let timeDiff = dtTS ? fpw.utils.timeDifference(dtTS) : '';
                 let timeSubtitle = `${dtTS ? dtTS.toLocaleString() : ''}${timeDiff ? ` (${timeDiff})` : ''}`;
 
                 // Creates Message Header Row
-                tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), height: 10, dismissOnSelect: false }));
+                tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), height: 10, dismissOnSelect: false }));
                 tableRows.push(
-                    await fpClass.tables.createTableRow(
+                    await fpw.tables.createTableRow(
                         [
-                            await fpClass.tables.createImageCell(await fpClass.files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 10 }),
-                            await fpClass.tables.createTextCell(fpClass.tables.getMessageDescByType(msg.messageType), undefined, { align: 'left', widthWeight: 55, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.body() }),
-                            await fpClass.tables.createTextCell(msg.isRead === false ? 'Unread' : 'Read', undefined, { align: 'right', widthWeight: 25, titleColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), titleFont: Font.body() }),
-                            await fpClass.tables.createTextCell('...', undefined, { align: 'right', widthWeight: 10, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
+                            await fpw.tables.createImageCell(await fpw.files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 10 }),
+                            await fpw.tables.createTextCell(fpw.tables.getMessageDescByType(msg.messageType), undefined, { align: 'left', widthWeight: 55, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.body() }),
+                            await fpw.tables.createTextCell(msg.isRead === false ? 'Unread' : 'Read', undefined, { align: 'right', widthWeight: 25, titleColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), titleFont: Font.body() }),
+                            await fpw.tables.createTextCell('...', undefined, { align: 'right', widthWeight: 10, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
                         ],
                         {
                             height: 40,
                             dismissOnSelect: false,
                             onSelect: async () => {
                                 console.log(`(Messages Table) Message Options button was pressed for ${msg.messageId}`);
-                                fpClass.alerts.showActionPrompt(
+                                fpw.alerts.showActionPrompt(
                                     'Message Options',
                                     undefined,
                                     [
@@ -2581,10 +2576,10 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
                                             title: 'Mark as Read',
                                             action: async () => {
                                                 console.log(`(Messages Table) Marking Message with ID: ${msg.messageId} as Read...`);
-                                                if (await fpClass.fordRequests.markMultipleUserMessagesRead([msg.messageId])) {
+                                                if (await fpw.fordRequests.markMultipleUserMessagesRead([msg.messageId])) {
                                                     console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
-                                                    fpClass.alerts.showAlert('Message marked read successfully', 'Message List will reload after data is refeshed');
-                                                    await generateMessagesTable(await fpClass.fordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                    fpw.alerts.showAlert('Message marked read successfully', 'Message List will reload after data is refeshed');
+                                                    await generateMessagesTable(await fpw.fordRequests.fetchVehicleData(false), unreadOnly, true);
                                                     generateMainInfoTable(true);
                                                 }
                                             },
@@ -2595,13 +2590,13 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
                                             title: 'Delete Message',
                                             action: async () => {
                                                 console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
-                                                let ok = await fpClass.alerts.showPrompt('Delete Message', 'Are you sure you want to delete this message?', 'Delete', true);
+                                                let ok = await fpw.alerts.showPrompt('Delete Message', 'Are you sure you want to delete this message?', 'Delete', true);
                                                 if (ok) {
                                                     console.log(`(Messages Table) Delete Confirmed for Message ID: ${msg.messageId}`);
-                                                    if (await fpClass.fordRequests.deleteUserMessages([msg.messageId])) {
+                                                    if (await fpw.fordRequests.deleteUserMessages([msg.messageId])) {
                                                         console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
-                                                        fpClass.alerts.showAlert('Message deleted successfully', 'Message List will reload after data is refeshed');
-                                                        await generateMessagesTable(await fpClass.fordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                        fpw.alerts.showAlert('Message deleted successfully', 'Message List will reload after data is refeshed');
+                                                        await generateMessagesTable(await fpw.fordRequests.fetchVehicleData(false), unreadOnly, true);
                                                         generateMainInfoTable(true);
                                                         up;
                                                     } else {
@@ -2625,29 +2620,29 @@ async function generateMessagesTable(vData, unreadOnly = false, update = false) 
 
                 // Creates Message Subject Row
                 tableRows.push(
-                    await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(msg.messageSubject, timeSubtitle, { align: 'left', widthWeight: 100, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                    await fpw.tables.createTableRow([await fpw.tables.createTextCell(msg.messageSubject, timeSubtitle, { align: 'left', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
                         height: 44,
                         dismissOnSelect: false,
                     }),
                 );
 
                 // Creates Message Subject and Body Row
-                tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.body() })], { height: fpClass.tables.getRowHeightByTxtLength(msg.messageBody), dismissOnSelect: false }));
+                tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.body() })], { height: fpw.tables.getRowHeightByTxtLength(msg.messageBody), dismissOnSelect: false }));
             }
         } else {
             tableRows.push(
-                await fpClass.tables.createTableRow(
+                await fpw.tables.createTableRow(
                     [
-                        await fpClass.tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
-                        await fpClass.tables.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title2() }),
-                        await fpClass.tables.createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
+                        await fpw.tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
+                        await fpw.tables.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title2() }),
+                        await fpw.tables.createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
                     ],
                     { height: 44, dismissOnSelect: false },
                 ),
             );
-            tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(fpClass.statics.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
+            tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell(fpw.statics.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
         }
-        await fpClass.tables.generateTableMenu('messages', tableRows, false, isPhone, update);
+        await fpw.tables.generateTableMenu('messages', tableRows, false, fpw.isPhone, update);
     } catch (e) {
         console.error(`generateMessagesTable() error: ${e}`);
     }
@@ -2664,7 +2659,7 @@ function getChangeLabelColorAndNameByType(type) {
         case 'fixed':
             return { name: 'Fixed', color: new Color('#b605fc') };
         default:
-            return { name: '', color: new Color(fpClass.statics.colorMap.textColor1) };
+            return { name: '', color: new Color(fpw.statics.colorMap.textColor1) };
     }
 }
 
@@ -2674,7 +2669,7 @@ async function generateRecentChangesTable() {
     if (changes && (changes.updated.length || changes.added.length || changes.removed.length || changes.fixed.length)) {
         let verTs = new Date(Date.parse(SCRIPT_TS));
         tableRows.push(
-            await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`${SCRIPT_VERSION} Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title1() })], {
+            await fpw.tables.createTableRow([await fpw.tables.createTextCell(`${SCRIPT_VERSION} Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title1() })], {
                 height: 50,
                 isHeader: true,
                 dismissOnSelect: false,
@@ -2685,7 +2680,7 @@ async function generateRecentChangesTable() {
                 console.log(`(Whats New Table) ${type} changes: ${changes[type].length}`);
                 let { name, color } = getChangeLabelColorAndNameByType(type);
                 tableRows.push(
-                    await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`${name}`, undefined, { align: 'left', widthWeight: 100, titleColor: color, titleFont: Font.title2() })], {
+                    await fpw.tables.createTableRow([await fpw.tables.createTextCell(`${name}`, undefined, { align: 'left', widthWeight: 100, titleColor: color, titleFont: Font.title2() })], {
                         height: 30,
                         dismissOnSelect: false,
                     }),
@@ -2694,7 +2689,7 @@ async function generateRecentChangesTable() {
                     console.log(`(Whats New Table) ${type} change: ${change}`);
                     let rowH = Math.ceil(change.length / 70) * (65 / 2);
                     tableRows.push(
-                        await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`\u2022 ${change}`, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.body() })], {
+                        await fpw.tables.createTableRow([await fpw.tables.createTextCell(`\u2022 ${change}`, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.body() })], {
                             height: rowH < 40 ? 40 : rowH,
                             dismissOnSelect: false,
                         }),
@@ -2703,24 +2698,24 @@ async function generateRecentChangesTable() {
             }
         }
     } else {
-        tableRows.push(await fpClass.tables.createTableRow([await fpClass.tables.createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
+        tableRows.push(await fpw.tables.createTableRow([await fpw.tables.createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
     }
 
-    await fpClass.tables.generateTableMenu('recentChanges', tableRows, false, false);
+    await fpw.tables.generateTableMenu('recentChanges', tableRows, false, false);
 }
 
 async function widgetStyleSelector() {
-    let widgetStyle = await fpClass.kc.getWidgetStyle();
+    let widgetStyle = await fpw.kc.getWidgetStyle();
     // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
     let tableRows = [];
     tableRows.push(
-        await fpClass.tables.createTableRow(
+        await fpw.tables.createTableRow(
             [
-                await fpClass.tables.createTextCell(`Widget Styles`, `This page will show an example of each widget size and type\nTap on type to set it.`, {
+                await fpw.tables.createTextCell(`Widget Styles`, `This page will show an example of each widget size and type\nTap on type to set it.`, {
                     align: 'center',
                     widthWeight: 1,
                     dismissOnTap: false,
-                    titleColor: new Color(fpClass.statics.colorMap.textColor1),
+                    titleColor: new Color(fpw.statics.colorMap.textColor1),
                     titleFont: Font.title1(),
                     subtitleColor: Color.lightGray(),
                     subtitleFont: Font.mediumSystemFont(11),
@@ -2734,7 +2729,7 @@ async function widgetStyleSelector() {
     );
     for (const [i, size] of ['small', 'medium'].entries()) {
         tableRows.push(
-            await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(`${fpClass.utils.capitalizeStr(size)}`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.title3() })], {
+            await fpw.tables.createTableRow([await fpw.tables.createTextCell(`${fpw.utils.capitalizeStr(size)}`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.title3() })], {
                 height: 30,
                 isHeader: true,
                 dismissOnSelect: false,
@@ -2743,11 +2738,11 @@ async function widgetStyleSelector() {
         for (const [i, style] of ['simple', 'detailed'].entries()) {
             // console.log(`Style: ${style} | Image: ${size}_${style}.png`);
             tableRows.push(
-                await fpClass.tables.createTableRow(
+                await fpw.tables.createTableRow(
                     [
-                        await fpClass.tables.createTextCell(`(${fpClass.utils.capitalizeStr(style)})`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: new Color(fpClass.statics.colorMap.textColor1), titleFont: Font.subheadline() }),
-                        await fpClass.tables.createImageCell(await fpClass.files.getImage(`${size}_${style}.png`), { align: 'center', widthWeight: 60 }),
-                        await fpClass.tables.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
+                        await fpw.tables.createTextCell(`(${fpw.utils.capitalizeStr(style)})`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: new Color(fpw.statics.colorMap.textColor1), titleFont: Font.subheadline() }),
+                        await fpw.tables.createImageCell(await fpw.files.getImage(`${size}_${style}.png`), { align: 'center', widthWeight: 60 }),
+                        await fpw.tables.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
                     ],
                     {
                         height: 150,
@@ -2755,7 +2750,7 @@ async function widgetStyleSelector() {
                         backgroundColor: widgetStyle === style ? Color.lightGray() : undefined,
                         onSelect: async () => {
                             console.log(`Setting WidgetStyle to ${style}`);
-                            await fpClass.kc.setWidgetStyle(style);
+                            await fpw.kc.setWidgetStyle(style);
                             widgetStyleSelector(size);
                         },
                     },
@@ -2763,12 +2758,64 @@ async function widgetStyleSelector() {
             );
         }
         tableRows.push(
-            await fpClass.tables.createTableRow([await fpClass.tables.createTextCell(``, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false })], {
+            await fpw.tables.createTableRow([await fpw.tables.createTextCell(``, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false })], {
                 height: 30,
                 dismissOnSelect: false,
             }),
         );
     }
 
-    await fpClass.tables.generateTableMenu('widgetStyles', tableRows, false, false);
+    await fpw.tables.generateTableMenu('widgetStyles', tableRows, false, false);
+}
+
+async function checkModules() {
+    const fm = FileManager.iCloud();
+    // Load the modules
+    const modules = [
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Class.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Alerts.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Files.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordCommands.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordRequests.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Keychain.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Menus.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Notifications.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Statics.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Utils.js',
+    ];
+    let available = [];
+    try {
+        const modulePath = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
+        if (!(await fm.isDirectory(modulePath))) {
+            console.log('Creating FPWModules directory...');
+            await fm.createDirectory(modulePath);
+        }
+        for (const [i, module] of modules.entries()) {
+            let url = widgetConfig.useBetaModules ? module.replace('main', 'beta') : module;
+            const fileName = url.substring(url.lastIndexOf('/') + 1);
+            const filePath = fm.joinPath(modulePath, fileName);
+            // console.log(filePath);
+            if (!(await fm.fileExists(filePath))) {
+                let req = new Request(url);
+                let code = await req.loadString();
+                available.push(fileName);
+                let codeToStore = Data.fromString(`//This module was downloaded using FordWidgetTool.\n\n${code}`);
+                console.log(`Required Module Missing... Downloading ${fileName}`);
+                await fm.write(filePath, codeToStore);
+            } else {
+                available.push(fileName);
+            }
+        }
+        // return;
+        if (available.length === modules.length) {
+            console.log(`All Required Modules (${modules.length}) Found!`);
+            // return importModule(fm.joinPath(modulePath, 'FPW_Class.js'));
+        }
+    } catch (error) {
+        console.error(`(checkModules) ${error}`);
+        return undefined;
+    }
 }

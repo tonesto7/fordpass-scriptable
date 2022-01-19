@@ -10,16 +10,27 @@ const FPW_Files = importModule('/FPWModules/FPW_Files.js'),
     FPW_ShortcutParser = importModule('/FPWModules/FPW_ShortcutParser.js'),
     FPW_Menus = importModule('/FPWModules/FPW_Menus.js');
 
-module.exports = class FPW_Class {
+module.exports = class FPW {
     constructor(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig) {
         // console.log(`FPW_Utils.js: constructor()`);
+        this.SCRIPT_NAME = 'Fordpass Widget';
         this.SCRIPT_ID = SCRIPT_ID;
         this.SCRIPT_VERSION = SCRIPT_VERSION;
         this.SCRIPT_TS = SCRIPT_TS;
+        //************************************************************************* */
+        //*                  Device Detail Functions
+        //************************************************************************* */
+        this.screenSize = Device.screenResolution();
+        this.isSmallDisplay = this.screenSize.width < 1200 === true;
+        this.darkMode = Device.isUsingDarkAppearance();
+        this.runningWidgetSize = config.widgetFamily;
+        this.isPhone = Device.isPhone();
+        this.isPad = Device.isPad();
+        this.deviceModel = Device.model();
+        this.deviceSystemVersion = Device.systemVersion();
         this.widgetConfig = widgetConfig;
         this.statics = importModule('FPW_Statics.js');
         this.timers = this.loadTimers();
-        this.tables = this.loadTables();
         this.alerts = this.loadAlerts();
         this.notifications = this.loadNotifications();
         this.shortcutParser = this.loadShortcutParser();
@@ -28,6 +39,7 @@ module.exports = class FPW_Class {
         this.utils = this.loadUtils();
         this.fordRequests = this.loadFordRequests();
         this.fordCommands = this.loadFordCommands();
+        this.tables = this.loadTables();
         this.menus = this.loadMenus();
     }
 

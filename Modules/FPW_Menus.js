@@ -1,12 +1,12 @@
 module.exports = class FPW_Menus {
-    constructor(fpClass) {
-        this.fpClass = fpClass;
-        this.SCRIPT_ID = fpClass.SCRIPT_ID;
-        this.widgetConfig = fpClass.widgetConfig;
-        this.kc = fpClass.kc;
-        this.statics = fpClass.statics;
-        this.fordRequests = fpClass.fordRequests;
-        this.alerts = fpClass.alerts;
-        this.timers = fpClass.timers;
+    constructor(fpw) {
+        this.fpw = fpw;
+        this.SCRIPT_ID = fpw.SCRIPT_ID;
+        this.widgetConfig = fpw.widgetConfig;
+        this.kc = fpw.kc;
+        this.statics = fpw.statics;
+        this.fordRequests = fpw.fordRequests;
+        this.alerts = fpw.alerts;
+        this.timers = fpw.timers;
     }
 };

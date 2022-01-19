@@ -1,8 +1,8 @@
 module.exports = class FPW_Files {
-    constructor(fpClass) {
-        this.fpClass = fpClass;
-        this.SCRIPT_ID = fpClass.SCRIPT_ID;
-        this.widgetConfig = fpClass.widgetConfig;
+    constructor(fpw) {
+        this.fpw = fpw;
+        this.SCRIPT_ID = fpw.SCRIPT_ID;
+        this.widgetConfig = fpw.widgetConfig;
     }
 
     async loadImage(imgUrl) {
@@ -28,7 +28,7 @@ module.exports = class FPW_Files {
     }
 
     async readLocalData() {
-        console.log('FileManager: Retrieving Vehicle Data from Local Cache...');
+        // console.log('FileManager: Retrieving Vehicle Data from Local Cache...');
         let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
         let fm = FileManager.local();
         let dir = fm.documentsDirectory();
@@ -97,8 +97,9 @@ module.exports = class FPW_Files {
                         imageUrl = 'https://i.imgur.com/hgYWYC0.png';
                         break;
                 }
-                console.log('ImageUrl: ' + imageUrl);
-                let iconImage = await loadImage(imageUrl);
+                const imgName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+                console.log('Downloading Image: ' + imgName);
+                let iconImage = await this.loadImage(imageUrl);
                 await fm.writeImage(path, iconImage);
                 return iconImage;
             }
@@ -111,7 +112,7 @@ module.exports = class FPW_Files {
     async getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false) {
         let fm = cloudStore ? FileManager.iCloud() : FileManager.local();
         let dir = fm.documentsDirectory();
-        let fileName = this.fpClass.SCRIPT_ID !== null && this.fpClass.SCRIPT_ID !== undefined && this.fpClass.SCRIPT_ID > 0 ? `vehicle-${angle}_${this.fpClass.SCRIPT_ID}.png` : `vehicle-${angle}.png`;
+        let fileName = this.fpw.SCRIPT_ID !== null && this.fpw.SCRIPT_ID !== undefined && this.fpw.SCRIPT_ID > 0 ? `vehicle-${angle}_${this.fpw.SCRIPT_ID}.png` : `vehicle-${angle}.png`;
         let path = fm.joinPath(dir, fileName);
         if (await fm.fileExists(path)) {
             if (asData) {
@@ -120,9 +121,9 @@ module.exports = class FPW_Files {
                 return await fm.readImage(path);
             }
         } else {
-            let vin = await this.fpClass.kc.getKeychainValue('fpVin');
-            let token = await this.fpClass.kc.getKeychainValue('fpToken2');
-            let country = await this.fpClass.kc.getKeychainValue('fpCountry');
+            let vin = await this.fpw.kc.getKeychainValue('fpVin');
+            let token = await this.fpw.kc.getKeychainValue('fpToken2');
+            let country = await this.fpw.kc.getKeychainValue('fpCountry');
             console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
             let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`);
             req.headers = {

@@ -1,9 +1,22 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Utils {
-    constructor(fpClass) {
+    constructor(fpw) {
         // console.log(`FPW_Utils.js: constructor()`);
-        this.fpClass = fpClass;
-        this.statics = fpClass.statics;
-        this.widgetConfig = fpClass.widgetConfig;
+        this.fpw = fpw;
+        this.statics = fpw.statics;
+        this.widgetConfig = fpw.widgetConfig;
+    }
+
+    runScript(name) {
+        let callback = new CallbackURL('scriptable:///run');
+        callback.addParameter('scriptName', name);
+        callback.open();
+    }
+
+    openScriptable() {
+        let callback = new CallbackURL('scriptable:///');
+        callback.open();
     }
 
     async getReleaseNotes(url, locale) {
@@ -173,7 +186,7 @@ module.exports = class FPW_Utils {
     async pressureToFixed(pressure, digits) {
         // console.log(`pressureToFixed(${pressure}, ${digits})`);
         try {
-            let unit = await this.fpClass.kc.getKeychainValue('fpPressureUnits');
+            let unit = await this.fpw.kc.getKeychainValue('fpPressureUnits');
             switch (unit) {
                 case 'PSI':
                     return pressure ? (pressure * 0.1450377).toFixed(digits) : -1;

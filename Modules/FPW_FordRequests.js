@@ -1,14 +1,14 @@
 module.exports = class FPW_FordRequests {
-    constructor(fpClass) {
-        this.fpClass = fpClass;
-        this.SCRIPT_ID = fpClass.SCRIPT_ID;
-        this.SCRIPT_VERSION = fpClass.SCRIPT_VERSION;
-        this.SCRIPT_TS = fpClass.SCRIPT_TS;
-        this.widgetConfig = fpClass.widgetConfig;
-        this.kc = fpClass.kc;
-        this.utils = fpClass.utils;
-        this.statics = fpClass.statics;
-        this.files = fpClass.files;
+    constructor(fpw) {
+        this.fpw = fpw;
+        this.SCRIPT_ID = fpw.SCRIPT_ID;
+        this.SCRIPT_VERSION = fpw.SCRIPT_VERSION;
+        this.SCRIPT_TS = fpw.SCRIPT_TS;
+        this.widgetConfig = fpw.widgetConfig;
+        this.kc = fpw.kc;
+        this.utils = fpw.utils;
+        this.statics = fpw.statics;
+        this.files = fpw.files;
     }
 
     appIDs() {
@@ -40,8 +40,9 @@ module.exports = class FPW_FordRequests {
         }
         if ((tok || refresh) && (tok == this.statics.textMap().errorMessages.invalidGrant || tok == this.statics.textMap().errorMessages.noCredentials || refresh == this.statics.textMap().errorMessages.invalidGrant || refresh == this.statics.textMap().errorMessages.noCredentials)) {
             return tok;
+        } else {
+            return undefined;
         }
-        return;
     }
 
     async fetchToken() {
@@ -309,6 +310,10 @@ module.exports = class FPW_FordRequests {
         const token = await this.kc.getKeychainValue('fpToken2');
         const country = await this.kc.getKeychainValue('fpCountry');
         let lang = await this.kc.getKeychainValue('fpLanguage');
+        if (!lang) {
+            await this.queryFordPassPrefs(true);
+            lang = await this.kc.getKeychainValue('fpLanguage');
+        }
         lang = lang.split('-');
         if (!vin) {
             return this.statics.textMap().errorMessages.noVin;
@@ -393,15 +398,20 @@ module.exports = class FPW_FordRequests {
                         console.log(` - Language: ${data.profile.preferredLanguage ? data.profile.preferredLanguage : Device.locale() + ' (Fallback)'}`);
                         console.log(` - DistanceUnit: ${data.profile.uomDistance === 2 ? 'km' : 'mi'}`);
                         console.log(` - PressureUnit: ${data.profile.uomPressure !== undefined && data.profile.uomPressure !== '' ? data.profile.uomPressure : 'PSI (Fallback)'}`);
+                        return true;
                     } catch (e) {
-                        console.log(`setUserPrefs Error: ${e}`);
+                        console.log(`queryFordPassPrefs SET Error: ${e}`);
+                        return false;
                     }
-                    return true;
+                } else {
+                    return false;
                 }
-                return false;
+            } else {
+                return true;
             }
         } catch (e) {
-            console.error(e);
+            console.error(`queryFordPassPrefs Error: ${e}`);
+            return false;
         }
     }
 
@@ -443,9 +453,9 @@ module.exports = class FPW_FordRequests {
         try {
             let data = json ? await request.loadJSON() : await request.loadString();
             let resp = request.response;
-            // if (this.widgetConfig.debugMode) {
-            // console.log(`makeFordRequest Req | Status: ${resp.statusCode}) | Resp: ${data}`);
-            // }
+            if (this.widgetConfig.debugMode) {
+                console.log(`makeFordRequest Req | Status: ${resp.statusCode}) | Resp: ${data}`);
+            }
             if (data == this.statics.textMap().errorMessages.accessDenied) {
                 console.log(`makeFordRequest(${desc}): Auth Token Expired. Fetching New Token and Requesting Data Again!`);
                 let result = await this.fetchToken();

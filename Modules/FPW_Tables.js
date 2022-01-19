@@ -1,16 +1,16 @@
 let tableMap = {};
 
 module.exports = class FPW_Tables {
-    constructor(fpClass) {
-        this.fpClass = fpClass;
-        this.SCRIPT_ID = fpClass.SCRIPT_ID;
-        this.widgetConfig = fpClass.widgetConfig;
-        this.kc = fpClass.kc;
-        this.statics = fpClass.statics;
-        this.fordRequests = fpClass.fordRequests;
-        this.alerts = fpClass.alerts;
-        this.utils = fpClass.utils;
-        this.timers = fpClass.timers;
+    constructor(fpw) {
+        this.fpw = fpw;
+        this.SCRIPT_ID = fpw.SCRIPT_ID;
+        this.widgetConfig = fpw.widgetConfig;
+        this.kc = fpw.kc;
+        this.statics = fpw.statics;
+        this.fordRequests = fpw.fordRequests;
+        this.alerts = fpw.alerts;
+        this.utils = fpw.utils;
+        this.timers = fpw.timers;
     }
 
     async getTable(tableName) {
@@ -200,7 +200,7 @@ module.exports = class FPW_Tables {
     }
 
     async showDataWebView(title, heading, data, type = undefined) {
-        // console.log(`showDataWebView(${title}, ${heading}, ${data})`);
+        // console.log(`showDataWebView(${title}, ${heading})`); //, ${JSON.stringify(data)})`);
         let otaHTML = '';
         try {
             data = this.utils.scrubPersonalData(data);
@@ -249,42 +249,42 @@ module.exports = class FPW_Tables {
             }
 
             // console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
-            const bgColor = this.statics.darkMode ? '#242424' : 'white';
-            const fontColor = this.statics.darkMode ? '#ffffff' : '#242425';
+            const bgColor = this.darkMode ? '#242424' : 'white';
+            const fontColor = this.darkMode ? '#ffffff' : '#242425';
             const wv = new WebView();
             let html = `
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"/>
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" />
-            <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.1/mdb.min.css" rel="stylesheet"/>
-            <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css">
-            
-            <title>${title}</title>
-            <style>
-                body { font-family: -apple-system; background-color: ${bgColor}; color: ${fontColor}; font-size: 0.8rem;}
-            </style>
-            
-        </head>
-        
-        <body>
-            <div class="mx-2">
-                ${otaHTML}
-            </div>
-            <div class="mx-2">
-                <h3>${heading}</h3>
-                <p style="color: orange;">(Personal Data Removed)</p>
-            </div>
-            <div class="ml-3" id="wrapper">
-                <pre>${JSON.stringify(data, null, 4)}</pre>
-            </div>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.1/mdb.min.js"></script>
-        </body>
-        
-        </html>  
-    `;
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"/>
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" />
+                    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.1/mdb.min.css" rel="stylesheet"/>
+                    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css">
+                    
+                    <title>${title}</title>
+                    <style>
+                        body { font-family: -apple-system; background-color: ${bgColor}; color: ${fontColor}; font-size: 0.8rem;}
+                    </style>
+                    
+                </head>
+                
+                <body>
+                    <div class="mx-2">
+                        ${otaHTML}
+                    </div>
+                    <div class="mx-2">
+                        <h3>${heading}</h3>
+                        <p style="color: orange;">(Personal Data Removed)</p>
+                    </div>
+                    <div class="ml-3" id="wrapper">
+                        <pre>${JSON.stringify(data, null, 4)}</pre>
+                    </div>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.1/mdb.min.js"></script>
+                </body>
+                
+                </html>  
+            `;
             await wv.loadHTML(html);
             await wv.waitForLoad();
             // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);

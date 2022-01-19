@@ -1,11 +1,23 @@
+//This module was downloaded using FordWidgetTool.
+
 let timerMap = {};
 module.exports = class FPW_Timers {
-    constructor() {}
+    constructor(fpw) {
+        this.fpw = fpw;
+        this.SCRIPT_ID = fpw.SCRIPT_ID;
+        this.widgetConfig = fpw.widgetConfig;
+        this.kc = fpw.kc;
+        this.statics = fpw.statics;
+        this.fordRequests = fpw.fordRequests;
+        this.alerts = fpw.alerts;
+        this.utils = fpw.utils;
+        this.timers = fpw.timers;
+    }
     async getTimer(timerName) {
         if (timerMap[timerName]) {
             return timerMap[timerName];
         }
-        let timer = Timer;
+        let timer = new Timer();
         timerMap[timerName] = timer;
         return timerMap[timerName];
     }

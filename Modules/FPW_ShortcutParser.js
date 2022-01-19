@@ -1,8 +1,10 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_ShortcutParser {
-    constructor(fpClass) {
-        this.fpClass = fpClass;
-        this.SCRIPT_ID = fpClass.SCRIPT_ID;
-        this.widgetConfig = fpClass.widgetConfig;
+    constructor(fpw) {
+        this.fpw = fpw;
+        this.SCRIPT_ID = fpw.SCRIPT_ID;
+        this.widgetConfig = fpw.widgetConfig;
         this.voiceIntentTree = {
             requests: { prefixs: ['is', 'are'] },
             commands: { prefixs: ['stop', 'start'] },
@@ -71,7 +73,7 @@ module.exports = class FPW_ShortcutParser {
     // ]
 
     async getAvailableRequests() {
-        const vData = await this.fpClass.fordRequests.fetchVehicleData(true);
+        const vData = await this.fpw.fordRequests.fetchVehicleData(true);
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         let cmds = [];
         let reqs = [];

@@ -1,8 +1,10 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Alerts {
-    constructor(fpClass) {
-        this.fpClass = fpClass;
-        this.SCRIPT_ID = fpClass.SCRIPT_ID;
-        this.widgetConfig = fpClass.widgetConfig;
+    constructor(fpw) {
+        this.fpw = fpw;
+        this.SCRIPT_ID = fpw.SCRIPT_ID;
+        this.widgetConfig = fpw.widgetConfig;
     }
 
     async showAlert(title, message) {
