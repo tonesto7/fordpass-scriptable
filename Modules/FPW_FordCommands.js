@@ -122,8 +122,8 @@ module.exports = class FPW_FordCommands {
             console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
             return;
         }
-        let token = await this.kc.getKeychainValue('fpToken2');
-        let vin = await this.kc.getKeychainValue('fpVin');
+        let token = await this.kc.getSettingVal('fpToken2');
+        let vin = await this.kc.getSettingVal('fpVin');
         let cmdCfgs = this.vehicleCmdConfigs(vin);
         let cmds = cmdCfgs[cmd_type].cmds;
         let cmdDesc = cmdCfgs[cmd_type].desc;

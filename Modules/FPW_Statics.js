@@ -125,6 +125,116 @@ const iconMap = {
     evChargeStatus: darkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
 };
 
+const phoneSizes = {
+    // 12 and 12 Pro
+    2532: {
+        small: 474,
+        medium: 1014,
+        large: 1062,
+        left: 78,
+        right: 618,
+        top: 231,
+        middle: 819,
+        bottom: 1407,
+    },
+
+    // 11 Pro Max, XS Max
+    2688: {
+        small: 507,
+        medium: 1080,
+        large: 1137,
+        left: 81,
+        right: 654,
+        top: 228,
+        middle: 858,
+        bottom: 1488,
+    },
+
+    // 11, XR
+    1792: {
+        small: 338,
+        medium: 720,
+        large: 758,
+        left: 54,
+        right: 436,
+        top: 160,
+        middle: 580,
+        bottom: 1000,
+    },
+
+    // 11 Pro, XS, X
+    2436: {
+        small: 465,
+        medium: 987,
+        large: 1035,
+        left: 69,
+        right: 591,
+        top: 213,
+        middle: 783,
+        bottom: 1353,
+    },
+
+    // Plus phones
+    2208: {
+        small: 471,
+        medium: 1044,
+        large: 1071,
+        left: 99,
+        right: 672,
+        top: 114,
+        middle: 696,
+        bottom: 1278,
+    },
+
+    // SE2 and 6/6S/7/8
+    1334: {
+        small: 296,
+        medium: 642,
+        large: 648,
+        left: 54,
+        right: 400,
+        top: 60,
+        middle: 412,
+        bottom: 764,
+    },
+
+    // SE1
+    1136: {
+        small: 282,
+        medium: 584,
+        large: 622,
+        left: 30,
+        right: 332,
+        top: 59,
+        middle: 399,
+        bottom: 399,
+    },
+
+    // 11 and XR in Display Zoom mode
+    1624: {
+        small: 310,
+        medium: 658,
+        large: 690,
+        left: 46,
+        right: 394,
+        top: 142,
+        middle: 522,
+        bottom: 902,
+    },
+
+    // Plus in Display Zoom mode
+    2001: {
+        small: 444,
+        medium: 963,
+        large: 972,
+        left: 81,
+        right: 600,
+        top: 90,
+        middle: 618,
+        bottom: 1146,
+    },
+};
+
 const sizeMap = {
     small: {
         titleFontSize: isSmallDisplay ? 9 : 9,
@@ -203,4 +313,4 @@ const sizeMap = {
         },
     },
 };
-module.exports = { sizeMap: sizeMap, iconMap: iconMap, colorMap: colorMap, textMap: textMap, getBgGradient: getBgGradient, isSmallDisplay: isSmallDisplay, darkMode: darkMode, isPhone: isPhone, isPad: isPad, runningWidgetSize: runningWidgetSize };
+module.exports = { phoneSizes: phoneSizes, sizeMap: sizeMap, iconMap: iconMap, colorMap: colorMap, textMap: textMap, getBgGradient: getBgGradient, isSmallDisplay: isSmallDisplay, darkMode: darkMode, isPhone: isPhone, isPad: isPad, runningWidgetSize: runningWidgetSize };

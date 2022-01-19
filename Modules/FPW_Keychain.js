@@ -10,15 +10,15 @@ module.exports = class FPW_Keychain {
     //********************************************************************************************************************************
 
     async vinFix() {
-        let vin = await this.getKeychainValue('fpVin');
+        let vin = await this.getSettingVal('fpVin');
         if (vin && this.fpw.utils.hasLowerCase(vin)) {
             console.log('VIN Validation Error: Your saved VIN number has lowercase letters.\nUpdating your saved value for you!');
-            await this.setKeychainValue('fpVin', vin.toUpperCase());
+            await this.setSettingVal('fpVin', vin.toUpperCase());
         }
     }
 
     async vinCheck(vin, setup = false) {
-        vin = vin || (await this.getKeychainValue('fpVin'));
+        vin = vin || (await this.getSettingVal('fpVin'));
         let vinLen = vin && vin.length === 17;
         let vinChar = vin && vin.match(/^[a-zA-Z0-9]+$/);
         let msgs = [];
@@ -33,7 +33,7 @@ module.exports = class FPW_Keychain {
                 console.log(`VIN Format Issues (${msgs.length}) | Current VIN: ${vin} | Errors: ${msgs.join('\n')}`);
                 if (!config.runsInWidget) {
                     //Added this to prevent the Alerts not supported in widgets error
-                    await this.fpw.alerts.showAlert('VIN Validation Error', msgs.join('\n'));
+                    // await this.fpw.alerts.showAlert('VIN Validation Error', msgs.join('\n'));
                 }
                 return false;
             } else {
@@ -44,34 +44,34 @@ module.exports = class FPW_Keychain {
     }
 
     async useMetricUnits() {
-        return (await this.getKeychainValue('fpDistanceUnits')) !== 'mi';
+        return (await this.getSettingVal('fpDistanceUnits')) !== 'mi';
     }
 
     async getMapProvider() {
-        return (await this.getKeychainValue('fpMapProvider')) || 'apple';
+        return (await this.getSettingVal('fpMapProvider')) || 'apple';
     }
 
     async setMapProvider(value) {
-        await this.setKeychainValue('fpMapProvider', value);
+        await this.setSettingVal('fpMapProvider', value);
     }
 
     async toggleMapProvider() {
         await this.setMapProvider((await this.getMapProvider()) === 'google' ? 'apple' : 'google');
     }
 
-    async getKeychainValue(key) {
+    async getSettingVal(key) {
         key = this.fpw.SCRIPT_ID !== null && this.fpw.SCRIPT_ID !== undefined && this.fpw.SCRIPT_ID > 0 ? `${key}_${this.fpw.SCRIPT_ID}` : key;
         try {
             if (await Keychain.contains(key)) {
                 return await Keychain.get(key);
             }
         } catch (e) {
-            console.log(`getKeychainValue(${key}) Error: ${e}`);
+            console.log(`getSettingVal(${key}) Error: ${e}`);
         }
         return null;
     }
 
-    async setKeychainValue(key, value) {
+    async setSettingVal(key, value) {
         if (key && value) {
             key = this.fpw.SCRIPT_ID !== null && this.fpw.SCRIPT_ID !== undefined && this.fpw.SCRIPT_ID > 0 ? `${key}_${this.fpw.SCRIPT_ID}` : key;
             await Keychain.set(key, value);
@@ -79,18 +79,18 @@ module.exports = class FPW_Keychain {
     }
 
     async getWidgetStyle() {
-        return (await this.getKeychainValue('fpWidgetStyle')) || 'detailed';
+        return (await this.getSettingVal('fpWidgetStyle')) || 'detailed';
     }
 
     async setWidgetStyle(style) {
-        return await this.setKeychainValue('fpWidgetStyle', style);
+        return await this.setSettingVal('fpWidgetStyle', style);
     }
 
-    hasKeychainValue(key) {
+    hasSettingVal(key) {
         return Keychain.contains(key);
     }
 
-    async removeKeychainValue(key) {
+    async removeSettingVal(key) {
         key = this.fpw.SCRIPT_ID !== null && this.fpw.SCRIPT_ID !== undefined && this.fpw.SCRIPT_ID > 0 ? `${key}_${this.fpw.SCRIPT_ID}` : key;
         if (await Keychain.contains(key)) {
             await Keychain.remove(key);
@@ -114,7 +114,7 @@ module.exports = class FPW_Keychain {
     async requiredPrefsOk(keys) {
         let missingKeys = [];
         for (const key in keys) {
-            let val = await this.getKeychainValue(keys[key]);
+            let val = await this.getSettingVal(keys[key]);
             if (val === null || val === '' || val === undefined) {
                 missingKeys.push(keys[key]);
             }
@@ -128,11 +128,11 @@ module.exports = class FPW_Keychain {
         }
     }
 
-    async clearKeychain() {
-        console.log('Info: Clearing All Widget Data from Keychain');
+    async clearSettings() {
+        console.log('Info: Clearing All Widget Settings from Keychain');
         const keys = ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits', 'fpSpeedUnits', 'fpScriptVersion'];
         for (const key in keys) {
-            await this.removeKeychainValue(keys[key]);
+            await this.removeSettingVal(keys[key]);
         }
     }
 };

@@ -186,7 +186,7 @@ module.exports = class FPW_Utils {
     async pressureToFixed(pressure, digits) {
         // console.log(`pressureToFixed(${pressure}, ${digits})`);
         try {
-            let unit = await this.fpw.kc.getKeychainValue('fpPressureUnits');
+            let unit = await this.fpw.kc.getSettingVal('fpPressureUnits');
             switch (unit) {
                 case 'PSI':
                     return pressure ? (pressure * 0.1450377).toFixed(digits) : -1;
