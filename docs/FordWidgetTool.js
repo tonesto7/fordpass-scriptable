@@ -19,6 +19,21 @@ class WidgetInstaller {
             scriptColor: 'blue',
             scriptGlyph: 'car',
             sourceUrl: 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js',
+            sourceModules: [
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Class.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Alerts.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Files.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordCommands.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordRequests.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Keychain.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Menus.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Notifications.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Statics.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Utils.js',
+            ],
             docsUrl: 'https://github.com/tonesto7/fordpass-scriptable#readme',
             cleanup: {
                 keys: ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits', 'fpSpeedUnits'],
@@ -52,6 +67,7 @@ class WidgetInstaller {
                 ],
             },
         };
+        this.widgetModules = [''];
     }
 
     hashCode(input) {
@@ -89,11 +105,16 @@ class WidgetInstaller {
 
     async getSrcUrl() {
         const releaseMode = await this.getReleaseMode();
-        return releaseMode === 'beta' ? this.scriptConfig.scriptUrl.replace('main', 'beta') : this.scriptConfig.scriptUrl;
+        return releaseMode === 'beta' ? this.scriptConfig.sourceUrl.replace('main', 'beta') : this.scriptConfig.sourceUrl;
+    }
+
+    async getSrcReleaseUrl(url) {
+        const releaseMode = await this.getReleaseMode();
+        return releaseMode === 'beta' ? url.replace('main', 'beta') : url;
     }
 
     async getReleaseMode() {
-        return (await wI.getKeychainValue('releaseMode')) || 'public';
+        return (await wI.getKeychainValue('fpWtReleaseMode')) || 'public';
     }
 
     async showAlert(title, message) {
@@ -112,7 +133,7 @@ class WidgetInstaller {
 
     async toggleReleaseMode() {
         let releaseMode = await this.getReleaseMode();
-        await this.setKeychainValue('releaseMode', releaseMode === 'beta' ? 'public' : 'beta');
+        await this.setKeychainValue('fpWtReleaseMode', releaseMode === 'beta' ? 'public' : 'beta');
     }
 
     async getKeychainValue(key) {
@@ -247,8 +268,44 @@ class WidgetInstaller {
         return code;
     }
 
+    async installModules() {
+        try {
+            const modules = this.scriptConfig.sourceModules;
+            if (modules.length) {
+                // console.log(`Info: Installing Modules: ${modules.join(', ')}`);
+                for (const [i, module] of modules.entries()) {
+                    let url = await this.getSrcReleaseUrl(module);
+                    console.log(`Installing Module ${i + 1} of ${modules.length}`);
+                    // console.log(`Module URL: ${url}`);
+                    await this.saveModule(url);
+                }
+            }
+            return;
+        } catch (e) {
+            console.error(`installModules | Error: ${e}`);
+        }
+    }
+
+    async saveModule(url) {
+        try {
+            let req = new Request(url);
+            let code = await req.loadString();
+            let moduleName = url.substring(url.lastIndexOf('/') + 1);
+            let codeToStore = Data.fromString(`//This module was downloaded using FordWidgetTool.\n\n${code}`);
+            await this.icloudFileManager.createDirectory(this.icloudFileManager.joinPath(this.icloudDocDirectory, 'FPWModules'), true);
+            let filePath = this.icloudFileManager.joinPath(this.icloudDocDirectory, 'FPWModules') + `/${moduleName}`;
+            this.icloudFileManager.write(filePath, codeToStore);
+            return true;
+        } catch (e) {
+            console.error('saveModule error: ' + e);
+            return false;
+        }
+    }
+
     async newScript(name, sourceUrl, docsUrl, icon, color) {
         try {
+            await this.installModules();
+
             let fileName = name;
             let nextId = 0;
             let filesFnd = await this.getAllInstances();
@@ -301,16 +358,19 @@ class WidgetInstaller {
     }
 
     async updateScripts(name, sourceUrl, docsUrl, icon, color) {
-        try {
-            let filesFnd = await this.getAllInstances();
-            if (filesFnd.length) {
-                // console.log(`filesFnd: (${filesFnd.length})`);
-                for (let i = 0; i < filesFnd.length; i++) {
-                    let id = await this.getIdFromFIle(filesFnd[i]);
-                    await this.saveScript(filesFnd[i], id, sourceUrl, docsUrl, icon, color);
+            console.log(`updateScripts | ${name} | ${sourceUrl} | ${docsUrl} | ${icon} | ${color}`);
+            try {
+                let filesFnd = await this.getAllInstances();
+                if (filesFnd.length) {
+                    await this.installModules();
+
+                    console.log(`filesFnd: (${filesFnd.length})`);
+                    for (let i = 0; i < filesFnd.length; i++) {
+                        let id = await this.getIdFromFIle(filesFnd[i]);
+                        await this.saveScript(filesFnd[i], id, sourceUrl, docsUrl, icon, color);
+                    }
                 }
-            }
-            await this.showAlert(`Widget Tool - Script Updater`, `The following Scripts were updated to the latest version:\n${filesFnd.join('\n')}`);
+                await this.showAlert(`Widget Tool - Script Updater`, `The following Scripts were updated to the latest version:\n${filesFnd.join('\n')}${this.scriptConfig.sourceModules.length ? `\n\n${this.scriptConfig.sourceModules.length} Modules were Updated` : ''}`);
         } catch (e) {
             console.log(`updateScripts | Error: ${e}`);
             return false;
@@ -332,27 +392,28 @@ async function menuBuilderByType(type) {
             case 'main':
                 title = `FordWidget Tool Menu`;
                 message = `Tool Version: (${SCRIPT_VERSION})\nRelease Mode: (${releaseMode.toUpperCase()})`;
-                items = [{
+                items = [
+                    {
                         title: `Update ${filesFnd.length} Instance${filesFnd.length > 1 ? 's' : ''}`,
-                        action: async() => {
-                            console.log('(Main Menu) Update Ford Widgets was pressed');
-                            await wI.updateScripts(this.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), this.scriptConfig.scriptGlyph, this.scriptConfig.scriptColor);
+                        action: async () => {
+                            console.log('(Main Menu) Update Widgets was pressed');
+                            await wI.updateScripts(wI.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), wI.scriptConfig.scriptGlyph, wI.scriptConfig.scriptColor);
                         },
                         destructive: true,
-                        show: true,
+                        show: filesFnd.length >= 1,
                     },
                     {
                         title: 'Create New Instance',
-                        action: async() => {
-                            console.log('(Main Menu) Update Ford Widgets was pressed');
-                            await wI.newScript(this.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), this.scriptConfig.scriptGlyph, this.scriptConfig.scriptColor);
+                        action: async () => {
+                            console.log('(Main Menu) Create New Instance was pressed');
+                            await wI.newScript(wI.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), wI.scriptConfig.scriptGlyph, wI.scriptConfig.scriptColor);
                         },
                         destructive: false,
                         show: true,
                     },
                     {
                         title: 'Remove Instances',
-                        action: async() => {
+                        action: async () => {
                             console.log('(Main Menu) Instances Removal was pressed');
                             await menuBuilderByType('removal');
                         },
@@ -361,7 +422,7 @@ async function menuBuilderByType(type) {
                     },
                     {
                         title: 'Settings',
-                        action: async() => {
+                        action: async () => {
                             console.log('(Main Menu) Settings was pressed');
                             menuBuilderByType('setting');
                         },
@@ -370,7 +431,7 @@ async function menuBuilderByType(type) {
                     },
                     {
                         title: 'Exit',
-                        action: async() => {
+                        action: async () => {
                             console.log(`(${type} Menu) Exit was pressed`);
                         },
                         destructive: false,
@@ -381,9 +442,10 @@ async function menuBuilderByType(type) {
             case 'setting':
                 title = `Settings Menu`;
                 message = ``;
-                items = [{
+                items = [
+                    {
                         title: `Release Mode: ${releaseMode}`,
-                        action: async() => {
+                        action: async () => {
                             console.log(`(${type} Menu) Toggle Release Mode was pressed`);
                             await wI.toggleReleaseMode();
                             menuBuilderByType('setting');
@@ -393,7 +455,7 @@ async function menuBuilderByType(type) {
                     },
                     {
                         title: 'Back',
-                        action: async() => {
+                        action: async () => {
                             console.log(`(${type} Menu) Back was pressed`);
                             await this.menuBuilderByType('main');
                         },
@@ -409,7 +471,7 @@ async function menuBuilderByType(type) {
                     for (const i in filesFnd) {
                         items.push({
                             title: filesFnd[i],
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(Removal Menu) ${filesFnd[i]} was pressed`);
                                 await wI.removeInstance(filesFnd[i]);
                                 await wI.showAlert('Widget Tool - Instance Removal', `${filesFnd[i]} Instance removed...`);
@@ -420,25 +482,28 @@ async function menuBuilderByType(type) {
                         });
                     }
                 }
-                items.push({
-                    title: 'Remove All Instances',
-                    action: async() => {
-                        console.log(`(Removal Menu) Remove All was pressed`);
-                        await wI.removeAllInstances();
-                        await wI.showAlert('Widget Tool - Instances Removal', `All ${filesFnd.length} Instances were removed`);
-                        menuBuilderByType('main');
+                items.push(
+                    {
+                        title: 'Remove All Instances',
+                        action: async () => {
+                            console.log(`(Removal Menu) Remove All was pressed`);
+                            await wI.removeAllInstances();
+                            await wI.showAlert('Widget Tool - Instances Removal', `All ${filesFnd.length} Instances were removed`);
+                            menuBuilderByType('main');
+                        },
+                        destructive: true,
+                        show: filesFnd.length ? true : false,
                     },
-                    destructive: true,
-                    show: filesFnd.length ? true : false,
-                }, {
-                    title: 'Back',
-                    action: async() => {
-                        console.log(`(${type} Menu) Back was pressed`);
-                        await menuBuilderByType('main');
+                    {
+                        title: 'Back',
+                        action: async () => {
+                            console.log(`(${type} Menu) Back was pressed`);
+                            await menuBuilderByType('main');
+                        },
+                        destructive: false,
+                        show: true,
                     },
-                    destructive: false,
-                    show: true,
-                }, );
+                );
                 break;
         }
         if (title.length > 0 && items.length > 0) {
@@ -471,7 +536,7 @@ if (config.runsInApp || config.runsFromHomeScreen) {
     // console.log('start | fnd: ' + fnd.length);
     if (fnd.length < 1) {
         console.log('start | no scripts found creating new one');
-        await wI.newScript(this.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), this.scriptConfig.scriptGlyph, this.scriptConfig.scriptColor);
+        await wI.newScript(wI.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), wI.scriptConfig.scriptGlyph, wI.scriptConfig.scriptColor);
     } else {
         console.log('start | showing Main Menu');
         // console.log(JSON.stringify(await wI.getFileDetails(fnd[0])));
