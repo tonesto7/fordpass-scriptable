@@ -1,4 +1,9 @@
-let tableMap = {};
+const FPW_Tables_AlertPage = importModule('/FPWModules/FPW_Tables_AlertPage.js'),
+    FPW_Tables_ChangesPage = importModule('/FPWModules/FPW_Tables_ChangesPage.js'),
+    FPW_Tables_MainPage = importModule('/FPWModules/FPW_Tables_MainPage.js'),
+    FPW_Tables_MessagePage = importModule('/FPWModules/FPW_Tables_MessagePage.js'),
+    FPW_Tables_RecallPage = importModule('/FPWModules/FPW_Tables_RecallPage.js');
+FPW_Tables_WidgetStylePage = importModule('/FPWModules/FPW_Tables_WidgetStylePage.js');
 
 module.exports = class FPW_Tables {
     constructor(FPW) {
@@ -10,25 +15,32 @@ module.exports = class FPW_Tables {
         this.Alerts = FPW.Alerts;
         this.Utils = FPW.Utils;
         this.Timers = FPW.Timers;
+        this.MainPage = new FPW_Tables_MainPage(FPW);
+        this.AlertPage = new FPW_Tables_AlertPage(FPW);
+        this.ChangesPage = new FPW_Tables_ChangesPage(FPW);
+        this.MessagePage = new FPW_Tables_MessagePage(FPW);
+        this.RecallPage = new FPW_Tables_RecallPage(FPW);
+        this.WidgetStylePage = new FPW_Tables_WidgetStylePage(FPW);
+        this.tableMap = {};
     }
 
     async getTable(tableName) {
         if (await this.tableExists(tableName)) {
-            return tableMap[tableName];
+            return this.tableMap[tableName];
         }
-        tableMap[tableName] = new UITable();
-        return tableMap[tableName];
+        this.tableMap[tableName] = new UITable();
+        return this.tableMap[tableName];
     }
 
     async removeTable(tableName) {
         if (await this.tableExists(tableName)) {
-            delete tableMap[tableName];
+            delete this.tableMap[tableName];
         }
         return;
     }
 
     async tableExists(tableName) {
-        return tableMap[tableName] !== undefined && tableMap[tableName] instanceof Object;
+        return this.tableMap[tableName] !== undefined && this.tableMap[tableName] instanceof Object;
     }
 
     async generateTableMenu(tableName, rows, showSeparators = false, fullscreen = false, update = false) {

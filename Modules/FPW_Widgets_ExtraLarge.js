@@ -1,23 +1,25 @@
-module.exports = class FPW_WidgetSmall {
+//This module was downloaded using FordWidgetTool.
+
+module.exports = class FPW_Widgets_ExtraLarge {
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
         this.Kc = FPW.Kc;
         this.Files = FPW.Files;
+        this.FordRequests = FPW.FordRequests;
         this.Alerts = FPW.Alerts;
-        // this.Timers = FPW.Timers;
+        this.Timers = FPW.Timers;
         this.Utils = FPW.Utils;
         this.Widgets = FPW.Widgets;
     }
 
-    async createSmallWidget(vData) {
+    async createExtraLargeWidget(vData) {
         let vehicleData = vData;
-        const wSize = 'small';
+        const wSize = 'extraLarge';
         // Defines the Widget Object
         const widget = new ListWidget();
         widget.backgroundGradient = this.FPW.getBgGradient();
-
         try {
             let mainStack = widget.addStack();
             mainStack.layoutVertically();
@@ -34,7 +36,7 @@ module.exports = class FPW_WidgetSmall {
             // Vehicle Logo
             await this.Widgets.createVehicleImageElement(mainCol1, vehicleData, this.FPW.sizeMap[wSize].logoSize.w, this.FPW.sizeMap[wSize].logoSize.h);
 
-            // Creates the Vehicle Logo, Odometer, Fuel/Battery and Distance Info Elements
+            // Creates the Odometer, Fuel/Battery and Distance Info Elements
             await this.Widgets.createFuelRangeElements(mainCol1, vehicleData, wSize);
 
             // Creates Low-Voltage Battery Voltage Elements
@@ -58,22 +60,38 @@ module.exports = class FPW_WidgetSmall {
             // Creates the Lock Status Elements
             await this.Widgets.createLockStatusElement(mainCol2, vehicleData, wSize);
 
-            // Creates the Ignition Status Elements
-            await this.Widgets.createIgnitionStatusElement(mainCol2, vehicleData, wSize);
-
             // Creates the Door Status Elements
-            await this.Widgets.createDoorElement(mainCol2, vehicleData, true, wSize);
+            await this.Widgets.createDoorElement(mainCol2, vehicleData, false, wSize);
 
-            // Creates the Door Status Elements
-            await this.Widgets.createWindowElement(mainCol2, vehicleData, true, wSize);
+            // Create Tire Pressure Elements
+            await this.Widgets.createTireElement(mainCol2, vehicleData, wSize);
 
             // mainCol2.addSpacer(0);
+
+            contentStack.addSpacer();
+
+            //****************
+            //* Third column
+            //****************
+            let mainCol3 = await this.Widgets.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+
+            // Creates the Ignition Status Elements
+            await this.Widgets.createIgnitionStatusElement(mainCol3, vehicleData, wSize);
+
+            // Creates the Door Status Elements
+            await this.Widgets.createWindowElement(mainCol3, vehicleData, false, wSize);
+
+            // Creates the Vehicle Location Element
+            await this.Widgets.createPositionElement(mainCol3, vehicleData, wSize);
+
+            // mainCol3.addSpacer();
 
             contentStack.addSpacer();
 
             //**********************
             //* Refresh and error
             //*********************
+
             let statusRow = await this.Widgets.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
             await this.Widgets.createStatusElement(statusRow, vehicleData, wSize);
 
@@ -81,8 +99,8 @@ module.exports = class FPW_WidgetSmall {
             let timestampRow = await this.Widgets.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             await this.Widgets.createTimeStampElement(timestampRow, vehicleData, wSize);
         } catch (e) {
-            console.error(`createSmallWidget() Error ${e}`);
-            this.Files.appendToLogFile(`createSmallWidget() Error: ${e}`);
+            console.error(`createExtraLargeWidget() Error: ${e}`);
+            this.Files.appendToLogFile(`createExtraLargeWidget() Error: ${e}`);
         }
         return widget;
     }

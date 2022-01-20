@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Menus {
     constructor(FPW) {
         this.FPW = FPW;
@@ -163,7 +165,7 @@ module.exports = class FPW_Menus {
                         title: 'Recent Changes',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) About was pressed`);
-                            await this.Tables.generateRecentChangesTable();
+                            await this.Tables.ChangesPage.createRecentChangesPage();
                             this.menuBuilderByType('helpInfo');
                         },
                         destructive: false,

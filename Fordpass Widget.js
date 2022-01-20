@@ -124,11 +124,6 @@ class Widget {
     constructor(fpw) {
         try {
             this.FPW = fpw;
-            this.Kc = this.FPW.Kc;
-            this.Menus = this.FPW.Menus;
-            this.Utils = this.FPW.Utils;
-            this.Widgets = this.FPW.Widgets;
-            this.Tables = this.FPW.Tables;
             this.LATEST_VERSION;
             this.updateAvailable = false;
             console.log(`this: ${JSON.stringify(this.FPW.SCRIPT_VERSION)}`);
@@ -155,23 +150,23 @@ class Widget {
             if (config.runsInWidget) {
                 console.log('(generateWidget) Running in Widget...');
                 this.FPW.Files.appendToLogFile('(generateWidget) Running in Widget...');
-                // await generateWidget(runningWidgetSize, fordData);
+                // await this.FPW.WidgetHelpers.generateWidget(runningWidgetSize, fordData);
                 let w = await testWidget(fordData);
             } else if (config.runsInApp || config.runsFromHomeScreen) {
                 // Show alert with current data (if running script in app)
                 if (args.shortcutParameter) {
                     // Create a parser function...
-                    await Speech.speak(await this.FPW.shortcutParameter.parseIncomingSiriCommand(args.shortcutParameter));
+                    await Speech.speak(await this.FPW.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
                 } else {
                     // await(await generateWidget('medium', fordData)).presentMedium();
-                    await this.Tables.TableMainMenu.generateMainInfoTable();
+                    await this.FPW.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
                 // console.log('runsInActionExtension: ' + config.runsInActionExtension);
             } else {
                 this.FPW.Files.appendToLogFile('(generateWidget) Running in Widget (else)...');
-                await this.generateWidget(runningWidgetSize, fordData);
+                await this.FPW.WidgetHelpers.generateWidget(runningWidgetSize, fordData);
             }
         } catch (e) {
             console.log(`rootCode | Error: ${e}`);
@@ -194,13 +189,13 @@ class Widget {
                 await this.FPW.Files.clearFileManager();
             }
             // Tries to fix the format of the VIN field (Makes sure they are capitalized)
-            await this.Kc.vinFix(await this.Kc.getSettingVal('fpVin'));
+            await this.FPW.Utils.vinFix(await this.FPW.Kc.getSettingVal('fpVin'));
 
             let frcPrefs = false;
-            let reqOk = await this.Kc.requiredPrefsOk(this.FPW.Kc.prefKeys().core);
+            let reqOk = await this.FPW.Kc.requiredPrefsOk(this.FPW.Kc.prefKeys().core);
             // console.log(`reqOk: ${reqOk}`);
             if (!reqOk) {
-                let prompt = await this.Menus.requiredPrefsMenu();
+                let prompt = await this.FPW.Menus.requiredPrefsMenu();
 
                 // console.log(`(prepWidget) Prefs Menu Prompt Result: ${prompt}`);
                 if (prompt === undefined) {
@@ -245,18 +240,18 @@ class Widget {
 
             switch (size) {
                 case 'small':
-                    w = wStyle === 'simple' ? await this.Widgets.createSmallWidget(data) : await this.Widgets.createSmallWidget(data);
+                    w = wStyle === 'simple' ? await this.FPW.WidgetHelpers.createSmallWidget(data) : await this.FPW.WidgetHelpers.createSmallWidget(data);
                     break;
                 case 'large':
-                    w = await this.Widgets.createLargeWidget(data);
+                    w = await this.FPW.WidgetHelpers.createLargeWidget(data);
                     break;
                 case 'extraLarge':
-                    w = await this.Widgets.createExtraLargeWidget(data);
+                    w = await this.WidgetHelpers.createExtraLargeWidget(data);
                     break;
 
                 default:
-                    // w = wStyle === 'simple' ? await createMediumSimpleWidget(data) : await this.Widgets.createMediumWidget(data);
-                    w = await this.Widgets.createMediumWidget(data);
+                    // w = wStyle === 'simple' ? await this.FPW.WidgetHelpers.createMediumSimpleWidget(data) : await this.FPW.WidgetHelpers.createMediumWidget(data);
+                    w = await this.FPW.WidgetHelpers.createMediumWidget(data);
                     break;
             }
             if (w === null) {
@@ -275,7 +270,7 @@ class Widget {
 
 async function testWidget(data) {
     const widget = new ListWidget();
-    // widget.backgroundGradient = FPW.getBgGradient();
+    widget.backgroundGradient = this.FPW.getBgGradient();
 
     try {
         let mainStack = widget.addStack();
@@ -283,12 +278,12 @@ async function testWidget(data) {
         mainStack.setPadding(0, 0, 0, 0);
 
         let contentStack = mainStack.addStack();
-        let row = await this.Widgets.createRow(contentStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
-        await this.Widgets.createText(row, 'This is a test', { font: Font.boldSystemFont(13), textColor: new Color(darkMode ? '#FFFFFF' : '#000000'), lineLimit: 1 });
+        let row = await this.FPW.WidgetHelpers.createRow(contentStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+        await this.FPW.WidgetHelpers.createText(row, 'This is a test', { font: Font.boldSystemFont(13), textColor: new Color(darkMode ? '#FFFFFF' : '#000000'), lineLimit: 1 });
         contentStack.layoutHorizontally();
     } catch (e) {
         console.log(`testWidget Error: ${e}`);
-        FPW.Files.appendToLogFile(`testWidget() Error: ${e}`);
+        this.FPW.Files.appendToLogFile(`testWidget() Error: ${e}`);
     }
     widget.setPadding(0, 5, 0, 1);
     Script.setWidget(widget);
@@ -298,6 +293,11 @@ async function testWidget(data) {
 // //***************************************************END WIDGET ELEMENT FUNCTIONS********************************************************
 // //***************************************************************************************************************************************
 
+/**
+ * @description This loads and makes sure all modules are loaded before running the script
+ * @param  {boolean} [useLocal=false] Tells the function to use the local version of the file manager instead of the icloud version
+ * @return
+ */
 async function getModules(useLocal = false) {
     const fm = useLocal ? FileManager.local() : FileManager.iCloud();
     // Load the modules
@@ -313,19 +313,19 @@ async function getModules(useLocal = false) {
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Statics.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableAlerts.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableChanges.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableMainMenu.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableMessages.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableRecalls.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableWidgetStyles.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_AlertPage.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_ChangesPage.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_MainPage.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_MessagePage.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_RecallPage.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_WidgetStylePage.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Utils.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_WidgetSmall.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_WidgetMedium.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_WidgetLarge.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_WidgetExtraLarge.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Small.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Medium.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Large.js',
+        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_ExtraLarge.js',
     ];
     let available = [];
     try {

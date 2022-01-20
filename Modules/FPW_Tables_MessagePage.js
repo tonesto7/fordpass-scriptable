@@ -1,4 +1,6 @@
-module.exports = class FPW_TableMessages {
+//This module was downloaded using FordWidgetTool.
+
+module.exports = class FPW_Tables_MessagePage {
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
@@ -11,7 +13,7 @@ module.exports = class FPW_TableMessages {
         this.Tables = FPW.Tables;
     }
 
-    async generateMessagesTable(vData, unreadOnly = false, update = false) {
+    async createMessagesPage(vData, unreadOnly = false, update = false) {
         try {
             let msgs = vData.messages && vData.messages && vData.messages && vData.messages.length ? vData.messages : messageTest || [];
             msgs = unreadOnly ? msgs.filter((msg) => msg.isRead === false) : msgs;
@@ -43,8 +45,8 @@ module.exports = class FPW_TableMessages {
                                                     if (await this.FordRequests.markMultipleUserMessagesRead(msgIds)) {
                                                         console.log(`(Messages Table) Marked (${msgIds.length}) Messages as Read Successfully`);
                                                         this.Alerts.showAlert('Marked Messages as Read Successfully', 'Message List will reload after data is refeshed');
-                                                        await this.generateMessagesTable(await this.FordRequests.fetchVehicleData(false), unreadOnly, true);
-                                                        this.Tables.TableMainMenu.generateMainInfoTable(true);
+                                                        await this.createMessagesPage(await this.FordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                        this.Tables.MainPage.createMainPage(true);
                                                     }
                                                 }
                                             },
@@ -61,8 +63,8 @@ module.exports = class FPW_TableMessages {
                                                     if (await this.FordRequests.deleteUserMessages([msg.messageId])) {
                                                         console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
                                                         this.Alerts.showAlert('Deleted Messages Successfully', 'Message List will reload after data is refeshed');
-                                                        await this.generateMessagesTable(await this.FordRequests.fetchVehicleData(false), unreadOnly, true);
-                                                        this.Tables.TableMainMenu.generateMainInfoTable(true);
+                                                        await this.createMessagesPage(await this.FordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                        this.Tables.MainPage.createMainPage(true);
                                                     }
                                                 }
                                             },
@@ -72,7 +74,7 @@ module.exports = class FPW_TableMessages {
                                     ],
                                     true,
                                     async() => {
-                                        this.generateMessagesTable(vData, unreadOnly);
+                                        this.createMessagesPage(vData, unreadOnly);
                                     },
                                 );
                             },
@@ -108,8 +110,8 @@ module.exports = class FPW_TableMessages {
                                                     if (await this.FordRequests.markMultipleUserMessagesRead([msg.messageId])) {
                                                         console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
                                                         this.Alerts.showAlert('Message marked read successfully', 'Message List will reload after data is refeshed');
-                                                        await this.generateMessagesTable(await this.FordRequests.fetchVehicleData(false), unreadOnly, true);
-                                                        this.Tables.TableMainMenu.generateMainInfoTable(true);
+                                                        await this.createMessagesPage(await this.FordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                        this.Tables.MainPage.createMainPage(true);
                                                     }
                                                 },
                                                 destructive: false,
@@ -125,11 +127,11 @@ module.exports = class FPW_TableMessages {
                                                         if (await this.FordRequests.deleteUserMessages([msg.messageId])) {
                                                             console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
                                                             this.Alerts.showAlert('Message deleted successfully', 'Message List will reload after data is refeshed');
-                                                            await this.generateMessagesTable(await this.FordRequests.fetchVehicleData(false), unreadOnly, true);
-                                                            this.Tables.TableMainMenu.generateMainInfoTable(true);
+                                                            await this.createMessagesPage(await this.FordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                            this.Tables.MainPage.createMainPage(true);
                                                             up;
                                                         } else {
-                                                            await this.generateMessagesTable(vData, unreadOnly);
+                                                            await this.createMessagesPage(vData, unreadOnly);
                                                         }
                                                     }
                                                 },
@@ -139,7 +141,7 @@ module.exports = class FPW_TableMessages {
                                         ],
                                         true,
                                         async() => {
-                                            await this.generateMessagesTable(vData, unreadOnly);
+                                            await this.createMessagesPage(vData, unreadOnly);
                                         },
                                     );
                                 },
@@ -172,8 +174,8 @@ module.exports = class FPW_TableMessages {
             }
             await this.Tables.generateTableMenu('messages', tableRows, false, this.FPW.isPhone, update);
         } catch (e) {
-            console.error(`generateMessagesTable() error: ${e}`);
-            this.Files.appendToLogFile(`generateMessagesTable() error: ${e}`);
+            console.error(`createMessagesPage() error: ${e}`);
+            this.Files.appendToLogFile(`createMessagesPage() error: ${e}`);
         }
     }
 };

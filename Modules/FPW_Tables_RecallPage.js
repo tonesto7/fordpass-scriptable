@@ -1,4 +1,6 @@
-module.exports = class FPW_TableRecalls {
+//This module was downloaded using FordWidgetTool.
+
+module.exports = class FPW_Tables_RecallPage {
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
@@ -11,7 +13,7 @@ module.exports = class FPW_TableRecalls {
         this.Tables = FPW.Tables;
     }
 
-    async generateRecallsTable(vData) {
+    async createRecallPage(vData) {
         try {
             let recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
             let tableRows = [];
@@ -92,8 +94,8 @@ module.exports = class FPW_TableRecalls {
 
             await this.Tables.generateTableMenu('recalls', tableRows, false, false);
         } catch (err) {
-            console.log(`generateRecallsTable() Error: ${err}`);
-            this.Files.appendToLogFile(`generateRecallsTable() Error: ${err}`);
+            console.log(`createRecallPage() Error: ${err}`);
+            this.Files.appendToLogFile(`createRecallPage() Error: ${err}`);
         }
     }
 };

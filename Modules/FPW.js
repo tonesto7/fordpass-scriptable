@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 const screenSize = Device.screenResolution();
 const isSmallDisplay = screenSize.width < 1200 === true;
 const darkMode = Device.isUsingDarkAppearance();

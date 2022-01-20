@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Utils {
     constructor(FPW) {
         this.FPW = FPW;
@@ -20,7 +22,9 @@ module.exports = class FPW_Utils {
         console.log(`getReleaseNotes | Url: ${url} | Locale: ${locale}`);
         let req = new Request(url);
         req.method = 'GET';
-        req.headers = {
+        req.//This module was downloaded using FordWidgetTool.
+
+s = {
             'Content-Type': 'plain/text',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -48,7 +52,9 @@ module.exports = class FPW_Utils {
 
     async getLatestScriptVersion() {
         let req = new Request(`https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/latest.json`);
-        req.headers = {
+        req.//This module was downloaded using FordWidgetTool.
+
+s = {
             'Content-Type': 'application/json',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',

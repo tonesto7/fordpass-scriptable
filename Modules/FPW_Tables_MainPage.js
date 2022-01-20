@@ -1,4 +1,6 @@
-module.exports = class FPW_TableMainMenu {
+//This module was downloaded using FordWidgetTool.
+
+module.exports = class FPW_Tables_MainPage {
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
@@ -12,7 +14,7 @@ module.exports = class FPW_TableMainMenu {
         this.Tables = FPW.Tables;
     }
 
-    async generateMainInfoTable(update = false) {
+    async createMainPage(update = false) {
         const vData = await this.FordRequests.fetchVehicleData(true);
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         const isEV = vData.evVehicle === true;
@@ -39,7 +41,9 @@ module.exports = class FPW_TableMainMenu {
         const msgs = vData.messages && vData.messages.length ? vData.messages : [];
         const recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
         const msgsUnread = msgs && msgs.length ? msgs.filter((msg) => msg.isRead === false) : [];
-        const headerColor = '#13233F';
+        const //This module was downloaded using FordWidgetTool.
+
+            Color = '#13233F';
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
 
         let tableRows = [];
@@ -55,7 +59,7 @@ module.exports = class FPW_TableMainMenu {
                             widthWeight: 27,
                             onTap: async() => {
                                 console.log('(Dashboard) View Messages was pressed');
-                                await generateMessagesTable(vData, false);
+                                await this.Tables.MessagePage.createMessagesPage(vData, false);
                             },
                         }),
 
@@ -66,11 +70,11 @@ module.exports = class FPW_TableMainMenu {
                             dismissOnTap: false,
                             onTap: async() => {
                                 console.log(`(Dashboard) Menu Button was pressed`);
-                                menuBuilderByType('main');
+                                this.Tables.menuBuilderByType('main');
                             },
                         }),
                     ], {
-                        backgroundColor: new Color(headerColor),
+                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
                         height: 40,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -86,7 +90,7 @@ module.exports = class FPW_TableMainMenu {
                         await this.Tables.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.subheadline() }),
                         await this.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
                     ], {
-                        backgroundColor: new Color(headerColor),
+                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
                         height: 20,
                         dismissOnSelect: false,
                     },
@@ -127,7 +131,7 @@ module.exports = class FPW_TableMainMenu {
                         }),
                         await this.Tables.createImageCell(await this.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                     ], {
-                        backgroundColor: new Color(headerColor),
+                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
                         height: 100,
                         cellSpacing: 0,
                         dismissOnSelect: false,
@@ -143,7 +147,7 @@ module.exports = class FPW_TableMainMenu {
                         await this.Tables.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, { align: 'left', widthWeight: 45, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.subheadline() }),
                         await this.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
                     ], {
-                        backgroundColor: new Color(headerColor),
+                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
                         height: 40,
                         dismissOnSelect: false,
                     },
@@ -158,7 +162,7 @@ module.exports = class FPW_TableMainMenu {
                         await this.Tables.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.regularSystemFont(9) }),
                         // await this.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
                     ], {
-                        backgroundColor: new Color(headerColor),
+                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
                         height: 20,
                         dismissOnSelect: false,
                     },
@@ -252,7 +256,7 @@ module.exports = class FPW_TableMainMenu {
                                 cellSpacing: 5,
                                 onSelect: async() => {
                                     console.log('(Dashboard) Recall Item row was pressed');
-                                    await generateRecallsTable(vData);
+                                    await this.Tables.RecallPage.createRecallPage(vData);
                                 },
                             },
                         ),
@@ -305,7 +309,7 @@ module.exports = class FPW_TableMainMenu {
                                     async() => {
                                         console.log('(Dashboard) Alert Item row was pressed');
                                         // await this.Alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
-                                        await generateAlertsTable(vData);
+                                        await this.Tables.AlertPage.createAlertsPage(vData);
                                     } :
                                     undefined,
                             },
@@ -342,7 +346,7 @@ module.exports = class FPW_TableMainMenu {
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) View Unread Messages was pressed');
-                                    await generateMessagesTable(vData, true);
+                                    await this.Tables.MessagePage.createMessagesPage(vData, true);
                                 },
                             }),
                         ], {
@@ -351,7 +355,7 @@ module.exports = class FPW_TableMainMenu {
                             cellSpacing: 5,
                             onSelect: async() => {
                                 console.log('(Dashboard) View Unread Messages was pressed');
-                                await generateMessagesTable(vData, true);
+                                await this.Tables.MessagePage.createMessagesPage(vData, true);
                             },
                         },
                     ),
@@ -667,8 +671,8 @@ module.exports = class FPW_TableMainMenu {
                 }
             }
         } catch (err) {
-            console.error(`generateMainInfoTable() Error: ${err}`);
-            this.Files.appendToLogFile(`generateMainInfoTable() Error: ${err}`);
+            console.error(`createMainPage() Error: ${err}`);
+            this.Files.appendToLogFile(`createMainPage() Error: ${err}`);
         }
 
         await this.Tables.generateTableMenu('main', tableRows, false, this.isPhone, update);
@@ -677,7 +681,7 @@ module.exports = class FPW_TableMainMenu {
             let reqOk = await this.Kc.requiredPrefsOk(this.Kc.prefKeys().core);
             // console.log(`(Dashboard) Last Version: ${lastVersion}`);
             if (reqOk && lastVersion !== SCRIPT_VERSION) {
-                generateRecentChangesTable();
+                this.Tables.ChangesPage.createRecentChangesPage();
                 await this.Kc.setSettingVal('fpScriptVersion', SCRIPT_VERSION);
             }
         }

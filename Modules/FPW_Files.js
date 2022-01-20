@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Files {
     constructor(FPW) {
         this.FPW = FPW;
@@ -177,7 +179,9 @@ module.exports = class FPW_Files {
             let country = await this.Kc.getSettingVal('fpCountry');
             console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
             let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`);
-            req.headers = {
+            req.//This module was downloaded using FordWidgetTool.
+
+s = {
                 'Content-Type': 'application/json',
                 Accept: 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9',

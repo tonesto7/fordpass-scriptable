@@ -1,4 +1,6 @@
-module.exports = class FPW_WidgetLarge {
+//This module was downloaded using FordWidgetTool.
+
+module.exports = class FPW_Widgets_Large {
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;

@@ -1,7 +1,7 @@
-const FPW_WidgetSmall = importModule('/FPWModules/FPW_WidgetSmall.js'),
-    FPW_WidgetMedium = importModule('/FPWModules/FPW_WidgetMedium.js'),
-    FPW_WidgetLarge = importModule('/FPWModules/FPW_WidgetLarge.js'),
-    FPW_WidgetExtraLarge = importModule('/FPWModules/FPW_WidgetExtraLarge.js');
+const FPW_Widgets_Small = importModule('/FPWModules/FPW_Widgets_Small.js'),
+    FPW_Widgets_Medium = importModule('/FPWModules/FPW_Widgets_Medium.js'),
+    FPW_Widgets_Large = importModule('/FPWModules/FPW_Widgets_Large.js'),
+    FPW_Widgets_ExtraLarge = importModule('/FPWModules/FPW_Widgets_ExtraLarge.js');
 
 module.exports = class FPW_Widgets {
     constructor(FPW) {
@@ -14,10 +14,10 @@ module.exports = class FPW_Widgets {
         this.Alerts = FPW.Alerts;
         this.Timers = FPW.Timers;
         this.Utils = FPW.Utils;
-        this.SmallWidget = new FPW_WidgetSmall(this);
-        this.MediumWidget = new FPW_WidgetMedium(this);
-        this.LargeWidget = new FPW_WidgetLarge(this);
-        this.ExtraLargeWidget = new FPW_WidgetExtraLarge(this);
+        this.SmallWidget = new FPW_Widgets_Small(this);
+        this.MediumWidget = new FPW_Widgets_Medium(this);
+        this.LargeWidget = new FPW_Widgets_Large(this);
+        this.ExtraLargeWidget = new FPW_Widgets_ExtraLarge(this);
     }
 
     async createColumn(srcField, styles = {}) {
@@ -56,10 +56,13 @@ module.exports = class FPW_Widgets {
         return _img;
     }
 
-    async createTitle(headerField, titleText, wSize = 'medium', hideTitleForSmall = false) {
+    async createTitle(Field, titleText, wSize = 'medium', hideTitleForSmall = false) {
+        //This module was downloaded using FordWidgetTool.
         let titleParams = titleText.split('||');
         let icon = this.FPW.iconMap[titleParams[0]];
-        let titleStack = await headerField.addStack({ '*centerAlignContent': null });
+        let titleStack = await //This module was downloaded using FordWidgetTool.
+
+            Field.addStack({ '*centerAlignContent': null });
         if (icon !== undefined) {
             titleStack.layoutHorizontally();
             let imgFile = await this.Files.getImage(icon.toString());
