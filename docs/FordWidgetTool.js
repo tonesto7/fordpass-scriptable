@@ -4,7 +4,7 @@
 
 // This is based on the scriptdude installer https://github.com/kevinkub/scriptdu.de script and modified to manage the Ford Widget script
 
-const SCRIPT_VERSION = '1.2.0';
+const SCRIPT_VERSION = '2.0.0';
 const maxSupportedInstance = 10;
 const configUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/docs/config.json`;
 
@@ -20,7 +20,7 @@ class WidgetInstaller {
             scriptGlyph: 'car',
             sourceUrl: 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js',
             sourceModules: [
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Class.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Alerts.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Files.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordCommands.js',
@@ -31,8 +31,19 @@ class WidgetInstaller {
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Statics.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableAlerts.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableChanges.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableMainMenu.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableMessages.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableRecalls.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_TableWidgetStyles.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Utils.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_WidgetSmall.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_WidgetMedium.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_WidgetLarge.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_WidgetExtraLarge.js',
             ],
             docsUrl: 'https://github.com/tonesto7/fordpass-scriptable#readme',
             cleanup: {

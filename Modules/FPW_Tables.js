@@ -6,7 +6,6 @@ module.exports = class FPW_Tables {
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
         this.Kc = FPW.Kc;
-        this.Statics = FPW.Statics;
         this.FordRequests = FPW.FordRequests;
         this.Alerts = FPW.Alerts;
         this.Utils = FPW.Utils;
@@ -150,7 +149,7 @@ module.exports = class FPW_Tables {
             case 'R':
                 return '#FF0000';
             default:
-                return this.Statics.colorMap.textColor1;
+                return this.FPW.colorMap.textColor1;
         }
     }
 
@@ -165,7 +164,7 @@ module.exports = class FPW_Tables {
             case 'fixed':
                 return { name: 'Fixed', color: new Color('#b605fc') };
             default:
-                return { name: '', color: new Color(this.Statics.colorMap.textColor1) };
+                return { name: '', color: new Color(this.FPW.colorMap.textColor1) };
         }
     }
 
@@ -215,20 +214,20 @@ module.exports = class FPW_Tables {
 
                     data.fuseResponse.fuseResponseList.forEach((fuse, ind) => {
                         otaHTML += `<ul>`;
-                        otaHTML += `<li>CorrelationID: ${fuse.oemCorrelationId || this.Statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Created: ${fuse.deploymentCreationDate || this.Statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Expiration: ${fuse.deploymentExpirationTime || this.Statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Priority: ${fuse.communicationPriority || this.Statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Type: ${fuse.type || this.Statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Trigger: ${fuse.triggerType || this.Statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>CorrelationID: ${fuse.oemCorrelationId || this.FPW.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Created: ${fuse.deploymentCreationDate || this.FPW.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Expiration: ${fuse.deploymentExpirationTime || this.FPW.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Priority: ${fuse.communicationPriority || this.FPW.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Type: ${fuse.type || this.FPW.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Trigger: ${fuse.triggerType || this.FPW.textMap().errorMessages.noData}</li>`;
                         otaHTML += `<li>Inhibit Required: ${fuse.inhibitRequired}</li>`;
-                        otaHTML += `<li>Environment: ${fuse.tmcEnvironment || this.Statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Environment: ${fuse.tmcEnvironment || this.FPW.textMap().errorMessages.noData}</li>`;
                         if (fuse.latestStatus) {
                             otaHTML += `<li>Latest Status:`;
                             otaHTML += `    <ul>`;
-                            otaHTML += `        <li>Status: ${fuse.latestStatus.aggregateStatus || this.Statics.textMap().errorMessages.noData}</li>`;
-                            otaHTML += `        <li>Details: ${fuse.latestStatus.detailedStatus || this.Statics.textMap().errorMessages.noData}</li>`;
-                            otaHTML += `        <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.Statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>Status: ${fuse.latestStatus.aggregateStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>Details: ${fuse.latestStatus.detailedStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.FPW.textMap().errorMessages.noData}</li>`;
                             otaHTML += `    </ul>`;
                             otaHTML += `</li>`;
                         }
@@ -236,12 +235,12 @@ module.exports = class FPW_Tables {
                             otaHTML += `<li>Package Details:`;
                             otaHTML += `    <ul>`;
                             otaHTML += `        <li>WiFi Required: ${fuse.packageUpdateDetails.wifiRequired}</li>`;
-                            otaHTML += `        <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.Statics.textMap().errorMessages.noData}</li>`;
-                            otaHTML += `        <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.Statics.textMap().errorMessages.noData}</li>`;
-                            otaHTML += `        <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.Statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.FPW.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.FPW.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
                             otaHTML += `        <li>ReleaseNotes:`;
                             otaHTML += `            <ul>`;
-                            otaHTML += `                 <li>${data.fuseResponse.languageText.Text || this.Statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `                 <li>${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
                             otaHTML += `            </ul>`;
                             otaHTML += `        </li>`;
                             otaHTML += `    </ul>`;

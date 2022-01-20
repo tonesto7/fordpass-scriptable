@@ -1,10 +1,8 @@
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_Files {
-    constructor(fpw) {
-        this.fpw = fpw;
-        this.SCRIPT_ID = fpw.SCRIPT_ID;
-        this.widgetConfig = fpw.widgetConfig;
+    constructor(FPW) {
+        this.FPW = FPW;
+        this.SCRIPT_ID = FPW.SCRIPT_ID;
+        this.widgetConfig = FPW.widgetConfig;
     }
 
     async loadImage(imgUrl) {
@@ -58,7 +56,10 @@ module.exports = class FPW_Files {
         try {
             let fm = FileManager.iCloud();
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_log_${this.SCRIPT_ID}.log` : 'fp_log.log';
+            const devName = Device.name()
+                .replace(/[^a-zA-Z\s]/g, '')
+                .toLowerCase();
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
             let path = fm.joinPath(logDir, fileName);
             if (!(await fm.isDirectory(logDir))) {
                 console.log('Creating Logs directory...');
@@ -68,10 +69,10 @@ module.exports = class FPW_Files {
             if (await fm.fileExists(path)) {
                 logText = await fm.readString(path);
                 logText += '\n[' + new Date().toLocaleString() + '] - ' + txt.toString();
-                console.log(logText);
+                // console.log(logText);
             } else {
                 logText = '[' + new Date().toLocaleString() + '] - ' + txt.toString();
-                console.log(logText);
+                // console.log(logText);
             }
             await fm.writeString(path, logText);
         } catch (e) {
@@ -162,7 +163,7 @@ module.exports = class FPW_Files {
     async getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false) {
         let fm = cloudStore ? FileManager.iCloud() : FileManager.local();
         let dir = fm.documentsDirectory();
-        let fileName = this.fpw.SCRIPT_ID !== null && this.fpw.SCRIPT_ID !== undefined && this.fpw.SCRIPT_ID > 0 ? `vehicle-${angle}_${this.fpw.SCRIPT_ID}.png` : `vehicle-${angle}.png`;
+        let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `vehicle-${angle}_${this.SCRIPT_ID}.png` : `vehicle-${angle}.png`;
         let path = fm.joinPath(dir, fileName);
         if (await fm.fileExists(path)) {
             if (asData) {
@@ -171,9 +172,9 @@ module.exports = class FPW_Files {
                 return await fm.readImage(path);
             }
         } else {
-            let vin = await this.fpw.Kc.getSettingVal('fpVin');
-            let token = await this.fpw.Kc.getSettingVal('fpToken2');
-            let country = await this.fpw.Kc.getSettingVal('fpCountry');
+            let vin = await this.Kc.getSettingVal('fpVin');
+            let token = await this.Kc.getSettingVal('fpToken2');
+            let country = await this.Kc.getSettingVal('fpCountry');
             console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
             let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`);
             req.headers = {

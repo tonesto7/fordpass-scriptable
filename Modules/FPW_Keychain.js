@@ -1,23 +1,14 @@
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_Keychain {
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
+        this.Utils = FPW.Utils;
     }
 
     //********************************************************************************************************************************
     //*                                             START FILE/KEYCHAIN MANAGEMENT FUNCTIONS
     //********************************************************************************************************************************
-
-    async vinFix() {
-        let vin = await this.getSettingVal('fpVin');
-        if (vin && this.FPW.utils.hasLowerCase(vin)) {
-            console.log('VIN Validation Error: Your saved VIN number has lowercase letters.\nUpdating your saved value for you!');
-            await this.setSettingVal('fpVin', vin.toUpperCase());
-        }
-    }
 
     async vinCheck(vin, setup = false) {
         vin = vin || (await this.getSettingVal('fpVin'));
@@ -62,7 +53,7 @@ module.exports = class FPW_Keychain {
     }
 
     async getSettingVal(key) {
-        key = this.FPW.SCRIPT_ID !== null && this.FPW.SCRIPT_ID !== undefined && this.FPW.SCRIPT_ID > 0 ? `${key}_${this.FPW.SCRIPT_ID}` : key;
+        key = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `${key}_${this.SCRIPT_ID}` : key;
         try {
             if (await Keychain.contains(key)) {
                 return await Keychain.get(key);
@@ -76,7 +67,7 @@ module.exports = class FPW_Keychain {
 
     async setSettingVal(key, value) {
         if (key && value) {
-            key = this.FPW.SCRIPT_ID !== null && this.FPW.SCRIPT_ID !== undefined && this.FPW.SCRIPT_ID > 0 ? `${key}_${this.FPW.SCRIPT_ID}` : key;
+            key = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `${key}_${this.SCRIPT_ID}` : key;
             await Keychain.set(key, value);
         }
     }
@@ -94,7 +85,7 @@ module.exports = class FPW_Keychain {
     }
 
     async removeSettingVal(key) {
-        key = this.FPW.SCRIPT_ID !== null && this.FPW.SCRIPT_ID !== undefined && this.FPW.SCRIPT_ID > 0 ? `${key}_${this.FPW.SCRIPT_ID}` : key;
+        key = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `${key}_${this.SCRIPT_ID}` : key;
         if (await Keychain.contains(key)) {
             await Keychain.remove(key);
         }

@@ -1,7 +1,3 @@
-//This module was downloaded using FordWidgetTool.
-
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_Notifications {
     constructor(FPW) {
         this.FPW = FPW;

@@ -6,7 +6,7 @@ module.exports = class FPW_FordCommands {
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
         this.Kc = FPW.Kc;
-        this.Statics = FPW.Statics;
+        this.Files = FPW.Files;
         this.FordRequests = FPW.FordRequests;
         this.Alerts = FPW.Alerts;
         this.Timers = FPW.Timers;
@@ -158,7 +158,7 @@ module.exports = class FPW_FordCommands {
                 if (data == 'Access Denied') {
                     console.log('sendVehicleCmd: Auth Token Expired. Fetching new token and fetch raw data again');
                     let result = await this.FordRequests.fetchToken();
-                    if (result && result == this.Statics.textMap().errorMessages.invalidGrant) {
+                    if (result && result == this.FPW.textMap().errorMessages.invalidGrant) {
                         console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
                         return result;
                     }
@@ -177,21 +177,21 @@ module.exports = class FPW_FordCommands {
                         if (cmdResp.statusCode === 590) {
                             console.log('code 590');
                             console.log(`isLastCmd: ${isLastCmd}`);
-                            outMsg = { title: `${cmdDesc} Command`, message: this.Statics.textMap().errorMessages.cmd_err_590 };
+                            outMsg = { title: `${cmdDesc} Command`, message: this.FPW.textMap().errorMessages.cmd_err_590 };
                         } else {
                             errMsg = `Command Error: ${JSON.stringify(data)}`;
-                            outMsg = { title: `${cmdDesc} Command`, message: `${this.Statics.textMap().errorMessages.cmd_err}\n\Error: ${cmdResp.statusCode}` };
+                            outMsg = { title: `${cmdDesc} Command`, message: `${this.FPW.textMap().errorMessages.cmd_err}\n\Error: ${cmdResp.statusCode}` };
                         }
                     } else {
                         console.log('sendVehicleCmd Response: ' + JSON.stringify(data));
-                        outMsg = { title: `${cmdDesc} Command`, message: this.Statics.textMap().successMessages.cmd_success };
+                        outMsg = { title: `${cmdDesc} Command`, message: this.FPW.textMap().successMessages.cmd_success };
                     }
                 }
 
                 if (wasError) {
                     if (errMsg) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
-                        this.FPW.files.appendToLogFile(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
+                        this.Files.appendToLogFile(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
                     }
                     if (outMsg.message !== '') {
                         await this.Alerts.showAlert(outMsg.title, outMsg.message);
@@ -219,7 +219,7 @@ module.exports = class FPW_FordCommands {
                 }
             } catch (e) {
                 console.log(`sendVehicleCmd() Catch Error: ${e}`);
-                this.FPW.files.appendToLogFile(`sendVehicleCmd() Catch Error: ${e}`);
+                this.Files.appendToLogFile(`sendVehicleCmd() Catch Error: ${e}`);
                 return;
             }
         }
