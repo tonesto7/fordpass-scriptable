@@ -1,13 +1,9 @@
-//This module was downloaded using FordWidgetTool.
-
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_Utils {
-    constructor(fpw) {
+    constructor(FPW) {
         // console.log(`FPW_Utils.js: constructor()`);
-        this.fpw = fpw;
-        this.statics = fpw.statics;
-        this.widgetConfig = fpw.widgetConfig;
+        this.FPW = FPW;
+        this.Statics = FPW.Statics;
+        this.widgetConfig = FPW.widgetConfig;
     }
 
     runScript(name) {
@@ -46,7 +42,7 @@ module.exports = class FPW_Utils {
             }
         } catch (e) {
             console.error(`getReleaseNotes Error: Could Not Load Release Notes. ${e}`);
-            this.fpw.files.appendToLogFile(`getReleaseNotes Error: Could Not Load Release Notes. ${e}`);
+            this.FPW.Files.appendToLogFile(`getReleaseNotes Error: Could Not Load Release Notes. ${e}`);
         }
         return undefined;
     }
@@ -65,7 +61,7 @@ module.exports = class FPW_Utils {
             return ver && ver.version ? ver.version.replace('v', '') : undefined;
         } catch (e) {
             console.log(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
-            this.fpw.files.appendToLogFile(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
+            this.FPW.Files.appendToLogFile(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
         }
     }
 
@@ -99,9 +95,9 @@ module.exports = class FPW_Utils {
 
     getTirePressureStyle(pressure, unit, wSize = 'medium') {
         const styles = {
-            normTxt: { font: Font.mediumSystemFont(this.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.statics.colorMap.textColor2) },
-            statLow: { font: Font.heavySystemFont(this.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF6700') },
-            statCrit: { font: Font.heavySystemFont(this.statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#DE1738') },
+            normTxt: { font: Font.mediumSystemFont(this.Statics.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.Statics.colorMap.textColor2) },
+            statLow: { font: Font.heavySystemFont(this.Statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF6700') },
+            statCrit: { font: Font.heavySystemFont(this.Statics.sizeMap[wSize].fontSizeMedium), textColor: new Color('#DE1738') },
             offset: 10,
         };
         let p = parseFloat(pressure);
@@ -140,7 +136,7 @@ module.exports = class FPW_Utils {
             return dto;
         } catch (e) {
             console.log(`convertFordDtToLocal Error: ${e}`);
-            this.fpw.files.appendToLogFile(`convertFordDtToLocal Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`convertFordDtToLocal Error: ${e}`);
         }
     }
 
@@ -155,22 +151,22 @@ module.exports = class FPW_Utils {
 
         if (elap < min) {
             let d = Math.round(elap / 1000);
-            return `${d} ${this.statics.textMap().UIValues.second}${d > 1 ? this.statics.textMap().UIValues.plural : ''} ${this.statics.textMap().UIValues.subsequentAdverb}`;
+            return `${d} ${this.Statics.textMap().UIValues.second}${d > 1 ? this.Statics.textMap().UIValues.plural : ''} ${this.Statics.textMap().UIValues.subsequentAdverb}`;
         } else if (elap < hour) {
             let d = Math.round(elap / min);
-            return `${d} ${this.statics.textMap().UIValues.minute}${d > 1 ? this.statics.textMap().UIValues.plural : ''} ${this.statics.textMap().UIValues.subsequentAdverb}`;
+            return `${d} ${this.Statics.textMap().UIValues.minute}${d > 1 ? this.Statics.textMap().UIValues.plural : ''} ${this.Statics.textMap().UIValues.subsequentAdverb}`;
         } else if (elap < day) {
             let d = Math.round(elap / hour);
-            return `${d} ${this.statics.textMap().UIValues.hour}${d > 1 ? this.statics.textMap().UIValues.plural : ''} ${this.statics.textMap().UIValues.subsequentAdverb}`;
+            return `${d} ${this.Statics.textMap().UIValues.hour}${d > 1 ? this.Statics.textMap().UIValues.plural : ''} ${this.Statics.textMap().UIValues.subsequentAdverb}`;
         } else if (elap < month) {
             let d = Math.round(elap / day);
-            return `${d} ${this.statics.textMap().UIValues.day}${d > 1 ? this.statics.textMap().UIValues.plural : ''} ${this.statics.textMap().UIValues.subsequentAdverb}`;
+            return `${d} ${this.Statics.textMap().UIValues.day}${d > 1 ? this.Statics.textMap().UIValues.plural : ''} ${this.Statics.textMap().UIValues.subsequentAdverb}`;
         } else if (elap < year) {
             let d = Math.round(elap / month);
-            return `${d} ${this.statics.textMap().UIValues.month}${d > 1 ? this.statics.textMap().UIValues.plural : ''} ${this.statics.textMap().UIValues.subsequentAdverb}`;
+            return `${d} ${this.Statics.textMap().UIValues.month}${d > 1 ? this.Statics.textMap().UIValues.plural : ''} ${this.Statics.textMap().UIValues.subsequentAdverb}`;
         } else {
             let d = Math.round(elap / year);
-            return `${d} ${this.statics.textMap().UIValues.year}${d > 1 ? this.statics.textMap().UIValues.plural : ''} ${this.statics.textMap().UIValues.subsequentAdverb}`;
+            return `${d} ${this.Statics.textMap().UIValues.year}${d > 1 ? this.Statics.textMap().UIValues.plural : ''} ${this.Statics.textMap().UIValues.subsequentAdverb}`;
         }
     }
 
@@ -191,7 +187,7 @@ module.exports = class FPW_Utils {
     async pressureToFixed(pressure, digits) {
         // console.log(`pressureToFixed(${pressure}, ${digits})`);
         try {
-            let unit = await this.fpw.kc.getSettingVal('fpPressureUnits');
+            let unit = await this.FPW.Kc.getSettingVal('fpPressureUnits');
             switch (unit) {
                 case 'PSI':
                     return pressure ? (pressure * 0.1450377).toFixed(digits) : -1;
@@ -309,7 +305,7 @@ module.exports = class FPW_Utils {
             }
         } catch (e) {
             console.error(`isNewerVersion Error: ${e}`);
-            this.fpw.files.appendToLogFile(`isNewerVersion Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`isNewerVersion Error: ${e}`);
         }
         return false;
     }

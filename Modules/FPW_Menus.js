@@ -1,14 +1,12 @@
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_Menus {
-    constructor(fpw) {
-        this.fpw = fpw;
-        this.SCRIPT_ID = fpw.SCRIPT_ID;
-        this.widgetConfig = fpw.widgetConfig;
-        this.kc = fpw.kc;
-        this.statics = fpw.statics;
-        this.fordRequests = fpw.fordRequests;
-        this.alerts = fpw.alerts;
-        this.timers = fpw.timers;
+    constructor(FPW) {
+        this.FPW = FPW;
+        this.SCRIPT_ID = FPW.SCRIPT_ID;
+        this.widgetConfig = FPW.widgetConfig;
+        this.Kc = FPW.Kc;
+        this.Statics = FPW.Statics;
+        this.FordRequests = FPW.FordRequests;
+        this.Alerts = FPW.Alerts;
+        this.Timers = FPW.Timers;
     }
 };

@@ -31,18 +31,18 @@ module.exports = class FPW {
         this.deviceModel = Device.model();
         this.deviceSystemVersion = Device.systemVersion();
         this.widgetConfig = widgetConfig;
-        this.statics = importModule('FPW_Statics.js');
-        this.timers = this.loadTimers();
-        this.alerts = this.loadAlerts();
-        this.notifications = this.loadNotifications();
-        this.shortcutParser = this.loadShortcutParser();
-        this.kc = this.loadKeychain();
-        this.files = this.loadFiles();
-        this.utils = this.loadUtils();
-        this.fordRequests = this.loadFordRequests();
-        this.fordCommands = this.loadFordCommands();
-        this.tables = this.loadTables();
-        this.menus = this.loadMenus();
+        this.Statics = importModule('FPW_Statics.js');
+        this.Timers = this.loadTimers();
+        this.Alerts = this.loadAlerts();
+        this.Notifications = this.loadNotifications();
+        this.ShortcutParser = this.loadShortcutParser();
+        this.Kc = this.loadKeychain();
+        this.Files = this.loadFiles();
+        this.Utils = this.loadUtils();
+        this.FordRequests = this.loadFordRequests();
+        this.FordCommands = this.loadFordCommands();
+        this.Tables = this.loadTables();
+        this.Menus = this.loadMenus();
     }
 
     loadFiles() {

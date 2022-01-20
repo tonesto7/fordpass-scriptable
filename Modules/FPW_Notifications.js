@@ -3,10 +3,10 @@
 //This module was downloaded using FordWidgetTool.
 
 module.exports = class FPW_Notifications {
-    constructor(fpw) {
-        this.fpw = fpw;
-        this.SCRIPT_ID = fpw.SCRIPT_ID;
-        this.widgetConfig = fpw.widgetConfig;
+    constructor(FPW) {
+        this.FPW = FPW;
+        this.SCRIPT_ID = FPW.SCRIPT_ID;
+        this.widgetConfig = FPW.widgetConfig;
     }
 
     async createNotification(title, subtitle, body, options = {}) {

@@ -1,18 +1,16 @@
-//This module was downloaded using FordWidgetTool.
-
 let tableMap = {};
 
 module.exports = class FPW_Tables {
-    constructor(fpw) {
-        this.fpw = fpw;
-        this.SCRIPT_ID = fpw.SCRIPT_ID;
-        this.widgetConfig = fpw.widgetConfig;
-        this.kc = fpw.kc;
-        this.statics = fpw.statics;
-        this.fordRequests = fpw.fordRequests;
-        this.alerts = fpw.alerts;
-        this.utils = fpw.utils;
-        this.timers = fpw.timers;
+    constructor(FPW) {
+        this.FPW = FPW;
+        this.SCRIPT_ID = FPW.SCRIPT_ID;
+        this.widgetConfig = FPW.widgetConfig;
+        this.Kc = FPW.Kc;
+        this.Statics = FPW.Statics;
+        this.FordRequests = FPW.FordRequests;
+        this.Alerts = FPW.Alerts;
+        this.Utils = FPW.Utils;
+        this.Timers = FPW.Timers;
     }
 
     async getTable(tableName) {
@@ -53,7 +51,7 @@ module.exports = class FPW_Tables {
             }
         } catch (e) {
             console.error(`generateTableMenu() error: ${e}`);
-            this.fpw.files.appendToLogFile(`generateTableMenu() error: ${e}`);
+            this.FPW.Files.appendToLogFile(`generateTableMenu() error: ${e}`);
         }
     }
 
@@ -92,7 +90,7 @@ module.exports = class FPW_Tables {
             return cell;
         } catch (err) {
             console.error(`Error creating text cell: ${err}`);
-            this.fpw.files.appendToLogFile(`Error creating text cell: ${err}`);
+            this.FPW.Files.appendToLogFile(`Error creating text cell: ${err}`);
         }
     }
 
@@ -105,7 +103,7 @@ module.exports = class FPW_Tables {
             return cell;
         } catch (err) {
             console.error(`Error creating image cell: ${err}`);
-            this.fpw.files.appendToLogFile(`Error creating image cell: ${err}`);
+            this.FPW.Files.appendToLogFile(`Error creating image cell: ${err}`);
         }
     }
 
@@ -118,7 +116,7 @@ module.exports = class FPW_Tables {
             return cell;
         } catch (err) {
             console.error(`Error creating button cell: ${err}`);
-            this.fpw.files.appendToLogFile(`Error creating button cell: ${err}`);
+            this.FPW.Files.appendToLogFile(`Error creating button cell: ${err}`);
         }
     }
 
@@ -138,7 +136,7 @@ module.exports = class FPW_Tables {
             }
         } catch (err) {
             console.error(`Error applying options: ${err}`);
-            this.fpw.files.appendToLogFile(`Error applying options: ${err}`);
+            this.FPW.Files.appendToLogFile(`Error applying options: ${err}`);
         }
         return src;
     }
@@ -152,7 +150,7 @@ module.exports = class FPW_Tables {
             case 'R':
                 return '#FF0000';
             default:
-                return this.statics.colorMap.textColor1;
+                return this.Statics.colorMap.textColor1;
         }
     }
 
@@ -167,7 +165,7 @@ module.exports = class FPW_Tables {
             case 'fixed':
                 return { name: 'Fixed', color: new Color('#b605fc') };
             default:
-                return { name: '', color: new Color(this.statics.colorMap.textColor1) };
+                return { name: '', color: new Color(this.Statics.colorMap.textColor1) };
         }
     }
 
@@ -217,20 +215,20 @@ module.exports = class FPW_Tables {
 
                     data.fuseResponse.fuseResponseList.forEach((fuse, ind) => {
                         otaHTML += `<ul>`;
-                        otaHTML += `<li>CorrelationID: ${fuse.oemCorrelationId || this.statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Created: ${fuse.deploymentCreationDate || this.statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Expiration: ${fuse.deploymentExpirationTime || this.statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Priority: ${fuse.communicationPriority || this.statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Type: ${fuse.type || this.statics.textMap().errorMessages.noData}</li>`;
-                        otaHTML += `<li>Trigger: ${fuse.triggerType || this.statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>CorrelationID: ${fuse.oemCorrelationId || this.Statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Created: ${fuse.deploymentCreationDate || this.Statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Expiration: ${fuse.deploymentExpirationTime || this.Statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Priority: ${fuse.communicationPriority || this.Statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Type: ${fuse.type || this.Statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Trigger: ${fuse.triggerType || this.Statics.textMap().errorMessages.noData}</li>`;
                         otaHTML += `<li>Inhibit Required: ${fuse.inhibitRequired}</li>`;
-                        otaHTML += `<li>Environment: ${fuse.tmcEnvironment || this.statics.textMap().errorMessages.noData}</li>`;
+                        otaHTML += `<li>Environment: ${fuse.tmcEnvironment || this.Statics.textMap().errorMessages.noData}</li>`;
                         if (fuse.latestStatus) {
                             otaHTML += `<li>Latest Status:`;
                             otaHTML += `    <ul>`;
-                            otaHTML += `        <li>Status: ${fuse.latestStatus.aggregateStatus || this.statics.textMap().errorMessages.noData}</li>`;
-                            otaHTML += `        <li>Details: ${fuse.latestStatus.detailedStatus || this.statics.textMap().errorMessages.noData}</li>`;
-                            otaHTML += `        <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>Status: ${fuse.latestStatus.aggregateStatus || this.Statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>Details: ${fuse.latestStatus.detailedStatus || this.Statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.Statics.textMap().errorMessages.noData}</li>`;
                             otaHTML += `    </ul>`;
                             otaHTML += `</li>`;
                         }
@@ -238,12 +236,12 @@ module.exports = class FPW_Tables {
                             otaHTML += `<li>Package Details:`;
                             otaHTML += `    <ul>`;
                             otaHTML += `        <li>WiFi Required: ${fuse.packageUpdateDetails.wifiRequired}</li>`;
-                            otaHTML += `        <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.statics.textMap().errorMessages.noData}</li>`;
-                            otaHTML += `        <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.statics.textMap().errorMessages.noData}</li>`;
-                            otaHTML += `        <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.Statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.Statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `        <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.Statics.textMap().errorMessages.noData}</li>`;
                             otaHTML += `        <li>ReleaseNotes:`;
                             otaHTML += `            <ul>`;
-                            otaHTML += `                 <li>${data.fuseResponse.languageText.Text || this.statics.textMap().errorMessages.noData}</li>`;
+                            otaHTML += `                 <li>${data.fuseResponse.languageText.Text || this.Statics.textMap().errorMessages.noData}</li>`;
                             otaHTML += `            </ul>`;
                             otaHTML += `        </li>`;
                             otaHTML += `    </ul>`;
@@ -298,7 +296,7 @@ module.exports = class FPW_Tables {
             await wv.present(true);
         } catch (e) {
             console.log(`showDataWebView() | Error: ${e}`);
-            this.fpw.files.appendToLogFile(`showDataWebView() | Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`showDataWebView() | Error: ${e}`);
         }
     }
 };

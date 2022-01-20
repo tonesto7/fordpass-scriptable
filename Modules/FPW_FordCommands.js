@@ -1,15 +1,15 @@
 //This module was downloaded using FordWidgetTool.
 
 module.exports = class FPW_FordCommands {
-    constructor(fpw) {
-        this.fpw = fpw;
-        this.SCRIPT_ID = fpw.SCRIPT_ID;
-        this.widgetConfig = fpw.widgetConfig;
-        this.kc = fpw.kc;
-        this.statics = fpw.statics;
-        this.fordRequests = fpw.fordRequests;
-        this.alerts = fpw.alerts;
-        this.timers = fpw.timers;
+    constructor(FPW) {
+        this.FPW = FPW;
+        this.SCRIPT_ID = FPW.SCRIPT_ID;
+        this.widgetConfig = FPW.widgetConfig;
+        this.Kc = FPW.Kc;
+        this.Statics = FPW.Statics;
+        this.FordRequests = FPW.FordRequests;
+        this.Alerts = FPW.Alerts;
+        this.Timers = FPW.Timers;
     }
 
     vehicleCmdConfigs = (vin, param2 = undefined) => {
@@ -119,13 +119,13 @@ module.exports = class FPW_FordCommands {
     };
 
     async sendVehicleCmd(cmd_type = '', mainMenuRefresh = true) {
-        let authMsg = await this.fordRequests.checkAuth('sendVehicleCmd(' + cmd_type + ')');
+        let authMsg = await this.FordRequests.checkAuth('sendVehicleCmd(' + cmd_type + ')');
         if (authMsg) {
             console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
             return;
         }
-        let token = await this.kc.getSettingVal('fpToken2');
-        let vin = await this.kc.getSettingVal('fpVin');
+        let token = await this.Kc.getSettingVal('fpToken2');
+        let vin = await this.Kc.getSettingVal('fpVin');
         let cmdCfgs = this.vehicleCmdConfigs(vin);
         let cmds = cmdCfgs[cmd_type].cmds;
         let cmdDesc = cmdCfgs[cmd_type].desc;
@@ -145,7 +145,7 @@ module.exports = class FPW_FordCommands {
                 'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
-                'Application-Id': this.fordRequests.appIDs().NA,
+                'Application-Id': this.FordRequests.appIDs().NA,
                 'auth-token': `${token}`,
             };
             req.method = cmds[cmd].method;
@@ -157,8 +157,8 @@ module.exports = class FPW_FordCommands {
                 // console.log(data);
                 if (data == 'Access Denied') {
                     console.log('sendVehicleCmd: Auth Token Expired. Fetching new token and fetch raw data again');
-                    let result = await this.fordRequests.fetchToken();
-                    if (result && result == this.statics.textMap().errorMessages.invalidGrant) {
+                    let result = await this.FordRequests.fetchToken();
+                    if (result && result == this.Statics.textMap().errorMessages.invalidGrant) {
                         console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
                         return result;
                     }
@@ -177,37 +177,37 @@ module.exports = class FPW_FordCommands {
                         if (cmdResp.statusCode === 590) {
                             console.log('code 590');
                             console.log(`isLastCmd: ${isLastCmd}`);
-                            outMsg = { title: `${cmdDesc} Command`, message: this.statics.textMap().errorMessages.cmd_err_590 };
+                            outMsg = { title: `${cmdDesc} Command`, message: this.Statics.textMap().errorMessages.cmd_err_590 };
                         } else {
                             errMsg = `Command Error: ${JSON.stringify(data)}`;
-                            outMsg = { title: `${cmdDesc} Command`, message: `${this.statics.textMap().errorMessages.cmd_err}\n\Error: ${cmdResp.statusCode}` };
+                            outMsg = { title: `${cmdDesc} Command`, message: `${this.Statics.textMap().errorMessages.cmd_err}\n\Error: ${cmdResp.statusCode}` };
                         }
                     } else {
                         console.log('sendVehicleCmd Response: ' + JSON.stringify(data));
-                        outMsg = { title: `${cmdDesc} Command`, message: this.statics.textMap().successMessages.cmd_success };
+                        outMsg = { title: `${cmdDesc} Command`, message: this.Statics.textMap().successMessages.cmd_success };
                     }
                 }
 
                 if (wasError) {
                     if (errMsg) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
-                        this.fpw.files.appendToLogFile(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
+                        this.FPW.files.appendToLogFile(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
                     }
                     if (outMsg.message !== '') {
-                        await this.alerts.showAlert(outMsg.title, outMsg.message);
+                        await this.Alerts.showAlert(outMsg.title, outMsg.message);
                     }
                     return;
                 } else {
                     if (isLastCmd) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Sent Successfully`);
-                        await this.alerts.showAlert(outMsg.title, outMsg.message);
-                        await this.timers.createTimer(
+                        await this.Alerts.showAlert(outMsg.title, outMsg.message);
+                        await this.Timers.createTimer(
                             'vehicleDataRefresh',
                             15000,
                             false,
                             async() => {
                                 console.log('sendVehicleCmd: Refreshing Vehicle Data after 10 seconds');
-                                await this.fordRequests.fetchVehicleData(false);
+                                await this.FordRequests.fetchVehicleData(false);
                                 if (mainMenuRefresh) {
                                     console.log('sendVehicleCmd: Reloading Main Menu Content');
                                     await generateMainInfoTable(true);
@@ -219,7 +219,7 @@ module.exports = class FPW_FordCommands {
                 }
             } catch (e) {
                 console.log(`sendVehicleCmd() Catch Error: ${e}`);
-                this.fpw.files.appendToLogFile(`sendVehicleCmd() Catch Error: ${e}`);
+                this.FPW.files.appendToLogFile(`sendVehicleCmd() Catch Error: ${e}`);
                 return;
             }
         }

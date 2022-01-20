@@ -1,10 +1,10 @@
 //This module was downloaded using FordWidgetTool.
 
 module.exports = class FPW_Keychain {
-    constructor(fpw) {
-        this.fpw = fpw;
-        this.SCRIPT_ID = fpw.SCRIPT_ID;
-        this.widgetConfig = fpw.widgetConfig;
+    constructor(FPW) {
+        this.FPW = FPW;
+        this.SCRIPT_ID = FPW.SCRIPT_ID;
+        this.widgetConfig = FPW.widgetConfig;
     }
 
     //********************************************************************************************************************************
@@ -13,7 +13,7 @@ module.exports = class FPW_Keychain {
 
     async vinFix() {
         let vin = await this.getSettingVal('fpVin');
-        if (vin && this.fpw.utils.hasLowerCase(vin)) {
+        if (vin && this.FPW.utils.hasLowerCase(vin)) {
             console.log('VIN Validation Error: Your saved VIN number has lowercase letters.\nUpdating your saved value for you!');
             await this.setSettingVal('fpVin', vin.toUpperCase());
         }
@@ -35,7 +35,7 @@ module.exports = class FPW_Keychain {
                 console.log(`VIN Format Issues (${msgs.length}) | Current VIN: ${vin} | Errors: ${msgs.join('\n')}`);
                 if (!config.runsInWidget) {
                     //Added this to prevent the Alerts not supported in widgets error
-                    // await this.fpw.alerts.showAlert('VIN Validation Error', msgs.join('\n'));
+                    // await this.FPW.Alerts.showAlert('VIN Validation Error', msgs.join('\n'));
                 }
                 return false;
             } else {
@@ -62,21 +62,21 @@ module.exports = class FPW_Keychain {
     }
 
     async getSettingVal(key) {
-        key = this.fpw.SCRIPT_ID !== null && this.fpw.SCRIPT_ID !== undefined && this.fpw.SCRIPT_ID > 0 ? `${key}_${this.fpw.SCRIPT_ID}` : key;
+        key = this.FPW.SCRIPT_ID !== null && this.FPW.SCRIPT_ID !== undefined && this.FPW.SCRIPT_ID > 0 ? `${key}_${this.FPW.SCRIPT_ID}` : key;
         try {
             if (await Keychain.contains(key)) {
                 return await Keychain.get(key);
             }
         } catch (e) {
             console.log(`getSettingVal(${key}) Error: ${e}`);
-            this.fpw.files.appendToLogFile(`getSettingVal(${key}) Error: ${e}`);
+            this.FPW.files.appendToLogFile(`getSettingVal(${key}) Error: ${e}`);
         }
         return null;
     }
 
     async setSettingVal(key, value) {
         if (key && value) {
-            key = this.fpw.SCRIPT_ID !== null && this.fpw.SCRIPT_ID !== undefined && this.fpw.SCRIPT_ID > 0 ? `${key}_${this.fpw.SCRIPT_ID}` : key;
+            key = this.FPW.SCRIPT_ID !== null && this.FPW.SCRIPT_ID !== undefined && this.FPW.SCRIPT_ID > 0 ? `${key}_${this.FPW.SCRIPT_ID}` : key;
             await Keychain.set(key, value);
         }
     }
@@ -94,7 +94,7 @@ module.exports = class FPW_Keychain {
     }
 
     async removeSettingVal(key) {
-        key = this.fpw.SCRIPT_ID !== null && this.fpw.SCRIPT_ID !== undefined && this.fpw.SCRIPT_ID > 0 ? `${key}_${this.fpw.SCRIPT_ID}` : key;
+        key = this.FPW.SCRIPT_ID !== null && this.FPW.SCRIPT_ID !== undefined && this.FPW.SCRIPT_ID > 0 ? `${key}_${this.FPW.SCRIPT_ID}` : key;
         if (await Keychain.contains(key)) {
             await Keychain.remove(key);
         }

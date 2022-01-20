@@ -171,9 +171,9 @@ module.exports = class FPW_Files {
                 return await fm.readImage(path);
             }
         } else {
-            let vin = await this.fpw.kc.getSettingVal('fpVin');
-            let token = await this.fpw.kc.getSettingVal('fpToken2');
-            let country = await this.fpw.kc.getSettingVal('fpCountry');
+            let vin = await this.fpw.Kc.getSettingVal('fpVin');
+            let token = await this.fpw.Kc.getSettingVal('fpToken2');
+            let country = await this.fpw.Kc.getSettingVal('fpCountry');
             console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
             let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`);
             req.headers = {
