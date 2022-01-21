@@ -4,6 +4,7 @@ const FPW_Tables_AlertPage = importModule('/FPWModules/FPW_Tables_AlertPage.js')
     FPW_Tables_MessagePage = importModule('/FPWModules/FPW_Tables_MessagePage.js'),
     FPW_Tables_RecallPage = importModule('/FPWModules/FPW_Tables_RecallPage.js');
 FPW_Tables_WidgetStylePage = importModule('/FPWModules/FPW_Tables_WidgetStylePage.js');
+const darkMode = Device.isUsingDarkAppearance();
 
 module.exports = class FPW_Tables {
     constructor(FPW) {
@@ -44,6 +45,7 @@ module.exports = class FPW_Tables {
     }
 
     async generateTableMenu(tableName, rows, showSeparators = false, fullscreen = false, update = false) {
+        console.log(`generateTableMenu() called for ${tableName} | ${rows.length} rows | ${showSeparators} | ${fullscreen} | ${update}`);
         try {
             const exists = await this.tableExists(tableName);
             let table = await this.getTable(tableName);
@@ -83,12 +85,17 @@ module.exports = class FPW_Tables {
 
     async createTableRow(cells, options) {
         let row = new UITableRow();
-        cells.forEach((cell) => {
-            if (cell) {
-                row.addCell(cell);
-            }
-        });
-        row = await this.applyTableOptions(row, options);
+        try {
+            cells.forEach((cell) => {
+                if (cell) {
+                    row.addCell(cell);
+                }
+            });
+            row = await this.applyTableOptions(row, options);
+        } catch (err) {
+            console.error(`createTableRow() error: ${err}`);
+            this.FPW.Files.appendToLogFile(`createTableRow() error: ${err}`);
+        }
         return row;
     }
 
@@ -265,8 +272,8 @@ module.exports = class FPW_Tables {
             }
 
             // console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
-            const bgColor = this.darkMode ? '#242424' : 'white';
-            const fontColor = this.darkMode ? '#ffffff' : '#242425';
+            const bgColor = darkMode ? '#242424' : 'white';
+            const fontColor = darkMode ? '#ffffff' : '#242425';
             const wv = new WebView();
             let html = `
                 <html>

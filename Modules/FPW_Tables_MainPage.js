@@ -1,80 +1,70 @@
-//This module was downloaded using FordWidgetTool.
-
+const darkMode = Device.isUsingDarkAppearance();
 module.exports = class FPW_Tables_MainPage {
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        this.Kc = FPW.Kc;
-        this.FordRequests = FPW.FordRequests;
-        this.FordCommands = FPW.FordCommands;
-        this.Alerts = FPW.Alerts;
-        this.Utils = FPW.Utils;
-        this.Timers = FPW.Timers;
-        this.Tables = FPW.Tables;
     }
 
     async createMainPage(update = false) {
-        const vData = await this.FordRequests.fetchVehicleData(true);
-        const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
-        const isEV = vData.evVehicle === true;
-        const pressureUnits = await this.Kc.getSettingVal('fpPressureUnits');
-        const distanceMultiplier = (await this.Kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-        const distanceUnit = (await this.Kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
-        const tireUnit = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
-        const dtePostfix = isEV ? 'Range' : 'to E';
-
-        let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
-        let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
-        let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
-
-        let ignStatus = '';
-        if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
-            ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
-            createRemoteStartStatusTimer();
-        } else {
-            this.Timers.stopTimer('remoteStartStatus');
-            ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
-        }
-        let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : this.FPW.textMap().UIValues.unknown;
-        const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : this.FPW.textMap().errorMessages.noData;
-        const msgs = vData.messages && vData.messages.length ? vData.messages : [];
-        const recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
-        const msgsUnread = msgs && msgs.length ? msgs.filter((msg) => msg.isRead === false) : [];
-        const //This module was downloaded using FordWidgetTool.
-
-            Color = '#13233F';
-        const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
-
-        let tableRows = [];
-
         try {
+            const vData = await this.FPW.FordRequests.fetchVehicleData(true);
+            const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
+            const isEV = vData.evVehicle === true;
+            const pressureUnits = await this.FPW.Kc.getSettingVal('fpPressureUnits');
+            const distanceMultiplier = (await this.FPW.Kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+            const distanceUnit = (await this.FPW.Kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+            const tireUnit = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
+            const dtePostfix = isEV ? 'Range' : 'to E';
+
+            let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
+            let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
+            let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
+
+            let ignStatus = '';
+            if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
+                ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
+                this.FPW.Timers.createRemoteStartStatusTimer();
+            } else {
+                this.FPW.Timers.stopTimer('remoteStartStatus');
+                ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
+            }
+            let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : this.FPW.textMap().UIValues.unknown;
+            const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : this.FPW.textMap().errorMessages.noData;
+            const msgs = vData.messages && vData.messages.length ? vData.messages : [];
+            const recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
+            const msgsUnread = msgs && msgs.length ? msgs.filter((msg) => msg.isRead === false) : [];
+            const headerColor = '#13233F';
+            const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
+
+            let tableRows = [];
+
             // Header Section - Row 1: vehicle messages, vehicle type, vehicle alerts
             tableRows.push(
-                await this.Tables.createTableRow(
+                await this.FPW.Tables.createTableRow(
                     [
-                        await this.Tables.createImageCell(await this.Files.getFPImage(`ic_message_center_notification_dark.png`), { align: 'left', widthWeight: 3 }),
-                        await this.Tables.createButtonCell(msgs.length ? `${msgs.length}` : '', {
+                        await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_message_center_notification_dark.png`), { align: 'left', widthWeight: 3 }),
+                        await this.FPW.Tables.createButtonCell(msgs.length ? `${msgs.length}` : '', {
                             align: 'left',
                             widthWeight: 27,
                             onTap: async() => {
                                 console.log('(Dashboard) View Messages was pressed');
-                                await this.Tables.MessagePage.createMessagesPage(vData, false);
+                                await this.FPW.Tables.MessagePage.createMessagesPage(vData, false);
                             },
                         }),
 
-                        await this.Tables.createTextCell(vData.info.vehicle.vehicleType, odometerVal, { align: 'center', widthWeight: 40, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textWhite), subtitleColor: Color.lightGray(), titleFont: Font.title3(), subtitleFont: Font.footnote() }),
-                        await this.Tables.createButtonCell('Menu', {
+                        await this.FPW.Tables.createTextCell(vData.info.vehicle.vehicleType, odometerVal, { align: 'center', widthWeight: 40, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textWhite), subtitleColor: Color.lightGray(), titleFont: Font.title3(), subtitleFont: Font.footnote() }),
+                        await this.FPW.Tables.createButtonCell('Menu', {
                             align: 'right',
                             widthWeight: 30,
                             dismissOnTap: false,
                             onTap: async() => {
                                 console.log(`(Dashboard) Menu Button was pressed`);
-                                this.Tables.menuBuilderByType('main');
+                                this.FPW.Tables.menuBuilderByType('main');
                             },
                         }),
                     ], {
-                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
+                        backgroundColor: new Color(headerColor),
                         height: 40,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -84,13 +74,13 @@ module.exports = class FPW_Tables_MainPage {
 
             // Header Section - Row 2: Shows tire pressure label and unit
             tableRows.push(
-                await this.Tables.createTableRow(
+                await this.FPW.Tables.createTableRow(
                     [
-                        await this.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
-                        await this.Tables.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.subheadline() }),
-                        await this.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                        await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                        await this.FPW.Tables.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.subheadline() }),
+                        await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
                     ], {
-                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
+                        backgroundColor: new Color(headerColor),
                         height: 20,
                         dismissOnSelect: false,
                     },
@@ -98,16 +88,16 @@ module.exports = class FPW_Tables_MainPage {
             );
 
             // Header Section - Row 3: Displays the Vehicle Image in center and doors on the left and windows on the right
-            const openDoors = this.Widgets.getOpenItems(vData.statusDoors); //['LF', 'RR', 'HD'];
-            const openWindows = this.Widgets.getOpenItems(vData.statusWindows); //['LF', 'RR', 'HD'];
+            const openDoors = this.FPW.WidgetHelpers.getOpenItems(vData.statusDoors); //['LF', 'RR', 'HD'];
+            const openWindows = this.FPW.WidgetHelpers.getOpenItems(vData.statusWindows); //['LF', 'RR', 'HD'];
             // console.log(`openDoors: ${JSON.stringify(openDoors)}`);
             // console.log(`openWindows: ${JSON.stringify(openWindows)}`);
             tableRows.push(
-                await this.Tables.createTableRow(
+                await this.FPW.Tables.createTableRow(
                     [
                         // Door Status Cells
-                        await this.Tables.createImageCell(await this.Files.getImage(`door_dark_menu.png`), { align: 'center', widthWeight: 5 }),
-                        await this.Tables.createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', {
+                        await this.FPW.Tables.createImageCell(await this.FPW.Files.getImage(`door_dark_menu.png`), { align: 'center', widthWeight: 5 }),
+                        await this.FPW.Tables.createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', {
                             align: 'left',
                             widthWeight: 25,
                             dismissOnTap: false,
@@ -116,11 +106,11 @@ module.exports = class FPW_Tables_MainPage {
                             subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.subheadline(),
                         }),
-                        await this.Tables.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
-                        await this.Tables.createImageCell(await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 20 }),
-                        await this.Tables.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
+                        await this.FPW.Tables.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
+                        await this.FPW.Tables.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 20 }),
+                        await this.FPW.Tables.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
                         // Window Status Cells
-                        await this.Tables.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
+                        await this.FPW.Tables.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                             align: 'right',
                             widthWeight: 25,
                             dismissOnTap: false,
@@ -129,9 +119,9 @@ module.exports = class FPW_Tables_MainPage {
                             subtitleColor: new Color(openWindows.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.subheadline(),
                         }),
-                        await this.Tables.createImageCell(await this.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
+                        await this.FPW.Tables.createImageCell(await this.FPW.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                     ], {
-                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
+                        backgroundColor: new Color(headerColor),
                         height: 100,
                         cellSpacing: 0,
                         dismissOnSelect: false,
@@ -141,13 +131,13 @@ module.exports = class FPW_Tables_MainPage {
 
             // Header Section - Row 4: Shows fuel/EV battery level and range
             tableRows.push(
-                await this.Tables.createTableRow(
+                await this.FPW.Tables.createTableRow(
                     [
-                        await this.Tables.createImageCell(isEV ? await this.Files.getImage(`ev_battery_dark_menu.png`) : await this.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                        await this.Tables.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, { align: 'left', widthWeight: 45, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.subheadline() }),
-                        await this.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
+                        await this.FPW.Tables.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
+                        await this.FPW.Tables.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, { align: 'left', widthWeight: 45, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.subheadline() }),
+                        await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
                     ], {
-                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
+                        backgroundColor: new Color(headerColor),
                         height: 40,
                         dismissOnSelect: false,
                     },
@@ -156,13 +146,13 @@ module.exports = class FPW_Tables_MainPage {
 
             // Header Section - Row 5: Shows vehicle checkin timestamp
             tableRows.push(
-                await this.Tables.createTableRow(
+                await this.FPW.Tables.createTableRow(
                     [
-                        // await this.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
-                        await this.Tables.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.regularSystemFont(9) }),
-                        // await this.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
+                        // await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
+                        await this.FPW.Tables.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.regularSystemFont(9) }),
+                        // await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
                     ], {
-                        backgroundColor: new Color(Color), //This module was downloaded using FordWidgetTool.
+                        backgroundColor: new Color(headerColor),
                         height: 20,
                         dismissOnSelect: false,
                     },
@@ -170,7 +160,7 @@ module.exports = class FPW_Tables_MainPage {
             );
 
             let update = false;
-            if (widgetConfig.showTestUIStuff) {
+            if (this.FPW.widgetConfig.showTestUIStuff) {
                 vData.alerts = {
                     vha: [{
                         alertIdentifier: 'E19-374-43',
@@ -212,10 +202,10 @@ module.exports = class FPW_Tables_MainPage {
             }
 
             // Script Update Available Row
-            if (update || updateAvailable) {
+            if (update || this.FPW.updateAvailable) {
                 tableRows.push(
-                    await this.Tables.createTableRow(
-                        [await this.Tables.createTextCell(`New Widget Update Available (v${LATEST_VERSION})`, 'Tap here to update', { align: 'center', widthWeight: 100, titleColor: new Color('#b605fc'), titleFont: Font.subheadline(), subtitleColor: new Color(this.FPW.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) })], {
+                    await this.FPW.Tables.createTableRow(
+                        [await this.FPW.Tables.createTextCell(`New Widget Update Available (v${LATEST_VERSION})`, 'Tap here to update', { align: 'center', widthWeight: 100, titleColor: new Color('#b605fc'), titleFont: Font.subheadline(), subtitleColor: new Color(this.FPW.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) })], {
                             height: 40,
                             dismissOnSelect: false,
                             onSelect: async() => {
@@ -233,7 +223,7 @@ module.exports = class FPW_Tables_MainPage {
             if (recalls && recalls.length) {
                 // Creates the Vehicle Recalls Title Row
                 tableRows.push(
-                    await this.Tables.createTableRow([await this.Tables.createTextCell(`Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
                         height: 30,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -246,17 +236,17 @@ module.exports = class FPW_Tables_MainPage {
                         break;
                     }
                     tableRows.push(
-                        await this.Tables.createTableRow(
+                        await this.FPW.Tables.createTableRow(
                             [
-                                await this.Tables.createImageCell(await this.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.Tables.createTextCell(recall.title, recall.type + '\n' + recall.id, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.body(), subtitleColor: new Color(this.FPW.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) }),
+                                await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.FPW.Tables.createTextCell(recall.title, recall.type + '\n' + recall.id, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.body(), subtitleColor: new Color(this.FPW.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) }),
                             ], {
                                 height: 44,
                                 dismissOnSelect: false,
                                 cellSpacing: 5,
                                 onSelect: async() => {
                                     console.log('(Dashboard) Recall Item row was pressed');
-                                    await this.Tables.RecallPage.createRecallPage(vData);
+                                    await this.FPW.Tables.RecallPage.createRecallPage(vData);
                                 },
                             },
                         ),
@@ -277,7 +267,7 @@ module.exports = class FPW_Tables_MainPage {
 
                 // Creates the Vehicle Alerts Title Row
                 tableRows.push(
-                    await this.Tables.createTableRow([await this.Tables.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
                         height: 30,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -290,13 +280,13 @@ module.exports = class FPW_Tables_MainPage {
                         break;
                     }
                     tableRows.push(
-                        await this.Tables.createTableRow(
+                        await this.FPW.Tables.createTableRow(
                             [
-                                await this.Tables.createImageCell(await this.Files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.Tables.createTextCell(alert.alertDescription, this.Tables.getAlertDescByType(alert.alertType), {
+                                await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.FPW.Tables.createTextCell(alert.alertDescription, this.FPW.Tables.getAlertDescByType(alert.alertType), {
                                     align: 'left',
                                     widthWeight: 93,
-                                    titleColor: new Color(this.Tables.getAlertColorByCode(alert.colorCode)),
+                                    titleColor: new Color(this.FPW.Tables.getAlertColorByCode(alert.colorCode)),
                                     titleFont: Font.body(),
                                     subtitleColor: new Color(this.FPW.colorMap.textColor1),
                                     subtitleFont: Font.regularSystemFont(9),
@@ -308,8 +298,8 @@ module.exports = class FPW_Tables_MainPage {
                                 onSelect: alert.noButton === undefined || alert.noButton === false ?
                                     async() => {
                                         console.log('(Dashboard) Alert Item row was pressed');
-                                        // await this.Alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
-                                        await this.Tables.AlertPage.createAlertsPage(vData);
+                                        // await this.FPW.Alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
+                                        await this.FPW.Tables.AlertPage.createAlertsPage(vData);
                                     } :
                                     undefined,
                             },
@@ -321,7 +311,7 @@ module.exports = class FPW_Tables_MainPage {
             // Unread Messages Section - Displays a count of unread messages and a button to view all messages
             if (msgsUnread.length) {
                 tableRows.push(
-                    await this.Tables.createTableRow([await this.Tables.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
                         height: 30,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -330,10 +320,10 @@ module.exports = class FPW_Tables_MainPage {
                 );
 
                 tableRows.push(
-                    await this.Tables.createTableRow(
+                    await this.FPW.Tables.createTableRow(
                         [
-                            await this.Tables.createImageCell(await this.Files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await this.Tables.createTextCell(`Unread Message${msgsUnread.length > 1 ? 's' : ''}: (${msgsUnread.length})`, undefined, {
+                            await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await this.FPW.Tables.createTextCell(`Unread Message${msgsUnread.length > 1 ? 's' : ''}: (${msgsUnread.length})`, undefined, {
                                 align: 'left',
                                 widthWeight: 76,
                                 titleColor: new Color(this.FPW.colorMap.textColor1),
@@ -341,12 +331,12 @@ module.exports = class FPW_Tables_MainPage {
                                 subtitleColor: new Color(this.FPW.colorMap.textColor1),
                                 subtitleFont: Font.regularSystemFont(9),
                             }),
-                            await this.Tables.createButtonCell('View', {
+                            await this.FPW.Tables.createButtonCell('View', {
                                 align: 'center',
                                 widthWeight: 17,
                                 onTap: async() => {
                                     console.log('(Dashboard) View Unread Messages was pressed');
-                                    await this.Tables.MessagePage.createMessagesPage(vData, true);
+                                    await this.FPW.Tables.MessagePage.createMessagesPage(vData, true);
                                 },
                             }),
                         ], {
@@ -355,7 +345,7 @@ module.exports = class FPW_Tables_MainPage {
                             cellSpacing: 5,
                             onSelect: async() => {
                                 console.log('(Dashboard) View Unread Messages was pressed');
-                                await this.Tables.MessagePage.createMessagesPage(vData, true);
+                                await this.FPW.Tables.MessagePage.createMessagesPage(vData, true);
                             },
                         },
                     ),
@@ -366,7 +356,7 @@ module.exports = class FPW_Tables_MainPage {
             if (caps && caps.length && (caps.includes('DOOR_LOCK_UNLOCK') || caps.includes('REMOTE_START') || caps.includes('REMOTE_PANIC_ALARM'))) {
                 // Creates the Status & Remote Controls Header Row
                 tableRows.push(
-                    await this.Tables.createTableRow([await this.Tables.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
                         height: 30,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -377,10 +367,10 @@ module.exports = class FPW_Tables_MainPage {
                 // Generates the Lock Control Row
                 if (caps.includes('DOOR_LOCK_UNLOCK')) {
                     tableRows.push(
-                        await this.Tables.createTableRow(
+                        await this.FPW.Tables.createTableRow(
                             [
-                                await this.Tables.createImageCell(await this.Files.getFPImage(`${vData.lockStatus === 'LOCKED' ? 'lock_icon' : 'unlock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.Tables.createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', {
+                                await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`${vData.lockStatus === 'LOCKED' ? 'lock_icon' : 'unlock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.FPW.Tables.createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', {
                                     align: 'left',
                                     widthWeight: 59,
                                     titleColor: new Color(this.FPW.colorMap.textColor1),
@@ -388,22 +378,22 @@ module.exports = class FPW_Tables_MainPage {
                                     titleFont: Font.headline(),
                                     subtitleFont: Font.subheadline(),
                                 }),
-                                await this.Tables.createButtonCell('Unlock', {
+                                await this.FPW.Tables.createButtonCell('Unlock', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Lock was pressed');
-                                        if (await this.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
-                                            await this.FordCommands.sendVehicleCmd('unlock');
+                                        if (await this.FPW.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
+                                            await this.FPW.FordCommands.sendVehicleCmd('unlock');
                                         }
                                     },
                                 }),
-                                await this.Tables.createButtonCell('Lock', {
+                                await this.FPW.Tables.createButtonCell('Lock', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Lock was pressed');
-                                        await this.FordCommands.sendVehicleCmd('lock');
+                                        await this.FPW.FordCommands.sendVehicleCmd('lock');
                                     },
                                 }),
                             ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
@@ -414,25 +404,25 @@ module.exports = class FPW_Tables_MainPage {
                 // Generates the Remote Start Control Row
                 if (caps.includes('REMOTE_START')) {
                     tableRows.push(
-                        await this.Tables.createTableRow(
+                        await this.FPW.Tables.createTableRow(
                             [
-                                await this.Tables.createImageCell(await this.Files.getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.Tables.createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 59, titleColor: new Color(this.FPW.colorMap.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
-                                await this.Tables.createButtonCell('Stop', {
+                                await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.FPW.Tables.createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 59, titleColor: new Color(this.FPW.colorMap.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createButtonCell('Stop', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Stop was pressed');
-                                        await this.FordCommands.sendVehicleCmd('stop');
+                                        await this.FPW.FordCommands.sendVehicleCmd('stop');
                                     },
                                 }),
-                                await this.Tables.createButtonCell('Start', {
+                                await this.FPW.Tables.createButtonCell('Start', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Start was pressed');
-                                        if (await this.Alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
-                                            await this.FordCommands.sendVehicleCmd('start');
+                                        if (await this.FPW.Alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
+                                            await this.FPW.FordCommands.sendVehicleCmd('start');
                                         }
                                     },
                                 }),
@@ -444,18 +434,18 @@ module.exports = class FPW_Tables_MainPage {
                 // Generates the Horn/Lights Control Row
                 if (caps.includes('REMOTE_PANIC_ALARM')) {
                     tableRows.push(
-                        await this.Tables.createTableRow(
+                        await this.FPW.Tables.createTableRow(
                             [
-                                await this.Tables.createImageCell(await this.Files.getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.Tables.createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 76, titleColor: new Color(this.FPW.colorMap.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.FPW.Tables.createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 76, titleColor: new Color(this.FPW.colorMap.textColor1), subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
 
-                                await this.Tables.createButtonCell('Start', {
+                                await this.FPW.Tables.createButtonCell('Start', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Horn/Lights was pressed');
-                                        if (await this.Alerts.showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
-                                            await this.FordCommands.sendVehicleCmd('horn_and_lights');
+                                        if (await this.FPW.Alerts.showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
+                                            await this.FPW.FordCommands.sendVehicleCmd('horn_and_lights');
                                         }
                                     },
                                 }),
@@ -469,7 +459,7 @@ module.exports = class FPW_Tables_MainPage {
             if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES' || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT'))) {
                 // Creates the Advanced Controls Header Text
                 tableRows.push(
-                    await this.Tables.createTableRow([await this.Tables.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
                         height: 30,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -480,25 +470,25 @@ module.exports = class FPW_Tables_MainPage {
                 // Generates the SecuriAlert Control Row
                 if (caps.includes('GUARD_MODE')) {
                     tableRows.push(
-                        await this.Tables.createTableRow(
+                        await this.FPW.Tables.createTableRow(
                             [
-                                await this.Tables.createImageCell(await this.Files.getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.Tables.createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 59, titleColor: new Color(this.FPW.colorMap.textColor1), subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
-                                await this.Tables.createButtonCell('Enable', {
+                                await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.FPW.Tables.createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 59, titleColor: new Color(this.FPW.colorMap.textColor1), subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createButtonCell('Enable', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) SecuriAlert Enable was pressed');
-                                        await this.FordCommands.sendVehicleCmd('guard_mode_on');
+                                        await this.FPW.FordCommands.sendVehicleCmd('guard_mode_on');
                                     },
                                 }),
-                                await this.Tables.createButtonCell('Disable', {
+                                await this.FPW.Tables.createButtonCell('Disable', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) SecuriAlert Disable was pressed');
-                                        if (await this.Alerts.showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
-                                            await this.FordCommands.sendVehicleCmd('guard_mode_off');
+                                        if (await this.FPW.Alerts.showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
+                                            await this.FPW.FordCommands.sendVehicleCmd('guard_mode_off');
                                         }
                                     },
                                 }),
@@ -510,22 +500,22 @@ module.exports = class FPW_Tables_MainPage {
                 // Generates the Zone Lighting Control Row
                 if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES')) {
                     tableRows.push(
-                        await this.Tables.createTableRow(
+                        await this.FPW.Tables.createTableRow(
                             [
-                                await this.Tables.createImageCell(await this.Files.getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.Tables.createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 59, titleColor: new Color(this.FPW.colorMap.textColor1), subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
-                                await this.Tables.createButtonCell('Enable', {
+                                await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.FPW.Tables.createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 59, titleColor: new Color(this.FPW.colorMap.textColor1), subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createButtonCell('Enable', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Zone Lighting On Button was pressed');
-                                        await this.Alerts.showActionPrompt(
+                                        await this.FPW.Alerts.showActionPrompt(
                                             'Zone Lighting On Menu',
                                             undefined, [{
                                                     title: 'Front Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Front On was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_front_on');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_front_on');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -534,7 +524,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Rear Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Rear On was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_rear_on');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_rear_on');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -543,7 +533,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Left Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Left On was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_left_on');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_left_on');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -552,7 +542,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Right Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Right On was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_right_on');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_right_on');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -561,7 +551,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'All Zones',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone All On was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_all_on');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_all_on');
                                                     },
                                                     destructive: false,
                                                     show: true,
@@ -571,18 +561,18 @@ module.exports = class FPW_Tables_MainPage {
                                         );
                                     },
                                 }),
-                                await this.Tables.createButtonCell('Disable', {
+                                await this.FPW.Tables.createButtonCell('Disable', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Zone Lighting Off Button was pressed');
-                                        await this.Alerts.showActionPrompt(
+                                        await this.FPW.Alerts.showActionPrompt(
                                             'Zone Lighting Off',
                                             undefined, [{
                                                     title: 'Front Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Front Off was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_front_off');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_front_off');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -591,7 +581,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Rear Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Rear Off was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_rear_off');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_rear_off');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -600,7 +590,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Left Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Left Off was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_left_off');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_left_off');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -609,7 +599,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Right Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Right Off was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_right_off');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_right_off');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -618,7 +608,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'All Zones',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone All Off was pressed`);
-                                                        await this.FordCommands.sendVehicleCmd('zone_lights_all_off');
+                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_all_off');
                                                     },
                                                     destructive: false,
                                                     show: true,
@@ -636,10 +626,10 @@ module.exports = class FPW_Tables_MainPage {
                 // Generates the Trailer Light Check Control Row
                 if (caps.includes('TRAILER_LIGHT')) {
                     tableRows.push(
-                        await this.Tables.createTableRow(
+                        await this.FPW.Tables.createTableRow(
                             [
-                                await this.Tables.createImageCell(await this.Files.getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.Tables.createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, {
+                                await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.FPW.Tables.createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, {
                                     align: 'left',
                                     widthWeight: 59,
                                     titleColor: new Color(this.FPW.colorMap.textColor1),
@@ -647,22 +637,22 @@ module.exports = class FPW_Tables_MainPage {
                                     titleFont: Font.headline(),
                                     subtitleFont: Font.subheadline(),
                                 }),
-                                await this.Tables.createButtonCell('Start', {
+                                await this.FPW.Tables.createButtonCell('Start', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Trailer Light Check Start was pressed');
-                                        if (await this.Alerts.showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
-                                            await this.FordCommands.sendVehicleCmd('trailer_light_check_on');
+                                        if (await this.FPW.Alerts.showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
+                                            await this.FPW.FordCommands.sendVehicleCmd('trailer_light_check_on');
                                         }
                                     },
                                 }),
-                                await this.Tables.createButtonCell('Stop', {
+                                await this.FPW.Tables.createButtonCell('Stop', {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Trailer Light Check Stop was pressed');
-                                        await this.FordCommands.sendVehicleCmd('trailer_light_check_off');
+                                        await this.FPW.FordCommands.sendVehicleCmd('trailer_light_check_off');
                                     },
                                 }),
                             ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
@@ -670,20 +660,20 @@ module.exports = class FPW_Tables_MainPage {
                     );
                 }
             }
-        } catch (err) {
-            console.error(`createMainPage() Error: ${err}`);
-            this.Files.appendToLogFile(`createMainPage() Error: ${err}`);
-        }
+            await this.FPW.Tables.generateTableMenu('main', tableRows, false, this.FPW.isPhone, update);
 
-        await this.Tables.generateTableMenu('main', tableRows, false, this.isPhone, update);
-        if (!update) {
-            let lastVersion = await this.Kc.getSettingVal('fpScriptVersion');
-            let reqOk = await this.Kc.requiredPrefsOk(this.Kc.prefKeys().core);
-            // console.log(`(Dashboard) Last Version: ${lastVersion}`);
-            if (reqOk && lastVersion !== SCRIPT_VERSION) {
-                this.Tables.ChangesPage.createRecentChangesPage();
-                await this.Kc.setSettingVal('fpScriptVersion', SCRIPT_VERSION);
+            if (!update) {
+                let lastVersion = await this.FPW.Kc.getSettingVal('fpScriptVersion');
+                let reqOk = await this.FPW.Kc.requiredPrefsOk(this.FPW.Kc.prefKeys().core);
+                // console.log(`(Dashboard) Last Version: ${lastVersion}`);
+                if (reqOk && lastVersion !== SCRIPT_VERSION) {
+                    this.FPW.Tables.ChangesPage.createRecentChangesPage();
+                    await this.FPW.Kc.setSettingVal('fpScriptVersion', SCRIPT_VERSION);
+                }
             }
+        } catch (err) {
+            console.error(`createMainPage() Error: ${err}`, err);
+            this.FPW.Files.appendToLogFile(`createMainPage() Error: ${err}`);
         }
     }
 };

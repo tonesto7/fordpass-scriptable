@@ -1,5 +1,3 @@
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_Keychain {
     constructor(FPW) {
         this.FPW = FPW;

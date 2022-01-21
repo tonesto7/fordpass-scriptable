@@ -56,13 +56,10 @@ module.exports = class FPW_Widgets {
         return _img;
     }
 
-    async createTitle(Field, titleText, wSize = 'medium', hideTitleForSmall = false) {
-        //This module was downloaded using FordWidgetTool.
+    async createTitle(headerField, titleText, wSize = 'medium', hideTitleForSmall = false) {
         let titleParams = titleText.split('||');
         let icon = this.FPW.iconMap[titleParams[0]];
-        let titleStack = await //This module was downloaded using FordWidgetTool.
-
-            Field.addStack({ '*centerAlignContent': null });
+        let titleStack = await headerField.addStack({ '*centerAlignContent': null });
         if (icon !== undefined) {
             titleStack.layoutHorizontally();
             let imgFile = await this.Files.getImage(icon.toString());

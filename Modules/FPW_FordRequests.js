@@ -1,7 +1,3 @@
-//This module was downloaded using FordWidgetTool.
-
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_FordRequests {
     constructor(FPW) {
         this.FPW = FPW;
@@ -71,9 +67,7 @@ module.exports = class FPW_FordRequests {
         if (!password) {
             return this.FPW.textMap().errorMessages.noCredentials;
         }
-        let //This module was downloaded using FordWidgetTool.
-
-s = {
+        let headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -84,11 +78,7 @@ s = {
 
         try {
             let req1 = new Request('https://sso.ci.ford.com/oidc/endpoint/default/token');
-            req1.//This module was downloaded using FordWidgetTool.
-
-s = //This module was downloaded using FordWidgetTool.
-
-s;
+            req1.headers = headers;
             req1.method = 'POST';
             req1.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=password&username=${username}&password=${encodeURIComponent(password)}`;
             req1.timeoutInterval = 10;
@@ -107,17 +97,9 @@ s;
             }
             if (resp1.statusCode === 200) {
                 let req2 = new Request(`https://api.mps.ford.com/api/oauth2/v1/token`);
-                //This module was downloaded using FordWidgetTool.
-
-s['content-type'] = 'application/json';
-                //This module was downloaded using FordWidgetTool.
-
-s['application-id'] = this.appIDs().NA;
-                req2.//This module was downloaded using FordWidgetTool.
-
-s = //This module was downloaded using FordWidgetTool.
-
-s;
+                headers['content-type'] = 'application/json';
+                headers['application-id'] = this.appIDs().NA;
+                req2.headers = headers;
                 req2.method = 'PUT';
                 req2.body = JSON.stringify({ code: token1.access_token });
                 req2.timeoutInterval = 10;
@@ -159,9 +141,7 @@ s;
             const refreshToken = await this.Kc.getSettingVal('fpRefreshToken');
 
             let req = new Request(`https://api.mps.ford.com/api/oauth2/v1/refresh`);
-            req.//This module was downloaded using FordWidgetTool.
-
-s = {
+            req.headers = {
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
                 'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
@@ -457,9 +437,7 @@ s = {
         const token = await this.Kc.getSettingVal('fpToken2');
         const vin = await this.Kc.getSettingVal('fpVin');
         let request = new Request(`https://fsm-service-fordbeta-prod.apps.pd01.useast.cf.ford.com/api/earlyAccess/eapMemberInfo`);
-        request.//This module was downloaded using FordWidgetTool.
-
-s = {
+        request.headers = {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -485,9 +463,7 @@ s = {
         return undefined;
     }
 
-    async makeFordRequest(desc, url, method, json = false, //This module was downloaded using FordWidgetTool.
-
-Override = undefined, body = undefined) {
+    async makeFordRequest(desc, url, method, json = false, headerOverride = undefined, body = undefined) {
         let authMsg = await this.checkAuth('makeFordRequest(' + desc + ')');
         if (authMsg) {
             return authMsg;
@@ -497,11 +473,7 @@ Override = undefined, body = undefined) {
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
-        const //This module was downloaded using FordWidgetTool.
-
-s = //This module was downloaded using FordWidgetTool.
-
-Override || {
+        const headers = Override || {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -511,11 +483,7 @@ Override || {
         };
 
         let request = new Request(url);
-        request.//This module was downloaded using FordWidgetTool.
-
-s = //This module was downloaded using FordWidgetTool.
-
-s;
+        request.headers = headers;
         request.method = method;
         request.timeoutInterval = 20;
         if (body) {

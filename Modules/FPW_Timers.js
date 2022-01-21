@@ -1,5 +1,3 @@
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_Timers {
     constructor(FPW) {
         this.FPW = FPW;
@@ -33,14 +31,18 @@ module.exports = class FPW_Timers {
     }
 
     async createTimer(name, interval, repeat = false, actions, clearExisting = false) {
-        if (clearExisting && this.timerMap[name]) {
-            await this.stopTimer(name);
-        }
-        let timer = await this.getTimer(name);
-        if (timer && interval && actions) {
-            timer.schedule(10000, repeat, actions);
-        } else {
-            console.log(`createTimer Error: Could Not Create Timer | Name: ${name} | Interval: ${interval} | Repeat: ${repeat} | Actions: ${actions}`);
+        try {
+            if (clearExisting && this.timerMap[name]) {
+                await this.stopTimer(name);
+            }
+            let timer = await this.getTimer(name);
+            if (timer && interval && actions) {
+                timer.schedule(10000, repeat, actions);
+            } else {
+                console.log(`createTimer Error: Could Not Create Timer | Name: ${name} | Interval: ${interval} | Repeat: ${repeat} | Actions: ${actions}`);
+            }
+        } catch (e) {
+            console.log(`createTimer Error: Could Not Create Timer | ${e}`);
         }
     }
 
@@ -52,7 +54,7 @@ module.exports = class FPW_Timers {
             async() => {
                 console.log('(Main Table) Refresh Timer Fired');
                 await this.FordRequests.fetchVehicleData(false);
-                await this.Tables.TableMainMenu.generateMainInfoTable(true);
+                await this.Tables.MainPage.createMainPage(true);
             },
             false,
         );
@@ -67,7 +69,7 @@ module.exports = class FPW_Timers {
             async() => {
                 console.log('(Remote Start Status) Timer fired');
                 await this.FordRequests.fetchVehicleData(false);
-                await this.Tables.TableMainMenu.generateMainInfoTable(true);
+                await this.Tables.MainPage.createMainPage(true);
             },
             true,
         );

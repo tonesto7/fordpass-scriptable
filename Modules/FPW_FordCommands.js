@@ -1,7 +1,3 @@
-//This module was downloaded using FordWidgetTool.
-
-//This module was downloaded using FordWidgetTool.
-
 module.exports = class FPW_FordCommands {
     constructor(FPW) {
         this.FPW = FPW;
@@ -141,9 +137,7 @@ module.exports = class FPW_FordCommands {
             let isLastCmd = !multiCmds || (multiCmds && cmds.length == parseInt(cmd) + 1);
             // console.log(`processing vehicle command (${cmd_type}) #${cmd} | Method: ${cmds[cmd].method} | URI: ${cmds[cmd].uri}`);
             let req = new Request(cmds[cmd].uri);
-            req.//This module was downloaded using FordWidgetTool.
-
-s = {
+            req.headers = {
                 Accept: '*/*',
                 'Accept-Language': 'en-us',
                 'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',

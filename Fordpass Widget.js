@@ -124,8 +124,6 @@ class Widget {
     constructor(fpw) {
         try {
             this.FPW = fpw;
-            this.LATEST_VERSION;
-            this.updateAvailable = false;
             console.log(`this: ${JSON.stringify(this.FPW.SCRIPT_VERSION)}`);
             this.FPW.Files.appendToLogFile('Widget Started');
         } catch (error) {
@@ -139,10 +137,6 @@ class Widget {
      * @memberof Widget
      */
     async start() {
-        // Call this to run the actual widget.
-        this.LATEST_VERSION = await this.FPW.Utils.getLatestScriptVersion();
-        this.updateAvailable = this.FPW.Utils.isNewerVersion(SCRIPT_VERSION, this.LATEST_VERSION);
-        console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${this.updateAvailable} | Latest Version: ${this.LATEST_VERSION}`);
         let fordData = await this.prepWidget();
         if (fordData === null) return;
 
@@ -169,8 +163,8 @@ class Widget {
                 await this.FPW.WidgetHelpers.generateWidget(runningWidgetSize, fordData);
             }
         } catch (e) {
-            console.log(`rootCode | Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`rootCode | Error: ${e}`);
+            console.log(`start() Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`start() Error: ${e}`);
         }
         Script.complete();
     }
@@ -311,7 +305,6 @@ async function getModules(useLocal = false) {
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Menus.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Notifications.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Statics.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_AlertPage.js',
         'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_ChangesPage.js',
@@ -343,8 +336,9 @@ async function getModules(useLocal = false) {
                 let req = new Request(url);
                 let code = await req.loadString();
                 available.push(fileName);
-                const header = `//This module was downloaded using FordWidgetTool.\n\n`;
-                let codeToStore = Data.fromString(`${header}${code.replace(/header/g, header)}`);
+                // const header = `//This module was downloaded using FordWidgetTool.\n\n`;
+                // const newCode = code.replace(`/${header}/g`, '');
+                let codeToStore = Data.fromString(`${code}`);
                 console.log(`Required Module Missing... Downloading ${fileName}`);
                 await fm.write(filePath, codeToStore);
             } else {

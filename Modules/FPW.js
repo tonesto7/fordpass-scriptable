@@ -1,8 +1,7 @@
-//This module was downloaded using FordWidgetTool.
-
 const screenSize = Device.screenResolution();
 const isSmallDisplay = screenSize.width < 1200 === true;
 const darkMode = Device.isUsingDarkAppearance();
+const LATEST_VERSION = await getLatestScriptVersion();
 
 module.exports = class FPW {
     colorMap = {
@@ -244,7 +243,6 @@ module.exports = class FPW {
         this.deviceModel = Device.model();
         this.deviceSystemVersion = Device.systemVersion();
         this.widgetConfig = widgetConfig;
-        this.Statics = importModule('FPW_Statics.js');
         this.Timers = this.loadTimers();
         this.Alerts = this.loadAlerts();
         this.Notifications = this.loadNotifications();
@@ -257,6 +255,9 @@ module.exports = class FPW {
         this.Tables = this.loadTables();
         this.Menus = this.loadMenus();
         this.WidgetHelpers = this.loadWidgetHelpers();
+        this.LATEST_VERSION = LATEST_VERSION;
+        this.updateAvailable = this.FPW.Utils.isNewerVersion(SCRIPT_VERSION, this.LATEST_VERSION);
+        console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${this.updateAvailable} | Latest Version: ${this.LATEST_VERSION}`);
     }
 
     loadFiles() {
@@ -401,3 +402,20 @@ module.exports = class FPW {
         };
     }
 };
+
+async function getLatestScriptVersion() {
+    let req = new Request(`https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/latest.json`);
+    req.headers = {
+        'Content-Type': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+    };
+    req.method = 'GET';
+    req.timeoutInterval = 10;
+    try {
+        let ver = await req.loadJSON();
+        return ver && ver.version ? ver.version.replace('v', '') : undefined;
+    } catch (e) {
+        console.log(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
+    }
+}
