@@ -301,7 +301,7 @@ class WidgetInstaller {
             let req = new Request(url);
             let code = await req.loadString();
             let moduleName = url.substring(url.lastIndexOf('/') + 1);
-            let codeToStore = Data.fromString(`//This module was downloaded using FordWidgetTool.\n\n${code}`);
+            let codeToStore = Data.fromString(`${code}`);
             await this.icloudFileManager.createDirectory(this.icloudFileManager.joinPath(this.icloudDocDirectory, 'FPWModules'), true);
             let filePath = this.icloudFileManager.joinPath(this.icloudDocDirectory, 'FPWModules') + `/${moduleName}`;
             this.icloudFileManager.write(filePath, codeToStore);
