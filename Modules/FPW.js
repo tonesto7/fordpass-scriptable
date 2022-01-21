@@ -249,6 +249,7 @@ module.exports = class FPW {
             this.ShortcutParser = this.loadShortcutParser();
             this.Kc = this.loadKeychain();
             this.Files = this.loadFiles();
+            this.Logger = this.logger.bind(this);
             this.Utils = this.loadUtils();
             this.FordRequests = this.loadFordRequests();
             this.FordCommands = this.loadFordCommands();
@@ -270,6 +271,17 @@ module.exports = class FPW {
         this.setStateVal('LATEST_VERSION', v);
         this.setStateVal('updateAvailable', await this.Utils.isNewerVersion(this.SCRIPT_VERSION, v));
         console.log(`Script Version: ${this.SCRIPT_VERSION} | Update Available: ${this.getStateVal('updateAvailable')} | Latest Version: ${this.getStateVal('LATEST_VERSION')}`);
+    }
+
+    async logger(msg, error = false, saveToLog = true) {
+        if (saveToLog) {
+            await this.Files.appendToLogFile(msg);
+        }
+        if (error) {
+            console.error(msg);
+        } else {
+            console.log(msg);
+        }
     }
 
     setStateVal(key, value) {

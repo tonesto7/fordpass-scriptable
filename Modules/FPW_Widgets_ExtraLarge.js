@@ -233,13 +233,13 @@ module.exports = class FPW_Widgets_ExtraLarge {
             let dtePostfix = isEV ? 'Range' : 'to E';
             let distanceMultiplier = (await this.FPW.Kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
             let distanceUnit = (await this.FPW.Kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
-            console.log('isEV: ' + isEV);
-            console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
-            console.log(`distanceToEmpty: ${vehicleData.distanceToEmpty}`);
-            console.log(`evBatteryLevel: ${vehicleData.evBatteryLevel}`);
-            console.log('evDistanceToEmpty: ' + vehicleData.evDistanceToEmpty);
-            console.log(`lvlValue: ${lvlValue}`);
-            console.log(`dteValue: ${dteValue}`);
+            // console.log('isEV: ' + isEV);
+            // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
+            // console.log(`distanceToEmpty: ${vehicleData.distanceToEmpty}`);
+            // console.log(`evBatteryLevel: ${vehicleData.evBatteryLevel}`);
+            // console.log('evDistanceToEmpty: ' + vehicleData.evDistanceToEmpty);
+            // console.log(`lvlValue: ${lvlValue}`);
+            // console.log(`dteValue: ${dteValue}`);
 
             // Fuel/Battery Section
             let elemCol = await this.FPW.WidgetHelpers.createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
