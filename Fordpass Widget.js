@@ -70,7 +70,7 @@ const changelog = {
 };
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/01/19, 6:00 pm';
+const SCRIPT_TS = '2022/01/21, 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -100,6 +100,9 @@ const widgetConfig = {
 };
 
 const FPWClass = await getModules(widgetConfig.useLocalModules);
+if (FPWClass === undefined) {
+    throw new Error('Could NOT Load FordPassWidget Class');
+}
 const FPW = new FPWClass(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
 
 //************************************************************************* */
@@ -288,6 +291,10 @@ async function testWidget(data) {
 // //***************************************************END WIDGET ELEMENT FUNCTIONS********************************************************
 // //***************************************************************************************************************************************
 
+async function hashCode(input) {
+    return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
+}
+
 /**
  * @description This loads and makes sure all modules are loaded before running the script
  * @param  {boolean} [useLocal=false] Tells the function to use the local version of the file manager instead of the icloud version
@@ -299,30 +306,43 @@ async function getModules(useLocal = false) {
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
     moduleRepo = widgetConfig.useBetaModules ? moduleRepo.replace('main', 'beta') : moduleRepo;
     const moduleFiles = [
-        'FPW.js',
-        'FPW_Alerts.js',
-        'FPW_Files.js',
-        'FPW_FordCommands.js',
-        'FPW_FordRequests.js',
-        'FPW_Keychain.js',
-        'FPW_Menus.js',
-        'FPW_Notifications.js',
-        'FPW_ShortcutParser.js',
-        'FPW_Tables.js',
-        'FPW_Tables_AlertPage.js',
-        'FPW_Tables_ChangesPage.js',
-        'FPW_Tables_MainPage.js',
-        'FPW_Tables_MessagePage.js',
-        'FPW_Tables_RecallPage.js',
-        'FPW_Tables_WidgetStylePage.js',
-        'FPW_Timers.js',
-        'FPW_Utils.js',
-        'FPW_Widgets.js',
-        'FPW_Widgets_Small.js',
-        'FPW_Widgets_Medium.js',
-        'FPW_Widgets_Large.js',
-        'FPW_Widgets_ExtraLarge.js',
+        'FPW.js||976099005',
+        'FPW_Alerts.js||1575654697',
+        'FPW_Files.js||1327907221',
+        'FPW_FordCommands.js||-1513595181',
+        'FPW_FordRequests.js||-530235373',
+        'FPW_Keychain.js||954896526',
+        'FPW_Menus.js||-2114571581',
+        'FPW_Notifications.js||-1071883614',
+        'FPW_ShortcutParser.js||966556475',
+        'FPW_Tables.js||883550714',
+        'FPW_Tables_AlertPage.js||1012159356',
+        'FPW_Tables_ChangesPage.js||-473781684',
+        'FPW_Tables_MainPage.js||1883446932',
+        'FPW_Tables_MessagePage.js||-1754669539',
+        'FPW_Tables_RecallPage.js||-285170438',
+        'FPW_Tables_WidgetStylePage.js||786295863',
+        'FPW_Timers.js||-694575770',
+        'FPW_Utils.js||-1891424353',
+        'FPW_Widgets.js||2147377263',
+        'FPW_Widgets_ExtraLarge.js||412651650',
+        'FPW_Widgets_Large.js||-347632866',
+        'FPW_Widgets_Medium.js||-848761353',
+        'FPW_Widgets_Small.js||-1812038684',
     ];
+
+    async function downloadModule(fileName, filePath) {
+        try {
+            let req = new Request(`${moduleRepo}${fileName}`);
+            let code = await req.loadString();
+            let codeData = Data.fromString(`${code}`);
+            await fm.write(filePath, codeData);
+            return true;
+        } catch (error) {
+            console.error(`(downloadModule) ${error}`);
+            return false;
+        }
+    }
 
     let available = [];
     try {
@@ -331,21 +351,26 @@ async function getModules(useLocal = false) {
             console.log('Creating FPWModules directory...');
             await fm.createDirectory(moduleDir);
         }
-
         for (const [i, file] of moduleFiles.entries()) {
-            const filePath = fm.joinPath(moduleDir, file);
-            // console.log(filePath);
+            const [fileName, fileHash] = file.split('||');
+            const filePath = fm.joinPath(moduleDir, fileName);
             if (!(await fm.fileExists(filePath))) {
-                let req = new Request(`${moduleRepo}${file}`);
-                let code = await req.loadString();
-                available.push(file);
-                const headerTxt = `//This module was downloaded using FordWidgetTool.\n\n`;
-                const newCode = code.replace(headerTxt, '');
-                let codeToStore = Data.fromString(`${headerTxt}${newCode}`);
-                console.log(`Required Module Missing... Downloading ${file}`);
-                await fm.write(filePath, codeToStore);
+                console.log(`Required Module Missing... Downloading ${fileName}`);
+                if (await downloadModule(fileName, filePath)) {
+                    available.push(fileName);
+                }
             } else {
-                available.push(file);
+                let fileCode = await fm.readString(filePath);
+                const hash = await hashCode(fileCode);
+                // console.log(`${fileName} hash: ${hash} | ${fileHash}`);
+                if (hash.toString() !== fileHash.toString()) {
+                    console.log(`Module Hash Missmatch... Downloading ${fileName}`);
+                    if (await downloadModule(fileName, filePath)) {
+                        available.push(fileName);
+                    }
+                } else {
+                    available.push(fileName);
+                }
             }
         }
         if (available.length === moduleFiles.length) {
@@ -354,12 +379,11 @@ async function getModules(useLocal = false) {
                 return importModule(fm.joinPath(moduleDir, 'FPW.js'));
             } catch (e) {
                 console.log(`Error Importing FPW.js: ${e}`);
-                // this.FPW.Files.appendToLogFile(`getModules() Error: ${e}`);
+                return undefined;
             }
         }
     } catch (error) {
         console.error(`(getModules) ${error}`);
-        // FPW.Files.appendToLogFile(`(getModules) ${error}`);
         return undefined;
     }
 }
