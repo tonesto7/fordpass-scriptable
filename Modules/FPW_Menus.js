@@ -217,7 +217,7 @@ module.exports = class FPW_Menus {
                         title: 'Small',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Small Widget was pressed`);
-                            const w = await this.FPW.Widgets.Small.createWidget(vehicleData);
+                            const w = await this.FPW.WidgetSmall.createWidget(vehicleData);
                             await w.presentSmall();
                         },
                         destructive: false,
@@ -227,7 +227,7 @@ module.exports = class FPW_Menus {
                         title: 'Medium',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Medium Widget was pressed`);
-                            const w = await this.FPW.Widgets.Medium.createWidget(vehicleData);
+                            const w = await this.FPW.WidgetMedium.createWidget(vehicleData);
                             await w.presentMedium();
                         },
                         destructive: false,
@@ -237,7 +237,7 @@ module.exports = class FPW_Menus {
                         title: 'Large',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Large Widget was pressed`);
-                            const w = awaitthis.Widgets.Large.createWidget(vehicleData);
+                            const w = awaitthis.WidgetLarge.createWidget(vehicleData);
                             await w.presentLarge();
                         },
                         destructive: false,
@@ -247,7 +247,7 @@ module.exports = class FPW_Menus {
                         title: 'Extra-Large',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Extra-Large Widget was pressed`);
-                            const w = await this.FPW.Widgets.ExtraLarge.createWidget(vehicleData);
+                            const w = await this.FPW.WidgetExtraLarge.createWidget(vehicleData);
                             await w.presentExtraLarge();
                         },
                         destructive: false,

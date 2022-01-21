@@ -1,9 +1,9 @@
-const FPW_Tables_AlertPage = importModule('/FPWModules/FPW_Tables_AlertPage.js'),
-    FPW_Tables_ChangesPage = importModule('/FPWModules/FPW_Tables_ChangesPage.js'),
-    FPW_Tables_MainPage = importModule('/FPWModules/FPW_Tables_MainPage.js'),
-    FPW_Tables_MessagePage = importModule('/FPWModules/FPW_Tables_MessagePage.js'),
-    FPW_Tables_RecallPage = importModule('/FPWModules/FPW_Tables_RecallPage.js');
-FPW_Tables_WidgetStylePage = importModule('/FPWModules/FPW_Tables_WidgetStylePage.js');
+const FPW_Tables_AlertPage = importModule('/FPW_Tables_AlertPage.js'),
+    FPW_Tables_ChangesPage = importModule('/FPW_Tables_ChangesPage.js'),
+    FPW_Tables_MainPage = importModule('/FPW_Tables_MainPage.js'),
+    FPW_Tables_MessagePage = importModule('/FPW_Tables_MessagePage.js'),
+    FPW_Tables_RecallPage = importModule('/FPW_Tables_RecallPage.js');
+FPW_Tables_WidgetStylePage = importModule('/FPW_Tables_WidgetStylePage.js');
 const darkMode = Device.isUsingDarkAppearance();
 
 module.exports = class FPW_Tables {

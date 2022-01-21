@@ -58,6 +58,7 @@ module.exports = class FPW_Files {
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
+                .replace(/\s/g, '_')
                 .toLowerCase();
             let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
             let path = fm.joinPath(logDir, fileName);
@@ -86,6 +87,7 @@ module.exports = class FPW_Files {
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
+                .replace(/\s/g, '_')
                 .toLowerCase();
             let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
             let path = fm.joinPath(logDir, fileName);
