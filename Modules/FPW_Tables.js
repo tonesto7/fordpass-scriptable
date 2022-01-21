@@ -40,7 +40,7 @@ module.exports = class FPW_Tables {
     }
 
     async generateTableMenu(tableName, rows, showSeparators = false, fullscreen = false, update = false) {
-        console.log(`generateTableMenu() called for ${tableName} | ${rows.length} rows | ${showSeparators} | ${fullscreen} | ${update}`);
+        // console.log(`generateTableMenu() called for ${tableName} | ${rows.length} rows | ${showSeparators} | ${fullscreen} | ${update}`);
         try {
             const exists = await this.tableExists(tableName);
             let table = await this.getTable(tableName);

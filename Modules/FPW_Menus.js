@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_Menus {
     constructor(FPW) {
         this.FPW = FPW;
@@ -306,10 +308,20 @@ module.exports = class FPW_Menus {
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
                             let data = await this.FPW.FordRequests.collectAllData(true);
-                            await this.FPW.Utils.createEmailObject(data, true);
+                            await this.FPW.Utils.createVehicleDataEmail(data, true);
                             this.menuBuilderByType('diagnostics');
                         },
                         destructive: true,
+                        show: true,
+                    },
+                    {
+                        title: 'Send Widget Logs to Developer',
+                        action: async() => {
+                            console.log(`(${typeDesc} Menu) Email Logs was pressed`);
+                            await this.FPW.Utils.createLogEmail();
+                            this.menuBuilderByType('diagnostics');
+                        },
+                        destructive: false,
                         show: true,
                     },
                     {
@@ -397,7 +409,7 @@ module.exports = class FPW_Menus {
                         title: `Widget Style: ${this.FPW.Utils.capitalizeStr(widgetStyle)}`,
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Widget Style pressed`);
-                            await this.FPW.Tables.widgetStyleSelector('medium');
+                            await this.FPW.Tables.WidgetStylePage.createWidgetStylePage();
                             this.menuBuilderByType('settings');
                         },
                         destructive: false,

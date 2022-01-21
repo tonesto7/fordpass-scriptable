@@ -43,7 +43,7 @@ module.exports = class FPW_Tables_WidgetStylePage {
                             [
                                 await this.FPW.Tables.createTextCell(`(${this.FPW.Utils.capitalizeStr(style)})`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.subheadline() }),
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getImage(`${size}_${style}.png`), { align: 'center', widthWeight: 60 }),
-                                await ththis.Tabless.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
+                                await this.FPW.Tables.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
                             ], {
                                 height: 150,
                                 dismissOnSelect: true,

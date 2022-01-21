@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 const darkMode = Device.isUsingDarkAppearance();
 module.exports = class FPW_Tables_AlertPage {
     constructor(FPW) {

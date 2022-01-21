@@ -1,7 +1,6 @@
 module.exports = class FPW_Utils {
     constructor(FPW) {
         this.FPW = FPW;
-        this.Kc = FPW.Kc;
         this.widgetConfig = FPW.widgetConfig;
     }
 
@@ -64,27 +63,49 @@ module.exports = class FPW_Utils {
         }
     }
 
-    async createEmailObject(data, attachJson = false) {
-        let email = new Mail();
-        const vehType = data.info && data.info.vehicle && data.info.vehicle.vehicleType ? data.info.vehicle.vehicleType : undefined;
-        const vehVin = data.info && data.info.vehicle && data.info.vehicle.vin ? data.info.vehicle.vin : undefined;
-        email.subject = `${vehType || 'FordPass'} Vehicle Data`;
-        email.toRecipients = ['purer_06_fidget@icloud.com']; // This is my anonymous email address provided by Apple,
-        email.body = attachJson ? 'Vehicle data is attached file' : JSON.stringify(data, null, 4);
-        email.isBodyHTML = true;
-        let fm = FileManager.local();
-        let dir = fm.documentsDirectory();
-        let path = fm.joinPath(dir, vehType ? `${vehType.replace(/\s/g, '_')}${vehVin ? '_' + vehVin : '_export'}.json` : `vehicleDataExport.json`);
-        if (attachJson) {
-            // Creates temporary JSON file and attaches it to the email
-            if (await fm.fileExists(path)) {
-                await fm.remove(path); //removes existing file if it exists
+    async createVehicleDataEmail(data, attachJson = false) {
+        try {
+            let email = new Mail();
+            const vehType = data.info && data.info.vehicle && data.info.vehicle.vehicleType ? data.info.vehicle.vehicleType : undefined;
+            const vehVin = data.info && data.info.vehicle && data.info.vehicle.vin ? data.info.vehicle.vin : undefined;
+            email.subject = `${vehType || 'FordPass'} Vehicle Data`;
+            email.toRecipients = [this.FPW.textMap().about.email]; // This is my anonymous email address provided by Apple,
+            email.body = attachJson ? 'Vehicle data is attached file' : JSON.stringify(data, null, 4);
+            email.isBodyHTML = true;
+            let fm = FileManager.local();
+            let dir = fm.documentsDirectory();
+            let path = fm.joinPath(dir, vehType ? `${vehType.replace(/\s/g, '_')}${vehVin ? '_' + vehVin : '_export'}.json` : `vehicleDataExport.json`);
+            if (attachJson) {
+                // Creates temporary JSON file and attaches it to the email
+                if (await fm.fileExists(path)) {
+                    await fm.remove(path); //removes existing file if it exists
+                }
+                await fm.writeString(path, JSON.stringify(data));
+                await email.addFileAttachment(path);
             }
-            await fm.writeString(path, JSON.stringify(data));
-            await email.addFileAttachment(path);
+            await email.send();
+            await fm.remove(path);
+        } catch (e) {
+            console.log(`createVehicleDataEmail Error: Could Not Create Email | ${e}`);
+            this.FPW.Files.appendToLogFile(`createVehicleDataEmail Error: Could Not Create Email | ${e}`);
         }
-        await email.send();
-        await fm.remove(path);
+    }
+
+    async createLogEmail() {
+        console.log('createLogEmail');
+        try {
+            let email = new Mail();
+            email.subject = `FordPass Widget Logs`;
+            email.toRecipients = [this.FPW.textMap().about.email]; // This is my anonymous email address provided by Apple,
+            email.body = 'Widget Logs are Attached';
+            email.isBodyHTML = true;
+            let logFile = await this.FPW.Files.getLogFilePath();
+            await email.addFileAttachment(logFile);
+            await email.send();
+        } catch (e) {
+            console.error(`createLogEmail Error: Could Not Send Log Email. ${e}`);
+            this.FPW.Files.appendToLogFile(`createLogEmail Error: Could Not Send Log Email. ${e}`);
+        }
     }
 
     async getPosition(data) {
@@ -186,7 +207,7 @@ module.exports = class FPW_Utils {
     async pressureToFixed(pressure, digits) {
         // console.log(`pressureToFixed(${pressure}, ${digits})`);
         try {
-            let unit = await this.Kc.getSettingVal('fpPressureUnits');
+            let unit = await this.FPW.Kc.getSettingVal('fpPressureUnits');
             switch (unit) {
                 case 'PSI':
                     return pressure ? (pressure * 0.1450377).toFixed(digits) : -1;

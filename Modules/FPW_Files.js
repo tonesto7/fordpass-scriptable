@@ -80,6 +80,44 @@ module.exports = class FPW_Files {
         }
     }
 
+    async readLogFile() {
+        try {
+            let fm = FileManager.iCloud();
+            const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
+            const devName = Device.name()
+                .replace(/[^a-zA-Z\s]/g, '')
+                .toLowerCase();
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
+            let path = fm.joinPath(logDir, fileName);
+            if (await fm.fileExists(path)) {
+                return await fm.readString(path);
+            } else {
+                return undefined;
+            }
+        } catch (e) {
+            console.log(`readLogFile Error: ${e}`);
+        }
+    }
+
+    async getLogFilePath() {
+        try {
+            let fm = FileManager.iCloud();
+            const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
+            const devName = Device.name()
+                .replace(/[^a-zA-Z\s]/g, '')
+                .toLowerCase();
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
+            let path = fm.joinPath(logDir, fileName);
+            if (await fm.fileExists(path)) {
+                return path;
+            } else {
+                return undefined;
+            }
+        } catch (e) {
+            console.log(`getLogFilePath Error: ${e}`);
+        }
+    }
+
     async removeLocalData(filename) {
         try {
             let fm = FileManager.local();
@@ -172,9 +210,9 @@ module.exports = class FPW_Files {
                 return await fm.readImage(path);
             }
         } else {
-            let vin = await this.Kc.getSettingVal('fpVin');
-            let token = await this.Kc.getSettingVal('fpToken2');
-            let country = await this.Kc.getSettingVal('fpCountry');
+            let vin = await this.FPW.Kc.getSettingVal('fpVin');
+            let token = await this.FPW.Kc.getSettingVal('fpToken2');
+            let country = await this.FPW.Kc.getSettingVal('fpCountry');
             console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
             let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`);
             req.headers = {

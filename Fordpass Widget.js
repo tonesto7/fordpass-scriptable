@@ -41,6 +41,7 @@ Changelog:
     - add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
     - Create widgets with less details and larger image.
     - Change module storage from iCloud to local storage.
+    - add a hash to the modules so we make sure it loads the correct modules.
 
 // Todo: Next Release (Post 2.0.x)
 - setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
@@ -335,7 +336,7 @@ async function getModules(useLocal = false) {
             const filePath = fm.joinPath(moduleDir, file);
             // console.log(filePath);
             if (!(await fm.fileExists(filePath))) {
-                let req = new Request(url);
+                let req = new Request(`${moduleRepo}${file}`);
                 let code = await req.loadString();
                 available.push(file);
                 const headerTxt = `//This module was downloaded using FordWidgetTool.\n\n`;

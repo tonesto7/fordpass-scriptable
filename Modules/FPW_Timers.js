@@ -3,12 +3,6 @@ module.exports = class FPW_Timers {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        this.Kc = FPW.Kc;
-        this.FordRequests = FPW.FordRequests;
-        this.Alerts = FPW.Alerts;
-        this.Utils = FPW.Utils;
-        this.Timers = FPW.Timers;
-        this.Tables = FPW.Tables;
         this.timerMap = {};
     }
 
@@ -47,14 +41,14 @@ module.exports = class FPW_Timers {
     }
 
     async scheduleMainTableRefresh(interval) {
-        await this.Timers.createTimer(
+        await this.createTimer(
             'mainTableRefresh',
             interval,
             false,
             async() => {
                 console.log('(Main Table) Refresh Timer Fired');
-                await this.FordRequests.fetchVehicleData(false);
-                await this.Tables.MainPage.createMainPage(true);
+                await this.FPW.FordRequests.fetchVehicleData(false);
+                await this.FPW.Tables.MainPage.createMainPage(true);
             },
             false,
         );
@@ -62,14 +56,14 @@ module.exports = class FPW_Timers {
 
     async createRemoteStartStatusTimer() {
         console.log('createRemoteStartStatusTimer');
-        await this.Timers.createTimer(
+        await this.createTimer(
             'remoteStartStatus',
             60000,
             false,
             async() => {
                 console.log('(Remote Start Status) Timer fired');
-                await this.FordRequests.fetchVehicleData(false);
-                await this.Tables.MainPage.createMainPage(true);
+                await this.FPW.FordRequests.fetchVehicleData(false);
+                await this.FPW.Tables.MainPage.createMainPage(true);
             },
             true,
         );

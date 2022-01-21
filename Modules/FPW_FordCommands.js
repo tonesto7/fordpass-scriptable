@@ -3,11 +3,6 @@ module.exports = class FPW_FordCommands {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        this.Kc = FPW.Kc;
-        this.Files = FPW.Files;
-        this.FordRequests = FPW.FordRequests;
-        this.Alerts = FPW.Alerts;
-        this.Timers = FPW.Timers;
     }
 
     vehicleCmdConfigs = (vin, param2 = undefined) => {
@@ -117,13 +112,13 @@ module.exports = class FPW_FordCommands {
     };
 
     async sendVehicleCmd(cmd_type = '', mainMenuRefresh = true) {
-        let authMsg = await this.FordRequests.checkAuth('sendVehicleCmd(' + cmd_type + ')');
+        let authMsg = await this.FPW.FordRequests.checkAuth('sendVehicleCmd(' + cmd_type + ')');
         if (authMsg) {
             console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
             return;
         }
-        let token = await this.Kc.getSettingVal('fpToken2');
-        let vin = await this.Kc.getSettingVal('fpVin');
+        let token = await this.FPW.Kc.getSettingVal('fpToken2');
+        let vin = await this.FPW.Kc.getSettingVal('fpVin');
         let cmdCfgs = this.vehicleCmdConfigs(vin);
         let cmds = cmdCfgs[cmd_type].cmds;
         let cmdDesc = cmdCfgs[cmd_type].desc;
@@ -143,7 +138,7 @@ module.exports = class FPW_FordCommands {
                 'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
-                'Application-Id': this.FordRequests.appIDs().NA,
+                'Application-Id': this.FPW.FordRequests.appIDs().NA,
                 'auth-token': `${token}`,
             };
             req.method = cmds[cmd].method;
@@ -155,7 +150,7 @@ module.exports = class FPW_FordCommands {
                 // console.log(data);
                 if (data == 'Access Denied') {
                     console.log('sendVehicleCmd: Auth Token Expired. Fetching new token and fetch raw data again');
-                    let result = await this.FordRequests.fetchToken();
+                    let result = await this.FPW.FordRequests.fetchToken();
                     if (result && result == this.FPW.textMap().errorMessages.invalidGrant) {
                         console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
                         return result;
@@ -189,23 +184,23 @@ module.exports = class FPW_FordCommands {
                 if (wasError) {
                     if (errMsg) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
-                        this.Files.appendToLogFile(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
+                        this.FPW.Files.appendToLogFile(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
                     }
                     if (outMsg.message !== '') {
-                        await this.Alerts.showAlert(outMsg.title, outMsg.message);
+                        await this.FPW.Alerts.showAlert(outMsg.title, outMsg.message);
                     }
                     return;
                 } else {
                     if (isLastCmd) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Sent Successfully`);
-                        await this.Alerts.showAlert(outMsg.title, outMsg.message);
-                        await this.Timers.createTimer(
+                        await this.FPW.Alerts.showAlert(outMsg.title, outMsg.message);
+                        await this.FPW.Timers.createTimer(
                             'vehicleDataRefresh',
                             15000,
                             false,
                             async() => {
                                 console.log('sendVehicleCmd: Refreshing Vehicle Data after 10 seconds');
-                                await this.FordRequests.fetchVehicleData(false);
+                                await this.FPW.FordRequests.fetchVehicleData(false);
                                 if (mainMenuRefresh) {
                                     console.log('sendVehicleCmd: Reloading Main Menu Content');
                                     await generateMainInfoTable(true);
@@ -217,7 +212,7 @@ module.exports = class FPW_FordCommands {
                 }
             } catch (e) {
                 console.log(`sendVehicleCmd() Catch Error: ${e}`);
-                this.Files.appendToLogFile(`sendVehicleCmd() Catch Error: ${e}`);
+                this.FPW.Files.appendToLogFile(`sendVehicleCmd() Catch Error: ${e}`);
                 return;
             }
         }

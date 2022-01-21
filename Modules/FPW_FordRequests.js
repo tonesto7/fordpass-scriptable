@@ -1,3 +1,5 @@
+//This module was downloaded using FordWidgetTool.
+
 module.exports = class FPW_FordRequests {
     constructor(FPW) {
         this.FPW = FPW;
@@ -42,8 +44,8 @@ module.exports = class FPW_FordRequests {
     }
 
     async collectAllData(scrub = false) {
-        let data = await this.FordRequests.fetchVehicleData(true);
-        data.otaInfo = await this.FordRequests.getVehicleOtaInfo();
+        let data = await this.fetchVehicleData(true);
+        data.otaInfo = await this.getVehicleOtaInfo();
         data.userPrefs = {
             country: await this.FPW.Kc.getSettingVal('fpCountry'),
             timeZone: await this.FPW.Kc.getSettingVal('fpTz'),
