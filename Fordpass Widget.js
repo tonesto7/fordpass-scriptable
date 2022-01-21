@@ -96,7 +96,7 @@ const widgetConfig = {
     useLocalModules: false,
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
-    showTestUIStuff: false,
+    showTestUIStuff: true,
 };
 
 const FPWClass = await getModules(widgetConfig.useLocalModules);
@@ -125,7 +125,6 @@ class Widget {
     constructor(fpw) {
         try {
             this.FPW = fpw;
-            console.log(`this: ${JSON.stringify(this.FPW.SCRIPT_VERSION)}`);
             this.FPW.Files.appendToLogFile('Widget Started');
         } catch (error) {
             console.log(`Error: ${error}`);
@@ -154,6 +153,7 @@ class Widget {
                     await Speech.speak(await this.FPW.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
                 } else {
                     // await(await generateWidget('medium', fordData)).presentMedium();
+                    // await this.FPW.Menus.menuBuilderByType('main');
                     await this.FPW.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {

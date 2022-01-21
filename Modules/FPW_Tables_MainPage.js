@@ -37,6 +37,9 @@ module.exports = class FPW_Tables_MainPage {
             const headerColor = '#13233F';
             const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
 
+            const showTestUIStuff = this.FPW.widgetConfig.showTestUIStuff === true;
+            let updateAvailable = this.FPW.getStateVal('updateAvailable') === true;
+
             let tableRows = [];
 
             // Header Section - Row 1: vehicle messages, vehicle type, vehicle alerts
@@ -160,7 +163,8 @@ module.exports = class FPW_Tables_MainPage {
             );
 
             let update = false;
-            if (this.FPW.widgetConfig.showTestUIStuff) {
+            console.log(`showTestUIStuff: ${showTestUIStuff}`);
+            if (showTestUIStuff) {
                 vData.alerts = {
                     vha: [{
                         alertIdentifier: 'E19-374-43',
@@ -198,11 +202,11 @@ module.exports = class FPW_Tables_MainPage {
 
                 vData.firmwareUpdating = true;
                 vData.deepSleepMode = true;
-                update = true;
+                updateAvailable = true;
             }
 
             // Script Update Available Row
-            if (update || this.FPW.getStateVal('updateAvailable') === true) {
+            if (updateAvailable) {
                 tableRows.push(
                     await this.FPW.Tables.createTableRow(
                         [
@@ -216,12 +220,10 @@ module.exports = class FPW_Tables_MainPage {
                             }),
                         ], {
                             height: 40,
-                            dismissOnSelect: false,
+                            dismissOnSelect: true,
                             onSelect: async() => {
                                 console.log('(Main Menu) Update Widget was pressed');
-                                let callback = new CallbackURL('scriptable:///run');
-                                callback.addParameter('scriptName', 'FordWidgetTool');
-                                callback.open();
+                                this.FPW.Utils.runScript('FordWidgetTool');
                             },
                         },
                     ),
@@ -464,7 +466,7 @@ module.exports = class FPW_Tables_MainPage {
                 }
             }
 
-            // Advanced Controls Section - Zone Lighting, SecuriAlert, Trailer Lights (if available)
+            // Advanced Controls Section - Zone Lighting, SecuriAlert, Trailer Lights(if available)
             if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES' || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT'))) {
                 // Creates the Advanced Controls Header Text
                 tableRows.push(
