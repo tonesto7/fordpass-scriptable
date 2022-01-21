@@ -5,9 +5,6 @@ module.exports = class FPW_FordRequests {
         this.SCRIPT_VERSION = FPW.SCRIPT_VERSION;
         this.SCRIPT_TS = FPW.SCRIPT_TS;
         this.widgetConfig = FPW.widgetConfig;
-        this.Kc = FPW.Kc;
-        this.Utils = FPW.Utils;
-        this.Files = FPW.Files;
     }
 
     appIDs() {
@@ -19,8 +16,8 @@ module.exports = class FPW_FordRequests {
     }
 
     async checkAuth(src = undefined) {
-        let token = await this.Kc.getSettingVal('fpToken2');
-        let expiresAt = await this.Kc.getSettingVal('fpTokenExpiresAt');
+        let token = await this.FPW.Kc.getSettingVal('fpToken2');
+        let expiresAt = await this.FPW.Kc.getSettingVal('fpTokenExpiresAt');
         let expired = expiresAt ? Date.now() >= Date.parse(expiresAt) : false;
         if (this.widgetConfig.debugMode) {
             console.log(`chechAuth(${src})`);
@@ -48,22 +45,22 @@ module.exports = class FPW_FordRequests {
         let data = await this.FordRequests.fetchVehicleData(true);
         data.otaInfo = await this.FordRequests.getVehicleOtaInfo();
         data.userPrefs = {
-            country: await this.Kc.getSettingVal('fpCountry'),
-            timeZone: await this.Kc.getSettingVal('fpTz'),
-            language: await this.Kc.getSettingVal('fpLanguage'),
-            unitOfDistance: await this.Kc.getSettingVal('fpDistanceUnits'),
-            unitOfPressure: await this.Kc.getSettingVal('fpPressureUnits'),
+            country: await this.FPW.Kc.getSettingVal('fpCountry'),
+            timeZone: await this.FPW.Kc.getSettingVal('fpTz'),
+            language: await this.FPW.Kc.getSettingVal('fpLanguage'),
+            unitOfDistance: await this.FPW.Kc.getSettingVal('fpDistanceUnits'),
+            unitOfPressure: await this.FPW.Kc.getSettingVal('fpPressureUnits'),
         };
         // data.userDetails = await FPW.FordRequests.getAllUserData();
-        return scrub ? this.Utils.scrubPersonalData(data) : data;
+        return scrub ? this.FPW.Utils.scrubPersonalData(data) : data;
     }
 
     async fetchToken() {
-        let username = await this.Kc.getSettingVal('fpUser');
+        let username = await this.FPW.Kc.getSettingVal('fpUser');
         if (!username) {
             return this.FPW.textMap().errorMessages.noCredentials;
         }
-        let password = await this.Kc.getSettingVal('fpPass');
+        let password = await this.FPW.Kc.getSettingVal('fpPass');
         if (!password) {
             return this.FPW.textMap().errorMessages.noCredentials;
         }
@@ -117,18 +114,18 @@ module.exports = class FPW_FordRequests {
                     return this.FPW.textMap().errorMessages.invalidGrant;
                 }
                 if (resp2.statusCode === 200) {
-                    await this.Kc.setSettingVal('fpToken2', token2.access_token);
-                    await this.Kc.setSettingVal('fpRefreshToken', token2.refresh_token);
-                    await this.Kc.setSettingVal('fpTokenExpiresAt', (Date.now() + token2.expires_in).toString());
-                    let token = await this.Kc.getSettingVal('fpToken2');
-                    let expiresAt = await this.Kc.getSettingVal('fpTokenExpiresAt');
+                    await this.FPW.Kc.setSettingVal('fpToken2', token2.access_token);
+                    await this.FPW.Kc.setSettingVal('fpRefreshToken', token2.refresh_token);
+                    await this.FPW.Kc.setSettingVal('fpTokenExpiresAt', (Date.now() + token2.expires_in).toString());
+                    let token = await this.FPW.Kc.getSettingVal('fpToken2');
+                    let expiresAt = await this.FPW.Kc.getSettingVal('fpTokenExpiresAt');
                     // console.log(`expiresAt: ${expiresAt}`);
                     return;
                 }
             }
         } catch (e) {
             console.log(`fetchToken Error: ${e}`);
-            this.Files.appendToLogFile(`fetchToken() Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`fetchToken() Error: ${e}`);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -138,7 +135,7 @@ module.exports = class FPW_FordRequests {
 
     async refreshToken() {
         try {
-            const refreshToken = await this.Kc.getSettingVal('fpRefreshToken');
+            const refreshToken = await this.FPW.Kc.getSettingVal('fpRefreshToken');
 
             let req = new Request(`https://api.mps.ford.com/api/oauth2/v1/refresh`);
             req.headers = {
@@ -166,9 +163,9 @@ module.exports = class FPW_FordRequests {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
             if (resp.statusCode === 200) {
-                await this.Kc.setSettingVal('fpToken2', token.access_token);
-                await this.Kc.setSettingVal('fpRefreshToken', token.refresh_token);
-                await this.Kc.setSettingVal('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
+                await this.FPW.Kc.setSettingVal('fpToken2', token.access_token);
+                await this.FPW.Kc.setSettingVal('fpRefreshToken', token.refresh_token);
+                await this.FPW.Kc.setSettingVal('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
                 // console.log(`expiresAt: ${expiresAt}`);
                 return;
             } else if (resp.statusCode === 401) {
@@ -176,7 +173,7 @@ module.exports = class FPW_FordRequests {
             }
         } catch (e) {
             console.log(`refreshToken() Error: ${e}`);
-            this.Files.appendToLogFile(`refreshToken() Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`refreshToken() Error: ${e}`);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -185,7 +182,7 @@ module.exports = class FPW_FordRequests {
     }
 
     async getVehicleStatus() {
-        let vin = await this.Kc.getSettingVal('fpVin');
+        let vin = await this.FPW.Kc.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -193,7 +190,7 @@ module.exports = class FPW_FordRequests {
     }
 
     async getVehicleInfo() {
-        let vin = await this.Kc.getSettingVal('fpVin');
+        let vin = await this.FPW.Kc.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -221,10 +218,10 @@ module.exports = class FPW_FordRequests {
     }
 
     async getVehicleAlerts() {
-        let vin = await this.Kc.getSettingVal('fpVin');
-        let token = await this.Kc.getSettingVal('fpToken2');
-        let country = await this.Kc.getSettingVal('fpCountry');
-        let lang = await this.Kc.getSettingVal('fpLanguage');
+        let vin = await this.FPW.Kc.getSettingVal('fpVin');
+        let token = await this.FPW.Kc.getSettingVal('fpToken2');
+        let country = await this.FPW.Kc.getSettingVal('fpCountry');
+        let lang = await this.FPW.Kc.getSettingVal('fpLanguage');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -259,7 +256,7 @@ module.exports = class FPW_FordRequests {
     }
 
     async getVehicleCapabilities() {
-        let vin = await this.Kc.getSettingVal('fpVin');
+        let vin = await this.FPW.Kc.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -278,9 +275,9 @@ module.exports = class FPW_FordRequests {
     }
 
     async getVehicleOtaInfo() {
-        let vin = await this.Kc.getSettingVal('fpVin');
-        let token = await this.Kc.getSettingVal('fpToken2');
-        let country = await this.Kc.getSettingVal('fpCountry');
+        let vin = await this.FPW.Kc.getSettingVal('fpVin');
+        let token = await this.FPW.Kc.getSettingVal('fpToken2');
+        let country = await this.FPW.Kc.getSettingVal('fpCountry');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -299,10 +296,10 @@ module.exports = class FPW_FordRequests {
     }
 
     async getVehicleManual() {
-        let vin = await this.Kc.getSettingVal('fpVin');
-        let token = await this.Kc.getSettingVal('fpToken2');
-        const country = await this.Kc.getSettingVal('fpCountry');
-        let lang = await this.Kc.getSettingVal('fpLanguage');
+        let vin = await this.FPW.Kc.getSettingVal('fpVin');
+        let token = await this.FPW.Kc.getSettingVal('fpToken2');
+        const country = await this.FPW.Kc.getSettingVal('fpCountry');
+        let lang = await this.FPW.Kc.getSettingVal('fpLanguage');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -321,13 +318,13 @@ module.exports = class FPW_FordRequests {
     }
 
     async getVehicleRecalls() {
-        const vin = await this.Kc.getSettingVal('fpVin');
-        const token = await this.Kc.getSettingVal('fpToken2');
-        const country = await this.Kc.getSettingVal('fpCountry');
-        let lang = await this.Kc.getSettingVal('fpLanguage');
+        const vin = await this.FPW.Kc.getSettingVal('fpVin');
+        const token = await this.FPW.Kc.getSettingVal('fpToken2');
+        const country = await this.FPW.Kc.getSettingVal('fpCountry');
+        let lang = await this.FPW.Kc.getSettingVal('fpLanguage');
         if (!lang) {
             await this.queryFordPassPrefs(true);
-            lang = await this.Kc.getSettingVal('fpLanguage');
+            lang = await this.FPW.Kc.getSettingVal('fpLanguage');
         }
         lang = lang.split('-');
         if (!vin) {
@@ -339,14 +336,14 @@ module.exports = class FPW_FordRequests {
     }
 
     async getFordpassRewardsInfo(program = 'F') {
-        const country = await this.Kc.getSettingVal('fpCountry');
+        const country = await this.FPW.Kc.getSettingVal('fpCountry');
         let data = await this.makeFordRequest('getFordpassRewardsInfo', `https://api.mps.ford.com/api/rewards-account-info/v1/customer/points/totals?rewardProgram=${program}&programCountry=${country}`, 'GET', false);
         // console.log('fordpass rewards: ' + JSON.stringify(data));
         return data && data.pointsTotals && data.pointsTotals.F ? data.pointsTotals.F : undefined;
     }
 
     async getEvChargeStatus() {
-        const vin = await this.Kc.getSettingVal('fpVin');
+        const vin = await this.FPW.Kc.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -354,8 +351,8 @@ module.exports = class FPW_FordRequests {
     }
 
     async getEvPlugStatus() {
-        const token = await this.Kc.getSettingVal('fpToken2');
-        const vin = await this.Kc.getSettingVal('fpVin');
+        const token = await this.FPW.Kc.getSettingVal('fpToken2');
+        const vin = await this.FPW.Kc.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -371,7 +368,7 @@ module.exports = class FPW_FordRequests {
     }
 
     async getEvChargerBalance() {
-        const vin = await this.Kc.getSettingVal('fpVin');
+        const vin = await this.FPW.Kc.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -380,7 +377,7 @@ module.exports = class FPW_FordRequests {
     }
 
     async getSecuriAlertStatus() {
-        const vin = await this.Kc.getSettingVal('fpVin');
+        const vin = await this.FPW.Kc.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -392,22 +389,22 @@ module.exports = class FPW_FordRequests {
     async queryFordPassPrefs(force = false) {
         try {
             let dtNow = Date.now();
-            let lastDt = await this.Kc.getSettingVal('fpLastPrefsQueryTs');
+            let lastDt = await this.FPW.Kc.getSettingVal('fpLastPrefsQueryTs');
             let ok2Upd = lastDt && dtNow - Number(lastDt) > 1000 * 60 * 5;
             // console.log(`Last prefs query: ${lastDt} | Now: ${dtNow} | Diff: ${dtNow - Number(lastDt)} | Ok2Upd: ${ok2Upd}`);
             if (ok2Upd || lastDt === null || force) {
-                await this.Kc.setSettingVal('fpLastPrefsQueryTs', dtNow.toString());
+                await this.FPW.Kc.setSettingVal('fpLastPrefsQueryTs', dtNow.toString());
                 console.log(ok2Upd ? `UserPrefs Expired - Refreshing from Ford API` : `UserPrefs Requested or Missing - Refreshing from Ford API`);
 
                 let data = await this.makeFordRequest('queryFordPassPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
                 // console.log('user data: ' + JSON.stringify(data));
                 if (data && data.status === 200 && data.profile) {
                     try {
-                        await this.Kc.setSettingVal('fpCountry', data.profile.country ? data.profile.country : 'USA');
-                        await this.Kc.setSettingVal('fpLanguage', data.profile.preferredLanguage || Device.locale());
-                        await this.Kc.setSettingVal('fpTz', data.profile.timeZone || CalendarEvent.timeZone);
-                        await this.Kc.setSettingVal('fpDistanceUnits', data.profile.uomDistance === 2 ? 'km' : 'mi');
-                        await this.Kc.setSettingVal('fpPressureUnits', data.profile.uomPressure ? data.profile.uomPressure : 'MPH');
+                        await this.FPW.Kc.setSettingVal('fpCountry', data.profile.country ? data.profile.country : 'USA');
+                        await this.FPW.Kc.setSettingVal('fpLanguage', data.profile.preferredLanguage || Device.locale());
+                        await this.FPW.Kc.setSettingVal('fpTz', data.profile.timeZone || CalendarEvent.timeZone);
+                        await this.FPW.Kc.setSettingVal('fpDistanceUnits', data.profile.uomDistance === 2 ? 'km' : 'mi');
+                        await this.FPW.Kc.setSettingVal('fpPressureUnits', data.profile.uomPressure ? data.profile.uomPressure : 'MPH');
                         console.log(`Saving User Preferences from Ford Account:`);
                         console.log(` - Country: ${data.profile.country ? data.profile.country : 'USA (Fallback)'}`);
                         console.log(` - Language: ${data.profile.preferredLanguage ? data.profile.preferredLanguage : Device.locale() + ' (Fallback)'}`);
@@ -416,7 +413,7 @@ module.exports = class FPW_FordRequests {
                         return true;
                     } catch (e) {
                         console.log(`queryFordPassPrefs SET Error: ${e}`);
-                        this.Files.appendToLogFile(`queryFordPassPrefs() SET Error: ${e}`);
+                        this.FPW.Files.appendToLogFile(`queryFordPassPrefs() SET Error: ${e}`);
                         return false;
                     }
                 } else {
@@ -427,15 +424,15 @@ module.exports = class FPW_FordRequests {
             }
         } catch (e) {
             console.error(`queryFordPassPrefs Error: ${e}`);
-            this.Files.appendToLogFile(`queryFordPassPrefs() Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`queryFordPassPrefs() Error: ${e}`);
             return false;
         }
     }
 
     // NOT WORKING YET (CORS ISSUE)
     async getEarlyAccessInfo() {
-        const token = await this.Kc.getSettingVal('fpToken2');
-        const vin = await this.Kc.getSettingVal('fpVin');
+        const token = await this.FPW.Kc.getSettingVal('fpToken2');
+        const vin = await this.FPW.Kc.getSettingVal('fpVin');
         let request = new Request(`https://fsm-service-fordbeta-prod.apps.pd01.useast.cf.ford.com/api/earlyAccess/eapMemberInfo`);
         request.headers = {
             'Content-Type': 'application/json',
@@ -468,12 +465,12 @@ module.exports = class FPW_FordRequests {
         if (authMsg) {
             return authMsg;
         }
-        let token = await this.Kc.getSettingVal('fpToken2');
-        let vin = await this.Kc.getSettingVal('fpVin');
+        let token = await this.FPW.Kc.getSettingVal('fpToken2');
+        let vin = await this.FPW.Kc.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
-        const headers = Override || {
+        const headers = headerOverride || {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -511,7 +508,7 @@ module.exports = class FPW_FordRequests {
             return data;
         } catch (e) {
             console.log(`makeFordRequest | ${desc} | Error: ${e}`);
-            this.Files.appendToLogFile(`makeFordRequest(${desc}) Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`makeFordRequest(${desc}) Error: ${e}`);
             return this.FPW.textMap().errorMessages.unknownError;
         }
     }
@@ -519,8 +516,8 @@ module.exports = class FPW_FordRequests {
     //from local store if last fetch is < x minutes, otherwise fetch from server
     async fetchVehicleData(loadLocal = false) {
         //Fetch data from local store
-        if ((!this.widgetConfig.alwaysFetch && (await this.Files.isLocalDataFreshEnough())) || loadLocal) {
-            return await this.Files.readLocalData();
+        if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
+            return await this.FPW.Files.readLocalData();
         }
 
         //fetch data from server
@@ -533,14 +530,14 @@ module.exports = class FPW_FordRequests {
         vehicleData.SCRIPT_TS = this.SCRIPT_TS;
         if (statusData == this.FPW.textMap().errorMessages.invalidGrant || statusData == this.FPW.textMap().errorMessages.connectionErrorOrVin || statusData == this.FPW.textMap().errorMessages.unknownError || statusData == this.FPW.textMap().errorMessages.noVin || statusData == this.FPW.textMap().errorMessages.noCredentials) {
             // console.log('fetchVehicleData | Error: ' + statusData);
-            let localData = this.Files.readLocalData();
+            let localData = this.FPW.Files.readLocalData();
             if (localData) {
                 vehicleData = localData;
             }
             if (statusData == this.FPW.textMap().errorMessages.invalidGrant) {
                 console.log(`fetchVehicleData | Error: ${statusData} | Clearing Authentication from Keychain`);
-                await this.Kc.removeSettingVal('fpPass');
-                // await this.Files.removeLocalData();
+                await this.FPW.Kc.removeSettingVal('fpPass');
+                // await this.FPW.Files.removeLocalData();
             }
             vehicleData.error = statusData;
             return vehicleData;
@@ -647,7 +644,7 @@ module.exports = class FPW_FordRequests {
         vehicleData.fuelLevel = vehicleStatus.fuel && vehicleStatus.fuel.fuelLevel ? Math.floor(vehicleStatus.fuel.fuelLevel) : null;
 
         //position of car
-        vehicleData.position = await this.Utils.getPosition(vehicleStatus);
+        vehicleData.position = await this.FPW.Utils.getPosition(vehicleStatus);
         vehicleData.latitude = parseFloat(vehicleStatus.gps.latitude);
         vehicleData.longitude = parseFloat(vehicleStatus.gps.longitude);
 
@@ -686,10 +683,10 @@ module.exports = class FPW_FordRequests {
         //tire pressure
         let tpms = vehicleStatus.TPMS;
         vehicleData.tirePressure = {
-            leftFront: await this.Utils.pressureToFixed(tpms.leftFrontTirePressure.value, 0),
-            rightFront: await this.Utils.pressureToFixed(tpms.rightFrontTirePressure.value, 0),
-            leftRear: await this.Utils.pressureToFixed(tpms.outerLeftRearTirePressure.value, 0),
-            rightRear: await this.Utils.pressureToFixed(tpms.outerRightRearTirePressure.value, 0),
+            leftFront: await this.FPW.Utils.pressureToFixed(tpms.leftFrontTirePressure.value, 0),
+            rightFront: await this.FPW.Utils.pressureToFixed(tpms.rightFrontTirePressure.value, 0),
+            leftRear: await this.FPW.Utils.pressureToFixed(tpms.outerLeftRearTirePressure.value, 0),
+            rightRear: await this.FPW.Utils.pressureToFixed(tpms.outerRightRearTirePressure.value, 0),
         };
 
         vehicleData.recallInfo = (await this.getVehicleRecalls()) || [];
@@ -700,13 +697,13 @@ module.exports = class FPW_FordRequests {
 
         // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();
 
-        vehicleData.lastRefresh = this.Utils.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
-        vehicleData.lastRefreshElapsed = this.Utils.timeDifference(this.Utils.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
+        vehicleData.lastRefresh = this.FPW.Utils.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
+        vehicleData.lastRefreshElapsed = this.FPW.Utils.timeDifference(this.FPW.Utils.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
         // console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
         console.log(`Last Vehicle Checkin: ${vehicleData.lastRefreshElapsed}`);
 
         //save data to local store
-        this.Files.saveDataToLocal(vehicleData);
+        this.FPW.Files.saveDataToLocal(vehicleData);
         // console.log(JSON.stringify(vehicleData));
         return vehicleData;
     }

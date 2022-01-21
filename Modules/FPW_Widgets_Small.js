@@ -3,15 +3,9 @@ module.exports = class FPW_Widgets_Small {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        this.Kc = FPW.Kc;
-        this.Files = FPW.Files;
-        this.Alerts = FPW.Alerts;
-        // this.Timers = FPW.Timers;
-        this.Utils = FPW.Utils;
-        this.Widgets = FPW.Widgets;
     }
 
-    async createSmallWidget(vData) {
+    async createWidget(vData) {
         let vehicleData = vData;
         const wSize = 'small';
         // Defines the Widget Object
@@ -29,23 +23,23 @@ module.exports = class FPW_Widgets_Small {
             //*****************
             //* First column
             //*****************
-            let mainCol1 = await this.Widgets.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+            let mainCol1 = await this.FPW.Widgets.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
             // Vehicle Logo
-            await this.Widgets.createVehicleImageElement(mainCol1, vehicleData, this.FPW.sizeMap[wSize].logoSize.w, this.FPW.sizeMap[wSize].logoSize.h);
+            await this.FPW.Widgets.createVehicleImageElement(mainCol1, vehicleData, this.FPW.sizeMap[wSize].logoSize.w, this.FPW.sizeMap[wSize].logoSize.h);
 
             // Creates the Vehicle Logo, Odometer, Fuel/Battery and Distance Info Elements
-            await this.Widgets.createFuelRangeElements(mainCol1, vehicleData, wSize);
+            await this.FPW.Widgets.createFuelRangeElements(mainCol1, vehicleData, wSize);
 
             // Creates Low-Voltage Battery Voltage Elements
-            await this.Widgets.createBatteryElement(mainCol1, vehicleData, wSize);
+            await this.FPW.Widgets.createBatteryElement(mainCol1, vehicleData, wSize);
 
             // Creates Oil Life Elements
             if (!vehicleData.evVehicle) {
-                await this.Widgets.createOilElement(mainCol1, vehicleData, wSize);
+                await this.FPW.Widgets.createOilElement(mainCol1, vehicleData, wSize);
             } else {
                 // Creates EV Plug Elements
-                await this.Widgets.createEvChargeElement(mainCol1, vehicleData, wSize);
+                await this.FPW.Widgets.createEvChargeElement(mainCol1, vehicleData, wSize);
             }
 
             contentStack.addSpacer();
@@ -53,19 +47,19 @@ module.exports = class FPW_Widgets_Small {
             //************************
             //* Second column
             //************************
-            let mainCol2 = await this.Widgets.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
+            let mainCol2 = await this.FPW.Widgets.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
             // Creates the Lock Status Elements
-            await this.Widgets.createLockStatusElement(mainCol2, vehicleData, wSize);
+            await this.FPW.Widgets.createLockStatusElement(mainCol2, vehicleData, wSize);
 
             // Creates the Ignition Status Elements
-            await this.Widgets.createIgnitionStatusElement(mainCol2, vehicleData, wSize);
+            await this.FPW.Widgets.createIgnitionStatusElement(mainCol2, vehicleData, wSize);
 
             // Creates the Door Status Elements
-            await this.Widgets.createDoorElement(mainCol2, vehicleData, true, wSize);
+            await this.FPW.Widgets.createDoorElement(mainCol2, vehicleData, true, wSize);
 
             // Creates the Door Status Elements
-            await this.Widgets.createWindowElement(mainCol2, vehicleData, true, wSize);
+            await this.FPW.Widgets.createWindowElement(mainCol2, vehicleData, true, wSize);
 
             // mainCol2.addSpacer(0);
 
@@ -74,15 +68,15 @@ module.exports = class FPW_Widgets_Small {
             //**********************
             //* Refresh and error
             //*********************
-            let statusRow = await this.Widgets.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
-            await this.Widgets.createStatusElement(statusRow, vehicleData, wSize);
+            let statusRow = await this.FPW.Widgets.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+            await this.FPW.Widgets.createStatusElement(statusRow, vehicleData, wSize);
 
             // This is the row displaying the time elapsed since last vehicle checkin.
-            let timestampRow = await this.Widgets.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-            await this.Widgets.createTimeStampElement(timestampRow, vehicleData, wSize);
+            let timestampRow = await this.FPW.Widgets.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+            await this.FPW.Widgets.createTimeStampElement(timestampRow, vehicleData, wSize);
         } catch (e) {
-            console.error(`createSmallWidget() Error ${e}`);
-            this.Files.appendToLogFile(`createSmallWidget() Error: ${e}`);
+            console.error(`createWidget(small) Error ${e}`);
+            this.FPW.Files.appendToLogFile(`createWidget(small) Error: ${e}`);
         }
         return widget;
     }

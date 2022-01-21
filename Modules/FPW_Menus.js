@@ -3,23 +3,14 @@ module.exports = class FPW_Menus {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        this.Kc = FPW.Kc;
-        this.Files = FPW.Files;
-        this.FordRequests = FPW.FordRequests;
-        this.FordCommands = FPW.FordCommands;
-        this.Alerts = FPW.Alerts;
-        this.Timers = FPW.Timers;
-        this.Tables = FPW.Tables;
-        this.Utils = FPW.Utils;
-        this.WidgetHelpers = FPW.WidgetHelpers;
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
         try {
-            user = user || (await this.Kc.getSettingVal('fpUser'));
-            pass = pass || (await this.Kc.getSettingVal('fpPass'));
-            vin = vin || (await this.Kc.getSettingVal('fpVin'));
-            let mapProvider = await this.Kc.getMapProvider();
+            user = user || (await this.FPW.Kc.getSettingVal('fpUser'));
+            pass = pass || (await this.FPW.Kc.getSettingVal('fpPass'));
+            vin = vin || (await this.FPW.Kc.getSettingVal('fpVin'));
+            let mapProvider = await this.FPW.Kc.getMapProvider();
 
             let prefsMenu = new Alert();
             prefsMenu.title = 'Required Settings Missing';
@@ -43,7 +34,7 @@ module.exports = class FPW_Menus {
             switch (respInd) {
                 case 0:
                     console.log('(Required Prefs Menu) Map Provider pressed');
-                    await this.Kc.toggleMapProvider();
+                    await this.FPW.Kc.toggleMapProvider();
                     return await this.requiredPrefsMenu(user, pass, vin);
                     break;
                 case 1:
@@ -63,16 +54,16 @@ module.exports = class FPW_Menus {
                     vin = prefsMenu.textFieldValue(2);
                     // console.log(`${user} ${pass} ${vin}`);
 
-                    if (this.Utils.inputTest(user) && this.Utils.inputTest(pass) && this.Utils.inputTest(vin)) {
-                        await this.Kc.setSettingVal('fpUser', user);
-                        await this.Kc.setSettingVal('fpPass', pass);
-                        await this.Kc.setSettingVal('fpMapProvider', mapProvider);
-                        let vinChk = await this.Kc.vinCheck(vin, true);
+                    if (this.FPW.Utils.inputTest(user) && this.FPW.Utils.inputTest(pass) && this.FPW.Utils.inputTest(vin)) {
+                        await this.FPW.Kc.setSettingVal('fpUser', user);
+                        await this.FPW.Kc.setSettingVal('fpPass', pass);
+                        await this.FPW.Kc.setSettingVal('fpMapProvider', mapProvider);
+                        let vinChk = await this.FPW.Kc.vinCheck(vin, true);
                         console.log(`VIN Number Ok: ${vinChk}`);
                         if (vinChk) {
-                            await this.Kc.setSettingVal('fpVin', vin.toUpperCase());
-                            // await this.FordRequests.checkAuth();
-                            // await this.FordRequests.queryFordPassPrefs(true);
+                            await this.FPW.Kc.setSettingVal('fpVin', vin.toUpperCase());
+                            // await this.FPW.FordRequests.checkAuth();
+                            // await this.FPW.FordRequests.queryFordPassPrefs(true);
                             return true;
                         } else {
                             // await requiredPrefsMenu();
@@ -89,15 +80,15 @@ module.exports = class FPW_Menus {
             }
         } catch (err) {
             console.log(`(Required Prefs Menu) Error: ${err}`);
-            this.Files.appendToLogFile(`(Required Prefs Menu) Error: ${err}`);
+            this.FPW.Files.appendToLogFile(`(Required Prefs Menu) Error: ${err}`);
             throw err;
         }
     }
 
     async menuBuilderByType(type) {
-        const vehicleData = await this.FordRequests.fetchVehicleData(true);
+        const vehicleData = await this.FPW.FordRequests.fetchVehicleData(true);
         // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
-        const typeDesc = this.Utils.capitalizeStr(type);
+        const typeDesc = this.FPW.Utils.capitalizeStr(type);
         let title = undefined;
         let message = undefined;
         let items = [];
@@ -105,7 +96,7 @@ module.exports = class FPW_Menus {
         switch (type) {
             case 'main':
                 title = `Widget Menu`;
-                message = `Widget Version: (${SCRIPT_VERSION})`.trim();
+                message = `Widget Version: (${this.FPW.SCRIPT_VERSION})`.trim();
                 items = [{
                         title: 'View Widget',
                         action: async() => {
@@ -121,8 +112,8 @@ module.exports = class FPW_Menus {
                         title: 'Request Refresh',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Refresh was pressed`);
-                            if (await this.Alerts.showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
-                                await this.FordCommands.sendVehicleCmd('status');
+                            if (await this.FPW.Alerts.showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
+                                await this.FPW.FordCommands.sendVehicleCmd('status');
                             }
                         },
                         destructive: true,
@@ -163,7 +154,7 @@ module.exports = class FPW_Menus {
                         title: 'Recent Changes',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) About was pressed`);
-                            await this.Tables.ChangesPage.createRecentChangesPage();
+                            await this.FPW.Tables.ChangesPage.createRecentChangesPage();
                             this.menuBuilderByType('helpInfo');
                         },
                         destructive: false,
@@ -226,7 +217,7 @@ module.exports = class FPW_Menus {
                         title: 'Small',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Small Widget was pressed`);
-                            const w = await this.WidgetHelpers.generateWidget('small', fordData);
+                            const w = await this.FPW.Widgets.Small.createWidget(vehicleData);
                             await w.presentSmall();
                         },
                         destructive: false,
@@ -236,7 +227,7 @@ module.exports = class FPW_Menus {
                         title: 'Medium',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Medium Widget was pressed`);
-                            const w = await this.WidgetHelpers.generateWidget('medium', fordData);
+                            const w = await this.FPW.Widgets.Medium.createWidget(vehicleData);
                             await w.presentMedium();
                         },
                         destructive: false,
@@ -246,7 +237,7 @@ module.exports = class FPW_Menus {
                         title: 'Large',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Large Widget was pressed`);
-                            const w = awaitthis.WidgetHelpers.generateWidget('large', fordData);
+                            const w = awaitthis.Widgets.Large.createWidget(vehicleData);
                             await w.presentLarge();
                         },
                         destructive: false,
@@ -256,7 +247,7 @@ module.exports = class FPW_Menus {
                         title: 'Extra-Large',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Extra-Large Widget was pressed`);
-                            const w = await this.WidgetHelpers.generateWidget('extraLarge', fordData);
+                            const w = await this.FPW.Widgets.ExtraLarge.createWidget(vehicleData);
                             await w.presentExtraLarge();
                         },
                         destructive: false,
@@ -280,8 +271,8 @@ module.exports = class FPW_Menus {
                         title: 'View OTA API Info',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) View OTA Info was pressed`);
-                            let data = await this.FordRequests.getVehicleOtaInfo();
-                            await this.Tables.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
+                            let data = await this.FPW.FordRequests.getVehicleOtaInfo();
+                            await this.FPW.Tables.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
                             this.menuBuilderByType('diagnostics');
                         },
                         destructive: false,
@@ -291,8 +282,8 @@ module.exports = class FPW_Menus {
                         title: 'View All Data',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) View All Data was pressed`);
-                            let data = await this.FordRequests.collectAllData(false);
-                            await this.Tables.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
+                            let data = await this.FPW.FordRequests.collectAllData(false);
+                            await this.FPW.Tables.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
                             this.menuBuilderByType('diagnostics');
                         },
                         destructive: false,
@@ -302,9 +293,9 @@ module.exports = class FPW_Menus {
                         title: 'Copy All Data to Clipboard',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Copy Data was pressed`);
-                            let data = await this.FordRequests.collectAllData(true);
+                            let data = await this.FPW.FordRequests.collectAllData(true);
                             await Pasteboard.copyString(JSON.stringify(data, null, 4));
-                            await this.Alerts.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
+                            await this.FPW.Alerts.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
                             this.menuBuilderByType('diagnostics');
                         },
                         destructive: false,
@@ -314,8 +305,8 @@ module.exports = class FPW_Menus {
                         title: 'Send Data to Developer',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
-                            let data = await this.FordRequests.collectAllData(true);
-                            await this.Utils.createEmailObject(data, true);
+                            let data = await this.FPW.FordRequests.collectAllData(true);
+                            await this.FPW.Utils.createEmailObject(data, true);
                             this.menuBuilderByType('diagnostics');
                         },
                         destructive: true,
@@ -338,8 +329,8 @@ module.exports = class FPW_Menus {
                         title: 'Clear Cached Files/Images',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Clear Files/Images was pressed`);
-                            await this.Files.clearFileManager();
-                            await this.Alerts.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
+                            await this.FPW.Files.clearFileManager();
+                            await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
                             this.menuBuilderByType('main');
                             // this.quit();
                         },
@@ -350,9 +341,9 @@ module.exports = class FPW_Menus {
                         title: 'Clear Login Info',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Clear Login Info was pressed`);
-                            if (await this.Alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
-                                await this.Kc.clearSettings();
-                                await this.Alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease close out the menus and restart the script again to re-initialize the widget.');
+                            if (await this.FPW.Alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
+                                await this.FPW.Kc.clearSettings();
+                                await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease close out the menus and restart the script again to re-initialize the widget.');
                                 this.menuBuilderByType('main');
                             } else {
                                 this.menuBuilderByType('reset');
@@ -365,10 +356,10 @@ module.exports = class FPW_Menus {
                         title: 'Reset Everything',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Reset Everything was pressed`);
-                            if (await this.Alerts.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
-                                await this.Kc.clearSettings();
-                                await this.Files.clearFileManager();
-                                await this.Alerts.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nClose out the menus and restart the app.');
+                            if (await this.FPW.Alerts.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
+                                await this.FPW.Kc.clearSettings();
+                                await this.FPW.Files.clearFileManager();
+                                await this.FPW.Alerts.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nClose out the menus and restart the app.');
                                 this.menuBuilderByType('main');
                             } else {
                                 this.menuBuilderByType('reset');
@@ -389,24 +380,24 @@ module.exports = class FPW_Menus {
                 ];
                 break;
             case 'settings':
-                let mapProvider = await this.Kc.getMapProvider();
-                let widgetStyle = await this.Kc.getWidgetStyle();
+                let mapProvider = await this.FPW.Kc.getMapProvider();
+                let widgetStyle = await this.FPW.Kc.getWidgetStyle();
                 title = 'Widget Settings';
                 items = [{
                         title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Map Provider pressed`);
-                            await this.Kc.toggleMapProvider();
+                            await this.FPW.Kc.toggleMapProvider();
                             this.menuBuilderByType('settings');
                         },
                         destructive: false,
                         show: true,
                     },
                     {
-                        title: `Widget Style: ${this.Utils.capitalizeStr(widgetStyle)}`,
+                        title: `Widget Style: ${this.FPW.Utils.capitalizeStr(widgetStyle)}`,
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Widget Style pressed`);
-                            await this.Tables.widgetStyleSelector('medium');
+                            await this.FPW.Tables.widgetStyleSelector('medium');
                             this.menuBuilderByType('settings');
                         },
                         destructive: false,

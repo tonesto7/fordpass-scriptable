@@ -8,23 +8,17 @@ module.exports = class FPW_Widgets {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        this.Kc = FPW.Kc;
-        this.Files = FPW.Files;
-        this.FordRequests = FPW.FordRequests;
-        this.Alerts = FPW.Alerts;
-        this.Timers = FPW.Timers;
-        this.Utils = FPW.Utils;
-        this.SmallWidget = new FPW_Widgets_Small(this);
-        this.MediumWidget = new FPW_Widgets_Medium(this);
-        this.LargeWidget = new FPW_Widgets_Large(this);
-        this.ExtraLargeWidget = new FPW_Widgets_ExtraLarge(this);
+        this.Small = new FPW_Widgets_Small(this);
+        this.Medium = new FPW_Widgets_Medium(this);
+        this.Large = new FPW_Widgets_Large(this);
+        this.ExtraLarge = new FPW_Widgets_ExtraLarge(this);
     }
 
     async createColumn(srcField, styles = {}) {
         let col = srcField.addStack();
         col.layoutVertically();
         if (styles && Object.keys(styles).length > 0) {
-            this.Utils._mapMethodsAndCall(col, styles);
+            this.FPW.Utils._mapMethodsAndCall(col, styles);
         }
 
         return col;
@@ -34,7 +28,7 @@ module.exports = class FPW_Widgets {
         let row = srcField.addStack();
         row.layoutHorizontally();
         if (styles && Object.keys(styles).length > 0) {
-            this.Utils._mapMethodsAndCall(row, styles);
+            this.FPW.Utils._mapMethodsAndCall(row, styles);
         }
 
         return row;
@@ -43,7 +37,7 @@ module.exports = class FPW_Widgets {
     async createText(srcField, text, styles = {}) {
         let txt = srcField.addText(text);
         if (styles && Object.keys(styles).length > 0) {
-            this.Utils._mapMethodsAndCall(txt, styles);
+            this.FPW.Utils._mapMethodsAndCall(txt, styles);
         }
         return txt;
     }
@@ -51,7 +45,7 @@ module.exports = class FPW_Widgets {
     async createImage(srcField, image, styles = {}) {
         let _img = srcField.addImage(image);
         if (styles && Object.keys(styles).length > 0) {
-            this.Utils._mapMethodsAndCall(_img, styles);
+            this.FPW.Utils._mapMethodsAndCall(_img, styles);
         }
         return _img;
     }
@@ -62,7 +56,7 @@ module.exports = class FPW_Widgets {
         let titleStack = await headerField.addStack({ '*centerAlignContent': null });
         if (icon !== undefined) {
             titleStack.layoutHorizontally();
-            let imgFile = await this.Files.getImage(icon.toString());
+            let imgFile = await this.FPW.Files.getImage(icon.toString());
             await this.createImage(titleStack, imgFile, { imageSize: new Size(this.FPW.sizeMap[wSize].iconSize.w, this.FPW.sizeMap[wSize].iconSize.h) });
         }
         // console.log(`titleParams(${titleText}): ${titleParams}`);
@@ -120,7 +114,7 @@ module.exports = class FPW_Widgets {
     async createVehicleImageElement(srcField, vData, width, height) {
         let logoRow = await this.createRow(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         if (vData.info !== undefined && vData.info.vehicle !== undefined) {
-            await this.createImage(logoRow, await this.Files.getVehicleImage(vData.info.vehicle.modelYear), { imageSize: new Size(width, height), '*centerAlignImage': null });
+            await this.createImage(logoRow, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear), { imageSize: new Size(width, height), '*centerAlignImage': null });
             srcField.addSpacer(3);
         }
         // return srcField;
@@ -132,8 +126,8 @@ module.exports = class FPW_Widgets {
             let lvlValue = !isEV ? (vehicleData.fuelLevel ? vehicleData.fuelLevel : 0) : vehicleData.evBatteryLevel ? vehicleData.evBatteryLevel : 0;
             let dteValue = !isEV ? (vehicleData.distanceToEmpty ? vehicleData.distanceToEmpty : null) : vehicleData.evDistanceToEmpty ? vehicleData.evDistanceToEmpty : null;
             let dtePostfix = isEV ? 'Range' : 'to E';
-            let distanceMultiplier = (await this.Kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-            let distanceUnit = (await this.Kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+            let distanceMultiplier = (await this.FPW.Kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+            let distanceUnit = (await this.FPW.Kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
 
             // Fuel/Battery Section
             let elemCol = await this.createColumn(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
@@ -149,7 +143,7 @@ module.exports = class FPW_Widgets {
             srcField.addSpacer(3);
         } catch (e) {
             console.error(`createFuelRangeElements() Error: ${e}`);
-            this.Files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
         }
     }
 
@@ -159,8 +153,8 @@ module.exports = class FPW_Widgets {
             let lvlValue = !isEV ? (vehicleData.fuelLevel ? vehicleData.fuelLevel : 0) : vehicleData.evBatteryLevel ? vehicleData.evBatteryLevel : 0;
             let dteValue = !isEV ? (vehicleData.distanceToEmpty ? vehicleData.distanceToEmpty : null) : vehicleData.evDistanceToEmpty ? vehicleData.evDistanceToEmpty : null;
             let dtePostfix = isEV ? 'Range' : 'to E';
-            let distanceMultiplier = (await this.Kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-            let distanceUnit = (await this.Kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+            let distanceMultiplier = (await this.FPW.Kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+            let distanceUnit = (await this.FPW.Kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
             // console.log('isEV: ' + isEV);
             // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
             // console.log(`distanceToEmpty: ${vehicleData.distanceToEmpty}`);
@@ -186,7 +180,7 @@ module.exports = class FPW_Widgets {
             srcField.addSpacer(3);
         } catch (e) {
             console.error(`createFuelRangeElements() Error: ${e}`);
-            this.Files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
         }
     }
 
@@ -202,7 +196,7 @@ module.exports = class FPW_Widgets {
             srcField.addSpacer(3);
         } catch (e) {
             console.error(`createBatteryElement() Error: ${e}`);
-            this.Files.appendToLogFile(`createBatteryElement() Error: ${e}`);
+            this.FPW.Files.appendToLogFile(`createBatteryElement() Error: ${e}`);
         }
     }
 
@@ -433,7 +427,7 @@ module.exports = class FPW_Widgets {
         };
         let offset = 0;
         let titleFld = await this.createRow(srcField);
-        let pressureUnits = await this.Kc.getSettingVal('fpPressureUnits');
+        let pressureUnits = await this.FPW.Kc.getSettingVal('fpPressureUnits');
         let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
         await createTitle(titleFld, `tirePressure||${unitTxt}`, wSize);
 
@@ -441,21 +435,21 @@ module.exports = class FPW_Widgets {
         // Row 1 - Tire Pressure Left Front amd Right Front
         let col1 = await this.createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
         let col1row1 = await this.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-        await this.createText(col1row1, vData.tirePressure.leftFront, this.Utils.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
+        await this.createText(col1row1, vData.tirePressure.leftFront, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
         let col2 = await this.createColumn(dataFld, { '*setPadding': [0, 3, 0, 3] });
         let col2row1 = await this.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
         await this.createText(col2row1, '|', styles.normTxt);
         let col3 = await this.createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
         let col3row1 = await this.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-        await this.createText(col3row1, vData.tirePressure.rightFront, this.Utils.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
+        await this.createText(col3row1, vData.tirePressure.rightFront, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
 
         // Row 2 - Tire Pressure Left Rear amd Right Rear
         let col1row2 = await this.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-        await this.createText(col1row2, vData.tirePressure.leftRear, this.Utils.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
+        await this.createText(col1row2, vData.tirePressure.leftRear, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
         let col2row2 = await this.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
         await this.createText(col2row2, '|', styles.normTxt);
         let col3row2 = await this.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-        await this.createText(col3row2, vData.tirePressure.rightRear, this.Utils.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
+        await this.createText(col3row2, vData.tirePressure.rightRear, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
 
         srcField.addSpacer(offset);
     }
@@ -466,7 +460,7 @@ module.exports = class FPW_Widgets {
         await this.createTitle(titleFld, 'position', wSize);
 
         let dataFld = await this.createRow(srcField);
-        let url = (await this.Kc.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
+        let url = (await this.FPW.Kc.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
         let value = vehicleData.position ? (widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vehicleData.position}`) : this.FPW.textMap().errorMessages.noData;
         await this.createText(dataFld, value, { url: url, font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
         srcField.addSpacer(offset);
@@ -519,7 +513,7 @@ module.exports = class FPW_Widgets {
     }
 
     async hasStatusMsg(vData) {
-        return vData.error || (!vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') || vData.deepSleepMode || vData.firmwareUpdating || updateAvailable; //|| (!vData.evVehicle && vData.oilLow)
+        return vData.error || (!vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') || vData.deepSleepMode || vData.firmwareUpdating || this.FPW.getStateVal('updateAvailable') === true; //|| (!vData.evVehicle && vData.oilLow)
     }
 
     async createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
@@ -549,9 +543,9 @@ module.exports = class FPW_Widgets {
                 await this.createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: Color.green(), lineLimit: 1 });
                 cnt++;
             }
-            if (cnt < maxMsgs && updateAvailable) {
+            if (cnt < maxMsgs && this.FPW.getStateVal('updateAvailable') === true) {
                 stk.addSpacer(cnt > 0 ? 5 : 0);
-                await this.createText(stk, `\u2022 Script Update: v${this.LATEST_VERSION}`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
+                await this.createText(stk, `\u2022 Script Update: v${this.getStateVal('LATEST_VERSION')}`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
                 cnt++;
             }
         }

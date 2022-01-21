@@ -144,7 +144,7 @@ class Widget {
             if (config.runsInWidget) {
                 console.log('(generateWidget) Running in Widget...');
                 this.FPW.Files.appendToLogFile('(generateWidget) Running in Widget...');
-                // await this.FPW.WidgetHelpers.generateWidget(runningWidgetSize, fordData);
+                // await this.FPW.Widgets.generateWidget(runningWidgetSize, fordData);
                 let w = await testWidget(fordData);
             } else if (config.runsInApp || config.runsFromHomeScreen) {
                 // Show alert with current data (if running script in app)
@@ -160,7 +160,7 @@ class Widget {
                 // console.log('runsInActionExtension: ' + config.runsInActionExtension);
             } else {
                 this.FPW.Files.appendToLogFile('(generateWidget) Running in Widget (else)...');
-                await this.FPW.WidgetHelpers.generateWidget(runningWidgetSize, fordData);
+                await this.FPW.Widgets.generateWidget(runningWidgetSize, fordData);
             }
         } catch (e) {
             console.log(`start() Error: ${e}`);
@@ -234,18 +234,18 @@ class Widget {
 
             switch (size) {
                 case 'small':
-                    w = wStyle === 'simple' ? await this.FPW.WidgetHelpers.createSmallWidget(data) : await this.FPW.WidgetHelpers.createSmallWidget(data);
+                    w = wStyle === 'simple' ? await this.FPW.Widgets.Small.createWidget(data) : await this.FPW.Widgets.Small.createWidget(data);
                     break;
                 case 'large':
-                    w = await this.FPW.WidgetHelpers.createLargeWidget(data);
+                    w = await this.FPW.Widgets.Large.createWidget(data);
                     break;
                 case 'extraLarge':
-                    w = await this.WidgetHelpers.createExtraLargeWidget(data);
+                    w = await this.FPW.Widgets.ExtraLarge.createWidget(data);
                     break;
 
                 default:
-                    // w = wStyle === 'simple' ? await this.FPW.WidgetHelpers.createMediumSimpleWidget(data) : await this.FPW.WidgetHelpers.createMediumWidget(data);
-                    w = await this.FPW.WidgetHelpers.createMediumWidget(data);
+                    // w = wStyle === 'simple' ? await this.FPW.Widgets.Medium.createWidget(data) : await this.FPW.Widgets.Medium.createWidgetSimple(data);
+                    w = await this.FPW.Widgets.Medium.createWidgetSimple(data);
                     break;
             }
             if (w === null) {
@@ -272,8 +272,8 @@ async function testWidget(data) {
         mainStack.setPadding(0, 0, 0, 0);
 
         let contentStack = mainStack.addStack();
-        let row = await this.FPW.WidgetHelpers.createRow(contentStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
-        await this.FPW.WidgetHelpers.createText(row, 'This is a test', { font: Font.boldSystemFont(13), textColor: new Color(darkMode ? '#FFFFFF' : '#000000'), lineLimit: 1 });
+        let row = await this.FPW.Widgets.createRow(contentStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+        await this.FPW.Widgets.createText(row, 'This is a test', { font: Font.boldSystemFont(13), textColor: new Color(darkMode ? '#FFFFFF' : '#000000'), lineLimit: 1 });
         contentStack.layoutHorizontally();
     } catch (e) {
         console.log(`testWidget Error: ${e}`);
@@ -295,60 +295,66 @@ async function testWidget(data) {
 async function getModules(useLocal = false) {
     const fm = useLocal ? FileManager.local() : FileManager.iCloud();
     // Load the modules
-    const modules = [
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Alerts.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Files.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordCommands.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordRequests.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Keychain.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Menus.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Notifications.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_AlertPage.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_ChangesPage.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_MainPage.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_MessagePage.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_RecallPage.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_WidgetStylePage.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Utils.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Small.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Medium.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Large.js',
-        'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_ExtraLarge.js',
+    let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
+    moduleRepo = widgetConfig.useBetaModules ? moduleRepo.replace('main', 'beta') : moduleRepo;
+    const moduleFiles = [
+        'FPW.js',
+        'FPW_Alerts.js',
+        'FPW_Files.js',
+        'FPW_FordCommands.js',
+        'FPW_FordRequests.js',
+        'FPW_Keychain.js',
+        'FPW_Menus.js',
+        'FPW_Notifications.js',
+        'FPW_ShortcutParser.js',
+        'FPW_Tables.js',
+        'FPW_Tables_AlertPage.js',
+        'FPW_Tables_ChangesPage.js',
+        'FPW_Tables_MainPage.js',
+        'FPW_Tables_MessagePage.js',
+        'FPW_Tables_RecallPage.js',
+        'FPW_Tables_WidgetStylePage.js',
+        'FPW_Timers.js',
+        'FPW_Utils.js',
+        'FPW_Widgets.js',
+        'FPW_Widgets_Small.js',
+        'FPW_Widgets_Medium.js',
+        'FPW_Widgets_Large.js',
+        'FPW_Widgets_ExtraLarge.js',
     ];
+
     let available = [];
     try {
-        const modulePath = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
-        if (!(await fm.isDirectory(modulePath))) {
+        const moduleDir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
+        if (!(await fm.isDirectory(moduleDir))) {
             console.log('Creating FPWModules directory...');
-            await fm.createDirectory(modulePath);
+            await fm.createDirectory(moduleDir);
         }
-        for (const [i, module] of modules.entries()) {
-            let url = widgetConfig.useBetaModules ? module.replace('main', 'beta') : module;
-            const fileName = url.substring(url.lastIndexOf('/') + 1);
-            const filePath = fm.joinPath(modulePath, fileName);
+
+        for (const [i, file] of moduleFiles.entries()) {
+            const filePath = fm.joinPath(moduleDir, file);
             // console.log(filePath);
             if (!(await fm.fileExists(filePath))) {
                 let req = new Request(url);
                 let code = await req.loadString();
-                available.push(fileName);
-                // const header = `//This module was downloaded using FordWidgetTool.\n\n`;
-                // const newCode = code.replace(`/${header}/g`, '');
-                let codeToStore = Data.fromString(`${code}`);
-                console.log(`Required Module Missing... Downloading ${fileName}`);
+                available.push(file);
+                const headerTxt = `//This module was downloaded using FordWidgetTool.\n\n`;
+                const newCode = code.replace(headerTxt, '');
+                let codeToStore = Data.fromString(`${headerTxt}${newCode}`);
+                console.log(`Required Module Missing... Downloading ${file}`);
                 await fm.write(filePath, codeToStore);
             } else {
-                available.push(fileName);
+                available.push(file);
             }
         }
-        if (available.length === modules.length) {
-            console.log(`All Required Modules (${modules.length}) Found!`);
-            const m = importModule(fm.joinPath(modulePath, 'FPW.js'));
-            return m;
+        if (available.length === moduleFiles.length) {
+            console.log(`All Required Modules (${moduleFiles.length}) Found!`);
+            try {
+                return importModule(fm.joinPath(moduleDir, 'FPW.js'));
+            } catch (e) {
+                console.log(`Error Importing FPW.js: ${e}`);
+                // this.FPW.Files.appendToLogFile(`getModules() Error: ${e}`);
+            }
         }
     } catch (error) {
         console.error(`(getModules) ${error}`);

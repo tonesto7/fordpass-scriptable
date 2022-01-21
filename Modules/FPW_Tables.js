@@ -11,11 +11,6 @@ module.exports = class FPW_Tables {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        this.Kc = FPW.Kc;
-        this.FordRequests = FPW.FordRequests;
-        this.Alerts = FPW.Alerts;
-        this.Utils = FPW.Utils;
-        this.Timers = FPW.Timers;
         this.MainPage = new FPW_Tables_MainPage(FPW);
         this.AlertPage = new FPW_Tables_AlertPage(FPW);
         this.ChangesPage = new FPW_Tables_ChangesPage(FPW);
@@ -226,7 +221,7 @@ module.exports = class FPW_Tables {
         // console.log(`showDataWebView(${title}, ${heading})`); //, ${JSON.stringify(data)})`);
         let otaHTML = '';
         try {
-            data = this.utils.scrubPersonalData(data);
+            data = this.FPW.Utils.scrubPersonalData(data);
             if (type === 'OTA') {
                 if (data.fuseResponse && data.fuseResponse.fuseResponseList && data.fuseResponse.fuseResponseList.length) {
                     otaHTML += `<h3>OTA Details</h3>`;

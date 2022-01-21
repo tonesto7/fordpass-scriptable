@@ -60,7 +60,7 @@ module.exports = class FPW_Tables_MainPage {
                             dismissOnTap: false,
                             onTap: async() => {
                                 console.log(`(Dashboard) Menu Button was pressed`);
-                                this.FPW.Tables.menuBuilderByType('main');
+                                this.FPW.Menus.menuBuilderByType('main');
                             },
                         }),
                     ], {
@@ -202,10 +202,19 @@ module.exports = class FPW_Tables_MainPage {
             }
 
             // Script Update Available Row
-            if (update || this.FPW.updateAvailable) {
+            if (update || this.FPW.getStateVal('updateAvailable') === true) {
                 tableRows.push(
                     await this.FPW.Tables.createTableRow(
-                        [await this.FPW.Tables.createTextCell(`New Widget Update Available (v${LATEST_VERSION})`, 'Tap here to update', { align: 'center', widthWeight: 100, titleColor: new Color('#b605fc'), titleFont: Font.subheadline(), subtitleColor: new Color(this.FPW.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) })], {
+                        [
+                            await this.FPW.Tables.createTextCell(`New Widget Update Available (v${this.FPW.getStateVal('LATEST_VERSION')})`, 'Tap here to update', {
+                                align: 'center',
+                                widthWeight: 100,
+                                titleColor: new Color('#b605fc'),
+                                titleFont: Font.subheadline(),
+                                subtitleColor: new Color(this.FPW.colorMap.textColor1),
+                                subtitleFont: Font.regularSystemFont(9),
+                            }),
+                        ], {
                             height: 40,
                             dismissOnSelect: false,
                             onSelect: async() => {
@@ -666,9 +675,9 @@ module.exports = class FPW_Tables_MainPage {
                 let lastVersion = await this.FPW.Kc.getSettingVal('fpScriptVersion');
                 let reqOk = await this.FPW.Kc.requiredPrefsOk(this.FPW.Kc.prefKeys().core);
                 // console.log(`(Dashboard) Last Version: ${lastVersion}`);
-                if (reqOk && lastVersion !== SCRIPT_VERSION) {
+                if (reqOk && lastVersion !== this.FPW.SCRIPT_VERSION) {
                     this.FPW.Tables.ChangesPage.createRecentChangesPage();
-                    await this.FPW.Kc.setSettingVal('fpScriptVersion', SCRIPT_VERSION);
+                    await this.FPW.Kc.setSettingVal('fpScriptVersion', this.FPW.SCRIPT_VERSION);
                 }
             }
         } catch (err) {

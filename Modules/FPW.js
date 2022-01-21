@@ -1,7 +1,6 @@
 const screenSize = Device.screenResolution();
 const isSmallDisplay = screenSize.width < 1200 === true;
 const darkMode = Device.isUsingDarkAppearance();
-const LATEST_VERSION = await getLatestScriptVersion();
 
 module.exports = class FPW {
     colorMap = {
@@ -226,38 +225,59 @@ module.exports = class FPW {
     };
 
     constructor(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig) {
-        // console.log(`FPW_Utils.js: constructor()`);
-        this.SCRIPT_NAME = 'Fordpass Widget';
-        this.SCRIPT_ID = SCRIPT_ID;
-        this.SCRIPT_VERSION = SCRIPT_VERSION;
-        this.SCRIPT_TS = SCRIPT_TS;
-        //************************************************************************* */
-        //*                  Device Detail Functions
-        //************************************************************************* */
-        this.screenSize = screenSize;
-        this.isSmallDisplay = isSmallDisplay;
-        this.darkMode = darkMode;
-        this.runningWidgetSize = config.widgetFamily;
-        this.isPhone = Device.isPhone();
-        this.isPad = Device.isPad();
-        this.deviceModel = Device.model();
-        this.deviceSystemVersion = Device.systemVersion();
-        this.widgetConfig = widgetConfig;
-        this.Timers = this.loadTimers();
-        this.Alerts = this.loadAlerts();
-        this.Notifications = this.loadNotifications();
-        this.ShortcutParser = this.loadShortcutParser();
-        this.Kc = this.loadKeychain();
-        this.Files = this.loadFiles();
-        this.Utils = this.loadUtils();
-        this.FordRequests = this.loadFordRequests();
-        this.FordCommands = this.loadFordCommands();
-        this.Tables = this.loadTables();
-        this.Menus = this.loadMenus();
-        this.WidgetHelpers = this.loadWidgetHelpers();
-        this.LATEST_VERSION = LATEST_VERSION;
-        this.updateAvailable = this.FPW.Utils.isNewerVersion(SCRIPT_VERSION, this.LATEST_VERSION);
-        console.log(`Script Version: ${SCRIPT_VERSION} | Update Available: ${this.updateAvailable} | Latest Version: ${this.LATEST_VERSION}`);
+        try {
+            this.SCRIPT_NAME = 'Fordpass Widget';
+            this.SCRIPT_ID = SCRIPT_ID;
+            this.SCRIPT_VERSION = SCRIPT_VERSION;
+            this.SCRIPT_TS = SCRIPT_TS;
+            this.stateStore = {};
+            //************************************************************************* */
+            //*                  Device Detail Functions
+            //************************************************************************* */
+            this.screenSize = screenSize;
+            this.isSmallDisplay = isSmallDisplay;
+            this.darkMode = darkMode;
+            this.runningWidgetSize = config.widgetFamily;
+            this.isPhone = Device.isPhone();
+            this.isPad = Device.isPad();
+            this.deviceModel = Device.model();
+            this.deviceSystemVersion = Device.systemVersion();
+            this.widgetConfig = widgetConfig;
+            this.Timers = this.loadTimers();
+            this.Alerts = this.loadAlerts();
+            this.Notifications = this.loadNotifications();
+            this.ShortcutParser = this.loadShortcutParser();
+            this.Kc = this.loadKeychain();
+            this.Files = this.loadFiles();
+            this.Utils = this.loadUtils();
+            this.FordRequests = this.loadFordRequests();
+            this.FordCommands = this.loadFordCommands();
+            this.Tables = this.loadTables();
+            this.Menus = this.loadMenus();
+            this.WidgetHelpers = this.loadWidgetHelpers();
+            this.checkForUpdates();
+        } catch (e) {
+            console.error(`FPW.js: constructor() - Error: ${e}`);
+        }
+    }
+
+    async checkForUpdates() {
+        const v = await this.Utils.getLatestScriptVersion();
+        this.setStateVal('LATEST_VERSION', v);
+        this.setStateVal('updateAvailable', await this.Utils.isNewerVersion(this.SCRIPT_VERSION, v));
+        console.log(`Script Version: ${this.SCRIPT_VERSION} | Update Available: ${this.getStateVal('updateAvailable')} | Latest Version: ${this.getStateVal('LATEST_VERSION')}`);
+    }
+
+    setStateVal(key, value) {
+        this.stateStore[key] = value;
+    }
+
+    getStateVal(key) {
+        return this.stateStore[key];
+    }
+
+    removeStateVal(key) {
+        delete this.stateStore[key];
     }
 
     loadFiles() {
@@ -402,20 +422,3 @@ module.exports = class FPW {
         };
     }
 };
-
-async function getLatestScriptVersion() {
-    let req = new Request(`https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/latest.json`);
-    req.headers = {
-        'Content-Type': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-    };
-    req.method = 'GET';
-    req.timeoutInterval = 10;
-    try {
-        let ver = await req.loadJSON();
-        return ver && ver.version ? ver.version.replace('v', '') : undefined;
-    } catch (e) {
-        console.log(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
-    }
-}
