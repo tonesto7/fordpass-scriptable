@@ -60,7 +60,8 @@ module.exports = class FPW_Files {
                 .replace(/[^a-zA-Z\s]/g, '')
                 .replace(/\s/g, '_')
                 .toLowerCase();
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
+            const type = config.runsInWidget ? 'widget' : config.runsInApp ? 'app' : 'unknown';
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_${type}_${this.SCRIPT_ID}.log` : `fp_${devName}_${type}.log`;
             let path = fm.joinPath(logDir, fileName);
             if (!(await fm.isDirectory(logDir))) {
                 console.log('Creating Logs directory...');

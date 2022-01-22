@@ -102,12 +102,6 @@ const widgetConfig = {
     showTestUIStuff: true,
 };
 
-// const FPWClass = await getModules(widgetConfig.useLocalModules);
-// if (FPWClass === undefined) {
-//     throw new Error('Could NOT Load FordPassWidget Class');
-// }
-// const FPW = new FPWClass(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
-
 //************************************************************************* */
 //*                  Device Detail Functions
 //************************************************************************* */
@@ -128,53 +122,53 @@ const runningWidgetSize = config.widgetFamily;
 //******************************************************************************
 
 class Widget {
-    constructor(fpw) {
-        try {
-            this.FPW = fpw;
-            this.FPW.Files.appendToLogFile('Widget Started');
-        } catch (error) {
-            console.log(`Error: ${error}`);
-        }
+    constructor() {
+        this.FPW;
+        this.logger = logger.bind(this);
+        this.validateModules = validateModules.bind(this);
     }
 
-    // /**
-    //  * @description This is the main function that runs the widget.
-    //  * @return
-    //  * @memberof Widget
-    //  */
-    // async start() {
-    //     let fordData = await this.prepWidget();
-    //     if (fordData === null) return;
+    async run() {
+        await this.logger('------------------------------------------------------------------------');
+        await this.logger(`Starting... | Widget: ${config.runsInWidget} | App: ${config.runsInApp}`);
+        const FPWClass = await this.validateModules();
+        if (FPWClass === undefined) {
+            this.logger(`Widget: ${config.runsInWidget} | App: ${config.runsInApp} |  Error Loading FPW.js | Exiting...`, 'error');
+            throw new Error('Could NOT Load FordPassWidget Class');
+        }
 
-    //     try {
-    //         if (config.runsInWidget) {
-    //             console.log('(generateWidget) Running in Widget...');
-    //             this.FPW.Files.appendToLogFile('(generateWidget) Running in Widget...');
-    //             // await this.FPW.Widgets.generateWidget(runningWidgetSize, fordData);
-    //             let w = await testWidget(fordData);
-    //         } else if (config.runsInApp || config.runsFromHomeScreen) {
-    //             // Show alert with current data (if running script in app)
-    //             if (args.shortcutParameter) {
-    //                 // Create a parser function...
-    //                 await Speech.speak(await this.FPW.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
-    //             } else {
-    //                 // await(await generateWidget('medium', fordData)).presentMedium();
-    //                 // await this.FPW.Menus.menuBuilderByType('main');
-    //                 await this.FPW.Tables.MainPage.createMainPage();
-    //             }
-    //         } else if (config.runsWithSiri || config.runsInActionExtension) {
-    //             // console.log('runsWithSiri: ' + config.runsWithSiri);
-    //             // console.log('runsInActionExtension: ' + config.runsInActionExtension);
-    //         } else {
-    //             this.FPW.Files.appendToLogFile('(generateWidget) Running in Widget (else)...');
-    //             await this.FPW.Widgets.generateWidget(runningWidgetSize, fordData);
-    //         }
-    //     } catch (e) {
-    //         console.log(`start() Error: ${e}`);
-    //         this.FPW.Files.appendToLogFile(`start() Error: ${e}`);
-    //     }
-    //     Script.complete();
-    // }
+        try {
+            this.FPW = new FPWClass(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
+            this.logger('Widget RUN...');
+            // Starts the widget load process
+            let fordData = await this.prepWidget();
+            if (fordData === null) return;
+            if (config.runsInWidget) {
+                await this.logger('(generateWidget) Running in Widget...');
+                await this.generateWidget(runningWidgetSize, fordData);
+                // await this.testWidget(fordData);
+            } else if (config.runsInApp || config.runsFromHomeScreen) {
+                // Show alert with current data (if running script in app)
+                if (args.shortcutParameter) {
+                    // Create a parser function...
+                    await Speech.speak(await this.FPW.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
+                } else {
+                    // await(await generateWidget('medium', fordData)).presentMedium();
+                    // await this.FPW.Menus.menuBuilderByType('main');
+                    await this.FPW.Tables.MainPage.createMainPage();
+                }
+            } else if (config.runsWithSiri || config.runsInActionExtension) {
+                // console.log('runsWithSiri: ' + config.runsWithSiri);
+                // console.log('runsInActionExtension: ' + config.runsInActionExtension);
+            } else {
+                this.logger('(generateWidget) Running in Widget (else)...');
+                await this.generateWidget(runningWidgetSize, fordData);
+            }
+            Script.complete();
+        } catch (e) {
+            await this.logger(`run() Error: ${e}`, true);
+        }
+    }
 
     /**
      * @description Makes sure the widget is ready to run by checking for proper settings. It will prompt the user to change settings if needed.
@@ -281,11 +275,15 @@ class Widget {
             console.log(`testWidget Error: ${e}`);
             this.FPW.Files.appendToLogFile(`testWidget() Error: ${e}`);
         }
+        widget.refreshAfterDate = new Date(Date.now() + 1000 * 60); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         widget.setPadding(0, 5, 0, 1);
         Script.setWidget(widget);
         // return widget;
     }
 }
+
+// //***************************************************END WIDGET ELEMENT FUNCTIONS********************************************************
+// //***************************************************************************************************************************************
 
 async function appendToLogFile(txt) {
     // console.log('appendToLogFile: Saving Data to Log...');
@@ -296,7 +294,8 @@ async function appendToLogFile(txt) {
             .replace(/[^a-zA-Z\s]/g, '')
             .replace(/\s/g, '_')
             .toLowerCase();
-        let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
+        const type = config.runsInWidget ? 'widget' : config.runsInApp ? 'app' : 'unknown';
+        let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_${type}_${this.SCRIPT_ID}.log` : `fp_${devName}_${type}.log`;
         let path = fm.joinPath(logDir, fileName);
         if (!(await fm.isDirectory(logDir))) {
             console.log('Creating Logs directory...');
@@ -317,6 +316,33 @@ async function appendToLogFile(txt) {
     }
 }
 
+const moduleFiles = [
+    'FPW.js||-681959783',
+    'FPW_Alerts.js||1575654697',
+    'FPW_Files.js||1769221768',
+    'FPW_FordCommands.js||-1513595181',
+    'FPW_FordRequests.js||-530235373',
+    'FPW_Keychain.js||954896526',
+    'FPW_Menus.js||-1221558013',
+    'FPW_Notifications.js||-1071883614',
+    'FPW_ShortcutParser.js||966556475',
+    'FPW_Tables.js||1324977678',
+    'FPW_Tables_AlertPage.js||1012159356',
+    'FPW_Tables_ChangesPage.js||-473781684',
+    'FPW_Tables_MainPage.js||-757583604',
+    'FPW_Tables_MessagePage.js||-1754669539',
+    'FPW_Tables_RecallPage.js||-285170438',
+    'FPW_Tables_WidgetStylePage.js||786295863',
+    'FPW_Timers.js||-694575770',
+    'FPW_Utils.js||-1891424353',
+    'FPW_Widgets.js||175049418',
+    'FPW_Widgets_ExtraLarge.js||-453486313',
+    'FPW_Widgets_Helpers.js||-1095305750',
+    'FPW_Widgets_Large.js||642581411',
+    'FPW_Widgets_Medium.js||-1667929836',
+    'FPW_Widgets_Small.js||812484577',
+];
+
 /**
  * @description This loads and makes sure all modules are loaded before running the script
  * @param  {boolean} [useLocal=false] Tells the function to use the local version of the file manager instead of the icloud version
@@ -326,33 +352,6 @@ async function validateModules(useLocal = false) {
     const fm = useLocal ? FileManager.local() : FileManager.iCloud();
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
     moduleRepo = widgetConfig.useBetaModules ? moduleRepo.replace('main', 'beta') : moduleRepo;
-    const moduleFiles = [
-        'FPW.js||-1951498029',
-        'FPW_Alerts.js||1575654697',
-        'FPW_Files.js||-32167747',
-        'FPW_FordCommands.js||-1513595181',
-        'FPW_FordRequests.js||-530235373',
-        'FPW_Keychain.js||954896526',
-        'FPW_Menus.js||-1221558013',
-        'FPW_Notifications.js||-1071883614',
-        'FPW_ShortcutParser.js||966556475',
-        'FPW_Tables.js||1324977678',
-        'FPW_Tables_AlertPage.js||1012159356',
-        'FPW_Tables_ChangesPage.js||-473781684',
-        'FPW_Tables_MainPage.js||-757583604',
-        'FPW_Tables_MessagePage.js||-1754669539',
-        'FPW_Tables_RecallPage.js||-285170438',
-        'FPW_Tables_WidgetStylePage.js||786295863',
-        'FPW_Timers.js||-694575770',
-        'FPW_Utils.js||-1891424353',
-        'FPW_Widgets.js||175049418',
-        'FPW_Widgets_ExtraLarge.js||-453486313',
-        'FPW_Widgets_Helpers.js||-1095305750',
-        'FPW_Widgets_Large.js||642581411',
-        'FPW_Widgets_Medium.js||-1667929836',
-        'FPW_Widgets_Small.js||812484577',
-    ];
-
     async function downloadModule(fileName, filePath) {
         try {
             let req = new Request(`${moduleRepo}${fileName}`);
@@ -361,7 +360,7 @@ async function validateModules(useLocal = false) {
             await fm.write(filePath, codeData);
             return true;
         } catch (error) {
-            logger(`(downloadModule) ${error}`, true);
+            await logger(`(downloadModule) ${error}`, true);
             return false;
         }
     }
@@ -374,14 +373,14 @@ async function validateModules(useLocal = false) {
     try {
         const moduleDir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
         if (!(await fm.isDirectory(moduleDir))) {
-            console.log('Creating FPWModules directory...');
+            await logger('Creating FPWModules directory...');
             await fm.createDirectory(moduleDir);
         }
         for (const [i, file] of moduleFiles.entries()) {
             const [fileName, fileHash] = file.split('||');
             const filePath = fm.joinPath(moduleDir, fileName);
             if (!(await fm.fileExists(filePath))) {
-                console.log(`Required Module Missing... Downloading ${fileName}`);
+                await logger(`Required Module Missing... Downloading ${fileName}`);
                 if (await downloadModule(fileName, filePath)) {
                     available.push(fileName);
                 }
@@ -390,7 +389,7 @@ async function validateModules(useLocal = false) {
                 const hash = await hashCode(fileCode);
                 // console.log(`${fileName} hash: ${hash} | ${fileHash}`);
                 if (widgetConfig.ignoreHashCheck === false && hash.toString() !== fileHash.toString()) {
-                    console.log(`Module Hash Missmatch... Downloading ${fileName}`);
+                    await logger(`Module Hash Missmatch... Downloading ${fileName}`);
                     if (await downloadModule(fileName, filePath)) {
                         available.push(fileName);
                     }
@@ -400,19 +399,27 @@ async function validateModules(useLocal = false) {
             }
         }
         if (available.length === moduleFiles.length) {
-            console.log(`All Required Modules (${moduleFiles.length}) Found!`);
-            try {
-                const modulePath = FileManager.iCloud().joinPath(FileManager.iCloud().documentsDirectory(), 'FPWModules', 'FPW.js');
-                return !(await fm.fileExists(modulePath)) ? undefined : true;
-            } catch (e) {
-                console.log(`Error Importing FPW.js: ${e}`);
-                return undefined;
-            }
+            await logger(`All Required Modules (${moduleFiles.length}) Found!`);
+            await logger(`Checking for Class Module... ${await checkForClassModule()} | Widget: ${config.runsInWidget} | App: ${config.runsInApp}`);
+            return await loadFPClass();
         }
     } catch (error) {
-        logger(`validateModules() Error: ${error}`, true);
+        await logger(`validateModules() Error: ${error}`, true);
         return undefined;
     }
+}
+
+async function loadFPClass() {
+    const modulePath = FileManager.iCloud().joinPath(FileManager.iCloud().documentsDirectory(), 'FPWModules') + '/FPW.js';
+    let module = undefined;
+    try {
+        if (await checkForClassModule(false)) {
+            module = importModule(modulePath);
+        }
+    } catch (e) {
+        await logger(`Error Importing FPW.js: ${e}`, true);
+    }
+    return module;
 }
 
 async function logger(msg, error = false, saveToLog = true) {
@@ -426,73 +433,27 @@ async function logger(msg, error = false, saveToLog = true) {
     }
 }
 
-async function checkForClassModule() {
+async function checkForClassModule(log = true) {
     try {
         const fm = FileManager.iCloud();
         const classPath = fm.joinPath(fm.documentsDirectory(), 'FPWModules', 'FPW.js');
         if (await fm.fileExists(classPath)) {
-            logger('Class Module Found!');
+            if (log) await logger('Class Module Found!');
             return true;
         } else {
-            logger('Class Module Not Found!');
+            if (log) await logger('Class Module Not Found!');
             return false;
         }
     } catch (error) {
-        logger(`checkForClassModule() Error: ${error}`, true);
+        await logger(`checkForClassModule() Error: ${error}`, true);
         return false;
     }
 }
 
-async function start() {
-    logger(`Starting...  | RunsInWidget: ${config.runsInWidget} | RunsInApp: ${config.runsInApp}`);
-    const modulePath = FileManager.iCloud().joinPath(FileManager.iCloud().documentsDirectory(), 'FPWModules') + '/FPW.js';
-    logger(`ModulePath: ${modulePath}`);
-    const modulesLoaded = await validateModules();
-    logger(`ModulesLoaded: ${modulesLoaded}`);
-    if (modulesLoaded === undefined) {
-        logger(`Widget: ${config.runsInWidget} | App: ${config.runsInApp} |  Error Loading FPW.js | Exiting...`);
-        throw new Error('Could NOT Load FordPassWidget Class');
-    }
-    // const FPWClass = await getModules(widgetConfig.useLocalModules);
-
-    // if (FPWClass === undefined) {
-    //     throw new Error('Could NOT Load FordPassWidget Class');
-    // }
-    const FPWClass = importModule(modulePath);
-    const FPW = new FPWClass(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
-    const wc = new Widget(FPW);
-    // await wc.start();
-    let fordData = await wc.prepWidget();
-    if (fordData === null) return;
-
-    try {
-        if (config.runsInWidget) {
-            console.log('(generateWidget) Running in Widget...');
-            wc.FPW.Files.appendToLogFile('(generateWidget) Running in Widget...');
-            // await this.FPW.Widgets.generateWidget(runningWidgetSize, fordData);
-            let w = await wc.testWidget(fordData);
-        } else if (config.runsInApp || config.runsFromHomeScreen) {
-            // Show alert with current data (if running script in app)
-            if (args.shortcutParameter) {
-                // Create a parser function...
-                await Speech.speak(await wc.FPW.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
-            } else {
-                // await(await generateWidget('medium', fordData)).presentMedium();
-                // await this.FPW.Menus.menuBuilderByType('main');
-                await wc.FPW.Tables.MainPage.createMainPage();
-            }
-        } else if (config.runsWithSiri || config.runsInActionExtension) {
-            // console.log('runsWithSiri: ' + config.runsWithSiri);
-            // console.log('runsInActionExtension: ' + config.runsInActionExtension);
-        } else {
-            wc.FPW.Files.appendToLogFile('(generateWidget) Running in Widget (else)...');
-            await wc.FPW.Widgets.generateWidget(runningWidgetSize, fordData);
-        }
-    } catch (e) {
-        logger(`start() Error: ${e}`, true);
-    }
-    Script.complete();
+try {
+    const wc = new Widget();
+    await wc.run();
+} catch (error) {
+    logger(`Error: ${error}`, true);
+    throw new Error(error);
 }
-start();
-// const wc = new Widget(FPW);
-// await wc.start();

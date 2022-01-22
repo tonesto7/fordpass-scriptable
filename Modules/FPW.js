@@ -231,6 +231,12 @@ module.exports = class FPW {
             this.SCRIPT_VERSION = SCRIPT_VERSION;
             this.SCRIPT_TS = SCRIPT_TS;
             this.stateStore = {};
+            this.localFM = FileManager.local();
+            this.localDocs = this.localFM.documentsDirectory();
+            this.localModuleDir = this.localFM.joinPath(this.localDocs, 'FPWModules');
+            this.iCloudFM = FileManager.iCloud();
+            this.iCloudDocs = this.iCloudFM.documentsDirectory();
+            this.iCloudModuleDir = this.iCloudFM.joinPath(this.iCloudDocs, 'FPWModules');
             //************************************************************************* */
             //*                  Device Detail Functions
             //************************************************************************* */
@@ -297,82 +303,82 @@ module.exports = class FPW {
     }
 
     loadFiles() {
-        const FPW_Files = importModule('/FPW_Files.js');
+        const FPW_Files = importModule(this.iCloudModuleDir + '/FPW_Files.js');
         return new FPW_Files(this);
     }
 
     loadKeychain() {
-        const FPW_Keychain = importModule('/FPW_Keychain.js');
+        const FPW_Keychain = importModule(this.iCloudModuleDir + '/FPW_Keychain.js');
         return new FPW_Keychain(this);
     }
 
     loadMenus() {
-        const FPW_Menus = importModule('/FPW_Menus.js');
+        const FPW_Menus = importModule(this.iCloudModuleDir + '/FPW_Menus.js');
         return new FPW_Menus(this);
     }
 
     loadUtils() {
-        const FPW_Utils = importModule('/FPW_Utils.js');
+        const FPW_Utils = importModule(this.iCloudModuleDir + '/FPW_Utils.js');
         return new FPW_Utils(this);
     }
 
     loadTimers() {
-        const FPW_Timers = importModule('/FPW_Timers.js');
+        const FPW_Timers = importModule(this.iCloudModuleDir + '/FPW_Timers.js');
         return new FPW_Timers(this);
     }
 
     loadTables() {
-        const FPW_Tables = importModule('/FPW_Tables.js');
+        const FPW_Tables = importModule(this.iCloudModuleDir + '/FPW_Tables.js');
         return new FPW_Tables(this);
     }
 
     loadAlerts() {
-        const FPW_Alerts = importModule('/FPW_Alerts.js');
+        const FPW_Alerts = importModule(this.iCloudModuleDir + '/FPW_Alerts.js');
         return new FPW_Alerts(this);
     }
 
     loadNotifications() {
-        const FPW_Notifications = importModule('/FPW_Notifications.js');
+        const FPW_Notifications = importModule(this.iCloudModuleDir + '/FPW_Notifications.js');
         return new FPW_Notifications(this);
     }
 
     loadFordRequests() {
-        const FPW_FordRequests = importModule('/FPW_FordRequests.js');
+        const FPW_FordRequests = importModule(this.iCloudModuleDir + '/FPW_FordRequests.js');
         return new FPW_FordRequests(this);
     }
 
     loadFordCommands() {
-        const FPW_FordCommands = importModule('/FPW_FordCommands.js');
+        const FPW_FordCommands = importModule(this.iCloudModuleDir + '/FPW_FordCommands.js');
         return new FPW_FordCommands(this);
     }
 
     loadShortcutParser() {
-        const FPW_ShortcutParser = importModule('/FPW_ShortcutParser.js');
+        const FPW_ShortcutParser = importModule(this.iCloudModuleDir + '/FPW_ShortcutParser.js');
         return new FPW_ShortcutParser(this);
     }
 
     loadWidgetHelpers() {
-        const FPW_WidgetHelpers = importModule('/FPW_Widgets_Helpers.js');
+        const FPW_WidgetHelpers = importModule(this.iCloudModuleDir + '/FPW_Widgets_Helpers.js');
         return new FPW_WidgetHelpers(this);
     }
 
     loadSmallWidgetModule() {
-        const FPW_Widgets_Small = importModule('/FPW_Widgets_Small.js');
+        const FPW_Widgets_Small = importModule(this.iCloudModuleDir + '/FPW_Widgets_Small.js');
         return new FPW_Widgets_Small(this);
     }
 
     loadMediumWidgetModule() {
-        const FPW_Widgets_Medium = importModule('/FPW_Widgets_Medium.js');
+        const FPW_Widgets_Medium = importModule(this.iCloudModuleDir + '/FPW_Widgets_Medium.js');
         return new FPW_Widgets_Medium(this);
     }
 
     loadLargeWidgetModule() {
-        const FPW_Widgets_Large = importModule('/FPW_Widgets_Large.js');
+        const FPW_Widgets_Large = importModule(this.iCloudModuleDir + '/FPW_Widgets_Large.js');
         return new FPW_Widgets_Large(this);
     }
 
     loadExtraLargeWidgetModule() {
-        const FPW_Widgets_ExtraLarge = importModule('/FPW_Widgets_ExtraLarge.js');
+        const FPW_Widgets_ExtraLarge = importModule(this.iCloudModuleDir + '/FPW_Widgets_ExtraLarge.js');
         return new FPW_Widgets_ExtraLarge(this);
     }
 
