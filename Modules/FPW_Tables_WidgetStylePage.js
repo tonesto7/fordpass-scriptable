@@ -7,7 +7,7 @@ module.exports = class FPW_Tables_WidgetStylePage {
 
     async createWidgetStylePage() {
         try {
-            let widgetStyle = await this.FPW.Kc.getWidgetStyle();
+            let widgetStyle = await this.FPW.getWidgetStyle();
             // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
             let tableRows = [];
             tableRows.push(
@@ -50,7 +50,7 @@ module.exports = class FPW_Tables_WidgetStylePage {
                                 backgroundColor: widgetStyle === style ? Color.lightGray() : undefined,
                                 onSelect: async() => {
                                     console.log(`Setting WidgetStyle to ${style}`);
-                                    await this.FPW.Kc.setWidgetStyle(style);
+                                    await this.FPW.setWidgetStyle(style);
                                     this.widgetStyleSelector(size);
                                 },
                             },

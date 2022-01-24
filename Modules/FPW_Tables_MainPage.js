@@ -11,9 +11,9 @@ module.exports = class FPW_Tables_MainPage {
             const vData = await this.FPW.FordAPI.fetchVehicleData(true);
             const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
             const isEV = vData.evVehicle === true;
-            const pressureUnits = await this.FPW.Kc.getSettingVal('fpPressureUnits');
-            const distanceMultiplier = (await this.FPW.Kc.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-            const distanceUnit = (await this.FPW.Kc.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+            const pressureUnits = await this.FPW.getSettingVal('fpPressureUnits');
+            const distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+            const distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
             const tireUnit = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
             const dtePostfix = isEV ? 'Range' : 'to E';
 
@@ -91,8 +91,8 @@ module.exports = class FPW_Tables_MainPage {
             );
 
             // Header Section - Row 3: Displays the Vehicle Image in center and doors on the left and windows on the right
-            const openDoors = await this.FPW.WidgetHelpers.getOpenItems(vData.statusDoors); //['LF', 'RR', 'HD'];
-            const openWindows = await this.FPW.WidgetHelpers.getOpenItems(vData.statusWindows); //['LF', 'RR', 'HD'];
+            const openDoors = await this.FPW.getOpenItems(vData.statusDoors); //['LF', 'RR', 'HD'];
+            const openWindows = await this.FPW.getOpenItems(vData.statusWindows); //['LF', 'RR', 'HD'];
             // console.log(`openDoors: ${JSON.stringify(openDoors)}`);
             // console.log(`openWindows: ${JSON.stringify(openWindows)}`);
             tableRows.push(
@@ -674,12 +674,12 @@ module.exports = class FPW_Tables_MainPage {
             await this.FPW.Tables.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
 
             if (!update) {
-                let lastVersion = await this.FPW.Kc.getSettingVal('fpScriptVersion');
-                let reqOk = await this.FPW.Kc.requiredPrefsOk(this.FPW.Kc.prefKeys().core);
+                let lastVersion = await this.FPW.getSettingVal('fpScriptVersion');
+                let reqOk = await this.FPW.requiredPrefsOk(this.FPW.prefKeys().core);
                 // console.log(`(Dashboard) Last Version: ${lastVersion}`);
                 if (reqOk && lastVersion !== this.FPW.SCRIPT_VERSION) {
                     this.FPW.Tables.ChangesPage.createRecentChangesPage();
-                    await this.FPW.Kc.setSettingVal('fpScriptVersion', this.FPW.SCRIPT_VERSION);
+                    await this.FPW.setSettingVal('fpScriptVersion', this.FPW.SCRIPT_VERSION);
                 }
             }
         } catch (err) {

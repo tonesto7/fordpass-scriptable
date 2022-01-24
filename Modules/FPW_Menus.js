@@ -7,10 +7,10 @@ module.exports = class FPW_Menus {
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
         try {
-            user = user || (await this.FPW.Kc.getSettingVal('fpUser'));
-            pass = pass || (await this.FPW.Kc.getSettingVal('fpPass'));
-            vin = vin || (await this.FPW.Kc.getSettingVal('fpVin'));
-            let mapProvider = await this.FPW.Kc.getMapProvider();
+            user = user || (await this.FPW.getSettingVal('fpUser'));
+            pass = pass || (await this.FPW.getSettingVal('fpPass'));
+            vin = vin || (await this.FPW.getSettingVal('fpVin'));
+            let mapProvider = await this.FPW.getMapProvider();
 
             let prefsMenu = new Alert();
             prefsMenu.title = 'Required Settings Missing';
@@ -34,7 +34,7 @@ module.exports = class FPW_Menus {
             switch (respInd) {
                 case 0:
                     console.log('(Required Prefs Menu) Map Provider pressed');
-                    await this.FPW.Kc.toggleMapProvider();
+                    await this.FPW.toggleMapProvider();
                     return await this.requiredPrefsMenu(user, pass, vin);
                     break;
                 case 1:
@@ -55,13 +55,13 @@ module.exports = class FPW_Menus {
                     // console.log(`${user} ${pass} ${vin}`);
 
                     if (this.FPW.inputTest(user) && this.FPW.inputTest(pass) && this.FPW.inputTest(vin)) {
-                        await this.FPW.Kc.setSettingVal('fpUser', user);
-                        await this.FPW.Kc.setSettingVal('fpPass', pass);
-                        await this.FPW.Kc.setSettingVal('fpMapProvider', mapProvider);
-                        let vinChk = await this.FPW.Kc.vinCheck(vin, true);
+                        await this.FPW.setSettingVal('fpUser', user);
+                        await this.FPW.setSettingVal('fpPass', pass);
+                        await this.FPW.setSettingVal('fpMapProvider', mapProvider);
+                        let vinChk = await this.FPW.vinCheck(vin, true);
                         console.log(`VIN Number Ok: ${vinChk}`);
                         if (vinChk) {
-                            await this.FPW.Kc.setSettingVal('fpVin', vin.toUpperCase());
+                            await this.FPW.setSettingVal('fpVin', vin.toUpperCase());
                             // await this.FPW.FordAPI.checkAuth();
                             // await this.FPW.FordAPI.queryFordPassPrefs(true);
                             return true;
@@ -216,7 +216,7 @@ module.exports = class FPW_Menus {
                         title: 'Small',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Small Widget was pressed`);
-                            const w = await this.FPW.WidgetSmall.createWidget(vehicleData);
+                            const w = await this.FPW.generateWidget('small', vehicleData);
                             await w.presentSmall();
                         },
                         destructive: false,
@@ -226,7 +226,7 @@ module.exports = class FPW_Menus {
                         title: 'Medium',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Medium Widget was pressed`);
-                            const w = await this.FPW.WidgetMedium.createWidget(vehicleData);
+                            const w = await this.FPW.generateWidget('medium', vehicleData);
                             await w.presentMedium();
                         },
                         destructive: false,
@@ -236,7 +236,7 @@ module.exports = class FPW_Menus {
                         title: 'Large',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Large Widget was pressed`);
-                            const w = awaitthis.WidgetLarge.createWidget(vehicleData);
+                            const w = await this.FPW.generateWidget('large', vehicleData);
                             await w.presentLarge();
                         },
                         destructive: false,
@@ -246,7 +246,7 @@ module.exports = class FPW_Menus {
                         title: 'Extra-Large',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Extra-Large Widget was pressed`);
-                            const w = await this.FPW.WidgetExtraLarge.createWidget(vehicleData);
+                            const w = await this.FPW.generateWidget('extraLarge', vehicleData);
                             await w.presentExtraLarge();
                         },
                         destructive: false,
@@ -351,7 +351,7 @@ module.exports = class FPW_Menus {
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Clear Login Info was pressed`);
                             if (await this.FPW.Alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
-                                await this.FPW.Kc.clearSettings();
+                                await this.FPW.clearSettings();
                                 await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease close out the menus and restart the script again to re-initialize the widget.');
                                 this.menuBuilderByType('main');
                             } else {
@@ -366,7 +366,7 @@ module.exports = class FPW_Menus {
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Reset Everything was pressed`);
                             if (await this.FPW.Alerts.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
-                                await this.FPW.Kc.clearSettings();
+                                await this.FPW.clearSettings();
                                 await this.FPW.Files.clearFileManager();
                                 await this.FPW.Alerts.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nClose out the menus and restart the app.');
                                 this.menuBuilderByType('main');
@@ -389,14 +389,14 @@ module.exports = class FPW_Menus {
                 ];
                 break;
             case 'settings':
-                let mapProvider = await this.FPW.Kc.getMapProvider();
-                let widgetStyle = await this.FPW.Kc.getWidgetStyle();
+                let mapProvider = await this.FPW.getMapProvider();
+                let widgetStyle = await this.FPW.getWidgetStyle();
                 title = 'Widget Settings';
                 items = [{
                         title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Map Provider pressed`);
-                            await this.FPW.Kc.toggleMapProvider();
+                            await this.FPW.toggleMapProvider();
                             this.menuBuilderByType('settings');
                         },
                         destructive: false,

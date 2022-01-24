@@ -44,7 +44,7 @@ module.exports = class FPW_Tables_AlertPage {
 
                     let releaseNotes;
                     if (alert.releaseNotesUrl) {
-                        let locale = (await this.FPW.Kc.getSettingVal('fpLanguage')) || Device.locale().replace('_', '-');
+                        let locale = (await this.FPW.getSettingVal('fpLanguage')) || Device.locale().replace('_', '-');
                         releaseNotes = await this.FPW.getReleaseNotes(alert.releaseNotesUrl, locale);
                     }
                     tableRows.push(
