@@ -76,8 +76,8 @@ module.exports = class FPW_Tables_MessagePage {
                 );
 
                 for (const [i, msg] of msgs.entries()) {
-                    let dtTS = msg.createdDate ? this.FPW.Utils.convertFordDtToLocal(msg.createdDate) : undefined;
-                    let timeDiff = dtTS ? this.FPW.Utils.timeDifference(dtTS) : '';
+                    let dtTS = msg.createdDate ? this.FPW.convertFordDtToLocal(msg.createdDate) : undefined;
+                    let timeDiff = dtTS ? this.FPW.timeDifference(dtTS) : '';
                     let timeSubtitle = `${dtTS ? dtTS.toLocaleString() : ''}${timeDiff ? ' (' + timeDiff + '})' : ''}`;
 
                     // Creates Message Header Row
@@ -167,8 +167,7 @@ module.exports = class FPW_Tables_MessagePage {
             }
             await this.FPW.Tables.generateTableMenu('messages', tableRows, false, this.FPW.isPhone, update);
         } catch (e) {
-            console.error(`createMessagesPage() error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createMessagesPage() error: ${e}`);
+            this.FPW.logger(`createMessagesPage() error: ${e}`, true);
         }
     }
 };

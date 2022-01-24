@@ -216,14 +216,14 @@ module.exports = class FPW_Tables_MainPage {
                                 titleColor: new Color('#b605fc'),
                                 titleFont: Font.subheadline(),
                                 subtitleColor: new Color(this.FPW.colorMap.textColor1),
-                                subtitleFont: Font.regularSystemFont(9),
+                                subtitleFont: Font.regularSystemFont(11),
                             }),
                         ], {
                             height: 40,
                             dismissOnSelect: true,
                             onSelect: async() => {
                                 console.log('(Main Menu) Update Widget was pressed');
-                                this.FPW.Utils.runScript('FordWidgetTool');
+                                this.FPW.runScript('FordWidgetTool');
                             },
                         },
                     ),
@@ -234,8 +234,8 @@ module.exports = class FPW_Tables_MainPage {
             if (recalls && recalls.length) {
                 // Creates the Vehicle Recalls Title Row
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
-                        height: 30,
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3() })], {
+                        height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
                         backgroundColor: new Color(titleBgColor),
@@ -250,9 +250,9 @@ module.exports = class FPW_Tables_MainPage {
                         await this.FPW.Tables.createTableRow(
                             [
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.FPW.Tables.createTextCell(recall.title, recall.type + '\n' + recall.id, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.body(), subtitleColor: new Color(this.FPW.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) }),
+                                await this.FPW.Tables.createTextCell(recall.title, `${recall.type}\n(ID: ${recall.id})`, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.body(), subtitleColor: new Color(this.FPW.colorMap.textColor1), subtitleFont: Font.regularSystemFont(9) }),
                             ], {
-                                height: 44,
+                                height: recall.id && recall.id.length ? 60 : 44,
                                 dismissOnSelect: false,
                                 cellSpacing: 5,
                                 onSelect: async() => {
@@ -278,8 +278,8 @@ module.exports = class FPW_Tables_MainPage {
 
                 // Creates the Vehicle Alerts Title Row
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
-                        height: 30,
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3() })], {
+                        height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
                         backgroundColor: new Color(titleBgColor),
@@ -322,8 +322,8 @@ module.exports = class FPW_Tables_MainPage {
             // Unread Messages Section - Displays a count of unread messages and a button to view all messages
             if (msgsUnread.length) {
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
-                        height: 30,
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3() })], {
+                        height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
                         backgroundColor: new Color(titleBgColor),
@@ -367,8 +367,8 @@ module.exports = class FPW_Tables_MainPage {
             if (caps && caps.length && (caps.includes('DOOR_LOCK_UNLOCK') || caps.includes('REMOTE_START') || caps.includes('REMOTE_PANIC_ALARM'))) {
                 // Creates the Status & Remote Controls Header Row
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
-                        height: 30,
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3() })], {
+                        height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
                         backgroundColor: new Color(titleBgColor),
@@ -470,8 +470,8 @@ module.exports = class FPW_Tables_MainPage {
             if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES' || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT'))) {
                 // Creates the Advanced Controls Header Text
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], {
-                        height: 30,
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3() })], {
+                        height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
                         backgroundColor: new Color(titleBgColor),
@@ -671,7 +671,7 @@ module.exports = class FPW_Tables_MainPage {
                     );
                 }
             }
-            await this.FPW.Tables.generateTableMenu('main', tableRows, false, this.FPW.isPhone, update);
+            await this.FPW.Tables.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
 
             if (!update) {
                 let lastVersion = await this.FPW.Kc.getSettingVal('fpScriptVersion');
@@ -683,8 +683,7 @@ module.exports = class FPW_Tables_MainPage {
                 }
             }
         } catch (err) {
-            console.error(`createMainPage() Error: ${err}`, err);
-            this.FPW.Files.appendToLogFile(`createMainPage() Error: ${err}`);
+            this.FPW.logger(`createMainPage() Error: ${err}`, true);
         }
     }
 };

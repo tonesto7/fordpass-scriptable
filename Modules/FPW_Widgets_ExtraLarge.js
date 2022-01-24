@@ -101,8 +101,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             let timestampRow = await this.FPW.WidgetHelpers.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             await this.createTimeStampElement(timestampRow, vehicleData, wSize);
         } catch (e) {
-            console.error(`simpleWidget(extra_large) Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`simpleWidget(extra_large) Error: ${e}`);
+            this.FPW.logger(`simpleWidget(extra_large) Error: ${e}`, true);
         }
         return widget;
     }
@@ -192,8 +191,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             let timestampRow = await this.FPW.WidgetHelpers.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             await this.createTimeStampElement(timestampRow, vehicleData, wSize);
         } catch (e) {
-            console.error(`detailedWidget(extra_large) Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`detailedWidget(extra_large) Error: ${e}`);
+            this.FPW.logger(`detailedWidget(extra_large) Error: ${e}`, true);
         }
         return widget;
     }
@@ -220,8 +218,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
-            console.error(`createFuelRangeElements() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
+            this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
         }
     }
 
@@ -254,8 +251,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
-            console.error(`createFuelRangeElements() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
+            this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
         }
     }
 
@@ -270,8 +266,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
-            console.error(`createBatteryElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createBatteryElement() Error: ${e}`);
+            this.FPW.logger(`createBatteryElement() Error: ${e}`, true);
         }
     }
 
@@ -294,8 +289,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(elem, text, txtStyle);
             srcField.addSpacer(3);
         } catch (e) {
-            console.error(`createOilElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createOilElement() Error: ${e}`);
+            this.FPW.logger(`createOilElement() Error: ${e}`, true);
         }
     }
 
@@ -309,8 +303,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
-            console.error(`createEvChargeElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createEvChargeElement() Error: ${e}`);
+            this.FPW.logger(`createEvChargeElement() Error: ${e}`, true);
         }
     }
 
@@ -409,8 +402,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             }
             srcField.addSpacer(offset);
         } catch (err) {
-            console.error(`createStatusDoors() Error: ${err}`);
-            this.FPW.Files.appendToLogFile(`createStatusDoors() Error: ${err}`);
+            this.FPW.logger(`createStatusDoors() Error: ${err}`, true);
         }
     }
 
@@ -476,8 +468,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             }
             srcField.addSpacer(offset);
         } catch (e) {
-            console.error(`createWindowElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createWindowElement() Error: ${e}`);
+            this.FPW.logger(`createWindowElement() Error: ${e}`, true);
         }
     }
 
@@ -496,26 +487,25 @@ module.exports = class FPW_Widgets_ExtraLarge {
             // Row 1 - Tire Pressure Left Front amd Right Front
             let col1 = await this.FPW.WidgetHelpers.createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
             let col1row1 = await this.FPW.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-            await this.FPW.WidgetHelpers.createText(col1row1, vData.tirePressure.leftFront, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
+            await this.FPW.WidgetHelpers.createText(col1row1, vData.tirePressure.leftFront, this.FPW.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
             let col2 = await this.FPW.WidgetHelpers.createColumn(dataFld, { '*setPadding': [0, 3, 0, 3] });
             let col2row1 = await this.FPW.WidgetHelpers.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
             await this.FPW.WidgetHelpers.createText(col2row1, '|', styles.normTxt);
             let col3 = await this.FPW.WidgetHelpers.createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
             let col3row1 = await this.FPW.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-            await this.FPW.WidgetHelpers.createText(col3row1, vData.tirePressure.rightFront, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
+            await this.FPW.WidgetHelpers.createText(col3row1, vData.tirePressure.rightFront, this.FPW.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
 
             // Row 2 - Tire Pressure Left Rear amd Right Rear
             let col1row2 = await this.FPW.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-            await this.FPW.WidgetHelpers.createText(col1row2, vData.tirePressure.leftRear, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
+            await this.FPW.WidgetHelpers.createText(col1row2, vData.tirePressure.leftRear, this.FPW.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
             let col2row2 = await this.FPW.WidgetHelpers.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
             await this.FPW.WidgetHelpers.createText(col2row2, '|', styles.normTxt);
             let col3row2 = await this.FPW.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-            await this.FPW.WidgetHelpers.createText(col3row2, vData.tirePressure.rightRear, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
+            await this.FPW.WidgetHelpers.createText(col3row2, vData.tirePressure.rightRear, this.FPW.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
 
             srcField.addSpacer(offset);
         } catch (e) {
-            console.error(`createTireElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createTireElement() Error: ${e}`);
+            this.FPW.logger(`createTireElement() Error: ${e}`, true);
         }
     }
 
@@ -531,8 +521,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(dataFld, value, { url: url, font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
             srcField.addSpacer(offset);
         } catch (e) {
-            console.error(`createPositionElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createPositionElement() Error: ${e}`);
+            this.FPW.logger(`createPositionElement() Error: ${e}`, true);
         }
     }
 
@@ -551,8 +540,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(dataFld, value, vehicleData.lockStatus !== undefined && vehicleData.lockStatus === 'LOCKED' ? styles.locked : styles.unlocked);
             srcField.addSpacer(offset);
         } catch (e) {
-            console.error(`createLockStatusElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createLockStatusElement() Error: ${e}`);
+            this.FPW.logger(`createLockStatusElement() Error: ${e}`, true);
         }
     }
 
@@ -579,8 +567,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(dataFld, status, vehicleData.ignitionStatus !== undefined && (vehicleData.ignitionStatus === 'On' || vehicleData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
             srcField.addSpacer(offset);
         } catch (e) {
-            console.error(`createIgnitionStatusElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createIgnitionStatusElement() Error: ${e}`);
+            this.FPW.logger(`createIgnitionStatusElement() Error: ${e}`, true);
         }
     }
 
@@ -592,8 +579,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             await this.FPW.WidgetHelpers.createText(stk, 'Updated: ' + refreshTime, { font: Font.mediumSystemFont(8), textColor: Color.lightGray(), lineLimit: 1 });
             return stk;
         } catch (e) {
-            console.error(`createTimeStampElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createTimeStampElement() Error: ${e}`);
+            this.FPW.logger(`createTimeStampElement() Error: ${e}`, true);
         }
     }
 
@@ -640,8 +626,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             }
             return stk;
         } catch (e) {
-            console.error(`createStatusElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createStatusElement() Error: ${e}`);
+            this.FPW.logger(`createStatusElement() Error: ${e}`, true);
         }
     }
 };

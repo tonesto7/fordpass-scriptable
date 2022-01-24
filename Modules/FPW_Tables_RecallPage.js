@@ -16,7 +16,7 @@ module.exports = class FPW_Tables_RecallPage {
                 for (const [i, recall] of recalls.entries()) {
                     let dtTS = recall.nhtsaInfo && recall.nhtsaInfo.recallDate ? new Date(Date.parse(recall.nhtsaInfo.recallDate)) : undefined;
                     let dateStr = dtTS ? dtTS.toLocaleDateString() : undefined;
-                    let timeDiff = dtTS ? this.FPW.Utils.timeDifference(dtTS) : '';
+                    let timeDiff = dtTS ? this.FPW.timeDifference(dtTS) : '';
                     let timestamp = `${dateStr ? ' - ' + dateStr : ''}${timeDiff ? ' (' + timeDiff + ')' : ''}`;
                     let recallType = recall.type ? `${recall.type}` : '';
                     let recallId = recall.id ? `${recallType.length ? '\n' : ''}Recall ID: ${recall.id}` : '';
@@ -91,8 +91,7 @@ module.exports = class FPW_Tables_RecallPage {
 
             await this.FPW.Tables.generateTableMenu('recalls', tableRows, false, false);
         } catch (err) {
-            console.log(`createRecallPage() Error: ${err}`);
-            this.FPW.Files.appendToLogFile(`createRecallPage() Error: ${err}`);
+            this.FPW.logger(`createRecallPage() Error: ${err}`, true);
         }
     }
 };

@@ -237,7 +237,7 @@ module.exports = class FPW {
         },
     };
 
-    constructor(inApp = false, SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig) {
+    constructor(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig) {
         try {
             this.SCRIPT_NAME = 'Fordpass Widget';
             this.SCRIPT_ID = SCRIPT_ID;
@@ -262,7 +262,7 @@ module.exports = class FPW {
             this.deviceModel = Device.model();
             this.deviceSystemVersion = Device.systemVersion();
             this.widgetConfig = widgetConfig;
-            if (inApp) {
+            if (config.runsInApp) {
                 this.Timers = this.loadTimers();
                 this.Alerts = this.loadAlerts();
             }
@@ -272,7 +272,7 @@ module.exports = class FPW {
             this.Files = this.loadFiles();
             this.Logger = this.logger.bind(this);
             this.FordRequests = this.loadFordRequests();
-            if (inApp) {
+            if (config.runsInApp) {
                 this.FordCommands = this.loadFordCommands();
                 this.Tables = this.loadTables();
                 this.Menus = this.loadMenus();

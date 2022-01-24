@@ -52,7 +52,7 @@ module.exports = class FPW_FordRequests {
             unitOfPressure: await this.FPW.Kc.getSettingVal('fpPressureUnits'),
         };
         // data.userDetails = await FPW.FordRequests.getAllUserData();
-        return scrub ? this.FPW.Utils.scrubPersonalData(data) : data;
+        return scrub ? this.FPW.scrubPersonalData(data) : data;
     }
 
     async fetchToken() {
@@ -124,8 +124,7 @@ module.exports = class FPW_FordRequests {
                 }
             }
         } catch (e) {
-            console.log(`fetchToken Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`fetchToken() Error: ${e}`);
+            this.FPW.logger(`fetchToken() Error: ${e}`, true);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -172,8 +171,7 @@ module.exports = class FPW_FordRequests {
                 await this.fetchToken();
             }
         } catch (e) {
-            console.log(`refreshToken() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`refreshToken() Error: ${e}`);
+            this.FPW.logger(`refreshToken() Error: ${e}`, true);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -413,7 +411,7 @@ module.exports = class FPW_FordRequests {
                         return true;
                     } catch (e) {
                         console.log(`queryFordPassPrefs SET Error: ${e}`);
-                        this.FPW.Files.appendToLogFile(`queryFordPassPrefs() SET Error: ${e}`);
+                        this.FPW.logger(`queryFordPassPrefs() SET Error: ${e}`);
                         return false;
                     }
                 } else {
@@ -423,8 +421,7 @@ module.exports = class FPW_FordRequests {
                 return true;
             }
         } catch (e) {
-            console.error(`queryFordPassPrefs Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`queryFordPassPrefs() Error: ${e}`);
+            this.FPW.logger(`queryFordPassPrefs() Error: ${e}`, true);
             return false;
         }
     }
@@ -507,8 +504,7 @@ module.exports = class FPW_FordRequests {
             }
             return data;
         } catch (e) {
-            console.log(`makeFordRequest | ${desc} | Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`makeFordRequest(${desc}) Error: ${e}`);
+            this.FPW.logger(`makeFordRequest(${desc}) Error: ${e}`, true);
             return this.FPW.textMap().errorMessages.unknownError;
         }
     }
@@ -644,7 +640,7 @@ module.exports = class FPW_FordRequests {
         vehicleData.fuelLevel = vehicleStatus.fuel && vehicleStatus.fuel.fuelLevel ? Math.floor(vehicleStatus.fuel.fuelLevel) : null;
 
         //position of car
-        vehicleData.position = await this.FPW.Utils.getPosition(vehicleStatus);
+        vehicleData.position = await this.FPW.getPosition(vehicleStatus);
         vehicleData.latitude = parseFloat(vehicleStatus.gps.latitude);
         vehicleData.longitude = parseFloat(vehicleStatus.gps.longitude);
 
@@ -683,10 +679,10 @@ module.exports = class FPW_FordRequests {
         //tire pressure
         let tpms = vehicleStatus.TPMS;
         vehicleData.tirePressure = {
-            leftFront: await this.FPW.Utils.pressureToFixed(tpms.leftFrontTirePressure.value, 0),
-            rightFront: await this.FPW.Utils.pressureToFixed(tpms.rightFrontTirePressure.value, 0),
-            leftRear: await this.FPW.Utils.pressureToFixed(tpms.outerLeftRearTirePressure.value, 0),
-            rightRear: await this.FPW.Utils.pressureToFixed(tpms.outerRightRearTirePressure.value, 0),
+            leftFront: await this.FPW.pressureToFixed(tpms.leftFrontTirePressure.value, 0),
+            rightFront: await this.FPW.pressureToFixed(tpms.rightFrontTirePressure.value, 0),
+            leftRear: await this.FPW.pressureToFixed(tpms.outerLeftRearTirePressure.value, 0),
+            rightRear: await this.FPW.pressureToFixed(tpms.outerRightRearTirePressure.value, 0),
         };
 
         vehicleData.recallInfo = (await this.getVehicleRecalls()) || [];
@@ -697,8 +693,8 @@ module.exports = class FPW_FordRequests {
 
         // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();
 
-        vehicleData.lastRefresh = this.FPW.Utils.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
-        vehicleData.lastRefreshElapsed = this.FPW.Utils.timeDifference(this.FPW.Utils.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
+        vehicleData.lastRefresh = this.FPW.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
+        vehicleData.lastRefreshElapsed = this.FPW.timeDifference(this.FPW.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
         // console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
         console.log(`Last Vehicle Checkin: ${vehicleData.lastRefreshElapsed}`);
 

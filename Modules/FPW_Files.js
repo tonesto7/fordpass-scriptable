@@ -10,8 +10,7 @@ module.exports = class FPW_Files {
             const req = new Request(imgUrl);
             return await req.loadImage();
         } catch (e) {
-            console.log(`loadImage Error: Could Not Load Image from ${imgUrl}.`);
-            this.appendToLogFile(`loadImage Error: Could Not Load Image from ${imgUrl}.`);
+            this.FPW.logger(`loadImage Error: Could Not Load Image from ${imgUrl}.`, true);
             return undefined;
         }
     }
@@ -28,8 +27,7 @@ module.exports = class FPW_Files {
             } //clean old data
             await fm.writeString(path, JSON.stringify(data));
         } catch (e) {
-            console.log(`saveDataToLocal Error: ${e}`);
-            this.appendToLogFile(`saveDataToLocal Error: ${e}`);
+            this.FPW.logger(`saveDataToLocal Error: ${e}`, true);
         }
     }
 
@@ -45,80 +43,9 @@ module.exports = class FPW_Files {
                 return JSON.parse(localData);
             }
         } catch (e) {
-            console.log(`readLocalData Error: ${e}`);
-            this.appendToLogFile(`readLocalData Error: ${e}`);
+            this.FPW.logger(`readLocalData Error: ${e}`, true);
         }
         return null;
-    }
-
-    async appendToLogFile(txt) {
-        // console.log('appendToLogFile: Saving Data to Log...');
-        try {
-            let fm = FileManager.iCloud();
-            const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
-            const devName = Device.name()
-                .replace(/[^a-zA-Z\s]/g, '')
-                .replace(/\s/g, '_')
-                .toLowerCase();
-            const type = config.runsInWidget ? 'widget' : config.runsInApp ? 'app' : 'unknown';
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_${type}_${this.SCRIPT_ID}.log` : `fp_${devName}_${type}.log`;
-            let path = fm.joinPath(logDir, fileName);
-            if (!(await fm.isDirectory(logDir))) {
-                console.log('Creating Logs directory...');
-                await fm.createDirectory(logDir);
-            }
-            let logText = '';
-            if (await fm.fileExists(path)) {
-                logText = await fm.readString(path);
-                logText += '\n[' + new Date().toLocaleString() + '] - ' + txt.toString();
-                // console.log(logText);
-            } else {
-                logText = '[' + new Date().toLocaleString() + '] - ' + txt.toString();
-                // console.log(logText);
-            }
-            await fm.writeString(path, logText);
-        } catch (e) {
-            console.log(`appendToLogFile Error: ${e}`);
-        }
-    }
-
-    async readLogFile() {
-        try {
-            let fm = FileManager.iCloud();
-            const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
-            const devName = Device.name()
-                .replace(/[^a-zA-Z\s]/g, '')
-                .replace(/\s/g, '_')
-                .toLowerCase();
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
-            let path = fm.joinPath(logDir, fileName);
-            if (await fm.fileExists(path)) {
-                return await fm.readString(path);
-            } else {
-                return undefined;
-            }
-        } catch (e) {
-            console.log(`readLogFile Error: ${e}`);
-        }
-    }
-
-    async getLogFilePath() {
-        try {
-            let fm = FileManager.iCloud();
-            const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
-            const devName = Device.name()
-                .replace(/[^a-zA-Z\s]/g, '')
-                .toLowerCase();
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
-            let path = fm.joinPath(logDir, fileName);
-            if (await fm.fileExists(path)) {
-                return path;
-            } else {
-                return undefined;
-            }
-        } catch (e) {
-            console.log(`getLogFilePath Error: ${e}`);
-        }
     }
 
     async removeLocalData(filename) {
@@ -130,8 +57,7 @@ module.exports = class FPW_Files {
                 await fm.remove(path);
             }
         } catch (e) {
-            console.log(`removeLocalData Error: ${e}`);
-            this.appendToLogFile(`removeLocalData Error: ${e}`);
+            this.FPW.logger(`removeLocalData Error: ${e}`, true);
         }
     }
 
@@ -153,8 +79,7 @@ module.exports = class FPW_Files {
                 await this.removeLocalData(file);
             });
         } catch (e) {
-            console.log(`clearFileManager Error: ${e}`);
-            this.appendToLogFile(`clearFileManager Error: ${e}`);
+            this.FPW.logger(`clearFileManager Error: ${e}`, true);
         }
     }
 
@@ -195,8 +120,7 @@ module.exports = class FPW_Files {
                 return iconImage;
             }
         } catch (e) {
-            console.log(`getImage(${image}) Error: ${e}`);
-            this.appendToLogFile(`getImage(${image}) Error: ${e}`);
+            this.FPW.logger(`getImage(${image}) Error: ${e}`, true);
             return null;
         }
     }
@@ -241,8 +165,7 @@ module.exports = class FPW_Files {
                     return await this.getImage('placeholder.png');
                 }
             } catch (e) {
-                console.error(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
-                this.appendToLogFile(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
+                this.FPW.logger(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`, true);
                 return await this.getImage('placeholder.png');
             }
         }

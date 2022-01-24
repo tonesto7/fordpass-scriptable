@@ -9,7 +9,7 @@ module.exports = class FPW_Widgets {
         let col = srcField.addStack();
         col.layoutVertically();
         if (styles && Object.keys(styles).length > 0) {
-            this.FPW.Utils._mapMethodsAndCall(col, styles);
+            this.FPW._mapMethodsAndCall(col, styles);
         }
 
         return col;
@@ -19,7 +19,7 @@ module.exports = class FPW_Widgets {
         let row = srcField.addStack();
         row.layoutHorizontally();
         if (styles && Object.keys(styles).length > 0) {
-            this.FPW.Utils._mapMethodsAndCall(row, styles);
+            this.FPW._mapMethodsAndCall(row, styles);
         }
 
         return row;
@@ -28,7 +28,7 @@ module.exports = class FPW_Widgets {
     async createText(srcField, text, styles = {}) {
         let txt = srcField.addText(text);
         if (styles && Object.keys(styles).length > 0) {
-            this.FPW.Utils._mapMethodsAndCall(txt, styles);
+            this.FPW._mapMethodsAndCall(txt, styles);
         }
         return txt;
     }
@@ -36,7 +36,7 @@ module.exports = class FPW_Widgets {
     async createImage(srcField, image, styles = {}) {
         let _img = srcField.addImage(image);
         if (styles && Object.keys(styles).length > 0) {
-            this.FPW.Utils._mapMethodsAndCall(_img, styles);
+            this.FPW._mapMethodsAndCall(_img, styles);
         }
         return _img;
     }
@@ -110,8 +110,7 @@ module.exports = class FPW_Widgets {
                 srcField.addSpacer(3);
             }
         } catch (e) {
-            console.error(`createVehicleImageElement Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createVehicleImageElement Error: ${e}`);
+            this.FPW.logger(`createVehicleImageElement Error: ${e}`, true);
         }
     }
 

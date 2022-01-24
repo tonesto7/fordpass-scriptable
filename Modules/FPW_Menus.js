@@ -54,7 +54,7 @@ module.exports = class FPW_Menus {
                     vin = prefsMenu.textFieldValue(2);
                     // console.log(`${user} ${pass} ${vin}`);
 
-                    if (this.FPW.Utils.inputTest(user) && this.FPW.Utils.inputTest(pass) && this.FPW.Utils.inputTest(vin)) {
+                    if (this.FPW.inputTest(user) && this.FPW.inputTest(pass) && this.FPW.inputTest(vin)) {
                         await this.FPW.Kc.setSettingVal('fpUser', user);
                         await this.FPW.Kc.setSettingVal('fpPass', pass);
                         await this.FPW.Kc.setSettingVal('fpMapProvider', mapProvider);
@@ -79,8 +79,7 @@ module.exports = class FPW_Menus {
                     return false;
             }
         } catch (err) {
-            console.log(`(Required Prefs Menu) Error: ${err}`);
-            this.FPW.Files.appendToLogFile(`(Required Prefs Menu) Error: ${err}`);
+            this.FPW.logger(`(Required Prefs Menu) Error: ${err}`, true);
             throw err;
         }
     }
@@ -88,7 +87,7 @@ module.exports = class FPW_Menus {
     async menuBuilderByType(type) {
         const vehicleData = await this.FPW.FordRequests.fetchVehicleData(true);
         // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
-        const typeDesc = this.FPW.Utils.capitalizeStr(type);
+        const typeDesc = this.FPW.capitalizeStr(type);
         let title = undefined;
         let message = undefined;
         let items = [];
@@ -306,7 +305,7 @@ module.exports = class FPW_Menus {
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
                             let data = await this.FPW.FordRequests.collectAllData(true);
-                            await this.FPW.Utils.createVehicleDataEmail(data, true);
+                            await this.FPW.createVehicleDataEmail(data, true);
                             this.menuBuilderByType('diagnostics');
                         },
                         destructive: true,
@@ -316,7 +315,7 @@ module.exports = class FPW_Menus {
                         title: 'Send Widget Logs to Developer',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Email Logs was pressed`);
-                            await this.FPW.Utils.createLogEmail();
+                            await this.FPW.createLogEmail();
                             this.menuBuilderByType('diagnostics');
                         },
                         destructive: false,
@@ -404,7 +403,7 @@ module.exports = class FPW_Menus {
                         show: true,
                     },
                     {
-                        title: `Widget Style: ${this.FPW.Utils.capitalizeStr(widgetStyle)}`,
+                        title: `Widget Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Widget Style pressed`);
                             await this.FPW.Tables.WidgetStylePage.createWidgetStylePage();

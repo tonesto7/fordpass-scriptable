@@ -72,7 +72,7 @@ const changelog = {
 };
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/01/21, 6:00 pm';
+const SCRIPT_TS = '2022/01/24, 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -131,22 +131,22 @@ class Widget {
     async run() {
         await this.logger('------------------------------------------------------------------------');
         await this.logger(`Starting... | Widget: ${config.runsInWidget} | App: ${config.runsInApp}`);
-        const FPWClass = await this.validateModules();
+        const FPWClass = await validateModules();
         if (FPWClass === undefined) {
-            this.logger(`Widget: ${config.runsInWidget} | App: ${config.runsInApp} |  Error Loading FPW.js | Exiting...`, 'error');
+            this.logger(`Widget: ${config.runsInWidget} | App: ${config.runsInApp} |  Error Running | Exiting...`, true);
             throw new Error('Could NOT Load FordPassWidget Class');
         }
 
         try {
-            this.FPW = new FPWClass(SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
+            this.FPW = new FPWClass(config.runsInApp, SCRIPT_ID, SCRIPT_VERSION, SCRIPT_TS, widgetConfig);
             this.logger('Widget RUN...');
             // Starts the widget load process
             let fordData = await this.prepWidget();
             if (fordData === null) return;
             if (config.runsInWidget) {
                 await this.logger('(generateWidget) Running in Widget...');
-                await this.generateWidget(runningWidgetSize, fordData);
-                // await this.testWidget(fordData);
+                //                 await this.generateWidget(runningWidgetSize, fordData);
+                await this.testWidget(fordData);
             } else if (config.runsInApp || config.runsFromHomeScreen) {
                 // Show alert with current data (if running script in app)
                 if (args.shortcutParameter) {
@@ -154,7 +154,7 @@ class Widget {
                     await Speech.speak(await this.FPW.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
                 } else {
                     // await(await generateWidget('medium', fordData)).presentMedium();
-                    // await this.FPW.Menus.menuBuilderByType('main');
+                    await this.testWidget(fordData);
                     await this.FPW.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
@@ -184,7 +184,7 @@ class Widget {
                 await this.FPW.Files.clearFileManager();
             }
             // Tries to fix the format of the VIN field (Makes sure they are capitalized)
-            await this.FPW.Utils.vinFix(await this.FPW.Kc.getSettingVal('fpVin'));
+            await this.FPW.vinFix(await this.FPW.Kc.getSettingVal('fpVin'));
 
             let frcPrefs = false;
             let reqOk = await this.FPW.Kc.requiredPrefsOk(this.FPW.Kc.prefKeys().core);
@@ -282,9 +282,6 @@ class Widget {
     }
 }
 
-// //***************************************************END WIDGET ELEMENT FUNCTIONS********************************************************
-// //***************************************************************************************************************************************
-
 async function appendToLogFile(txt) {
     // console.log('appendToLogFile: Saving Data to Log...');
     try {
@@ -316,39 +313,38 @@ async function appendToLogFile(txt) {
     }
 }
 
-const moduleFiles = [
-    'FPW.js||-681959783',
-    'FPW_Alerts.js||1575654697',
-    'FPW_Files.js||1769221768',
-    'FPW_FordCommands.js||-1513595181',
-    'FPW_FordRequests.js||-530235373',
-    'FPW_Keychain.js||954896526',
-    'FPW_Menus.js||-1221558013',
-    'FPW_Notifications.js||-1071883614',
-    'FPW_ShortcutParser.js||966556475',
-    'FPW_Tables.js||1324977678',
-    'FPW_Tables_AlertPage.js||1012159356',
-    'FPW_Tables_ChangesPage.js||-473781684',
-    'FPW_Tables_MainPage.js||-757583604',
-    'FPW_Tables_MessagePage.js||-1754669539',
-    'FPW_Tables_RecallPage.js||-285170438',
-    'FPW_Tables_WidgetStylePage.js||786295863',
-    'FPW_Timers.js||-694575770',
-    'FPW_Utils.js||-1891424353',
-    'FPW_Widgets.js||175049418',
-    'FPW_Widgets_ExtraLarge.js||-453486313',
-    'FPW_Widgets_Helpers.js||-1095305750',
-    'FPW_Widgets_Large.js||642581411',
-    'FPW_Widgets_Medium.js||-1667929836',
-    'FPW_Widgets_Small.js||812484577',
-];
-
 /**
  * @description This loads and makes sure all modules are loaded before running the script
  * @param  {boolean} [useLocal=false] Tells the function to use the local version of the file manager instead of the icloud version
  * @return
  */
 async function validateModules(useLocal = false) {
+    const moduleFiles = [
+        'FPW.js||-681959783',
+        'FPW_Alerts.js||1575654697',
+        'FPW_Files.js||1769221768',
+        'FPW_FordCommands.js||-1513595181',
+        'FPW_FordRequests.js||-530235373',
+        'FPW_Keychain.js||954896526',
+        'FPW_Menus.js||-1221558013',
+        'FPW_Notifications.js||-1071883614',
+        'FPW_ShortcutParser.js||966556475',
+        'FPW_Tables.js||1324977678',
+        'FPW_Tables_AlertPage.js||1012159356',
+        'FPW_Tables_ChangesPage.js||-473781684',
+        'FPW_Tables_MainPage.js||-757583604',
+        'FPW_Tables_MessagePage.js||-1754669539',
+        'FPW_Tables_RecallPage.js||-285170438',
+        'FPW_Tables_WidgetStylePage.js||786295863',
+        'FPW_Timers.js||-694575770',
+        'FPW_Utils.js||-1891424353',
+        'FPW_Widgets.js||175049418',
+        'FPW_Widgets_ExtraLarge.js||-453486313',
+        'FPW_Widgets_Helpers.js||-1095305750',
+        'FPW_Widgets_Large.js||642581411',
+        'FPW_Widgets_Medium.js||-1667929836',
+        'FPW_Widgets_Small.js||812484577',
+    ];
     const fm = useLocal ? FileManager.local() : FileManager.iCloud();
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
     moduleRepo = widgetConfig.useBetaModules ? moduleRepo.replace('main', 'beta') : moduleRepo;
@@ -400,8 +396,8 @@ async function validateModules(useLocal = false) {
         }
         if (available.length === moduleFiles.length) {
             await logger(`All Required Modules (${moduleFiles.length}) Found!`);
-            await logger(`Checking for Class Module... ${await checkForClassModule()} | Widget: ${config.runsInWidget} | App: ${config.runsInApp}`);
-            return await loadFPClass();
+            await logger(`Checking for Class Module... ${await checkForClassModule(config.runsInApp, false)} | Widget: ${config.runsInWidget} | App: ${config.runsInApp}`);
+            return await loadFPClass(config.runsInApp);
         }
     } catch (error) {
         await logger(`validateModules() Error: ${error}`, true);
@@ -417,7 +413,7 @@ async function loadFPClass() {
             module = importModule(modulePath);
         }
     } catch (e) {
-        await logger(`Error Importing FPW.js: ${e}`, true);
+        await logger(`Error Loading FPW.js: ${e}`, true);
     }
     return module;
 }
@@ -436,12 +432,12 @@ async function logger(msg, error = false, saveToLog = true) {
 async function checkForClassModule(log = true) {
     try {
         const fm = FileManager.iCloud();
-        const classPath = fm.joinPath(fm.documentsDirectory(), 'FPWModules', 'FPW.js');
+        const classPath = fm.joinPath(fm.documentsDirectory(), 'FPWModules') + '/FPW.js';
         if (await fm.fileExists(classPath)) {
-            if (log) await logger('Class Module Found!');
+            if (log) await logger(`Class Module Found!`);
             return true;
         } else {
-            if (log) await logger('Class Module Not Found!');
+            if (log) await logger(`Class Module NOT Found!`);
             return false;
         }
     } catch (error) {
@@ -455,5 +451,5 @@ try {
     await wc.run();
 } catch (error) {
     logger(`Error: ${error}`, true);
-    throw new Error(error);
+    //     throw new Error(error);
 }

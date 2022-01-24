@@ -8,7 +8,7 @@ module.exports = class FPW_Tables_ChangePage {
 
     async createRecentChangesPage() {
         try {
-            let changes = changelog[this.SCRIPT_VERSION];
+            let changes = this.FPW.changelog[this.SCRIPT_VERSION];
             let tableRows = [];
             if (changes && (changes.updated.length || changes.added.length || changes.removed.length || changes.fixed.length)) {
                 let verTs = new Date(Date.parse(this.SCRIPT_TS));
@@ -47,7 +47,7 @@ module.exports = class FPW_Tables_ChangePage {
 
             await this.FPW.Tables.generateTableMenu('recentChanges', tableRows, false, false);
         } catch (error) {
-            console.error(`(RecentChanges Table) ${error}`);
+            this.FPW.logger(`(RecentChanges Table) ${error}`, true);
         }
     }
 };

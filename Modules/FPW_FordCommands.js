@@ -184,7 +184,7 @@ module.exports = class FPW_FordCommands {
                 if (wasError) {
                     if (errMsg) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
-                        this.FPW.Files.appendToLogFile(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
+                        this.FPW.logger(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
                     }
                     if (outMsg.message !== '') {
                         await this.FPW.Alerts.showAlert(outMsg.title, outMsg.message);
@@ -211,8 +211,7 @@ module.exports = class FPW_FordCommands {
                     }
                 }
             } catch (e) {
-                console.log(`sendVehicleCmd() Catch Error: ${e}`);
-                this.FPW.Files.appendToLogFile(`sendVehicleCmd() Catch Error: ${e}`);
+                this.FPW.logger(`sendVehicleCmd() Catch Error: ${e}`, true);
                 return;
             }
         }

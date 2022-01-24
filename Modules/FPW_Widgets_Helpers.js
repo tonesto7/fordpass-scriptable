@@ -9,7 +9,7 @@ module.exports = class FPW_Widgets_Helpers {
         let col = srcField.addStack();
         col.layoutVertically();
         if (styles && Object.keys(styles).length > 0) {
-            this.FPW.Utils._mapMethodsAndCall(col, styles);
+            this.FPW._mapMethodsAndCall(col, styles);
         }
 
         return col;
@@ -19,7 +19,7 @@ module.exports = class FPW_Widgets_Helpers {
         let row = srcField.addStack();
         row.layoutHorizontally();
         if (styles && Object.keys(styles).length > 0) {
-            this.FPW.Utils._mapMethodsAndCall(row, styles);
+            this.FPW._mapMethodsAndCall(row, styles);
         }
 
         return row;
@@ -28,7 +28,7 @@ module.exports = class FPW_Widgets_Helpers {
     async createText(srcField, text, styles = {}) {
         let txt = srcField.addText(text);
         if (styles && Object.keys(styles).length > 0) {
-            this.FPW.Utils._mapMethodsAndCall(txt, styles);
+            this.FPW._mapMethodsAndCall(txt, styles);
         }
         return txt;
     }
@@ -36,7 +36,7 @@ module.exports = class FPW_Widgets_Helpers {
     async createImage(srcField, image, styles = {}) {
         let _img = srcField.addImage(image);
         if (styles && Object.keys(styles).length > 0) {
-            this.FPW.Utils._mapMethodsAndCall(_img, styles);
+            this.FPW._mapMethodsAndCall(_img, styles);
         }
         return _img;
     }
@@ -133,8 +133,7 @@ module.exports = class FPW_Widgets_Helpers {
             await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
-            console.error(`createFuelRangeElements() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
+            this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
         }
     }
 
@@ -170,8 +169,7 @@ module.exports = class FPW_Widgets_Helpers {
             await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
-            console.error(`createFuelRangeElements() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createFuelRangeElements() Error: ${e}`);
+            this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
         }
     }
 
@@ -186,8 +184,7 @@ module.exports = class FPW_Widgets_Helpers {
             await this.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
-            console.error(`createBatteryElement() Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`createBatteryElement() Error: ${e}`);
+            this.FPW.logger(`createBatteryElement() Error: ${e}`, true);
         }
     }
 
@@ -426,21 +423,21 @@ module.exports = class FPW_Widgets_Helpers {
         // Row 1 - Tire Pressure Left Front amd Right Front
         let col1 = await this.createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
         let col1row1 = await this.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-        await this.createText(col1row1, vData.tirePressure.leftFront, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
+        await this.createText(col1row1, vData.tirePressure.leftFront, this.FPW.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
         let col2 = await this.createColumn(dataFld, { '*setPadding': [0, 3, 0, 3] });
         let col2row1 = await this.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
         await this.createText(col2row1, '|', styles.normTxt);
         let col3 = await this.createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
         let col3row1 = await this.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-        await this.createText(col3row1, vData.tirePressure.rightFront, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
+        await this.createText(col3row1, vData.tirePressure.rightFront, this.FPW.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
 
         // Row 2 - Tire Pressure Left Rear amd Right Rear
         let col1row2 = await this.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-        await this.createText(col1row2, vData.tirePressure.leftRear, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
+        await this.createText(col1row2, vData.tirePressure.leftRear, this.FPW.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
         let col2row2 = await this.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
         await this.createText(col2row2, '|', styles.normTxt);
         let col3row2 = await this.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-        await this.createText(col3row2, vData.tirePressure.rightRear, this.FPW.Utils.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
+        await this.createText(col3row2, vData.tirePressure.rightRear, this.FPW.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
 
         srcField.addSpacer(offset);
     }

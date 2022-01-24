@@ -58,8 +58,7 @@ module.exports = class FPW_Tables {
                 await table.present(fullscreen);
             }
         } catch (e) {
-            console.error(`generateTableMenu() error: ${e}`);
-            this.FPW.Files.appendToLogFile(`generateTableMenu() error: ${e}`);
+            this.FPW.logger(`generateTableMenu() error: ${e}`, true);
         }
     }
 
@@ -88,8 +87,7 @@ module.exports = class FPW_Tables {
             });
             row = await this.applyTableOptions(row, options);
         } catch (err) {
-            console.error(`createTableRow() error: ${err}`);
-            this.FPW.Files.appendToLogFile(`createTableRow() error: ${err}`);
+            this.FPW.logger(`createTableRow() error: ${err}`, true);
         }
         return row;
     }
@@ -102,8 +100,7 @@ module.exports = class FPW_Tables {
             }
             return cell;
         } catch (err) {
-            console.error(`Error creating text cell: ${err}`);
-            this.FPW.Files.appendToLogFile(`Error creating text cell: ${err}`);
+            this.FPW.logger(`Error creating text cell: ${err}`, true);
         }
     }
 
@@ -115,8 +112,7 @@ module.exports = class FPW_Tables {
             }
             return cell;
         } catch (err) {
-            console.error(`Error creating image cell: ${err}`);
-            this.FPW.Files.appendToLogFile(`Error creating image cell: ${err}`);
+            this.FPW.logger(`Error creating image cell: ${err}`, true);
         }
     }
 
@@ -128,8 +124,7 @@ module.exports = class FPW_Tables {
             }
             return cell;
         } catch (err) {
-            console.error(`Error creating button cell: ${err}`);
-            this.FPW.Files.appendToLogFile(`Error creating button cell: ${err}`);
+            this.FPW.logger(`Error creating button cell: ${err}`, true);
         }
     }
 
@@ -148,8 +143,7 @@ module.exports = class FPW_Tables {
                 }
             }
         } catch (err) {
-            console.error(`Error applying options: ${err}`);
-            this.FPW.Files.appendToLogFile(`Error applying options: ${err}`);
+            this.FPW.logger(`Error applying options: ${err}`, true);
         }
         return src;
     }
@@ -221,7 +215,7 @@ module.exports = class FPW_Tables {
         // console.log(`showDataWebView(${title}, ${heading})`); //, ${JSON.stringify(data)})`);
         let otaHTML = '';
         try {
-            data = this.FPW.Utils.scrubPersonalData(data);
+            data = this.FPW.scrubPersonalData(data);
             if (type === 'OTA') {
                 if (data.fuseResponse && data.fuseResponse.fuseResponseList && data.fuseResponse.fuseResponseList.length) {
                     otaHTML += `<h3>OTA Details</h3>`;
@@ -308,8 +302,7 @@ module.exports = class FPW_Tables {
             // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
             await wv.present(true);
         } catch (e) {
-            console.log(`showDataWebView() | Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`showDataWebView() | Error: ${e}`);
+            this.FPW.logger(`showDataWebView() | Error: ${e}`, true);
         }
     }
 };
