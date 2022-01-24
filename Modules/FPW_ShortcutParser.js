@@ -3,7 +3,6 @@ module.exports = class FPW_ShortcutParser {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        this.FordRequests = FPW.FordRequests;
         this.voiceIntentTree = {
             requests: { prefixs: ['is', 'are'] },
             commands: { prefixs: ['stop', 'start'] },
@@ -72,7 +71,7 @@ module.exports = class FPW_ShortcutParser {
     // ]
 
     async getAvailableRequests() {
-        const vData = await this.FordRequests.fetchVehicleData(true);
+        const vData = await this.FPW.FordAPI.fetchVehicleData(true);
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         let cmds = [];
         let reqs = [];

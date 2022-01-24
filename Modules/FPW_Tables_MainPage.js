@@ -8,7 +8,7 @@ module.exports = class FPW_Tables_MainPage {
 
     async createMainPage(update = false) {
         try {
-            const vData = await this.FPW.FordRequests.fetchVehicleData(true);
+            const vData = await this.FPW.FordAPI.fetchVehicleData(true);
             const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
             const isEV = vData.evVehicle === true;
             const pressureUnits = await this.FPW.Kc.getSettingVal('fpPressureUnits');
@@ -395,7 +395,7 @@ module.exports = class FPW_Tables_MainPage {
                                     onTap: async() => {
                                         console.log('(Dashboard) Lock was pressed');
                                         if (await this.FPW.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
-                                            await this.FPW.FordCommands.sendVehicleCmd('unlock');
+                                            await this.FPW.FordAPI.sendVehicleCmd('unlock');
                                         }
                                     },
                                 }),
@@ -404,7 +404,7 @@ module.exports = class FPW_Tables_MainPage {
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Lock was pressed');
-                                        await this.FPW.FordCommands.sendVehicleCmd('lock');
+                                        await this.FPW.FordAPI.sendVehicleCmd('lock');
                                     },
                                 }),
                             ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
@@ -424,7 +424,7 @@ module.exports = class FPW_Tables_MainPage {
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Stop was pressed');
-                                        await this.FPW.FordCommands.sendVehicleCmd('stop');
+                                        await this.FPW.FordAPI.sendVehicleCmd('stop');
                                     },
                                 }),
                                 await this.FPW.Tables.createButtonCell('Start', {
@@ -433,7 +433,7 @@ module.exports = class FPW_Tables_MainPage {
                                     onTap: async() => {
                                         console.log('(Dashboard) Start was pressed');
                                         if (await this.FPW.Alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
-                                            await this.FPW.FordCommands.sendVehicleCmd('start');
+                                            await this.FPW.FordAPI.sendVehicleCmd('start');
                                         }
                                     },
                                 }),
@@ -456,7 +456,7 @@ module.exports = class FPW_Tables_MainPage {
                                     onTap: async() => {
                                         console.log('(Dashboard) Horn/Lights was pressed');
                                         if (await this.FPW.Alerts.showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
-                                            await this.FPW.FordCommands.sendVehicleCmd('horn_and_lights');
+                                            await this.FPW.FordAPI.sendVehicleCmd('horn_and_lights');
                                         }
                                     },
                                 }),
@@ -490,7 +490,7 @@ module.exports = class FPW_Tables_MainPage {
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) SecuriAlert Enable was pressed');
-                                        await this.FPW.FordCommands.sendVehicleCmd('guard_mode_on');
+                                        await this.FPW.FordAPI.sendVehicleCmd('guard_mode_on');
                                     },
                                 }),
                                 await this.FPW.Tables.createButtonCell('Disable', {
@@ -499,7 +499,7 @@ module.exports = class FPW_Tables_MainPage {
                                     onTap: async() => {
                                         console.log('(Dashboard) SecuriAlert Disable was pressed');
                                         if (await this.FPW.Alerts.showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
-                                            await this.FPW.FordCommands.sendVehicleCmd('guard_mode_off');
+                                            await this.FPW.FordAPI.sendVehicleCmd('guard_mode_off');
                                         }
                                     },
                                 }),
@@ -526,7 +526,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Front Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Front On was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_front_on');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_front_on');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -535,7 +535,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Rear Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Rear On was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_rear_on');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_rear_on');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -544,7 +544,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Left Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Left On was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_left_on');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_left_on');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -553,7 +553,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Right Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Right On was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_right_on');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_right_on');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -562,7 +562,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'All Zones',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone All On was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_all_on');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_all_on');
                                                     },
                                                     destructive: false,
                                                     show: true,
@@ -583,7 +583,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Front Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Front Off was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_front_off');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_front_off');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -592,7 +592,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Rear Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Rear Off was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_rear_off');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_rear_off');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -601,7 +601,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Left Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Left Off was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_left_off');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_left_off');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -610,7 +610,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'Right Zone',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone Right Off was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_right_off');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_right_off');
                                                     },
                                                     destructive: false,
                                                     show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
@@ -619,7 +619,7 @@ module.exports = class FPW_Tables_MainPage {
                                                     title: 'All Zones',
                                                     action: async() => {
                                                         console.log(`(Dashboard) Zone All Off was pressed`);
-                                                        await this.FPW.FordCommands.sendVehicleCmd('zone_lights_all_off');
+                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_all_off');
                                                     },
                                                     destructive: false,
                                                     show: true,
@@ -654,7 +654,7 @@ module.exports = class FPW_Tables_MainPage {
                                     onTap: async() => {
                                         console.log('(Dashboard) Trailer Light Check Start was pressed');
                                         if (await this.FPW.Alerts.showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
-                                            await this.FPW.FordCommands.sendVehicleCmd('trailer_light_check_on');
+                                            await this.FPW.FordAPI.sendVehicleCmd('trailer_light_check_on');
                                         }
                                     },
                                 }),
@@ -663,7 +663,7 @@ module.exports = class FPW_Tables_MainPage {
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Trailer Light Check Stop was pressed');
-                                        await this.FPW.FordCommands.sendVehicleCmd('trailer_light_check_off');
+                                        await this.FPW.FordAPI.sendVehicleCmd('trailer_light_check_off');
                                     },
                                 }),
                             ], { height: 44, cellSpacing: 5, dismissOnSelect: false },

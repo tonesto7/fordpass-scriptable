@@ -271,9 +271,9 @@ module.exports = class FPW {
             this.Kc = this.loadKeychain();
             this.Files = this.loadFiles();
             this.Logger = this.logger.bind(this);
-            this.FordRequests = this.loadFordRequests();
+            this.FordAPI = this.loadFordApi();
             if (inApp) {
-                this.FordCommands = this.loadFordCommands();
+                // this.FordCommands = this.loadFordCommands();
                 this.Tables = this.loadTables();
                 this.Menus = this.loadMenus();
             }
@@ -423,9 +423,9 @@ module.exports = class FPW {
         return new FPW_Notifications(this);
     }
 
-    loadFordRequests() {
-        const FPW_FordRequests = importModule(this.iCloudModuleDir + '/FPW_FordRequests.js');
-        return new FPW_FordRequests(this);
+    loadFordApi() {
+        const FPW_FordAPIs = importModule(this.iCloudModuleDir + '/FPW_FordAPIs.js');
+        return new FPW_FordAPIs(this);
     }
 
     loadFordCommands() {

@@ -62,8 +62,8 @@ module.exports = class FPW_Menus {
                         console.log(`VIN Number Ok: ${vinChk}`);
                         if (vinChk) {
                             await this.FPW.Kc.setSettingVal('fpVin', vin.toUpperCase());
-                            // await this.FPW.FordRequests.checkAuth();
-                            // await this.FPW.FordRequests.queryFordPassPrefs(true);
+                            // await this.FPW.FordAPI.checkAuth();
+                            // await this.FPW.FordAPI.queryFordPassPrefs(true);
                             return true;
                         } else {
                             // await requiredPrefsMenu();
@@ -85,7 +85,7 @@ module.exports = class FPW_Menus {
     }
 
     async menuBuilderByType(type) {
-        const vehicleData = await this.FPW.FordRequests.fetchVehicleData(true);
+        const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
         // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
         const typeDesc = this.FPW.capitalizeStr(type);
         let title = undefined;
@@ -112,7 +112,7 @@ module.exports = class FPW_Menus {
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Refresh was pressed`);
                             if (await this.FPW.Alerts.showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
-                                await this.FPW.FordCommands.sendVehicleCmd('status');
+                                await this.FPW.FordAPI.sendVehicleCmd('status');
                             }
                         },
                         destructive: true,
@@ -270,7 +270,7 @@ module.exports = class FPW_Menus {
                         title: 'View OTA API Info',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) View OTA Info was pressed`);
-                            let data = await this.FPW.FordRequests.getVehicleOtaInfo();
+                            let data = await this.FPW.FordAPI.getVehicleOtaInfo();
                             await this.FPW.Tables.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
                             this.menuBuilderByType('diagnostics');
                         },
@@ -281,7 +281,7 @@ module.exports = class FPW_Menus {
                         title: 'View All Data',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) View All Data was pressed`);
-                            let data = await this.FPW.FordRequests.collectAllData(false);
+                            let data = await this.FPW.FordAPI.collectAllData(false);
                             await this.FPW.Tables.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
                             this.menuBuilderByType('diagnostics');
                         },
@@ -292,7 +292,7 @@ module.exports = class FPW_Menus {
                         title: 'Copy All Data to Clipboard',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Copy Data was pressed`);
-                            let data = await this.FPW.FordRequests.collectAllData(true);
+                            let data = await this.FPW.FordAPI.collectAllData(true);
                             await Pasteboard.copyString(JSON.stringify(data, null, 4));
                             await this.FPW.Alerts.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
                             this.menuBuilderByType('diagnostics');
@@ -304,7 +304,7 @@ module.exports = class FPW_Menus {
                         title: 'Send Data to Developer',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
-                            let data = await this.FPW.FordRequests.collectAllData(true);
+                            let data = await this.FPW.FordAPI.collectAllData(true);
                             await this.FPW.createVehicleDataEmail(data, true);
                             this.menuBuilderByType('diagnostics');
                         },

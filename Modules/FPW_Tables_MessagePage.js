@@ -35,10 +35,10 @@ module.exports = class FPW_Tables_MessagePage {
                                                 let ok = await this.FPW.Alerts.showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?`, `Mark (${msgIds.length}) Read`, true);
                                                 if (ok) {
                                                     console.log(`(Messages Table) Marking ${msgIds.length} Messages as Read`);
-                                                    if (await this.FPW.FordRequests.markMultipleUserMessagesRead(msgIds)) {
+                                                    if (await this.FPW.FordAPI.markMultipleUserMessagesRead(msgIds)) {
                                                         console.log(`(Messages Table) Marked (${msgIds.length}) Messages as Read Successfully`);
                                                         this.FPW.Alerts.showAlert('Marked Messages as Read Successfully', 'Message List will reload after data is refeshed');
-                                                        await this.createMessagesPage(await this.FPW.FordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);
                                                         this.FPW.Tables.MainPage.createMainPage(true);
                                                     }
                                                 }
@@ -53,10 +53,10 @@ module.exports = class FPW_Tables_MessagePage {
                                                 let ok = await this.FPW.Alerts.showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?', `Delete (${msgIds.length}) Messages`, true);
                                                 if (ok) {
                                                     console.log(`(Messages Table) Deleting ${msgIds.length} Messages`);
-                                                    if (await this.FPW.FordRequests.deleteUserMessages([msg.messageId])) {
+                                                    if (await this.FPW.FordAPI.deleteUserMessages([msg.messageId])) {
                                                         console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
                                                         this.FPW.Alerts.showAlert('Deleted Messages Successfully', 'Message List will reload after data is refeshed');
-                                                        await this.createMessagesPage(await this.FPW.FordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);
                                                         this.FPW.Tables.MainPage.createMainPage(true);
                                                     }
                                                 }
@@ -100,10 +100,10 @@ module.exports = class FPW_Tables_MessagePage {
                                                 title: 'Mark as Read',
                                                 action: async() => {
                                                     console.log(`(Messages Table) Marking Message with ID: ${msg.messageId} as Read...`);
-                                                    if (await this.FPW.FordRequests.markMultipleUserMessagesRead([msg.messageId])) {
+                                                    if (await this.FPW.FordAPI.markMultipleUserMessagesRead([msg.messageId])) {
                                                         console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
                                                         this.FPW.Alerts.showAlert('Message marked read successfully', 'Message List will reload after data is refeshed');
-                                                        await this.createMessagesPage(await this.FPW.FordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);
                                                         this.FPW.Tables.MainPage.createMainPage(true);
                                                     }
                                                 },
@@ -117,10 +117,10 @@ module.exports = class FPW_Tables_MessagePage {
                                                     let ok = await this.FPW.Alerts.showPrompt('Delete Message', 'Are you sure you want to delete this message?', 'Delete', true);
                                                     if (ok) {
                                                         console.log(`(Messages Table) Delete Confirmed for Message ID: ${msg.messageId}`);
-                                                        if (await this.FPW.FordRequests.deleteUserMessages([msg.messageId])) {
+                                                        if (await this.FPW.FordAPI.deleteUserMessages([msg.messageId])) {
                                                             console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
                                                             this.FPW.Alerts.showAlert('Message deleted successfully', 'Message List will reload after data is refeshed');
-                                                            await this.createMessagesPage(await this.FPW.FordRequests.fetchVehicleData(false), unreadOnly, true);
+                                                            await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);
                                                             this.FPW.Tables.MainPage.createMainPage(true);
                                                             up;
                                                         } else {

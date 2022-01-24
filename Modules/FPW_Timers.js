@@ -47,7 +47,7 @@ module.exports = class FPW_Timers {
             false,
             async() => {
                 console.log('(Main Table) Refresh Timer Fired');
-                await this.FPW.FordRequests.fetchVehicleData(false);
+                await this.FPW.FordAPI.fetchVehicleData(false);
                 await this.FPW.Tables.MainPage.createMainPage(true);
             },
             false,
@@ -62,7 +62,7 @@ module.exports = class FPW_Timers {
             false,
             async() => {
                 console.log('(Remote Start Status) Timer fired');
-                await this.FPW.FordRequests.fetchVehicleData(false);
+                await this.FPW.FordAPI.fetchVehicleData(false);
                 await this.FPW.Tables.MainPage.createMainPage(true);
             },
             true,

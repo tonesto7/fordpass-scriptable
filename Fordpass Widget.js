@@ -203,19 +203,19 @@ class Widget {
                 }
             }
             // console.log('(prepWidget) Checking for token...');
-            const cAuth = await this.FPW.FordRequests.checkAuth();
+            const cAuth = await this.FPW.FordAPI.checkAuth();
             // console.log(`(prepWidget) CheckAuth Result: ${cAuth}`);
 
             // console.log(`(prepWidget) Checking User Prefs | Force: (${frcPrefs})`);
-            const fPrefs = await this.FPW.FordRequests.queryFordPassPrefs(frcPrefs);
+            const fPrefs = await this.FPW.FordAPI.queryFordPassPrefs(frcPrefs);
             // console.log(`(prepWidget) User Prefs Result: ${fPrefs}`);
 
             // console.log('(prepWidget) Fetching Vehicle Data...');
-            const vData = await this.FPW.FordRequests.fetchVehicleData();
+            const vData = await this.FPW.FordAPI.fetchVehicleData();
             return vData;
         } catch (err) {
             console.log(`(prepWidget) Error: ${err}`);
-            this.FPW.Files.appendToLogFile(`prepWidget() Error: ${err}`);
+            this.FPW.appendToLogFile(`prepWidget() Error: ${err}`);
             return null;
         }
     }
@@ -253,7 +253,7 @@ class Widget {
             w.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         } catch (e) {
             console.log(`generateWidget Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`generateWidget() Error: ${e}`);
+            this.FPW.appendToLogFile(`generateWidget() Error: ${e}`);
         }
         return w;
     }
@@ -273,7 +273,7 @@ class Widget {
             contentStack.layoutHorizontally();
         } catch (e) {
             console.log(`testWidget Error: ${e}`);
-            this.FPW.Files.appendToLogFile(`testWidget() Error: ${e}`);
+            this.FPW.appendToLogFile(`testWidget() Error: ${e}`);
         }
         widget.refreshAfterDate = new Date(Date.now() + 1000 * 60); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         widget.setPadding(0, 5, 0, 1);
@@ -285,7 +285,7 @@ class Widget {
 async function appendToLogFile(txt) {
     // console.log('appendToLogFile: Saving Data to Log...');
     try {
-        let fm = FileManager.iCloud();
+        const fm = FileManager.iCloud();
         const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
         const devName = Device.name()
             .replace(/[^a-zA-Z\s]/g, '')
@@ -323,8 +323,7 @@ async function validateModules(useLocal = false) {
         'FPW.js||-681959783',
         'FPW_Alerts.js||1575654697',
         'FPW_Files.js||1769221768',
-        'FPW_FordCommands.js||-1513595181',
-        'FPW_FordRequests.js||-530235373',
+        'FPW_FordAPIs.js||-1513595181',
         'FPW_Keychain.js||954896526',
         'FPW_Menus.js||-1221558013',
         'FPW_Notifications.js||-1071883614',
@@ -337,7 +336,6 @@ async function validateModules(useLocal = false) {
         'FPW_Tables_RecallPage.js||-285170438',
         'FPW_Tables_WidgetStylePage.js||786295863',
         'FPW_Timers.js||-694575770',
-        'FPW_Utils.js||-1891424353',
         'FPW_Widgets.js||175049418',
         'FPW_Widgets_ExtraLarge.js||-453486313',
         'FPW_Widgets_Helpers.js||-1095305750',
@@ -396,26 +394,25 @@ async function validateModules(useLocal = false) {
         }
         if (available.length === moduleFiles.length) {
             await logger(`All Required Modules (${moduleFiles.length}) Found!`);
-            await logger(`Checking for Class Module... ${await checkForClassModule(config.runsInApp, false)} | Widget: ${config.runsInWidget} | App: ${config.runsInApp}`);
-            return await loadFPClass(config.runsInApp);
+            await logger(`Loading FPW Class (${useLocal ? 'Local' : 'iCloud'})!!!`);
+            try {
+                const clsPath = fm.joinPath(fm.documentsDirectory(), 'FPWModules') + '/FPW.js';
+                if (await fm.fileExists(clsPath)) {
+                    let module = importModule(clsPath);
+                    return module;
+                } else {
+                    await logger('Module Not Found!', true);
+                    return undefined;
+                }
+            } catch (e) {
+                await logger(`Error Loading FPW Module: ${e}`, true);
+                return undefined;
+            }
         }
     } catch (error) {
         await logger(`validateModules() Error: ${error}`, true);
         return undefined;
     }
-}
-
-async function loadFPClass() {
-    const modulePath = FileManager.iCloud().joinPath(FileManager.iCloud().documentsDirectory(), 'FPWModules') + '/FPW.js';
-    let module = undefined;
-    try {
-        if (await checkForClassModule(false)) {
-            module = importModule(modulePath);
-        }
-    } catch (e) {
-        await logger(`Error Loading FPW.js: ${e}`, true);
-    }
-    return module;
 }
 
 async function logger(msg, error = false, saveToLog = true) {
@@ -426,23 +423,6 @@ async function logger(msg, error = false, saveToLog = true) {
         console.error(msg);
     } else {
         console.log(msg);
-    }
-}
-
-async function checkForClassModule(log = true) {
-    try {
-        const fm = FileManager.iCloud();
-        const classPath = fm.joinPath(fm.documentsDirectory(), 'FPWModules') + '/FPW.js';
-        if (await fm.fileExists(classPath)) {
-            if (log) await logger(`Class Module Found!`);
-            return true;
-        } else {
-            if (log) await logger(`Class Module NOT Found!`);
-            return false;
-        }
-    } catch (error) {
-        await logger(`checkForClassModule() Error: ${error}`, true);
-        return false;
     }
 }
 
