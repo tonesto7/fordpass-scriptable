@@ -108,6 +108,5 @@ module.exports = class FPW_Widgets_Helpers {
             await this.createImage(logoRow, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear), { imageSize: new Size(width, height), '*centerAlignImage': null });
             srcField.addSpacer(3);
         }
-        // return srcField;
     }
 };

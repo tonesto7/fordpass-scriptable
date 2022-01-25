@@ -130,7 +130,7 @@ module.exports = class FPW_Widgets_ExtraLarge {
             let mainCol1 = await this.WidgetHelpers.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
             // Vehicle Logo
-            await this.createVehicleImageElement(mainCol1, vehicleData, this.FPW.sizeMap[wSize].logoSize.w, this.FPW.sizeMap[wSize].logoSize.h);
+            await this.WidgetHelpers.createVehicleImageElement(mainCol1, vehicleData, this.FPW.sizeMap[wSize].logoSize.w, this.FPW.sizeMap[wSize].logoSize.h);
 
             // Creates the Odometer, Fuel/Battery and Distance Info Elements
             await this.createFuelRangeElements(mainCol1, vehicleData, wSize);
