@@ -43,7 +43,7 @@ module.exports = class FPW_Widgets_Medium {
             let col1Row = await this.WidgetHelpers.createRow(mainCol1, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
 
             // Vehicle Logo
-            await this.WidgetHelpers.createVehicleImageElement(col1Row, vehicleData, 145, 105);
+            await this.WidgetHelpers.createVehicleImageElement(col1Row, vehicleData, 145, 105, 1);
 
             // Creates Low-Voltage Battery Voltage Elements
             // await createBatteryElement(mainCol1, vehicleData, wSize);
@@ -310,6 +310,7 @@ module.exports = class FPW_Widgets_Medium {
 
     async createDoorElement(srcField, vData, countOnly = false, wSize = 'medium') {
         try {
+            let that = this;
             const styles = {
                 normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 },
                 statOpen: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
@@ -366,26 +367,36 @@ module.exports = class FPW_Widgets_Medium {
                     await this.WidgetHelpers.createText(col3row2, ')', styles.normTxt);
                 }
 
+                let that = this;
                 async function getHoodStatusElem(stkElem, data, center = false) {
-                    await this.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}HD (`, styles.normTxt);
-                    await this.WidgetHelpers.createText(stkElem, data.statusDoors.hood ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.hood ? styles.statOpen : styles.statClosed);
-                    await this.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
+                    try {
+                        await that.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}HD (`, styles.normTxt);
+                        await that.WidgetHelpers.createText(stkElem, data.statusDoors.hood ? that.FPW.textMap().symbols.open : that.FPW.textMap().symbols.closed, vData.statusDoors.hood ? styles.statOpen : styles.statClosed);
+                        await that.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
+                    } catch (e) {
+                        that.FPW.logger(`getHoodStatusElem() Error: ${e}`, true);
+                    }
                 }
                 async function getTailgateStatusElem(stkElem, data, center = false) {
-                    await this.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}TG (`, styles.normTxt);
-                    await this.WidgetHelpers.createText(stkElem, data.statusDoors.tailgate ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.tailgate ? styles.statOpen : styles.statClosed);
-                    await this.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
+                    try {
+                        await that.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}TG (`, styles.normTxt);
+                        await that.WidgetHelpers.createText(stkElem, data.statusDoors.tailgate ? that.FPW.textMap().symbols.open : that.FPW.textMap().symbols.closed, vData.statusDoors.tailgate ? styles.statOpen : styles.statClosed);
+                        await that.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
+                    } catch (e) {
+                        that.FPW.logger(`getTailgateStatusElem() Error: ${e}`, true);
+                    }
                 }
 
                 // Creates the third row of status elements for the tailgate and/or hood (if equipped)
                 let hasHood = vData.statusDoors.hood !== null;
                 let hasTailgate = vData.statusDoors.tailgate !== null;
+
                 if (hasHood || hasTailgate) {
                     if (hasHood && hasTailgate) {
                         let col1row3 = await this.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
                         await getHoodStatusElem(col1row3, vData);
 
-                        let col2row3 = await this.WidgetHelpers.createRow(col2, {});
+                        let col2row3 = await this.WidgetHelpers.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
                         await this.WidgetHelpers.createText(col2row3, '|', styles.normTxt);
 
                         let col3row3 = await this.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
@@ -403,7 +414,7 @@ module.exports = class FPW_Widgets_Medium {
             }
             srcField.addSpacer(offset);
         } catch (err) {
-            this.FPW.logger(`createStatusDoors() Error: ${err}`, true);
+            this.FPW.logError(`createDoorElement(medium) Error: ${err}`);
         }
     }
 

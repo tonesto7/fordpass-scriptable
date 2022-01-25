@@ -698,6 +698,12 @@ module.exports = class FPW_FordAPIs {
         // console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
         console.log(`Last Vehicle Checkin: ${vehicleData.lastRefreshElapsed}`);
 
+        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 1);
+        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 2);
+        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 3);
+        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 4);
+        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 5);
+
         //save data to local store
         this.FPW.Files.saveDataToLocal(vehicleData);
         // console.log(JSON.stringify(vehicleData));

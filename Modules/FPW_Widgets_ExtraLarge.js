@@ -369,15 +369,24 @@ module.exports = class FPW_Widgets_ExtraLarge {
                     await this.WidgetHelpers.createText(col3row2, ')', styles.normTxt);
                 }
 
+                let that = this;
                 async function getHoodStatusElem(stkElem, data, center = false) {
-                    await this.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}HD (`, styles.normTxt);
-                    await this.WidgetHelpers.createText(stkElem, data.statusDoors.hood ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.hood ? styles.statOpen : styles.statClosed);
-                    await this.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
+                    try {
+                        await that.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}HD (`, styles.normTxt);
+                        await that.WidgetHelpers.createText(stkElem, data.statusDoors.hood ? that.FPW.textMap().symbols.open : that.FPW.textMap().symbols.closed, vData.statusDoors.hood ? styles.statOpen : styles.statClosed);
+                        await that.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
+                    } catch (e) {
+                        that.FPW.logger(`getHoodStatusElem() Error: ${e}`, true);
+                    }
                 }
                 async function getTailgateStatusElem(stkElem, data, center = false) {
-                    await this.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}TG (`, styles.normTxt);
-                    await this.WidgetHelpers.createText(stkElem, data.statusDoors.tailgate ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.tailgate ? styles.statOpen : styles.statClosed);
-                    await this.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
+                    try {
+                        await that.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}TG (`, styles.normTxt);
+                        await that.WidgetHelpers.createText(stkElem, data.statusDoors.tailgate ? that.FPW.textMap().symbols.open : that.FPW.textMap().symbols.closed, vData.statusDoors.tailgate ? styles.statOpen : styles.statClosed);
+                        await that.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
+                    } catch (e) {
+                        that.FPW.logger(`getTailgateStatusElem() Error: ${e}`, true);
+                    }
                 }
 
                 // Creates the third row of status elements for the tailgate and/or hood (if equipped)

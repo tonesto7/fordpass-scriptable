@@ -38,8 +38,8 @@ module.exports = class FPW_Files {
             let fm = FileManager.local();
             let dir = fm.documentsDirectory();
             let path = fm.joinPath(dir, fileName);
-            if (fm.fileExists(path)) {
-                let localData = fm.readString(path);
+            if (await fm.fileExists(path)) {
+                let localData = await fm.readString(path);
                 return JSON.parse(localData);
             }
         } catch (e) {
@@ -137,7 +137,7 @@ module.exports = class FPW_Files {
                 return await fm.readImage(path);
             }
         } else {
-            let vin = await this.FPWtSettingVal('fpVin');
+            let vin = await this.FPW.getSettingVal('fpVin');
             let token = await this.FPW.getSettingVal('fpToken2');
             let country = await this.FPW.getSettingVal('fpCountry');
             console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
@@ -157,7 +157,7 @@ module.exports = class FPW_Files {
             try {
                 let img = await req.loadImage();
                 let resp = req.response;
-                // console.log(`vehicleImage Resp: ${resp.statusCode}`);
+                console.log(`vehicleImage Resp: ${resp.statusCode}`);
                 if (resp.statusCode === 200) {
                     await fm.writeImage(path, img);
                     return img;

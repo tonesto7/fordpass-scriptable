@@ -6,23 +6,30 @@ module.exports = class FPW_Widgets_Helpers {
     }
 
     async createColumn(srcField, styles = {}) {
-        let col = srcField.addStack();
-        col.layoutVertically();
-        if (styles && Object.keys(styles).length > 0) {
-            this.FPW._mapMethodsAndCall(col, styles);
+        try {
+            let col = srcField.addStack();
+            col.layoutVertically();
+            if (styles && Object.keys(styles).length > 0) {
+                this.FPW._mapMethodsAndCall(col, styles);
+            }
+            return col;
+        } catch (e) {
+            this.FPW.logError(`createColumn Error: ${e}`);
         }
-
-        return col;
     }
 
     async createRow(srcField, styles = {}) {
-        let row = srcField.addStack();
-        row.layoutHorizontally();
-        if (styles && Object.keys(styles).length > 0) {
-            this.FPW._mapMethodsAndCall(row, styles);
+        try {
+            let row = srcField.addStack();
+            row.layoutHorizontally();
+            if (styles && Object.keys(styles).length > 0) {
+                this.FPW._mapMethodsAndCall(row, styles);
+            }
+            return row;
+        } catch (e) {
+            this.FPW.logError(`createRow Error: ${e}`);
+            return null;
         }
-
-        return row;
     }
 
     async createText(srcField, text, styles = {}) {
@@ -102,10 +109,10 @@ module.exports = class FPW_Widgets_Helpers {
         return await context.getImage();
     }
 
-    async createVehicleImageElement(srcField, vData, width, height) {
+    async createVehicleImageElement(srcField, vData, width, height, angle = 4) {
         let logoRow = await this.createRow(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         if (vData.info !== undefined && vData.info.vehicle !== undefined) {
-            await this.createImage(logoRow, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear), { imageSize: new Size(width, height), '*centerAlignImage': null });
+            await this.createImage(logoRow, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, angle), { imageSize: new Size(width, height), '*centerAlignImage': null });
             srcField.addSpacer(3);
         }
     }
