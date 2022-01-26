@@ -20,7 +20,6 @@ class WidgetInstaller {
             scriptGlyph: 'car',
             sourceUrl: 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js',
             sourceModules: [
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Alerts.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Files.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordAPIs.js',
@@ -36,7 +35,7 @@ class WidgetInstaller {
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_RecallPage.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_WidgetStylePage.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Helpers.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Small.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Medium.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Large.js',
