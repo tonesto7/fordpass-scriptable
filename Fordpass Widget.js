@@ -44,6 +44,7 @@ Changelog:
     - add a hash to the modules so we make sure it loads the correct modules.
     - add test mode to use cached data for widget testing
     - figure out why fetchVehicleData is called multiple times with token expires error.
+    - fix main page not refreshing every 30 seconds.
 
 // Todo: Next Release (Post 2.0.x)
 - setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
@@ -69,7 +70,7 @@ const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
-    screenShotMode: true, // Places a dummy address in the widget for anonymous screenshots.
+    screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     tirePressureThresholds: {
@@ -86,7 +87,7 @@ const widgetConfig = {
     ignoreHashCheck: true,
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
-    showTestUIStuff: true,
+    showTestUIStuff: false,
 };
 
 //************************************************************************* */
@@ -304,12 +305,13 @@ class Widget {
      */
     async run() {
         try {
+            this.logInfo('---------------------------');
             this.logInfo('Widget RUN...');
             // Starts the widget load process
             let fordData = await this.prepWidget();
             if (fordData === null) return;
             if (config.runsInWidget) {
-                await this.logInfo('(generateWidget) Running in Widget...');
+                // await this.logInfo('(generateWidget) Running in Widget...');
                 await this.generateWidget(runningWidgetSize, fordData);
                 // await this.testWidget(fordData);
             } else if (config.runsInApp || config.runsFromHomeScreen) {
@@ -318,13 +320,16 @@ class Widget {
                     // Create a parser function...
                     await Speech.speak(await this.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
                 } else {
+                    // let w = await this.generateWidget('medium', fordData);
+                    // w.presentMedium();
+
                     await this.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
                 // console.log('runsInActionExtension: ' + config.runsInActionExtension);
             } else {
-                this.logInfo('(generateWidget) Running in Widget (else)...');
+                // this.logInfo('(generateWidget) Running in Widget (else)...');
                 await this.generateWidget(runningWidgetSize, fordData);
             }
             Script.complete();
@@ -366,7 +371,7 @@ class Widget {
                 }
             }
             // console.log('(prepWidget) Checking for token...');
-            const cAuth = await this.FordAPI.checkAuth();
+            const cAuth = await this.FordAPI.checkAuth('prepWidget');
             // console.log(`(prepWidget) CheckAuth Result: ${cAuth}`);
 
             // console.log(`(prepWidget) Checking User Prefs | Force: (${frcPrefs})`);
@@ -418,9 +423,9 @@ class Widget {
                 return;
             }
             widget.setPadding(0, 5, 0, 1);
+            widget.refreshAfterDate = new Date(Date.now() + 1000 * 60); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
             Script.setWidget(widget);
-            this.logInfo(`Created Widget(${size}) | ${JSON.stringify(widget)}`);
-            widget.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+            this.logInfo(`Created Widget(${size})...`); // | ${JSON.stringify(widget)}`);
         } catch (e) {
             this.logError(`generateWidget() Error: ${e}`);
         }
@@ -435,7 +440,9 @@ class Widget {
         const v = await this.getLatestScriptVersion();
         this.setStateVal('LATEST_VERSION', v);
         this.setStateVal('updateAvailable', this.isNewerVersion(this.SCRIPT_VERSION, v));
-        console.log(`Script Version: ${this.SCRIPT_VERSION} | Update Available: ${this.getStateVal('updateAvailable')} | Latest Version: ${this.getStateVal('LATEST_VERSION')}`);
+        console.log(`Script Version: ${this.SCRIPT_VERSION}`);
+        console.log(`Update Available: ${this.getStateVal('updateAvailable')}`);
+        console.log(`Latest Version: ${this.getStateVal('LATEST_VERSION')}`);
     }
 
     /**
@@ -898,16 +905,18 @@ class Widget {
 
     /**
      * @description
-     * @param  {any} items
-     * @return
+     * @param  {Object} items
+     * @return {Array} openItems
      * @memberof Widget
      */
-    async getOpenItems(items) {
+    getOpenItems(src = '', items) {
         let openItems = [];
-        if (items && items.length) {
-            Object.entries(doors)
-                .filter(([_, v]) => v)
-                .map(([k, _]) => k)
+        if (items && Object.keys(items).length) {
+            Object.keys(items)
+                .filter((k) => {
+                    return items[k];
+                })
+                .map((k) => k)
                 .forEach((k) => {
                     switch (k) {
                         case 'driverFront':
@@ -1589,7 +1598,7 @@ async function logError(msg, saveToLog = true) {
 try {
     if (await validateModules()) {
         const wc = new Widget();
-        await wc.run();
+        wc.run();
     }
 } catch (error) {
     logError(`Error: ${error}`);
