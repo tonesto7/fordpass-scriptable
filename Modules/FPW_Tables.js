@@ -213,7 +213,7 @@ module.exports = class FPW_Tables {
 
     async dataValueToString(dataValue) {
         if (dataValue === undefined || dataValue === null) {
-            return this.FPW.textValues().errorMessages.noData;
+            return this.FPW.textMap().errorMessages.noData;
         } else if (dataValue instanceof boolean) {
             return dataValue ? 'True' : 'False';
         } else {

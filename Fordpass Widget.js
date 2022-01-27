@@ -45,6 +45,7 @@ Changelog:
     - add test mode to use cached data for widget testing
     - figure out why fetchVehicleData is called multiple times with token expires error.
     - fix main page not refreshing every 30 seconds.
+    - possibly add vehicle status overlay to image using canvas?!...
 
 // Todo: Next Release (Post 2.0.x)
 - setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
@@ -60,7 +61,7 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/01/24, 6:00 pm';
+const SCRIPT_TS = '2022/01/26, 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -94,6 +95,7 @@ const widgetConfig = {
 //*                  Device Detail Functions
 //************************************************************************* */
 const screenSize = Device.screenResolution();
+const screenScale = Device.screenScale();
 const isSmallDisplay = screenSize.width < 1200 === true;
 const darkMode = Device.isUsingDarkAppearance();
 if (typeof require === 'undefined') require = importModule;
@@ -126,6 +128,10 @@ class Widget {
     colorMap = {
         textColor1: darkMode ? '#EDEDED' : '#000000', // Header Text Color
         textColor2: darkMode ? '#EDEDED' : '#000000', // Value Text Color
+        normalText: Color.dynamic(new Color('#000000'), new Color('#EDEDED')),
+        lightText: Color.dynamic(Color.darkGray(), Color.lightGray()),
+        openColor: new Color('#FF5733'),
+        closedColor: new Color('#5A65C0'),
         textBlack: '#000000',
         textWhite: '#EDEDED',
         backColor: darkMode ? '#111111' : '#FFFFFF', // Background Color'
@@ -254,6 +260,7 @@ class Widget {
         //*                  Device Detail Functions
         //************************************************************************* */
         this.screenSize = screenSize;
+        this.screenScale = screenScale;
         this.isSmallDisplay = isSmallDisplay;
         this.darkMode = darkMode;
         this.runningWidgetSize = config.widgetFamily;
@@ -262,21 +269,16 @@ class Widget {
         this.deviceModel = Device.model();
         this.deviceSystemVersion = Device.systemVersion();
         this.widgetConfig = widgetConfig;
-        // this.logInfo(`After WidgetConfig`);
         if (config.runsInApp) {
-            // this.logInfo(`Running in App 1`);
             this.Timers = this.moduleLoader('Timers');
             this.Alerts = this.moduleLoader('Alerts');
             this.Notifications = this.moduleLoader('Notifications');
         }
         // this.ShortcutParser = this.moduleLoader('ShortcutParser');
         this.Files = this.moduleLoader('Files');
-
-        // this.logInfo(`After Files`);
         this.FordAPI = this.moduleLoader('FordAPIs');
-        // this.logInfo(`After FordAPI`);
         if (config.runsInApp) {
-            // this.logInfo(`Running in App 2`);
+            this.Images = this.moduleLoader('Images');
             this.Tables = this.moduleLoader('Tables');
             this.Menus = this.moduleLoader('Menus');
         }
@@ -320,10 +322,10 @@ class Widget {
                     // Create a parser function...
                     await Speech.speak(await this.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
                 } else {
-                    // let w = await this.generateWidget('medium', fordData);
-                    // w.presentMedium();
+                    let w = await this.generateWidget('medium', fordData);
+                    w.presentMedium();
 
-                    await this.Tables.MainPage.createMainPage();
+                    // await this.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -422,13 +424,13 @@ class Widget {
                 this.logError(`generateWidget() | Widget is null!`);
                 return;
             }
-            widget.setPadding(0, 5, 0, 1);
-            widget.refreshAfterDate = new Date(Date.now() + 1000 * 60); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
-            Script.setWidget(widget);
-            this.logInfo(`Created Widget(${size})...`); // | ${JSON.stringify(widget)}`);
         } catch (e) {
             this.logError(`generateWidget() Error: ${e}`);
         }
+        widget.setPadding(0, 5, 0, 1);
+        widget.refreshAfterDate = new Date(Date.now() + 1000 * 60); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+        Script.setWidget(widget);
+        this.logInfo(`Created Widget(${size})...`);
         return widget;
     }
 
@@ -1439,6 +1441,7 @@ async function validateModules(useLocal = false) {
         'FPW_Alerts.js||1575654697',
         'FPW_Files.js||-1368940717',
         'FPW_FordAPIs.js||-1527776815',
+        'FPW_Images.js||-1368940717',
         'FPW_Keychain.js||865182748',
         'FPW_Menus.js||1069934756',
         'FPW_Notifications.js||-168421043',
@@ -1451,7 +1454,6 @@ async function validateModules(useLocal = false) {
         'FPW_Tables_RecallPage.js||-169548452',
         'FPW_Tables_WidgetStylePage.js||-1509087067',
         'FPW_Timers.js||-1888476318',
-        'FPW_Widgets.js||-1740552139',
         'FPW_Widgets_ExtraLarge.js||1913554047',
         'FPW_Widgets_Helpers.js||384162293',
         'FPW_Widgets_Large.js||692726051',
@@ -1595,12 +1597,12 @@ async function logError(msg, saveToLog = true) {
 //********************************************************************************************************************************
 //*                                              THIS IS WHAT RUNS THE ACTUAL SCRIPT
 //********************************************************************************************************************************
-try {
-    if (await validateModules()) {
-        const wc = new Widget();
-        wc.run();
-    }
-} catch (error) {
-    logError(`Error: ${error}`);
-    //     throw new Error(error);
+// try {
+if (await validateModules()) {
+    const wc = new Widget();
+    wc.run();
 }
+// } catch (error) {
+// logError(`Error: ${error}`);
+//     throw new Error(error);
+// }

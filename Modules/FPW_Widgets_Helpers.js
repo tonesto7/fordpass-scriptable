@@ -1,4 +1,42 @@
 module.exports = class FPW_Widgets_Helpers {
+    DeviceSize = {
+        '428x926': {
+            small: { width: 176, height: 176 },
+            medium: { width: 374, height: 176 },
+            large: { width: 374, height: 391 },
+        },
+        '390x844': {
+            small: { width: 161, height: 161 },
+            medium: { width: 342, height: 161 },
+            large: { width: 342, height: 359 },
+        },
+        '414x896': {
+            small: { width: 169, height: 169 },
+            medium: { width: 360, height: 169 },
+            large: { width: 360, height: 376 },
+        },
+        '375x812': {
+            small: { width: 155, height: 155 },
+            medium: { width: 329, height: 155 },
+            large: { width: 329, height: 345 },
+        },
+        '414x736': {
+            small: { width: 159, height: 159 },
+            medium: { width: 348, height: 159 },
+            large: { width: 348, height: 357 },
+        },
+        '375x667': {
+            small: { width: 148, height: 148 },
+            medium: { width: 322, height: 148 },
+            large: { width: 322, height: 324 },
+        },
+        '320x568': {
+            small: { width: 141, height: 141 },
+            medium: { width: 291, height: 141 },
+            large: { width: 291, height: 299 },
+        },
+    };
+
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
@@ -63,6 +101,17 @@ module.exports = class FPW_Widgets_Helpers {
             let title = titleParams.length > 1 ? this.FPW.textMap(titleParams[1]).elemHeaders[titleParams[0]] : this.FPW.textMap().elemHeaders[titleParams[0]];
             await this.createText(titleStack, title + ':', { font: Font.boldSystemFont(this.FPW.sizeMap[wSize].titleFontSize), textColor: new Color(this.FPW.colorMap.textColor1), lineLimit: 1 });
         }
+    }
+
+    getFont(fontName, fontSize) {
+        if (fontName == 'SF UI Display') {
+            return Font.systemFont(fontSize);
+        }
+
+        if (fontName == 'SF UI Display Bold') {
+            return Font.semiboldSystemFont(fontSize);
+        }
+        return new Font(fontName, fontSize);
     }
 
     async createProgressBar(percent, vData, wSize = 'medium') {
