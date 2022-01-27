@@ -85,6 +85,7 @@ const widgetConfig = {
      */
     useBetaModules: true,
     useLocalModules: false,
+    testMode: true,
     ignoreHashCheck: true,
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
@@ -310,7 +311,7 @@ class Widget {
             this.logInfo('---------------------------');
             this.logInfo('Widget RUN...');
             // Starts the widget load process
-            let fordData = await this.prepWidget();
+            let fordData = widgetConfig.testMode ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget();
             if (fordData === null) return;
             if (config.runsInWidget) {
                 // await this.logInfo('(generateWidget) Running in Widget...');
