@@ -99,10 +99,10 @@ module.exports = class FPW_Widgets_Small {
             // Car Status box
             let carStatusContainer = await this.WidgetHelpers.createRow(carInfoContainer, { '*setPadding': [2, 0, 0, 0] });
 
-            let carStatusBox = await this.WidgetHelpers.createRow(carStatusContainer, { '*setPadding': [3, 3, 3, 3], '*centerAlignContent': null, cornerRadius: 4, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)) });
+            let carStatusBox = await this.WidgetHelpers.createRow(carStatusContainer, { '*setPadding': [3, 3, 3, 0], '*centerAlignContent': null, cornerRadius: 4, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)), size: new Size(Math.round(width * 0.9), Math.round(height * 0.1)) });
             try {
                 const doorsLocked = vData.lockStatus === 'LOCKED';
-                await this.WidgetHelpers.createText(carStatusBox, `${doorsLocked ? 'Locked' : 'Unlocked'}`, { font: doorsLocked ? Font.systemFont(10) : Font.semiboldSystemFont(10), textColor: doorsLocked ? this.FPW.colorMap.closedColor : this.FPW.colorMap.openColor, textOpacity: 0.7 });
+                await this.WidgetHelpers.createText(carStatusBox, `${doorsLocked ? 'Locked' : 'Unlocked'}`, { font: doorsLocked ? Font.systemFont(10) : Font.semiboldSystemFont(10), textColor: doorsLocked ? this.FPW.colorMap.normalText : this.FPW.colorMap.openColor, textOpacity: 0.7, '*centerAlignText': null });
                 carStatusBox.addSpacer(5);
             } catch (e) {
                 console.error(e.message);
@@ -278,7 +278,7 @@ module.exports = class FPW_Widgets_Small {
             // Distance/Range to Empty
             let dteRow = await this.WidgetHelpers.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
             let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+            await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
             this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
@@ -311,7 +311,7 @@ module.exports = class FPW_Widgets_Small {
             // Distance to Empty
             let dteRow = await this.WidgetHelpers.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
             let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+            await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
             this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
@@ -336,7 +336,7 @@ module.exports = class FPW_Widgets_Small {
     async createOilElement(srcField, vData, wSize = 'medium') {
         try {
             const styles = {
-                normal: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 },
+                normal: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 },
                 warning: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color('#FF6700'), lineLimit: 1 },
                 critical: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color('#DE1738'), lineLimit: 1 },
             };
@@ -363,7 +363,7 @@ module.exports = class FPW_Widgets_Small {
             elem.addSpacer(2);
             let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : this.FPW.textMap().errorMessages.noData;
             // console.log(`battery charge: ${value}`);
-            await this.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+            await this.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
             this.FPW.logger(`createEvChargeElement() Error: ${e}`, true);
@@ -373,7 +373,7 @@ module.exports = class FPW_Widgets_Small {
     async createDoorElement(srcField, vData, countOnly = false, wSize = 'medium') {
         try {
             const styles = {
-                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 },
+                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText, lineLimit: 1 },
                 statOpen: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
                 statClosed: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
                 offset: 5,
@@ -481,7 +481,7 @@ module.exports = class FPW_Widgets_Small {
     async createWindowElement(srcField, vData, countOnly = false, wSize = 'medium') {
         try {
             const styles = {
-                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2) },
+                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText },
                 statOpen: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
                 statClosed: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
                 offset: 10,
@@ -547,7 +547,7 @@ module.exports = class FPW_Widgets_Small {
     async createTireElement(srcField, vData, wSize = 'medium') {
         try {
             const styles = {
-                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2) },
+                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText },
             };
             let offset = 0;
             let titleFld = await this.WidgetHelpers.createRow(srcField);
@@ -590,7 +590,7 @@ module.exports = class FPW_Widgets_Small {
             let dataFld = await this.WidgetHelpers.createRow(srcField);
             let url = (await this.FPW.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
             let value = vehicleData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vehicleData.position}`) : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(dataFld, value, { url: url, font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
+            await this.WidgetHelpers.createText(dataFld, value, { url: url, font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText, lineLimit: 2, minimumScaleFactor: 0.7 });
             srcField.addSpacer(offset);
         } catch (e) {
             this.FPW.logger(`createPositionElement() Error: ${e}`, true);
@@ -694,7 +694,7 @@ module.exports = class FPW_Widgets_Small {
                 }
             }
             if (!this.hasStatusMsg()) {
-                await this.WidgetHelpers.createText(stk, `     `, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+                await this.WidgetHelpers.createText(stk, `     `, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
             }
             return stk;
         } catch (e) {

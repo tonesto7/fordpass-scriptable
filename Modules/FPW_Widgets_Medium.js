@@ -100,7 +100,7 @@ module.exports = class FPW_Widgets_Medium {
             let carStatusBox = await this.WidgetHelpers.createRow(carStatusContainer, { '*setPadding': [3, 3, 3, 3], '*centerAlignContent': null, cornerRadius: 4, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)) });
             try {
                 const doorsLocked = vData.lockStatus === 'LOCKED';
-                await this.WidgetHelpers.createText(carStatusBox, `${doorsLocked ? 'Locked' : 'Unlocked'}`, { font: doorsLocked ? Font.systemFont(10) : Font.semiboldSystemFont(10), textColor: doorsLocked ? this.FPW.colorMap.closedColor : this.FPW.colorMap.openColor, textOpacity: 0.7 });
+                await this.WidgetHelpers.createText(carStatusBox, `${doorsLocked ? 'Locked' : 'Unlocked'}`, { font: doorsLocked ? Font.systemFont(10) : Font.semiboldSystemFont(10), textColor: doorsLocked ? this.FPW.colorMap.normalText : this.FPW.colorMap.openColor, textOpacity: 0.7 });
                 carStatusBox.addSpacer(5);
             } catch (e) {
                 console.error(e.message);
