@@ -325,8 +325,10 @@ class Widget {
                 } else {
                     let w = await this.generateWidget('medium', fordData);
                     w.presentMedium();
+                    let w2 = await this.generateWidget('small', fordData);
+                    w2.presentSmall();
 
-                    // await this.Tables.MainPage.createMainPage();
+                    await this.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);

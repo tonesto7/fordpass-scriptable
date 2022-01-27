@@ -165,4 +165,22 @@ module.exports = class FPW_Widgets_Helpers {
             srcField.addSpacer(3);
         }
     }
+
+    async getRangeData(data) {
+        const isEV = data.evVehicle === true;
+        const dtePostfix = isEV ? 'Range' : 'to E';
+        const distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+        const distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+        const dteValueRaw = !isEV ? (data.distanceToEmpty ? data.distanceToEmpty : undefined) : data.evDistanceToEmpty ? data.evDistanceToEmpty : undefined;
+        return {
+            isEV: isEV,
+            lvlValue: !isEV ? (data.fuelLevel ? data.fuelLevel : 0) : data.evBatteryLevel ? data.evBatteryLevel : 0,
+            dteValue: dteValueRaw ? Math.round(dteValueRaw * distanceMultiplier) : undefined,
+            odometerVal: data.odometer ? `${Math.round(data.odometer * distanceMultiplier)} ${distanceUnit}` : this.FPW.textMap().errorMessages.noData,
+            dtePostfix: dtePostfix,
+            // distanceMultiplier: distanceMultiplier, // distance multiplier
+            distanceUnit: distanceUnit, // unit of length
+            dteInfo: dteValueRaw ? `${Math.round(dteValueRaw * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData,
+        };
+    }
 };
