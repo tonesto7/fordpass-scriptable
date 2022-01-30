@@ -289,21 +289,21 @@ const sizeMap = {
         },
     },
     large: {
-        titleFontSize: isSmallDisplay ? 9 : 10,
-        fontSizeSmall: isSmallDisplay ? 8 : 10,
-        fontSizeMedium: isSmallDisplay ? 9 : 11,
-        fontSizeBig: isSmallDisplay ? 12 : 12,
+        titleFontSize: isSmallDisplay ? 12 : 12,
+        fontSizeSmall: isSmallDisplay ? 14 : 14,
+        fontSizeMedium: isSmallDisplay ? 16 : 16,
+        fontSizeBig: isSmallDisplay ? 18 : 18,
         barGauge: {
-            w: isSmallDisplay ? 80 : 80,
+            w: isSmallDisplay ? 300 : 300,
             h: isSmallDisplay ? 10 : 10,
         },
         logoSize: {
-            w: isSmallDisplay ? 85 : 85,
-            h: isSmallDisplay ? 45 : 45,
+            w: isSmallDisplay ? 160 : 160,
+            h: isSmallDisplay ? 84.7 : 84.7,
         },
         iconSize: {
-            w: isSmallDisplay ? 11 : 11,
-            h: isSmallDisplay ? 11 : 11,
+            w: isSmallDisplay ? 12 : 12,
+            h: isSmallDisplay ? 12 : 12,
         },
     },
     extraLarge: {
@@ -597,76 +597,71 @@ async function createLargeWidget(vData) {
         mainStack.layoutVertically();
         mainStack.setPadding(0, 0, 0, 0);
 
-        let contentStack = mainStack.addStack();
-        contentStack.layoutHorizontally();
-
         //*****************
-        //* First column
+        //* Top stack
         //*****************
-        let mainCol1 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
 
+        let topStack = mainStack.addStack();
+        topStack.layoutHorizontally();
+
+        let tsCol1 = await createColumn(topStack, { '*setPadding': [0, 0, 0, 0] });
         // Vehicle Logo
-        let vehicleLogoRow = await createRow(mainCol1, { '*centerAlignContent': null });
+        let vehicleLogoRow = await createRow(tsCol1, { '*centerAlignContent': null });
         let vehicleLogo = vehicleData.info !== undefined && vehicleData.info.vehicle !== undefined ? await createImage(vehicleLogoRow, await getVehicleImage(vehicleData.info.vehicle.modelYear), { imageSize: new Size(sizeMap[wSize].logoSize.w, sizeMap[wSize].logoSize.h), '*centerAlignImage': null }) : null;
-        mainCol1.addSpacer(0);
+        tsCol1.addSpacer(0);
 
-        // Creates the Fuel Info Elements
-        await createFuelBattElement(mainCol1, vehicleData, wSize);
-
+        let tsCol2 = await createColumn(topStack, { '*setPadding': [0, 0, 0, 0] });
         // Creates the Mileage Info Elements
-        await createMileageElement(mainCol1, vehicleData, wSize);
-
+        await createMileageElement(tsCol2, vehicleData, wSize);
         // Creates Battery Level Elements
-        await createBatteryElement(mainCol1, vehicleData, wSize);
-
+        await createBatteryElement(tsCol2, vehicleData, wSize);
         // Creates Oil Life Elements
         if (!vehicleData.evVehicle) {
-            await createOilElement(mainCol1, vehicleData, wSize);
+            await createOilElement(tsCol2, vehicleData, wSize);
         } else {
             // Creates EV Plug Elements
-            await createEvChargeElement(mainCol1, vehicleData, wSize);
+            await createEvChargeElement(tsCol2, vehicleData, wSize);
         }
 
-        contentStack.addSpacer();
-
-        //************************
-        //* Second column
-        //************************
-        let mainCol2 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
-
-        // Creates the Lock Status Elements
-        await createLockStatusElement(mainCol2, vehicleData, wSize);
-
-        // Creates the Door Status Elements
-        await createDoorElement(mainCol2, vehicleData, false, wSize);
-
-        // Create Tire Pressure Elements
-        await createTireElement(mainCol2, vehicleData, wSize);
-
-        mainCol2.addSpacer(0);
-
-        contentStack.addSpacer();
-
-        //****************
-        //* Third column
-        //****************
-        let mainCol3 = await createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
-
-        // Creates the Ignition Status Elements
-        await createIgnitionStatusElement(mainCol3, vehicleData, wSize);
-
-        // Creates the Door Status Elements
-        await createWindowElement(mainCol3, vehicleData, false, wSize);
-
-        // Creates the Vehicle Location Element
-        await createPositionElement(mainCol3, vehicleData, wSize);
-
-        mainCol3.addSpacer();
-
-        contentStack.addSpacer();
-
         //**********************
-        //* Refresh and error
+        //* FuelBatt Stack
+        //*********************
+
+        let fullBattStack = mainStack.addStack();
+        fullBattStack.layoutHorizontally();
+        
+        let col1 = await createColumn(fullBattStack, { '*setPadding': [0, 0, 0, 0] });
+        // Creates the Fuel Info Elements
+        await createFuelBattElement(col1, vehicleData, wSize);
+
+        //*****************
+        //* Bottom stack
+        //*****************
+
+        let bottomStack = mainStack.addStack();
+        bottomStack.layoutHorizontally();
+
+        let bsCol1 = await createColumn(bottomStack, { '*setPadding': [0, 0, 0, 0] });
+        // Creates the Lock Status Elements
+        await createLockStatusElement(bsCol1, vehicleData, wSize);
+        // Creates the Door Status Elements
+        await createDoorElement(bsCol1, vehicleData, false, wSize);
+        // Create Tire Pressure Elements
+        await createTireElement(bsCol1, vehicleData, wSize);
+
+        bsCol1.addSpacer(0);
+        bottomStack.addSpacer();
+
+        let bsCol2 = await createColumn(bottomStack, { '*setPadding': [0, 0, 0, 0] });
+        // Creates the Ignition Status Elements
+        await createIgnitionStatusElement(bsCol2, vehicleData, wSize);
+        // Creates the Window Status Elements
+        await createWindowElement(bsCol2, vehicleData, false, wSize);
+        // Creates the Vehicle Location Element
+        await createPositionElement(bsCol2, vehicleData, wSize);
+        
+        //**********************
+        //* Status Row
         //*********************
 
         let statusRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
@@ -675,6 +670,7 @@ async function createLargeWidget(vData) {
         // This is the row displaying the time elapsed since last vehicle checkin.
         let timestampRow = await createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         await createTimeStampElement(timestampRow, vehicleData, wSize);
+
     } catch (e) {
         console.error(`createLargeWidget Error ${e}`);
     }
@@ -903,7 +899,7 @@ async function createFuelBattElement(srcField, vehicleData, wSize = 'medium') {
 
         // Fuel tank header
         let fuelHeaderRow = await createRow(srcField);
-        let fuelHeadericon = await createImage(fuelHeaderRow, await getImage(isEV ? runtimeData.evBatteryStatus : runtimeData.fuelIcon), { imageSize: new Size(11, 11) });
+        let fuelHeadericon = await createImage(fuelHeaderRow, await getImage(isEV ? runtimeData.evBatteryStatus : runtimeData.fuelIcon), { imageSize: new Size(sizeMap[wSize].iconSize.w, sizeMap[wSize].iconSize.h) });
         fuelHeaderRow.addSpacer(3);
         // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
 
@@ -1147,7 +1143,7 @@ async function createWindowElement(srcField, vData, countOnly = false, wSize = '
 
 async function createTireElement(srcField, vData, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        normTxt: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2) },
     };
     let offset = 0;
     let titleFld = await createRow(srcField);
@@ -1159,21 +1155,21 @@ async function createTireElement(srcField, vData, wSize = 'medium') {
     // Row 1 - Tire Pressure Left Front amd Right Front
     let col1 = await createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
     let col1row1 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-    await createText(col1row1, vData.tirePressure.leftFront, getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
+    await createText(col1row1, vData.tirePressure.leftFront, getTirePressureStyle(vData.tirePressure.leftFront, unitTxt, wSize));
     let col2 = await createColumn(dataFld, { '*setPadding': [0, 3, 0, 3] });
     let col2row1 = await createRow(col2, { '*setPadding': [0, 0, 0, 0] });
     await createText(col2row1, '|', styles.normTxt);
     let col3 = await createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
     let col3row1 = await createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-    await createText(col3row1, vData.tirePressure.rightFront, getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
+    await createText(col3row1, vData.tirePressure.rightFront, getTirePressureStyle(vData.tirePressure.rightFront, unitTxt, wSize));
 
     // Row 2 - Tire Pressure Left Rear amd Right Rear
     let col1row2 = await createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-    await createText(col1row2, vData.tirePressure.leftRear, getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
+    await createText(col1row2, vData.tirePressure.leftRear, getTirePressureStyle(vData.tirePressure.leftRear, unitTxt, wSize));
     let col2row2 = await createRow(col2, { '*setPadding': [0, 0, 0, 0] });
     await createText(col2row2, '|', styles.normTxt);
     let col3row2 = await createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-    await createText(col3row2, vData.tirePressure.rightRear, getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
+    await createText(col3row2, vData.tirePressure.rightRear, getTirePressureStyle(vData.tirePressure.rightRear, unitTxt, wSize));
 
     srcField.addSpacer(offset);
 }
@@ -1186,7 +1182,7 @@ async function createPositionElement(srcField, vehicleData, wSize = 'medium') {
     let dataFld = await createRow(srcField);
     let url = (await getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
     let value = vehicleData.position ? (widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vehicleData.position}`) : textValues().errorMessages.noData;
-    await createText(dataFld, value, { url: url, font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
+    await createText(dataFld, value, { url: url, font: Font.regularSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
     srcField.addSpacer(offset);
 }
 
@@ -2963,7 +2959,7 @@ async function getPosition(data) {
 
 function getTirePressureStyle(pressure, unit, wSize = 'medium') {
     const styles = {
-        normTxt: { font: Font.mediumSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2) },
+        normTxt: { font: Font.regularSystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color(runtimeData.textColor2) },
         statLow: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('FF6700') },
         statCrit: { font: Font.heavySystemFont(sizeMap[wSize].fontSizeMedium), textColor: new Color('DE1738') },
         offset: 10,
