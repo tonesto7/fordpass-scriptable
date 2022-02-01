@@ -212,13 +212,16 @@ module.exports = class FPW_Tables {
     }
 
     async dataValueToString(dataValue) {
+        let result = '';
         if (dataValue === undefined || dataValue === null) {
-            return this.FPW.textMap().errorMessages.noData;
+            result = this.FPW.textMap().errorMessages.noData;
         } else if (dataValue instanceof boolean) {
-            return dataValue ? 'True' : 'False';
+            result = dataValue ? 'True' : 'False';
         } else {
-            return dataValue.toString();
+            result = dataValue.toString();
         }
+        console.log(`result: ${result}`);
+        return result;
     }
 
     async showDataWebView(title, heading, data, type = undefined) {
@@ -234,33 +237,33 @@ module.exports = class FPW_Tables {
                         for (const [i, fuse] of data.fuseResponse.fuseResponseList.entries()) {
                             if (fuse && Object.keys(fuse).length) {
                                 HTML += `<ul>`;
-                                HTML += `<li>CorrelationID: ${this.dataValueToString(fuse.oemCorrelationId)}</li>`;
-                                HTML += `<li>Created: ${this.dataValueToString(fuse.deploymentCreationDate)}</li>`;
-                                HTML += `<li>Expiration: ${this.dataValueToString(fuse.deploymentExpirationTime)}</li>`;
-                                HTML += `<li>Priority: ${this.dataValueToString(fuse.communicationPriority)}</li>`;
-                                HTML += `<li>Type: ${this.dataValueToString(fuse.type)}</li>`;
-                                HTML += `<li>Trigger: ${this.dataValueToString(fuse.triggerType)}</li>`;
-                                HTML += `<li>Inhibit Required: ${this.dataValueToString(fuse.inhibitRequired)}</li>`;
-                                HTML += `<li>Environment: ${this.dataValueToString(fuse.tmcEnvironment)}</li>`;
+                                HTML += `<li>CorrelationID: ${fuse.oemCorrelationId || this.FPW.textMap().errorMessages.noData}</li>`;
+                                HTML += `<li>Created: ${fuse.deploymentCreationDate || this.FPW.textMap().errorMessages.noData}</li>`;
+                                HTML += `<li>Expiration: ${fuse.deploymentExpirationTime || this.FPW.textMap().errorMessages.noData}</li>`;
+                                HTML += `<li>Priority: ${fuse.communicationPriority || this.FPW.textMap().errorMessages.noData}</li>`;
+                                HTML += `<li>Type: ${fuse.type || this.FPW.textMap().errorMessages.noData}</li>`;
+                                HTML += `<li>Trigger: ${fuse.triggerType || this.FPW.textMap().errorMessages.noData}</li>`;
+                                HTML += `<li>Inhibit Required: ${fuse.inhibitRequired || this.FPW.textMap().errorMessages.noData}</li>`;
+                                HTML += `<li>Environment: ${fuse.tmcEnvironment || this.FPW.textMap().errorMessages.noData}</li>`;
                                 if (fuse.latestStatus) {
                                     HTML += `<li>Latest Status:`;
                                     HTML += `    <ul>`;
-                                    HTML += `        <li>Status: ${this.dataValueToString(fuse.latestStatus.aggregateStatus)}</li>`;
-                                    HTML += `        <li>Details: ${this.dataValueToString(fuse.latestStatus.detailedStatus)}</li>`;
-                                    HTML += `        <li>DateTime: ${this.dataValueToString(fuse.latestStatus.dateTimestamp)}</li>`;
+                                    HTML += `        <li>Status: ${fuse.latestStatus.aggregateStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `        <li>Details: ${fuse.latestStatus.detailedStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `        <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.FPW.textMap().errorMessages.noData}</li>`;
                                     HTML += `    </ul>`;
                                     HTML += `</li>`;
                                 }
                                 if (fuse.packageUpdateDetails) {
                                     HTML += `<li>Package Details:`;
                                     HTML += `    <ul>`;
-                                    HTML += `        <li>WiFi Required: ${this.dataValueToString(fuse.packageUpdateDetails.wifiRequired)}</li>`;
-                                    HTML += `        <li>Priority: ${this.dataValueToString(fuse.packageUpdateDetails.packagePriority)}</li>`;
-                                    HTML += `        <li>FailedResponse: ${this.dataValueToString(fuse.packageUpdateDetails.failedOnResponse)}</li>`;
-                                    HTML += `        <li>DisplayTime: ${this.dataValueToString(fuse.packageUpdateDetails.updateDisplayTime)}</li>`;
+                                    HTML += `        <li>WiFi Required: ${fuse.packageUpdateDetails.wifiRequired || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `        <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `        <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `        <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
                                     HTML += `        <li>ReleaseNotes:`;
                                     HTML += `            <ul>`;
-                                    HTML += `                 <li>${this.dataValueToString(data.fuseResponse.languageText.Text)}</li>`;
+                                    HTML += `                 <li>${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
                                     HTML += `            </ul>`;
                                     HTML += `        </li>`;
                                     HTML += `    </ul>`;

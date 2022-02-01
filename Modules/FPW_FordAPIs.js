@@ -124,7 +124,7 @@ module.exports = class FPW_FordAPIs {
                 }
             }
         } catch (e) {
-            this.FPW.logger(`fetchToken() Error: ${e}`, true);
+            this.FPW.logInfo(`fetchToken() Error: ${e}`);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -171,7 +171,7 @@ module.exports = class FPW_FordAPIs {
                 await this.fetchToken();
             }
         } catch (e) {
-            this.FPW.logger(`refreshToken() Error: ${e}`, true);
+            this.FPW.logInfo(`refreshToken() Error: ${e}`);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -421,7 +421,7 @@ module.exports = class FPW_FordAPIs {
                 return true;
             }
         } catch (e) {
-            this.FPW.logger(`queryFordPassPrefs() Error: ${e}`, true);
+            this.FPW.logInfo(`queryFordPassPrefs() Error: ${e}`);
             return false;
         }
     }
@@ -504,7 +504,7 @@ module.exports = class FPW_FordAPIs {
             }
             return data;
         } catch (e) {
-            this.FPW.logger(`makeFordRequest(${desc}) Error: ${e}`, true);
+            this.FPW.logInfo(`makeFordRequest(${desc}) Error: ${e}`);
             return this.FPW.textMap().errorMessages.unknownError;
         }
     }
@@ -889,7 +889,7 @@ module.exports = class FPW_FordAPIs {
                 if (wasError) {
                     if (errMsg) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
-                        this.FPW.logger(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
+                        this.FPW.logInfo(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
                     }
                     if (outMsg.message !== '') {
                         await this.FPW.Alerts.showAlert(outMsg.title, outMsg.message);
@@ -916,7 +916,7 @@ module.exports = class FPW_FordAPIs {
                     }
                 }
             } catch (e) {
-                this.FPW.logger(`sendVehicleCmd() Catch Error: ${e}`, true);
+                this.FPW.logInfo(`sendVehicleCmd() Catch Error: ${e}`);
                 return;
             }
         }

@@ -1,7 +1,5 @@
 const fm = FileManager.iCloud();
 const FPW_WidgetHelpers = importModule(fm.joinPath(fm.documentsDirectory(), 'FPWModules') + '/FPW_Widgets_Helpers.js');
-let WIDGET_FONT = 'SF UI Display';
-let WIDGET_FONT_BOLD = 'SF UI Display Bold';
 
 module.exports = class FPW_Widgets_Medium {
     constructor(FPW) {
@@ -25,7 +23,6 @@ module.exports = class FPW_Widgets_Medium {
 
     async simpleWidget(vData) {
         console.log(`createWidgetSimple(medium) called for ${vData.vin}`);
-        let vehicleData = vData;
         const wSize = 'medium';
 
         // Defines the Widget Object
@@ -39,15 +36,31 @@ module.exports = class FPW_Widgets_Medium {
             // let paddingLeft = Math.round(width * 0.055);
             let paddingLeft = 4;
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            vData.deepSleepMode = true;
+            vData.firmwareUpdating = true;
+            const hasStatusMsg = await this.hasStatusMsg(vData);
 
             //************************
             //* TOP ROW CONTAINER
             //************************
             // const leftColumn = await this.WidgetHelpers.createColumn(widget, {})
-            const topRowContainer = await this.WidgetHelpers.createRow(widget, { size: new Size(Math.round(width * 1), Math.round(height * 0.25)) });
+            // const topRowContainer = await this.WidgetHelpers.createRow(widget, { size: new Size(Math.round(width * 1), Math.round(height * 0.2)) });
+
+            //***********************************
+            //* MIDDLE ROW CONTAINER
+            //***********************************
+            let middleRowContainer = await this.WidgetHelpers.createRow(widget, {
+                /*size: new Size(Math.round(width * 1), Math.round(height * 0.8))*/
+            });
+
+            // ****************************************
+            // * LEFT BODY COLUMN CONTAINER
+            // ****************************************
+            let leftContainer = await this.WidgetHelpers.createColumn(middleRowContainer, { size: new Size(Math.round(width * 0.5), Math.round(height * 0.6)) });
+            leftContainer.addSpacer();
 
             // Vehicle Title
-            const vehicleNameContainer = await this.WidgetHelpers.createRow(topRowContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+            const vehicleNameContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
             let vehicleNameStr = vData.info.vehicle.vehicleType || '';
 
             let vehicleNameSize = 24;
@@ -56,17 +69,6 @@ module.exports = class FPW_Widgets_Medium {
             }
             await this.WidgetHelpers.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.FPW.colorMap.normalText, '*rightAlignText': null });
             vehicleNameContainer.addSpacer();
-
-            //***********************************
-            //* MIDDLE ROW CONTAINER
-            //***********************************
-            let middleRowContainer = await this.WidgetHelpers.createRow(widget, { size: new Size(Math.round(width * 1), Math.round(height * 0.5)) });
-
-            // ****************************************
-            // * LEFT BODY COLUMN CONTAINER
-            // ****************************************
-            let leftContainer = await this.WidgetHelpers.createColumn(middleRowContainer, { size: new Size(Math.round(width * 0.5), Math.round(height * 0.5)) });
-            leftContainer.addSpacer();
 
             // Range and Odometer
             let miContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
@@ -93,64 +95,70 @@ module.exports = class FPW_Widgets_Medium {
                 miContainer.addText('Error Getting Range Data');
             }
 
-            // Car Status box
-            let carStatusContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0] });
-            leftContainer.addSpacer();
-
-            let carStatusBox = await this.WidgetHelpers.createRow(carStatusContainer, { '*setPadding': [3, 3, 3, 3], '*centerAlignContent': null, cornerRadius: 4, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)) });
-            try {
-                const doorsLocked = vData.lockStatus === 'LOCKED';
-                await this.WidgetHelpers.createText(carStatusBox, `${doorsLocked ? 'Locked' : 'Unlocked'}`, { font: doorsLocked ? Font.systemFont(10) : Font.semiboldSystemFont(10), textColor: doorsLocked ? this.FPW.colorMap.normalText : this.FPW.colorMap.openColor, textOpacity: 0.7 });
-                carStatusBox.addSpacer(5);
-            } catch (e) {
-                console.error(e.message);
-                carStatusBox.addText(`Lock Status Failed`);
-            }
-
             // Vehicle Location Row
-            leftContainer.addSpacer();
-            const locationContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 16, 0] });
+            const locationContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [16, paddingLeft, 16, 0], '*topAlignContent': null });
             let url = (await this.FPW.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
             let locationStr = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(locationContainer, locationStr, { url: url, font: Font.systemFont(11), textColor: this.FPW.colorMap.normalText, lineLimit: 2, minimumScaleFactor: 0.9, textOpacity: 0.5 });
+            await this.WidgetHelpers.createText(locationContainer, locationStr, { url: url, font: Font.systemFont(13), textColor: this.FPW.colorMap.normalText, lineLimit: 2, minimumScaleFactor: 0.7, textOpacity: 0.9 });
+
+            leftContainer.addSpacer();
 
             //***********************************
             //* RIGHT BODY CONTAINER
             //***********************************
 
-            const rightContainer = await this.WidgetHelpers.createColumn(middleRowContainer, { '*setPadding': [0, paddingLeft, 0, 0], size: new Size(Math.round(width * 0.5), Math.round(height * 0.5)), '*centerAlignContent': null });
+            const rightContainer = await this.WidgetHelpers.createColumn(middleRowContainer, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.5), Math.round(height * 0.7)), '*bottomAlignContent': null });
             rightContainer.addSpacer();
 
             // Vehicle Image Container
-            const carImageContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 6, 0, paddingLeft], '*bottomAlignContent': null });
+            let imgWidth = Math.round(width * 0.4);
+            let imgHeight = Math.round(height * 0.5);
+            const carImageContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0], '*bottomAlignContent': null });
+            carImageContainer.addSpacer();
+            await this.WidgetHelpers.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), resizable: true });
+            carImageContainer.addSpacer();
 
-            let canvasWidth = Math.round(width * 0.4);
-            let canvasHeight = Math.round(height * 0.55);
+            // Creates the Door, Locks, and Window Status indicators.
+            let carStatusContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0] });
+            carStatusContainer.addSpacer();
 
-            // let image = await this.getCarCanvasImage(data, canvasWidth, canvasHeight, 0.95);
-            await this.WidgetHelpers.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(canvasWidth, canvasHeight - 20), resizable: true });
+            let carStatusBox = await this.WidgetHelpers.createRow(carStatusContainer, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null, cornerRadius: 10, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)), size: new Size(Math.round(width * 0.3), Math.round(height * 0.15)) });
+            try {
+                const doorsLocked = vData.lockStatus === 'LOCKED';
+                let lockImgFile = await this.FPW.Files.getImage(doorsLocked ? 'lock_2_blue.png' : 'unlock_2_red.png');
+                await this.WidgetHelpers.createImage(carStatusBox, lockImgFile, { imageSize: new Size(Math.round(width * 0.1), Math.round(height * 0.1)), '*leftAlignImage': null, resizable: true });
+                // carStatusBox.addSpacer();
+                let windowsOpen = await this.FPW.getOpenItems(vData.statusWindows);
+                let windImgFile = await this.FPW.Files.getImage(windowsOpen.length ? 'window_2_red.png' : 'window_2_blue.png');
+                await this.WidgetHelpers.createImage(carStatusBox, windImgFile, { imageSize: new Size(Math.round(width * 0.1), Math.round(height * 0.15)), '*leftAlignImage': null, resizable: true });
 
-            // Creates the Door/Window Status Message
-            await this.createDoorWindowText(rightContainer, vData);
+                let doorsOpen = await this.FPW.getOpenItems(vData.statusDoors);
+                let doorImgFile = await this.FPW.Files.getImage(doorsOpen.length ? 'door_2_red.png' : 'door_2_blue.png');
+                await this.WidgetHelpers.createImage(carStatusBox, doorImgFile, { imageSize: new Size(Math.round(width * 0.1), Math.round(height * 0.15)), '*leftAlignImage': null, resizable: true, url: await this.FPW.buildCallbackUrl({ test: 'test', test2: 'test2' }) });
+                // await this.WidgetHelpers.createText(carStatusBox, `${doorsLocked ? 'Locked' : 'Unlocked'}`, { font: doorsLocked ? Font.systemFont(10) : Font.semiboldSystemFont(10), textColor: doorsLocked ? this.FPW.colorMap.normalText : this.FPW.colorMap.openColor, textOpacity: 0.7 });
+
+                // carStatusBox.addSpacer();
+            } catch (e) {
+                console.error(e.message);
+                carStatusBox.addText(`Lock Status Failed`);
+            }
+            carStatusContainer.addSpacer();
+            // rightContainer.addSpacer();
 
             //**************************
             //* BOTTOM ROW CONTAINER
             //**************************
-            const bottomRowContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [5, 0, 5, 0], '*bottomAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.25)) });
+            if (hasStatusMsg) {
+                let statusRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*topAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.1)) });
+                await this.createStatusElement(statusRow, vData, 2, wSize);
+                statusRow.addSpacer();
+            }
 
-            const bottomRowColumn = await this.WidgetHelpers.createColumn(bottomRowContainer, {});
-
-            let statusRow = await this.WidgetHelpers.createRow(bottomRowColumn, { '*setPadding': [0, 0, 0, 0], '*bottomAlignContent': null });
-            await this.createStatusElement(statusRow, vehicleData, wSize);
-
-            // Timestamp Bottom Row
-            bottomRowColumn.addSpacer();
-            const timestampContainer = await this.WidgetHelpers.createRow(bottomRowColumn, { '*setPadding': [0, 0, 0, 0], '*bottomAlignContent': null });
-            // timestampContainer.addSpacer();
-            // timestampContainer.addSpacer();
-            let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : '';
-            await this.WidgetHelpers.createText(timestampContainer, refreshTime, { font: Font.semiboldSystemFont(8), textColor: this.FPW.colorMap.normalText, '*centerAlignText': null, textOpacity: 0.6 });
-            // bottomRowContainer.addSpacer();
+            // Displays the Last Vehicle Checkin Time Elapsed...
+            let timestampRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*bottomAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * hasStatusMsg ? 0.1 : 0.2)) });
+            timestampRow.addSpacer();
+            await this.createTimeStampElement(timestampRow, vData, wSize);
+            timestampRow.addSpacer();
 
             // ***************** RIGHT BODY CONTAINER END *****************
         } catch (e) {
@@ -159,14 +167,116 @@ module.exports = class FPW_Widgets_Medium {
         return widget;
     }
 
+    async detailedWidget(vData) {
+        const wSize = 'medium';
+
+        // Defines the Widget Object
+        const widget = new ListWidget();
+        widget.setPadding(0, 0, 0, 0);
+        widget.backgroundGradient = this.FPW.getBgGradient();
+        try {
+            const { width, height } = this.widgetSize[wSize];
+            // let paddingTop = Math.round(height * 0.09);
+            let paddingTop = 6;
+            // let paddingLeft = Math.round(width * 0.055);
+            let paddingLeft = 6;
+            console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            vData.deepSleepMode = true;
+            vData.firmwareUpdating = true;
+            const hasStatusMsg = await this.hasStatusMsg(vData);
+            //_______________________________
+            //|         |         |         |
+            //|         |         |         |
+            //|         |         |         |
+            //|_________|_________|_________|
+            //|                             |
+            //-------------------------------
+
+            let topContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 1), Math.round(height * 0.9)) });
+            //*****************
+            //* First column
+            //*****************
+            let mainCol1 = await this.WidgetHelpers.createColumn(topContainer, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 1)) });
+
+            // Vehicle Image Container
+            let imgWidth = Math.round(width * 0.33);
+            let imgHeight = Math.round(height * 0.3);
+            await this.WidgetHelpers.createVehicleImageElement(mainCol1, vData, this.FPW.sizeMap[wSize].logoSize.w, this.FPW.sizeMap[wSize].logoSize.h + 10);
+
+            // Creates the Odometer, Fuel/Battery and Distance Info Elements
+            await this.createFuelRangeElements(mainCol1, vData, wSize);
+
+            // Creates Low-Voltage Battery Voltage Elements
+            await this.createBatteryElement(mainCol1, vData, wSize);
+
+            // Creates Oil Life Elements
+            if (!vData.evVehicle) {
+                await this.createOilElement(mainCol1, vData, wSize);
+            } else {
+                // Creates EV Plug Elements
+                await this.createEvChargeElement(mainCol1, vData, wSize);
+            }
+            // widget.addSpacer();
+
+            //************************
+            //* Second column
+            //************************
+            let mainCol2 = await this.WidgetHelpers.createColumn(topContainer, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 1)) });
+
+            // Creates the Lock Status Elements
+            await this.createLockStatusElement(mainCol2, vData, wSize);
+
+            // Creates the Door Status Elements
+            await this.createDoorElement(mainCol2, vData, false, wSize);
+
+            // Create Tire Pressure Elements
+            await this.createTireElement(mainCol2, vData, wSize);
+            // mainCol2.addSpacer(0);
+            widget.addSpacer();
+
+            //****************
+            //* Third column
+            //****************
+            let mainCol3 = await this.WidgetHelpers.createColumn(topContainer, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 1)) });
+
+            // Creates the Ignition Status Elements
+            await this.createIgnitionStatusElement(mainCol3, vData, wSize);
+
+            // Creates the Door Status Elements
+            await this.createWindowElement(mainCol3, vData, false, wSize);
+
+            // Creates the Vehicle Location Element
+            await this.createPositionElement(mainCol3, vData, wSize);
+
+            //**********************
+            //* Refresh and error
+            //*********************
+
+            if (hasStatusMsg) {
+                let statusRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*centerAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.05)) });
+                await this.createStatusElement(statusRow, vData, 2, wSize);
+                statusRow.addSpacer();
+            }
+
+            // This is the row displaying the time elapsed since last vehicle checkin.
+            let timestampRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*topAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * hasStatusMsg ? 0.05 : 0.1)) });
+            timestampRow.addSpacer();
+            await this.createTimeStampElement(timestampRow, vData, wSize);
+            timestampRow.addSpacer();
+        } catch (e) {
+            this.FPW.logger(`detailedWidget(medium) Error: ${e}`, true);
+        }
+        return widget;
+    }
+
     async createDoorWindowText(srcField, vData) {
         try {
             const styles = {
-                open: { font: Font.semiboldSystemFont(10), textColor: new Color('#FF5733'), lineLimit: 1 },
-                closed: { font: Font.systemFont(10), textColor: this.FPW.colorMap.lighterText, textOpacity: 0.5, lineLimit: 1 },
+                open: { font: Font.semiboldSystemFont(10), textColor: new Color('#FF5733'), lineLimit: 2 },
+                closed: { font: Font.systemFont(10), textColor: this.FPW.colorMap.lighterText, textOpacity: 0.5, lineLimit: 2 },
             };
-            let container = await this.WidgetHelpers.createRow(srcField, { '*setPadding': [6, 0, 12, 0] });
-            container.addSpacer();
+            let container = await this.WidgetHelpers.createRow(srcField, { '*setPadding': [0, 0, 0, 0] });
+            // container.addSpacer();
             let doorsOpen = await this.FPW.getOpenItems(vData.statusDoors); //['LF', 'RR', 'HD'];
             let hoodOpen = false;
             let tailgateOpen = false;
@@ -188,111 +298,21 @@ module.exports = class FPW_Widgets_Medium {
                 openStatus += tailgateOpen ? `Tailgate Open, and ` : '';
                 openStatus += windowsOpen.length ? `${windowsOpen.length} Windows Open` : 'All Windows Closed';
             }
-            console.log(`openStatus: ${openStatus}`);
+            // console.log(`openStatus: ${openStatus}`);
             const alertStatus = Object.keys(doorsOpen).length > 0 || Object.keys(windowsOpen).length > 0 || hoodOpen || tailgateOpen;
             await this.WidgetHelpers.createText(container, openStatus, alertStatus ? styles.open : styles.closed);
-            container.addSpacer();
+            // container.addSpacer();
         } catch (err) {
             this.FPW.logError(`createDoorWindowText(medium) ${err}`);
         }
         return srcField;
     }
 
-    async detailedWidget(vData) {
-        let vehicleData = vData;
-        const wSize = 'medium';
-
-        // Defines the Widget Object
-        const widget = new ListWidget();
-        widget.backgroundGradient = this.FPW.getBgGradient();
+    async createRangeElements(srcField, vData, wSize = 'medium') {
         try {
-            let mainStack = widget.addStack();
-            mainStack.layoutVertically();
-            mainStack.setPadding(0, 0, 0, 0);
-            let contentStack = mainStack.addStack();
-            contentStack.layoutHorizontally();
-
-            //*****************
-            //* First column
-            //*****************
-            let mainCol1 = await this.WidgetHelpers.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
-
-            // Vehicle Logo
-            await this.WidgetHelpers.createVehicleImageElement(mainCol1, vehicleData, this.FPW.sizeMap[wSize].logoSize.w, this.FPW.sizeMap[wSize].logoSize.h);
-
-            // Creates the Odometer, Fuel/Battery and Distance Info Elements
-            await this.createFuelRangeElements(mainCol1, vehicleData, wSize);
-
-            // Creates Low-Voltage Battery Voltage Elements
-            await this.createBatteryElement(mainCol1, vehicleData, wSize);
-
-            // Creates Oil Life Elements
-            if (!vehicleData.evVehicle) {
-                await this.createOilElement(mainCol1, vehicleData, wSize);
-            } else {
-                // Creates EV Plug Elements
-                await this.createEvChargeElement(mainCol1, vehicleData, wSize);
-            }
-
-            contentStack.addSpacer();
-
-            //************************
-            //* Second column
-            //************************
-            let mainCol2 = await this.WidgetHelpers.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
-
-            // Creates the Lock Status Elements
-            await this.createLockStatusElement(mainCol2, vehicleData, wSize);
-
-            // Creates the Door Status Elements
-            await this.createDoorElement(mainCol2, vehicleData, false, wSize);
-
-            // Create Tire Pressure Elements
-            await this.createTireElement(mainCol2, vehicleData, wSize);
-
-            // mainCol2.addSpacer(0);
-
-            contentStack.addSpacer();
-
-            //****************
-            //* Third column
-            //****************
-            let mainCol3 = await this.WidgetHelpers.createColumn(contentStack, { '*setPadding': [0, 0, 0, 0] });
-
-            // Creates the Ignition Status Elements
-            await this.createIgnitionStatusElement(mainCol3, vehicleData, wSize);
-
-            // Creates the Door Status Elements
-            await this.createWindowElement(mainCol3, vehicleData, false, wSize);
-
-            // Creates the Vehicle Location Element
-            await this.createPositionElement(mainCol3, vehicleData, wSize);
-
-            // mainCol3.addSpacer();
-
-            contentStack.addSpacer();
-
-            //**********************
-            //* Refresh and error
-            //*********************
-
-            let statusRow = await this.WidgetHelpers.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
-            await this.createStatusElement(statusRow, vehicleData, wSize);
-
-            // This is the row displaying the time elapsed since last vehicle checkin.
-            let timestampRow = await this.WidgetHelpers.createRow(mainStack, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-            await this.createTimeStampElement(timestampRow, vehicleData, wSize);
-        } catch (e) {
-            this.FPW.logger(`detailedWidget(medium) Error: ${e}`, true);
-        }
-        return widget;
-    }
-
-    async createRangeElements(srcField, vehicleData, wSize = 'medium') {
-        try {
-            const isEV = vehicleData.evVehicle === true;
-            let lvlValue = !isEV ? (vehicleData.fuelLevel ? vehicleData.fuelLevel : 0) : vehicleData.evBatteryLevel ? vehicleData.evBatteryLevel : 0;
-            let dteValue = !isEV ? (vehicleData.distanceToEmpty ? vehicleData.distanceToEmpty : null) : vehicleData.evDistanceToEmpty ? vehicleData.evDistanceToEmpty : null;
+            const isEV = vData.evVehicle === true;
+            let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
+            let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
             let dtePostfix = isEV ? 'Range' : 'to E';
             let distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
             let distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
@@ -302,7 +322,7 @@ module.exports = class FPW_Widgets_Medium {
 
             // Fuel/Battery Level BAR
             let barRow = await this.WidgetHelpers.createRow(elemCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-            await this.WidgetHelpers.createImage(barRow, await this.WidgetHelpers.createProgressBar(lvlValue ? lvlValue : 50, vehicleData, wSize), { '*centerAlignImage': null, imageSize: new Size(this.FPW.sizeMap[wSize].barGauge.w, this.FPW.sizeMap[wSize].barGauge.h + 3) });
+            await this.WidgetHelpers.createImage(barRow, await this.WidgetHelpers.createProgressBar(lvlValue ? lvlValue : 50, vData, wSize), { '*centerAlignImage': null, imageSize: new Size(this.FPW.sizeMap[wSize].barGauge.w, this.FPW.sizeMap[wSize].barGauge.h + 3) });
 
             // Distance/Range to Empty
             let dteRow = await this.WidgetHelpers.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
@@ -310,23 +330,23 @@ module.exports = class FPW_Widgets_Medium {
             await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
-            this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
+            this.FPW.logger(`createRangeElements() Error: ${e}`, true);
         }
     }
 
-    async createFuelRangeElements(srcField, vehicleData, wSize = 'medium') {
+    async createFuelRangeElements(srcField, vData, wSize = 'medium') {
         try {
-            const isEV = vehicleData.evVehicle === true;
-            let lvlValue = !isEV ? (vehicleData.fuelLevel ? vehicleData.fuelLevel : 0) : vehicleData.evBatteryLevel ? vehicleData.evBatteryLevel : 0;
-            let dteValue = !isEV ? (vehicleData.distanceToEmpty ? vehicleData.distanceToEmpty : null) : vehicleData.evDistanceToEmpty ? vehicleData.evDistanceToEmpty : null;
+            const isEV = vData.evVehicle === true;
+            let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
+            let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
             let dtePostfix = isEV ? 'Range' : 'to E';
             let distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
             let distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
             // console.log('isEV: ' + isEV);
-            // console.log(`fuelLevel: ${vehicleData.fuelLevel}`);
-            // console.log(`distanceToEmpty: ${vehicleData.distanceToEmpty}`);
-            // console.log(`evBatteryLevel: ${vehicleData.evBatteryLevel}`);
-            // console.log('evDistanceToEmpty: ' + vehicleData.evDistanceToEmpty);
+            // console.log(`fuelLevel: ${vData.fuelLevel}`);
+            // console.log(`distanceToEmpty: ${vData.distanceToEmpty}`);
+            // console.log(`evBatteryLevel: ${vData.evBatteryLevel}`);
+            // console.log('evDistanceToEmpty: ' + vData.evDistanceToEmpty);
             // console.log(`lvlValue: ${lvlValue}`);
             // console.log(`dteValue: ${dteValue}`);
 
@@ -335,7 +355,7 @@ module.exports = class FPW_Widgets_Medium {
 
             // Fuel/Battery Level BAR
             let barRow = await this.WidgetHelpers.createRow(elemCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-            await this.WidgetHelpers.createImage(barRow, await this.WidgetHelpers.createProgressBar(lvlValue ? lvlValue : 50, vehicleData, wSize), { '*centerAlignImage': null, imageSize: new Size(this.FPW.sizeMap[wSize].barGauge.w, this.FPW.sizeMap[wSize].barGauge.h + 3) });
+            await this.WidgetHelpers.createImage(barRow, await this.WidgetHelpers.createProgressBar(lvlValue ? lvlValue : 50, vData, wSize), { '*centerAlignImage': null, imageSize: new Size(this.FPW.sizeMap[wSize].barGauge.w, this.FPW.sizeMap[wSize].barGauge.h + 3) });
 
             // Distance to Empty
             let dteRow = await this.WidgetHelpers.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
@@ -347,14 +367,14 @@ module.exports = class FPW_Widgets_Medium {
         }
     }
 
-    async createBatteryElement(srcField, vehicleData, wSize = 'medium') {
+    async createBatteryElement(srcField, vData, wSize = 'medium') {
         try {
             let elem = await this.WidgetHelpers.createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
             await this.WidgetHelpers.createTitle(elem, 'batteryStatus', wSize, this.FPW.isSmallDisplay || wSize === 'small');
             elem.addSpacer(2);
-            let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
+            let value = vData.batteryLevel ? `${vData.batteryLevel}V` : 'N/A';
             // console.log(`batteryLevel: ${value}`);
-            let lowBattery = vehicleData.batteryStatus === 'STATUS_LOW' ? true : false;
+            let lowBattery = vData.batteryStatus === 'STATUS_LOW' ? true : false;
             await this.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
@@ -385,12 +405,12 @@ module.exports = class FPW_Widgets_Medium {
         }
     }
 
-    async createEvChargeElement(srcField, vehicleData, wSize = 'medium') {
+    async createEvChargeElement(srcField, vData, wSize = 'medium') {
         try {
             let elem = await this.WidgetHelpers.createRow(srcField, { '*layoutHorizontally': null });
             await this.WidgetHelpers.createTitle(elem, 'evChargeStatus', wSize, this.FPW.isSmallDisplay || wSize === 'small');
             elem.addSpacer(2);
-            let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : this.FPW.textMap().errorMessages.noData;
+            let value = vData.evChargeStatus ? `${vData.evChargeStatus}` : this.FPW.textMap().errorMessages.noData;
             // console.log(`battery charge: ${value}`);
             await this.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
             srcField.addSpacer(3);
@@ -612,15 +632,15 @@ module.exports = class FPW_Widgets_Medium {
         }
     }
 
-    async createPositionElement(srcField, vehicleData, wSize = 'medium') {
+    async createPositionElement(srcField, vData, wSize = 'medium') {
         try {
             let offset = 0;
             let titleFld = await this.WidgetHelpers.createRow(srcField);
             await this.WidgetHelpers.createTitle(titleFld, 'position', wSize);
 
             let dataFld = await this.WidgetHelpers.createRow(srcField);
-            let url = (await this.FPW.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vehicleData.latitude},${vehicleData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vehicleData.info.vehicle.nickName)}&ll=${vehicleData.latitude},${vehicleData.longitude}`;
-            let value = vehicleData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vehicleData.position}`) : this.FPW.textMap().errorMessages.noData;
+            let url = (await this.FPW.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
+            let value = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.FPW.textMap().errorMessages.noData;
             await this.WidgetHelpers.createText(dataFld, value, { url: url, font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
             srcField.addSpacer(offset);
         } catch (e) {
@@ -628,7 +648,7 @@ module.exports = class FPW_Widgets_Medium {
         }
     }
 
-    async createLockStatusElement(srcField, vehicleData, wSize = 'medium') {
+    async createLockStatusElement(srcField, vData, wSize = 'medium') {
         try {
             const styles = {
                 unlocked: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
@@ -639,26 +659,26 @@ module.exports = class FPW_Widgets_Medium {
             await this.WidgetHelpers.createTitle(titleFld, 'lockStatus', wSize);
             titleFld.addSpacer(2);
             let dataFld = await this.WidgetHelpers.createRow(srcField);
-            let value = vehicleData.lockStatus ? vehicleData.lockStatus.toLowerCase().charAt(0).toUpperCase() + vehicleData.lockStatus.toLowerCase().slice(1) : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(dataFld, value, vehicleData.lockStatus !== undefined && vehicleData.lockStatus === 'LOCKED' ? styles.locked : styles.unlocked);
+            let value = vData.lockStatus ? vData.lockStatus.toLowerCase().charAt(0).toUpperCase() + vData.lockStatus.toLowerCase().slice(1) : this.FPW.textMap().errorMessages.noData;
+            await this.WidgetHelpers.createText(dataFld, value, vData.lockStatus !== undefined && vData.lockStatus === 'LOCKED' ? styles.locked : styles.unlocked);
             srcField.addSpacer(offset);
         } catch (e) {
             this.FPW.logger(`createLockStatusElement() Error: ${e}`, true);
         }
     }
 
-    async createIgnitionStatusElement(srcField, vehicleData, wSize = 'medium') {
+    async createIgnitionStatusElement(srcField, vData, wSize = 'medium') {
         try {
             const styles = {
                 on: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
                 off: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
             };
-            let remStartOn = vehicleData.remoteStartStatus && vehicleData.remoteStartStatus.running ? true : false;
+            let remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
             let status = '';
             if (remStartOn) {
                 status = `Remote Start (ON)`;
-            } else if (vehicleData.ignitionStatus !== undefined) {
-                status = vehicleData.ignitionStatus.charAt(0).toUpperCase() + vehicleData.ignitionStatus.slice(1); //vehicleData.ignitionStatus.toUpperCase();
+            } else if (vData.ignitionStatus !== undefined) {
+                status = vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1); //vData.ignitionStatus.toUpperCase();
             } else {
                 this.FPW.textMap().errorMessages.noData;
             }
@@ -667,18 +687,18 @@ module.exports = class FPW_Widgets_Medium {
             await this.WidgetHelpers.createTitle(titleFld, 'ignitionStatus', wSize);
             titleFld.addSpacer(2);
             let dataFld = await this.WidgetHelpers.createRow(srcField);
-            await this.WidgetHelpers.createText(dataFld, status, vehicleData.ignitionStatus !== undefined && (vehicleData.ignitionStatus === 'On' || vehicleData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
+            await this.WidgetHelpers.createText(dataFld, status, vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
             srcField.addSpacer(offset);
         } catch (e) {
             this.FPW.logger(`createIgnitionStatusElement() Error: ${e}`, true);
         }
     }
 
-    async createTimeStampElement(stk, vehicleData, wSize = 'medium') {
+    async createTimeStampElement(stk, vData, wSize = 'medium') {
         try {
             // stk.setPadding(topOffset, leftOffset, bottomOffset, rightOffset);
             // Creates the Refresh Label to show when the data was last updated from Ford
-            let refreshTime = vehicleData.lastRefreshElapsed ? vehicleData.lastRefreshElapsed : this.FPW.textMap().UIValues.unknown;
+            let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : this.FPW.textMap().UIValues.unknown;
             await this.WidgetHelpers.createText(stk, 'Updated: ' + refreshTime, { font: Font.mediumSystemFont(8), textColor: Color.lightGray(), lineLimit: 1 });
             return stk;
         } catch (e) {
@@ -710,12 +730,12 @@ module.exports = class FPW_Widgets_Medium {
                 // }
                 if (cnt < maxMsgs && vData.deepSleepMode) {
                     stk.addSpacer(cnt > 0 ? 5 : 0);
-                    await this.WidgetHelpers.createText(stk, `\u2022 Deep Sleep Mode`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), lineLimit: 1 });
+                    await this.WidgetHelpers.createText(stk, `\u2022 Deep Sleep Mode`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: Color.orange(), '*leftAlignText': null, lineLimit: 1 });
                     cnt++;
                 }
                 if (cnt < maxMsgs && vData.firmwareUpdating) {
                     stk.addSpacer(cnt > 0 ? 5 : 0);
-                    await this.WidgetHelpers.createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: Color.green(), lineLimit: 1 });
+                    await this.WidgetHelpers.createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: Color.green(), '*leftAlignText': null, lineLimit: 1 });
                     cnt++;
                 }
                 if (cnt < maxMsgs && this.FPW.getStateVal('updateAvailable') === true) {
@@ -725,9 +745,9 @@ module.exports = class FPW_Widgets_Medium {
                 }
             }
             if (!this.hasStatusMsg()) {
-                await this.WidgetHelpers.createText(stk, `     `, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+                await this.WidgetHelpers.createText(stk, `     `, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
             }
-            return stk;
+            // return stk;
         } catch (e) {
             this.FPW.logger(`createStatusElement() Error: ${e}`, true);
         }

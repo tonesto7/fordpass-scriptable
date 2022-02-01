@@ -161,7 +161,7 @@ module.exports = class FPW_Widgets_Helpers {
     async createVehicleImageElement(srcField, vData, width, height, angle = 4) {
         let logoRow = await this.createRow(srcField, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
         if (vData.info !== undefined && vData.info.vehicle !== undefined) {
-            await this.createImage(logoRow, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, angle), { imageSize: new Size(width, height), '*centerAlignImage': null });
+            await this.createImage(logoRow, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, angle), { imageSize: new Size(width, height), '*centerAlignImage': null, resizable: true });
             srcField.addSpacer(3);
         }
     }

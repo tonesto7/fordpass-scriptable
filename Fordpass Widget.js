@@ -61,17 +61,18 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/01/26, 6:00 pm';
+const SCRIPT_TS = '2022/01/31, 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
 //* Customize Widget Options
 //******************************************************************
+//test
 const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
-    screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
+    screenShotMode: true, // Places a dummy address in the widget for anonymous screenshots.
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     tirePressureThresholds: {
@@ -133,6 +134,8 @@ class Widget {
         lightText: Color.dynamic(Color.darkGray(), Color.lightGray()),
         openColor: new Color('#FF5733'),
         closedColor: new Color('#5A65C0'),
+        orangeColor: new Color('#FF6700'),
+        redColor: new Color('#DE1738'),
         textBlack: '#000000',
         textWhite: '#EDEDED',
         backColor: darkMode ? '#111111' : '#FFFFFF', // Background Color'
@@ -202,22 +205,22 @@ class Widget {
             },
         },
         large: {
-            titleFontSize: isSmallDisplay ? 9 : 10,
-            fontSizeSmall: isSmallDisplay ? 8 : 10,
-            fontSizeMedium: isSmallDisplay ? 9 : 11,
-            fontSizeBig: isSmallDisplay ? 12 : 12,
+            titleFontSize: isSmallDisplay ? 12 : 12,
+            fontSizeSmall: isSmallDisplay ? 14 : 14,
+            fontSizeMedium: isSmallDisplay ? 16 : 16,
+            fontSizeBig: isSmallDisplay ? 18 : 18,
             barGauge: {
-                w: isSmallDisplay ? 80 : 80,
+                w: isSmallDisplay ? 300 : 300,
                 h: isSmallDisplay ? 15 : 17,
                 fs: isSmallDisplay ? 8 : 10,
             },
             logoSize: {
-                w: isSmallDisplay ? 85 : 85,
-                h: isSmallDisplay ? 45 : 45,
+                w: isSmallDisplay ? 160 : 160,
+                h: isSmallDisplay ? 84.7 : 84.7,
             },
             iconSize: {
-                w: isSmallDisplay ? 11 : 11,
-                h: isSmallDisplay ? 11 : 11,
+                w: isSmallDisplay ? 12 : 12,
+                h: isSmallDisplay ? 12 : 12,
             },
         },
         extraLarge: {
@@ -226,17 +229,17 @@ class Widget {
             fontSizeMedium: 11,
             fontSizeBig: 12,
             barGauge: {
-                w: isSmallDisplay ? 80 : 80,
+                w: isSmallDisplay ? 300 : 300,
                 h: isSmallDisplay ? 15 : 17,
                 fs: isSmallDisplay ? 8 : 10,
             },
             logoSize: {
-                w: 85,
-                h: 45,
+                w: 160,
+                h: 84.7,
             },
             iconSize: {
-                w: 11,
-                h: 11,
+                w: 12,
+                h: 12,
             },
         },
     };
@@ -270,11 +273,11 @@ class Widget {
         this.deviceModel = Device.model();
         this.deviceSystemVersion = Device.systemVersion();
         this.widgetConfig = widgetConfig;
-        if (config.runsInApp) {
-            this.Timers = this.moduleLoader('Timers');
-            this.Alerts = this.moduleLoader('Alerts');
-            this.Notifications = this.moduleLoader('Notifications');
-        }
+        // if (config.runsInApp) {
+        this.Timers = this.moduleLoader('Timers');
+        this.Alerts = this.moduleLoader('Alerts');
+        this.Notifications = this.moduleLoader('Notifications');
+        // }
         // this.ShortcutParser = this.moduleLoader('ShortcutParser');
         this.Files = this.moduleLoader('Files');
         this.FordAPI = this.moduleLoader('FordAPIs');
@@ -314,21 +317,31 @@ class Widget {
             let fordData = widgetConfig.testMode ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget();
             if (fordData === null) return;
             if (config.runsInWidget) {
-                // await this.logInfo('(generateWidget) Running in Widget...');
-                await this.generateWidget(runningWidgetSize, fordData);
-                // await this.testWidget(fordData);
+                if (args.widgetParameter) {
+                    await this.generateWidget(args.widgetParameter, fordData);
+                } else {
+                    await this.generateWidget(runningWidgetSize, fordData);
+                }
             } else if (config.runsInApp || config.runsFromHomeScreen) {
-                // Show alert with current data (if running script in app)
                 if (args.shortcutParameter) {
                     // Create a parser function...
                     await Speech.speak(await this.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
+                } else if (args.queryParameters && Object.keys(args.queryParameters).length > 0) {
+                    console.log(JSON.stringify(args.queryParameters));
+                    this.Alerts.showAlert('Params Received', JSON.stringify(args.queryParameters));
                 } else {
-                    let w = await this.generateWidget('medium', fordData);
-                    w.presentMedium();
-                    let w2 = await this.generateWidget('small', fordData);
-                    w2.presentSmall();
+                    // let w = await this.generateWidget('medium', fordData);
+                    // await w.presentMedium();
+                    // let w2 = await this.generateWidget('small', fordData);
+                    // await w2.presentSmall();
+                    // let w3 = await this.generateWidget('smallSimple', fordData);
+                    // await w3.presentSmall();
+                    let w4 = await this.generateWidget('mediumSimple', fordData);
+                    await w4.presentMedium();
+                    let w5 = await this.generateWidget('large', fordData);
+                    await w5.presentLarge();
 
-                    await this.Tables.MainPage.createMainPage();
+                    // await this.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -407,20 +420,35 @@ class Widget {
             switch (size) {
                 case 'small':
                     mod = await this.moduleLoader('Widgets_Small');
-                    widget = await mod.createWidget(data);
+                    widget = await mod.createWidget(data, 'detailed');
+                    break;
+                case 'smallSimple':
+                    mod = await this.moduleLoader('Widgets_Small');
+                    widget = await mod.createWidget(data, 'simple');
                     break;
                 case 'large':
                     mod = await this.moduleLoader('Widgets_Large');
-                    widget = await mod.createWidget(data);
+                    widget = await mod.createWidget(data, 'detailed');
+                    break;
+                case 'largeSimple':
+                    mod = await this.moduleLoader('Widgets_Large');
+                    widget = await mod.createWidget(data, 'simple');
                     break;
                 case 'extraLarge':
                     mod = await this.moduleLoader('Widgets_ExtraLarge');
-                    widget = await mod.createWidget(data);
+                    widget = await mod.createWidget(data, 'detailed');
                     break;
-
+                case 'medium':
+                    mod = await this.moduleLoader('Widgets_Medium');
+                    widget = await mod.createWidget(data, 'detailed');
+                    break;
+                case 'mediumSimple':
+                    mod = await this.moduleLoader('Widgets_Medium');
+                    widget = await mod.createWidget(data, 'simple');
+                    break;
                 default:
                     mod = await this.moduleLoader('Widgets_Medium');
-                    widget = await mod.createWidget(data);
+                    widget = await mod.createWidget(data, 'detailed');
                     break;
             }
             if (widget === null) {
@@ -630,10 +658,26 @@ class Widget {
      * @param  {any} name
      * @return {void}@memberof Widget
      */
-    runScript(name) {
+    runScript(name, params = {}) {
         let callback = new CallbackURL('scriptable:///run');
         callback.addParameter('scriptName', name);
+        if (params && Object.keys(params).length > 0) {
+            for (let key in params) {
+                callback.addParameter(key, params[key]);
+            }
+        }
         callback.open();
+    }
+
+    async buildCallbackUrl(params = {}) {
+        let callback = new CallbackURL(URLScheme.forRunningScript());
+
+        if (params && Object.keys(params).length > 0) {
+            for (let key in params) {
+                callback.addParameter(key, params[key]);
+            }
+        }
+        return callback.getURL();
     }
 
     /**
@@ -1603,7 +1647,7 @@ async function logError(msg, saveToLog = true) {
 // try {
 if (await validateModules()) {
     const wc = new Widget();
-    wc.run();
+    await wc.run();
 }
 // } catch (error) {
 // logError(`Error: ${error}`);
