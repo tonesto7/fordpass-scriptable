@@ -173,7 +173,7 @@ module.exports = class FPW_Widgets_Medium {
 
         // Defines the Widget Object
         const widget = new ListWidget();
-        widget.setPadding(0, 0, 0, 0);
+
         widget.backgroundGradient = this.FPW.getBgGradient();
         try {
             const { width, height } = this.widgetSize[wSize];
@@ -182,23 +182,17 @@ module.exports = class FPW_Widgets_Medium {
             // let paddingLeft = Math.round(width * 0.055);
             let paddingLeft = 4;
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            widget.setPadding(paddingTop, paddingLeft, 0, 0);
             vData.deepSleepMode = true;
             vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
-
+            const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
             //************************
             //* TOP ROW CONTAINER
             //************************
             let topRowContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
-
-            // ****************************************
-            // * LEFT BODY COLUMN CONTAINER
-            // ****************************************
-            let leftContainer = await this.WidgetHelpers.createColumn(topRowContainer, { size: new Size(Math.round(width * 0.5), Math.round(height * 0.6)) });
-            leftContainer.addSpacer();
-
             // Vehicle Title
-            const vehicleNameContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+            const vehicleNameContainer = await this.WidgetHelpers.createRow(topRowContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
             let vehicleNameStr = vData.info.vehicle.vehicleType || '';
 
             let vehicleNameSize = 24;
@@ -207,6 +201,13 @@ module.exports = class FPW_Widgets_Medium {
             }
             await this.WidgetHelpers.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.FPW.colorMap.normalText, '*rightAlignText': null });
             vehicleNameContainer.addSpacer();
+
+            let bodyContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
+            // ****************************************
+            // * LEFT BODY COLUMN CONTAINER
+            // ****************************************
+            let leftContainer = await this.WidgetHelpers.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+            leftContainer.addSpacer();
 
             // Range and Odometer
             let miContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
@@ -245,30 +246,76 @@ module.exports = class FPW_Widgets_Medium {
             //* RIGHT BODY CONTAINER
             //***********************************
 
-            const rightContainer = await this.WidgetHelpers.createColumn(topRowContainer, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.5), Math.round(height * 0.7)), '*bottomAlignContent': null });
+            const rightContainer = await this.WidgetHelpers.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
             rightContainer.addSpacer();
 
             // Vehicle Image Container
-            let imgWidth = Math.round(width * 0.4);
-            let imgHeight = Math.round(height * 0.5);
-            const carImageContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0], '*bottomAlignContent': null });
+            let imgWidth = Math.round(width * 0.35);
+            let imgHeight = Math.round(height * 0.4);
+            const carImageContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
             carImageContainer.addSpacer();
-            await this.WidgetHelpers.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), resizable: true });
+            await this.WidgetHelpers.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), '*rightAlignImage': null, resizable: true });
             carImageContainer.addSpacer();
 
             // Creates the Door, Locks, and Window Status indicators.
             let controlsContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
             controlsContainer.addSpacer();
 
-            let controlsBox = await this.WidgetHelpers.createRow(controlsContainer, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null, cornerRadius: 10, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)), size: new Size(Math.round(width * 0.9), 40) });
-            controlsContainer.addSpacer();
-            // rightContainer.addSpacer();
+            //*****************************
+            //* COMMAND BUTTONS CONTAINER
+            //*****************************
+            let buttonRow = await this.WidgetHelpers.createRow(controlsContainer, { '*setPadding': [0, 0, 0, Math.round(width * 0.05)], '*topAlignContent': null, spacing: 10 });
+            const btnSize = 24;
+            const buttons = [{
+                    show: caps && caps.includes('REMOTE_START'),
+                    icon: {
+                        image: SFSymbol.named('power.circle').image,
+                        opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'start_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    },
+                    // label: {
+                    //     text: 'Start',
+                    //     opts: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: !runStatus || runStatus === 'Off' ? this.FPW.colorMap.closedColor : this.FPW.colorMap.openColor, '*centerAlignText': null },
+                    // },
+                },
 
+                {
+                    show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
+                    icon: {
+                        image: SFSymbol.named('lock.fill').image,
+                        opts: { url: await this.FPW.buildCallbackUrl({ command: 'lock_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    },
+                    // label: {
+                    //     text: doorsLocked ? 'Unlock' : 'Locked',
+                    //     opts: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: doorsLocked ? this.FPW.colorMap.closedColor : this.FPW.colorMap.openColor, '*centerAlignText': null },
+                    // },
+                },
+
+                {
+                    show: caps && caps.includes('REMOTE_PANIC_ALARM'),
+                    icon: {
+                        image: SFSymbol.named('bell.and.waveform.fill').image,
+                        opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    },
+                    // label: {
+                    //     text: 'Horn/Lights',
+                    //     opts: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.closedColor, '*centerAlignText': null },
+                    // },
+                },
+            ];
+
+            let buttonsToShow = buttons.filter((btn) => btn.show === true);
+            const boxHeight = 40;
+            buttonRow.size = new Size(Math.round(width * (0.2 * buttonsToShow.length)), boxHeight);
+            for (const [i, btn] of buttonsToShow.entries()) {
+                await this.buttonRowBuilder(buttonRow, Math.round(width * 0.2), Math.round(buttonsToShow.length / 100), boxHeight, btn.icon, btn.label);
+            }
+
+            // controlsContainer.addSpacer();
             //**************************
             //* BOTTOM ROW CONTAINER
             //**************************
             // if (hasStatusMsg) {
-            //     let statusRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*topAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.1)) });
+            //     let statusRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*centerAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.1)) });
             //     await this.createStatusElement(statusRow, vData, 2, wSize);
             //     statusRow.addSpacer();
             // }
@@ -284,6 +331,21 @@ module.exports = class FPW_Widgets_Medium {
             this.FPW.logger(`simpleWidget(medium) Error: ${e}`, true);
         }
         return widget;
+    }
+
+    async buttonRowBuilder(srcElem, elemWidth, widthPerc, elemHeight, icon, label) {
+        let btnCol = await this.WidgetHelpers.createColumn(srcElem, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 8, borderWidth: 2, borderColor: this.FPW.colorMap.normalText });
+        btnCol.addSpacer();
+        const btnImgRow = await this.WidgetHelpers.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
+        btnImgRow.addSpacer();
+
+        await this.WidgetHelpers.createImage(btnImgRow, icon.image, icon.opts);
+        btnImgRow.addSpacer();
+        // const btnLblRow = await this.WidgetHelpers.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
+        // btnLblRow.addSpacer();
+        // await this.WidgetHelpers.createText(btnLblRow, label.text, label.opts);
+        // btnLblRow.addSpacer();
+        btnCol.addSpacer();
     }
 
     async detailedWidget(vData) {
@@ -789,8 +851,8 @@ module.exports = class FPW_Widgets_Medium {
     async createIgnitionStatusElement(srcField, vData, wSize = 'medium') {
         try {
             const styles = {
-                on: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
-                off: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
+                on: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.openColor },
+                off: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.closedColor },
             };
             let remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
             let status = '';

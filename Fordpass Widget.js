@@ -224,14 +224,14 @@ class Widget {
             },
         },
         extraLarge: {
-            titleFontSize: 10,
-            fontSizeSmall: 10,
-            fontSizeMedium: 11,
-            fontSizeBig: 12,
+            titleFontSize: 15,
+            fontSizeSmall: 11,
+            fontSizeMedium: 13,
+            fontSizeBig: 17,
             barGauge: {
-                w: isSmallDisplay ? 300 : 300,
-                h: isSmallDisplay ? 15 : 17,
-                fs: isSmallDisplay ? 8 : 10,
+                w: 300,
+                h: 20,
+                fs: 14,
             },
             logoSize: {
                 w: 160,

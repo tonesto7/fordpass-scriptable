@@ -9,3 +9,4 @@ all_data.json
 ota.json
 userdata.json
 .DS_Store
+node_modules/

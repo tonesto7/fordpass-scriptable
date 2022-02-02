@@ -1,0 +1,12 @@
+{
+    "name": "fordpass-scriptable",
+    "version": "1.0.0",
+    "eslintConfig": {
+        "extends": "@scriptable-ios"
+    },
+    "devDependencies": {
+        "@scriptable-ios/eslint-config": "latest",
+        "@types/scriptable-ios": "latest",
+        "eslint": "latest"
+    }
+}
