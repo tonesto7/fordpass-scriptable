@@ -500,21 +500,21 @@ module.exports = class FPW_Widgets_ExtraLarge {
             // Row 1 - Tire Pressure Left Front amd Right Front
             let col1 = await this.WidgetHelpers.createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
             let col1row1 = await this.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-            await this.WidgetHelpers.createText(col1row1, vData.tirePressure.leftFront, this.FPW.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
+            await this.WidgetHelpers.createText(col1row1, vData.tirePressure.leftFront, this.WidgetHelpers.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
             let col2 = await this.WidgetHelpers.createColumn(dataFld, { '*setPadding': [0, 3, 0, 3] });
             let col2row1 = await this.WidgetHelpers.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
             await this.WidgetHelpers.createText(col2row1, '|', styles.normTxt);
             let col3 = await this.WidgetHelpers.createColumn(dataFld, { '*setPadding': [0, 0, 0, 0] });
             let col3row1 = await this.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-            await this.WidgetHelpers.createText(col3row1, vData.tirePressure.rightFront, this.FPW.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
+            await this.WidgetHelpers.createText(col3row1, vData.tirePressure.rightFront, this.WidgetHelpers.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
 
             // Row 2 - Tire Pressure Left Rear amd Right Rear
             let col1row2 = await this.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
-            await this.WidgetHelpers.createText(col1row2, vData.tirePressure.leftRear, this.FPW.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
+            await this.WidgetHelpers.createText(col1row2, vData.tirePressure.leftRear, this.WidgetHelpers.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
             let col2row2 = await this.WidgetHelpers.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
             await this.WidgetHelpers.createText(col2row2, '|', styles.normTxt);
             let col3row2 = await this.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
-            await this.WidgetHelpers.createText(col3row2, vData.tirePressure.rightRear, this.FPW.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
+            await this.WidgetHelpers.createText(col3row2, vData.tirePressure.rightRear, this.WidgetHelpers.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
 
             srcField.addSpacer(offset);
         } catch (e) {

@@ -205,22 +205,22 @@ class Widget {
             },
         },
         large: {
-            titleFontSize: isSmallDisplay ? 12 : 12,
-            fontSizeSmall: isSmallDisplay ? 14 : 14,
-            fontSizeMedium: isSmallDisplay ? 16 : 16,
-            fontSizeBig: isSmallDisplay ? 18 : 18,
+            titleFontSize: 15,
+            fontSizeSmall: 11,
+            fontSizeMedium: 13,
+            fontSizeBig: 17,
             barGauge: {
-                w: isSmallDisplay ? 300 : 300,
-                h: isSmallDisplay ? 15 : 17,
-                fs: isSmallDisplay ? 8 : 10,
+                w: 300,
+                h: 20,
+                fs: 14,
             },
             logoSize: {
-                w: isSmallDisplay ? 160 : 160,
-                h: isSmallDisplay ? 84.7 : 84.7,
+                w: 160,
+                h: 84.7,
             },
             iconSize: {
-                w: isSmallDisplay ? 12 : 12,
-                h: isSmallDisplay ? 12 : 12,
+                w: 12,
+                h: 12,
             },
         },
         extraLarge: {
@@ -336,10 +336,12 @@ class Widget {
                     // await w2.presentSmall();
                     // let w3 = await this.generateWidget('smallSimple', fordData);
                     // await w3.presentSmall();
-                    let w4 = await this.generateWidget('mediumSimple', fordData);
-                    await w4.presentMedium();
-                    let w5 = await this.generateWidget('large', fordData);
-                    await w5.presentLarge();
+                    // let w4 = await this.generateWidget('mediumSimple', fordData);
+                    // await w4.presentMedium();
+                    // let w5 = await this.generateWidget('large', fordData);
+                    // await w5.presentLarge();
+                    let w6 = await this.generateWidget('mediumSimpleButtons', fordData);
+                    await w6.presentMedium();
 
                     // await this.Tables.MainPage.createMainPage();
                 }
@@ -445,6 +447,10 @@ class Widget {
                 case 'mediumSimple':
                     mod = await this.moduleLoader('Widgets_Medium');
                     widget = await mod.createWidget(data, 'simple');
+                    break;
+                case 'mediumSimpleButtons':
+                    mod = await this.moduleLoader('Widgets_Medium');
+                    widget = await mod.createWidget(data, 'simpleButtons');
                     break;
                 default:
                     mod = await this.moduleLoader('Widgets_Medium');
@@ -808,50 +814,6 @@ class Widget {
     async getPosition(data) {
         let loc = await Location.reverseGeocode(parseFloat(data.gps.latitude), parseFloat(data.gps.longitude));
         return `${loc[0].postalAddress.street}, ${loc[0].postalAddress.city}`;
-    }
-
-    /**
-     * @description
-     * @param  {any} pressure
-     * @param  {any} unit
-     * @param  {string} [wSize='medium']
-     * @return
-     * @memberof Widget
-     */
-    getTirePressureStyle(pressure, unit, wSize = 'medium') {
-        const styles = {
-            normTxt: { font: Font.mediumSystemFont(this.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.colorMap.textColor2) },
-            statLow: { font: Font.heavySystemFont(this.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF6700') },
-            statCrit: { font: Font.heavySystemFont(this.sizeMap[wSize].fontSizeMedium), textColor: new Color('#DE1738') },
-            offset: 10,
-        };
-        let p = parseFloat(pressure);
-        if (p) {
-            let low = this.widgetConfig.tirePressureThresholds.low;
-            let crit = this.widgetConfig.tirePressureThresholds.critical;
-            switch (unit) {
-                case 'kPa':
-                    low = this.widgetConfig.tirePressureThresholds.low / 0.145377;
-                    crit = this.widgetConfig.tirePressureThresholds.critical / 0.145377;
-                    break;
-                case 'bar':
-                    low = this.widgetConfig.tirePressureThresholds.low / 14.5377;
-                    crit = this.widgetConfig.tirePressureThresholds.critical / 14.5377;
-                    break;
-            }
-            if (p >= 0 && p > crit && p < low) {
-                // console.log(`Tire Pressure Low(${low}) | Pressure ${p} | Func: (${p >= 0 && p > crit && p < low})`);
-                return styles.statLow;
-            } else if (p >= 0 && p < crit) {
-                // console.log(`Tire Pressure Critical(${crit}) | Pressure ${p} | Func: (${p < crit && p >= 0})`);
-                return styles.statCrit;
-            } else {
-                // console.log(`Tire Pressure | Pressure ${p}`);
-                return styles.normTxt;
-            }
-        }
-        // console.log(`Tire Pressure | Pressure ${p}`);
-        return styles.normTxt;
     }
 
     /**

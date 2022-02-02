@@ -89,7 +89,7 @@ module.exports = class FPW_Widgets_Helpers {
     async createTitle(headerField, titleText, wSize = 'medium', hideTitleForSmall = false) {
         let titleParams = titleText.split('||');
         let icon = this.FPW.iconMap[titleParams[0]];
-        let titleStack = await headerField.addStack({ '*centerAlignContent': null });
+        let titleStack = await headerField.addStack({ '*bottomAlignContent': null });
         if (icon !== undefined) {
             titleStack.layoutHorizontally();
             let imgFile = await this.FPW.Files.getImage(icon.toString());
@@ -99,7 +99,7 @@ module.exports = class FPW_Widgets_Helpers {
         if (titleText && titleText.length && !hideTitleForSmall) {
             titleStack.addSpacer(2);
             let title = titleParams.length > 1 ? this.FPW.textMap(titleParams[1]).elemHeaders[titleParams[0]] : this.FPW.textMap().elemHeaders[titleParams[0]];
-            await this.createText(titleStack, title + ':', { font: Font.boldSystemFont(this.FPW.sizeMap[wSize].titleFontSize), textColor: new Color(this.FPW.colorMap.textColor1), lineLimit: 1 });
+            await this.createText(titleStack, title + ':', { font: Font.boldSystemFont(this.FPW.sizeMap[wSize].titleFontSize), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
         }
     }
 
@@ -182,5 +182,49 @@ module.exports = class FPW_Widgets_Helpers {
             distanceUnit: distanceUnit, // unit of length
             dteInfo: dteValueRaw ? `${Math.round(dteValueRaw * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData,
         };
+    }
+
+    /**
+     * @description
+     * @param  {any} pressure
+     * @param  {any} unit
+     * @param  {string} [wSize='medium']
+     * @return
+     * @memberof Widget
+     */
+    getTirePressureStyle(pressure, unit, wSize = 'medium') {
+        const styles = {
+            normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText },
+            statLow: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.orangeColor },
+            statCrit: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.redColor },
+            offset: 10,
+        };
+        let p = parseFloat(pressure);
+        if (p) {
+            let low = this.widgetConfig.tirePressureThresholds.low;
+            let crit = this.widgetConfig.tirePressureThresholds.critical;
+            switch (unit) {
+                case 'kPa':
+                    low = this.widgetConfig.tirePressureThresholds.low / 0.145377;
+                    crit = this.widgetConfig.tirePressureThresholds.critical / 0.145377;
+                    break;
+                case 'bar':
+                    low = this.widgetConfig.tirePressureThresholds.low / 14.5377;
+                    crit = this.widgetConfig.tirePressureThresholds.critical / 14.5377;
+                    break;
+            }
+            if (p >= 0 && p > crit && p < low) {
+                // console.log(`Tire Pressure Low(${low}) | Pressure ${p} | Func: (${p >= 0 && p > crit && p < low})`);
+                return styles.statLow;
+            } else if (p >= 0 && p < crit) {
+                // console.log(`Tire Pressure Critical(${crit}) | Pressure ${p} | Func: (${p < crit && p >= 0})`);
+                return styles.statCrit;
+            } else {
+                // console.log(`Tire Pressure | Pressure ${p}`);
+                return styles.normTxt;
+            }
+        }
+        // console.log(`Tire Pressure | Pressure ${p}`);
+        return styles.normTxt;
     }
 };
