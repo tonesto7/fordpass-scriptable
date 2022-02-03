@@ -321,7 +321,7 @@ module.exports = class FPW_Widgets_Small {
     async createBatteryElement(srcField, vehicleData, wSize = 'medium') {
         try {
             let elem = await this.WidgetHelpers.createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
-            await this.WidgetHelpers.createTitle(elem, 'batteryStatus', wSize, this.FPW.isSmallDisplay || wSize === 'small');
+            await this.WidgetHelpers.createTitle(elem, 'batteryStatus', wSize, true, this.FPW.isSmallDisplay || wSize === 'small');
             elem.addSpacer(2);
             let value = vehicleData.batteryLevel ? `${vehicleData.batteryLevel}V` : 'N/A';
             // console.log(`batteryLevel: ${value}`);
@@ -341,7 +341,7 @@ module.exports = class FPW_Widgets_Small {
                 critical: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color('#DE1738'), lineLimit: 1 },
             };
             let elem = await this.WidgetHelpers.createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
-            await this.WidgetHelpers.createTitle(elem, 'oil', wSize, this.FPW.isSmallDisplay || wSize === 'small');
+            await this.WidgetHelpers.createTitle(elem, 'oil', wSize, true, this.FPW.isSmallDisplay || wSize === 'small');
             elem.addSpacer(2);
             let txtStyle = styles.normal;
             if (vData.oilLife && vData.oilLife >= 0 && vData.oilLife <= 25) {
@@ -359,7 +359,7 @@ module.exports = class FPW_Widgets_Small {
     async createEvChargeElement(srcField, vehicleData, wSize = 'medium') {
         try {
             let elem = await this.WidgetHelpers.createRow(srcField, { '*layoutHorizontally': null });
-            await this.WidgetHelpers.createTitle(elem, 'evChargeStatus', wSize, this.FPW.isSmallDisplay || wSize === 'small');
+            await this.WidgetHelpers.createTitle(elem, 'evChargeStatus', wSize, true, this.FPW.isSmallDisplay || wSize === 'small');
             elem.addSpacer(2);
             let value = vehicleData.evChargeStatus ? `${vehicleData.evChargeStatus}` : this.FPW.textMap().errorMessages.noData;
             // console.log(`battery charge: ${value}`);
@@ -381,7 +381,7 @@ module.exports = class FPW_Widgets_Small {
 
             let offset = styles.offset;
             let titleFld = await this.WidgetHelpers.createRow(srcField);
-            await this.WidgetHelpers.createTitle(titleFld, 'doors', wSize);
+            await this.WidgetHelpers.createTitle(titleFld, 'doors', wSize, true);
 
             // Creates the first row of status elements for LF and RF
             let dataRow1Fld = await this.WidgetHelpers.createRow(srcField);
@@ -489,7 +489,7 @@ module.exports = class FPW_Widgets_Small {
 
             let offset = styles.offset;
             let titleFld = await this.WidgetHelpers.createRow(srcField);
-            await this.WidgetHelpers.createTitle(titleFld, 'windows', wSize);
+            await this.WidgetHelpers.createTitle(titleFld, 'windows', wSize, true);
 
             // Creates the first row of status elements for LF and RF
             let dataRow1Fld = await this.WidgetHelpers.createRow(srcField);

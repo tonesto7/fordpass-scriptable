@@ -16,49 +16,42 @@ module.exports = class FPW_Widgets_Medium {
         switch (style) {
             case 'simple':
                 return await this.simpleWidget(vData);
-            case 'simpleButtons':
-                return await this.simpleButtonWidget(vData);
             default:
                 return await this.detailedWidget(vData);
         }
     }
 
     async simpleWidget(vData) {
-        console.log(`createWidgetSimple(medium) called...`);
+        console.log(`simpleWidget(medium) called...`);
         const wSize = 'medium';
 
         // Defines the Widget Object
         const widget = new ListWidget();
-        widget.setPadding(0, 0, 0, 0);
+
         widget.backgroundGradient = this.FPW.getBgGradient();
         try {
             const { width, height } = this.widgetSize[wSize];
-            // let paddingTop = Math.round(height * 0.09);
-            let paddingTop = 5;
-            // let paddingLeft = Math.round(width * 0.055);
-            let paddingLeft = 4;
+            let paddingTop = Math.round(height * 0.05);
+            // let paddingTop = 5;
+            let paddingLeft = Math.round(width * 0.03);
+            // let paddingLeft = 4;
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            widget.setPadding(paddingTop, paddingLeft, 0, 0);
             vData.deepSleepMode = true;
             vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
-
+            const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
             //************************
             //* TOP ROW CONTAINER
             //************************
-            // const leftColumn = await this.WidgetHelpers.createColumn(widget, {})
-            // const topRowContainer = await this.WidgetHelpers.createRow(widget, { size: new Size(Math.round(width * 1), Math.round(height * 0.2)) });
+            // let topRowContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
 
-            //***********************************
-            //* MIDDLE ROW CONTAINER
-            //***********************************
-            let topRowContainer = await this.WidgetHelpers.createRow(widget, {});
-
+            let bodyContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
             // ****************************************
             // * LEFT BODY COLUMN CONTAINER
             // ****************************************
-            let leftContainer = await this.WidgetHelpers.createColumn(topRowContainer, { size: new Size(Math.round(width * 0.5), Math.round(height * 0.6)) });
+            let leftContainer = await this.WidgetHelpers.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
             leftContainer.addSpacer();
-
             // Vehicle Title
             const vehicleNameContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
             let vehicleNameStr = vData.info.vehicle.vehicleType || '';
@@ -69,7 +62,6 @@ module.exports = class FPW_Widgets_Medium {
             }
             await this.WidgetHelpers.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.FPW.colorMap.normalText, '*rightAlignText': null });
             vehicleNameContainer.addSpacer();
-
             // Range and Odometer
             let miContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
 
@@ -96,149 +88,10 @@ module.exports = class FPW_Widgets_Medium {
             }
 
             // Vehicle Location Row
-            const locationContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [16, paddingLeft, 16, 0], '*topAlignContent': null });
+            const locationContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [10, paddingLeft, 0, 0], '*topAlignContent': null });
             let url = (await this.FPW.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
             let locationStr = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(locationContainer, locationStr, { url: url, font: Font.systemFont(13), textColor: this.FPW.colorMap.normalText, lineLimit: 2, minimumScaleFactor: 0.7, textOpacity: 0.9 });
-
-            leftContainer.addSpacer();
-
-            //***********************************
-            //* RIGHT BODY CONTAINER
-            //***********************************
-
-            const rightContainer = await this.WidgetHelpers.createColumn(topRowContainer, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.5), Math.round(height * 0.7)), '*bottomAlignContent': null });
-            rightContainer.addSpacer();
-
-            // Vehicle Image Container
-            let imgWidth = Math.round(width * 0.4);
-            let imgHeight = Math.round(height * 0.5);
-            const carImageContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0], '*bottomAlignContent': null });
-            carImageContainer.addSpacer();
-            await this.WidgetHelpers.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), resizable: true });
-            carImageContainer.addSpacer();
-
-            // Creates the Door, Locks, and Window Status indicators.
-            let carStatusContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0] });
-            carStatusContainer.addSpacer();
-
-            let carStatusBox = await this.WidgetHelpers.createRow(carStatusContainer, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null, cornerRadius: 10, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)), size: new Size(Math.round(width * 0.3), Math.round(height * 0.15)) });
-            try {
-                const doorsLocked = vData.lockStatus === 'LOCKED';
-                let lockImgFile = await this.FPW.Files.getImage(doorsLocked ? 'lock_2_blue.png' : 'unlock_2_red.png');
-                await this.WidgetHelpers.createImage(carStatusBox, lockImgFile, { imageSize: new Size(Math.round(width * 0.1), Math.round(height * 0.1)), '*leftAlignImage': null, resizable: true });
-                // carStatusBox.addSpacer();
-                let windowsOpen = await this.FPW.getOpenItems(vData.statusWindows);
-                let windImgFile = await this.FPW.Files.getImage(windowsOpen.length ? 'window_2_red.png' : 'window_2_blue.png');
-                await this.WidgetHelpers.createImage(carStatusBox, windImgFile, { imageSize: new Size(Math.round(width * 0.1), Math.round(height * 0.15)), '*leftAlignImage': null, resizable: true });
-
-                let doorsOpen = await this.FPW.getOpenItems(vData.statusDoors);
-                let doorImgFile = await this.FPW.Files.getImage(doorsOpen.length ? 'door_2_red.png' : 'door_2_blue.png');
-                await this.WidgetHelpers.createImage(carStatusBox, doorImgFile, { imageSize: new Size(Math.round(width * 0.1), Math.round(height * 0.15)), '*leftAlignImage': null, resizable: true, url: await this.FPW.buildCallbackUrl({ test: 'test', test2: 'test2' }) });
-                // await this.WidgetHelpers.createText(carStatusBox, `${doorsLocked ? 'Locked' : 'Unlocked'}`, { font: doorsLocked ? Font.systemFont(10) : Font.semiboldSystemFont(10), textColor: doorsLocked ? this.FPW.colorMap.normalText : this.FPW.colorMap.openColor, textOpacity: 0.7 });
-
-                // carStatusBox.addSpacer();
-            } catch (e) {
-                console.error(e.message);
-                carStatusBox.addText(`Lock Status Failed`);
-            }
-            carStatusContainer.addSpacer();
-            // rightContainer.addSpacer();
-
-            //**************************
-            //* BOTTOM ROW CONTAINER
-            //**************************
-            if (hasStatusMsg) {
-                let statusRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*topAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.1)) });
-                await this.createStatusElement(statusRow, vData, 2, wSize);
-                statusRow.addSpacer();
-            }
-
-            // Displays the Last Vehicle Checkin Time Elapsed...
-            let timestampRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*bottomAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * hasStatusMsg ? 0.1 : 0.2)) });
-            timestampRow.addSpacer();
-            await this.createTimeStampElement(timestampRow, vData, wSize);
-            timestampRow.addSpacer();
-
-            // ***************** RIGHT BODY CONTAINER END *****************
-        } catch (e) {
-            this.FPW.logger(`simpleWidget(medium) Error: ${e}`, true);
-        }
-        return widget;
-    }
-
-    async simpleButtonWidget(vData) {
-        console.log(`simpleButtonWidget(medium) called...`);
-        const wSize = 'medium';
-
-        // Defines the Widget Object
-        const widget = new ListWidget();
-
-        widget.backgroundGradient = this.FPW.getBgGradient();
-        try {
-            const { width, height } = this.widgetSize[wSize];
-            // let paddingTop = Math.round(height * 0.09);
-            let paddingTop = 5;
-            // let paddingLeft = Math.round(width * 0.055);
-            let paddingLeft = 4;
-            console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
-            widget.setPadding(paddingTop, paddingLeft, 0, 0);
-            vData.deepSleepMode = true;
-            vData.firmwareUpdating = true;
-            const hasStatusMsg = await this.hasStatusMsg(vData);
-            const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
-            //************************
-            //* TOP ROW CONTAINER
-            //************************
-            let topRowContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
-            // Vehicle Title
-            const vehicleNameContainer = await this.WidgetHelpers.createRow(topRowContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
-            let vehicleNameStr = vData.info.vehicle.vehicleType || '';
-
-            let vehicleNameSize = 24;
-            if (vehicleNameStr.length >= 10) {
-                vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
-            }
-            await this.WidgetHelpers.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.FPW.colorMap.normalText, '*rightAlignText': null });
-            vehicleNameContainer.addSpacer();
-
-            let bodyContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
-            // ****************************************
-            // * LEFT BODY COLUMN CONTAINER
-            // ****************************************
-            let leftContainer = await this.WidgetHelpers.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
-            leftContainer.addSpacer();
-
-            // Range and Odometer
-            let miContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
-
-            try {
-                const { isEV, lvlValue, dteValue, odometerVal, dtePostfix, distanceMultiplier, distanceUnit, dteInfo } = await this.WidgetHelpers.getRangeData(vData);
-
-                // DTE Text
-                await this.WidgetHelpers.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(16), textColor: this.FPW.colorMap.normalText, textOpacity: 0.7 });
-
-                let levelContainer = await this.WidgetHelpers.createRow(miContainer, {});
-                // DTE + Level Separator
-                await this.WidgetHelpers.createText(levelContainer, ' / ', { font: Font.systemFont(14), textColor: this.FPW.colorMap.lighterText, textOpacity: 0.6 });
-                // Level Text
-                await this.WidgetHelpers.createText(levelContainer, `${lvlValue}%`, { font: Font.systemFont(16), textColor: this.FPW.colorMap.normalText, textOpacity: 0.6 });
-
-                // leftContainer.addSpacer();
-                let mileageContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0] });
-
-                // Odometer Text
-                await this.WidgetHelpers.createText(mileageContainer, `Odometer: ${odometerVal}`, { font: Font.systemFont(10), textColor: this.FPW.colorMap.normalText, textOpacity: 0.7 });
-            } catch (e) {
-                console.error(e.message);
-                miContainer.addText('Error Getting Range Data');
-            }
-
-            // Vehicle Location Row
-            const locationContainer = await this.WidgetHelpers.createRow(leftContainer, { '*setPadding': [16, paddingLeft, 16, 0], '*topAlignContent': null });
-            let url = (await this.FPW.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
-            let locationStr = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(locationContainer, locationStr, { url: url, font: Font.systemFont(13), textColor: this.FPW.colorMap.normalText, lineLimit: 2, minimumScaleFactor: 0.7, textOpacity: 0.9 });
+            await this.WidgetHelpers.createText(locationContainer, locationStr, { url: url, font: Font.body(), textColor: this.FPW.colorMap.normalText, lineLimit: 2, minimumScaleFactor: 0.7, textOpacity: 0.9 });
 
             leftContainer.addSpacer();
 
@@ -250,67 +103,27 @@ module.exports = class FPW_Widgets_Medium {
             rightContainer.addSpacer();
 
             // Vehicle Image Container
-            let imgWidth = Math.round(width * 0.35);
-            let imgHeight = Math.round(height * 0.4);
-            const carImageContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
+            let imgWidth = Math.round(width * 0.5);
+            let imgHeight = Math.round(height * 0.5);
+            const carImageContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [paddingTop, 0, 0, 0], '*centerAlignContent': null });
             carImageContainer.addSpacer();
-            await this.WidgetHelpers.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), '*rightAlignImage': null, resizable: true });
+            await this.WidgetHelpers.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { /*imageSize: new Size(imgWidth, imgHeight),*/ '*rightAlignImage': null, resizable: true });
             carImageContainer.addSpacer();
+            const doorWindStatusContainer = await this.WidgetHelpers.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0] });
+            doorWindStatusContainer.addSpacer();
+            await this.createDoorWindowText(doorWindStatusContainer, vData);
+            doorWindStatusContainer.addSpacer();
 
-            // Creates the Door, Locks, and Window Status indicators.
-            let controlsContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
-            controlsContainer.addSpacer();
+            rightContainer.addSpacer();
 
             //*****************************
             //* COMMAND BUTTONS CONTAINER
             //*****************************
-            let buttonRow = await this.WidgetHelpers.createRow(controlsContainer, { '*setPadding': [0, 0, 0, Math.round(width * 0.05)], '*topAlignContent': null, spacing: 10 });
-            const btnSize = 24;
-            const buttons = [{
-                    show: caps && caps.includes('REMOTE_START'),
-                    icon: {
-                        image: SFSymbol.named('power.circle').image,
-                        opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'start_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
-                    },
-                    // label: {
-                    //     text: 'Start',
-                    //     opts: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: !runStatus || runStatus === 'Off' ? this.FPW.colorMap.closedColor : this.FPW.colorMap.openColor, '*centerAlignText': null },
-                    // },
-                },
+            const controlsContainer = await this.WidgetHelpers.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
+            controlsContainer.addSpacer();
+            await this.WidgetHelpers.createWidgetButtonRow(controlsContainer, vData, width, 40, 24);
+            controlsContainer.addSpacer();
 
-                {
-                    show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
-                    icon: {
-                        image: SFSymbol.named('lock.fill').image,
-                        opts: { url: await this.FPW.buildCallbackUrl({ command: 'lock_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
-                    },
-                    // label: {
-                    //     text: doorsLocked ? 'Unlock' : 'Locked',
-                    //     opts: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: doorsLocked ? this.FPW.colorMap.closedColor : this.FPW.colorMap.openColor, '*centerAlignText': null },
-                    // },
-                },
-
-                {
-                    show: caps && caps.includes('REMOTE_PANIC_ALARM'),
-                    icon: {
-                        image: SFSymbol.named('bell.and.waveform.fill').image,
-                        opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
-                    },
-                    // label: {
-                    //     text: 'Horn/Lights',
-                    //     opts: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.closedColor, '*centerAlignText': null },
-                    // },
-                },
-            ];
-
-            let buttonsToShow = buttons.filter((btn) => btn.show === true);
-            const boxHeight = 40;
-            buttonRow.size = new Size(Math.round(width * (0.2 * buttonsToShow.length)), boxHeight);
-            for (const [i, btn] of buttonsToShow.entries()) {
-                await this.buttonRowBuilder(buttonRow, Math.round(width * 0.2), Math.round(buttonsToShow.length / 100), boxHeight, btn.icon, btn.label);
-            }
-
-            // controlsContainer.addSpacer();
             //**************************
             //* BOTTOM ROW CONTAINER
             //**************************
@@ -321,31 +134,14 @@ module.exports = class FPW_Widgets_Medium {
             // }
 
             // Displays the Last Vehicle Checkin Time Elapsed...
-            let timestampRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*bottomAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * hasStatusMsg ? 0.1 : 0.1)) });
-            timestampRow.addSpacer();
-            await this.createTimeStampElement(timestampRow, vData, wSize);
-            timestampRow.addSpacer();
+            let timestampRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 5, paddingLeft], '*bottomAlignContent': null });
+            await this.WidgetHelpers.createTimeStampElement(timestampRow, vData, 'center', 8);
 
             // ***************** RIGHT BODY CONTAINER END *****************
         } catch (e) {
             this.FPW.logger(`simpleWidget(medium) Error: ${e}`, true);
         }
         return widget;
-    }
-
-    async buttonRowBuilder(srcElem, elemWidth, widthPerc, elemHeight, icon, label) {
-        let btnCol = await this.WidgetHelpers.createColumn(srcElem, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 8, borderWidth: 2, borderColor: this.FPW.colorMap.normalText });
-        btnCol.addSpacer();
-        const btnImgRow = await this.WidgetHelpers.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
-        btnImgRow.addSpacer();
-
-        await this.WidgetHelpers.createImage(btnImgRow, icon.image, icon.opts);
-        btnImgRow.addSpacer();
-        // const btnLblRow = await this.WidgetHelpers.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
-        // btnLblRow.addSpacer();
-        // await this.WidgetHelpers.createText(btnLblRow, label.text, label.opts);
-        // btnLblRow.addSpacer();
-        btnCol.addSpacer();
     }
 
     async detailedWidget(vData) {
@@ -441,9 +237,7 @@ module.exports = class FPW_Widgets_Medium {
 
             // This is the row displaying the time elapsed since last vehicle checkin.
             let timestampRow = await this.WidgetHelpers.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*topAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * hasStatusMsg ? 0.05 : 0.1)) });
-            timestampRow.addSpacer();
-            await this.createTimeStampElement(timestampRow, vData, wSize);
-            timestampRow.addSpacer();
+            await this.WidgetHelpers.createTimeStampElement(timestampRow, vData, 'center', 8);
         } catch (e) {
             this.FPW.logger(`detailedWidget(medium) Error: ${e}`, true);
         }
@@ -453,7 +247,7 @@ module.exports = class FPW_Widgets_Medium {
     async createDoorWindowText(srcField, vData) {
         try {
             const styles = {
-                open: { font: Font.semiboldSystemFont(10), textColor: new Color('#FF5733'), lineLimit: 2 },
+                open: { font: Font.semiboldSystemFont(10), textColor: this.FPW.colorMap.openColor, lineLimit: 2 },
                 closed: { font: Font.systemFont(10), textColor: this.FPW.colorMap.lighterText, textOpacity: 0.5, lineLimit: 2 },
             };
             let container = await this.WidgetHelpers.createRow(srcField, { '*setPadding': [0, 0, 0, 0] });
@@ -508,7 +302,7 @@ module.exports = class FPW_Widgets_Medium {
             // Distance/Range to Empty
             let dteRow = await this.WidgetHelpers.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
             let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+            await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
             this.FPW.logger(`createRangeElements() Error: ${e}`, true);
@@ -541,7 +335,7 @@ module.exports = class FPW_Widgets_Medium {
             // Distance to Empty
             let dteRow = await this.WidgetHelpers.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
             let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+            await this.WidgetHelpers.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
             this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
@@ -551,12 +345,12 @@ module.exports = class FPW_Widgets_Medium {
     async createBatteryElement(srcField, vData, wSize = 'medium') {
         try {
             let elem = await this.WidgetHelpers.createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
-            await this.WidgetHelpers.createTitle(elem, 'batteryStatus', wSize, this.FPW.isSmallDisplay || wSize === 'small');
+            await this.WidgetHelpers.createTitle(elem, 'batteryStatus', wSize, true, this.FPW.isSmallDisplay || wSize === 'small');
             elem.addSpacer(2);
             let value = vData.batteryLevel ? `${vData.batteryLevel}V` : 'N/A';
             // console.log(`batteryLevel: ${value}`);
             let lowBattery = vData.batteryStatus === 'STATUS_LOW' ? true : false;
-            await this.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+            await this.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : this.FPW.colorMap.normalText, lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
             this.FPW.logger(`createBatteryElement() Error: ${e}`, true);
@@ -566,12 +360,12 @@ module.exports = class FPW_Widgets_Medium {
     async createOilElement(srcField, vData, wSize = 'medium') {
         try {
             const styles = {
-                normal: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 },
-                warning: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color('#FF6700'), lineLimit: 1 },
-                critical: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color('#DE1738'), lineLimit: 1 },
+                normal: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 },
+                warning: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.orangeColor, lineLimit: 1 },
+                critical: { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.redColor, lineLimit: 1 },
             };
             let elem = await this.WidgetHelpers.createRow(srcField, { '*layoutHorizontally': null, '*bottomAlignContent': null });
-            await this.WidgetHelpers.createTitle(elem, 'oil', wSize, this.FPW.isSmallDisplay || wSize === 'small');
+            await this.WidgetHelpers.createTitle(elem, 'oil', wSize, true, this.FPW.isSmallDisplay || wSize === 'small');
             elem.addSpacer(2);
             let txtStyle = styles.normal;
             if (vData.oilLife && vData.oilLife >= 0 && vData.oilLife <= 25) {
@@ -589,11 +383,11 @@ module.exports = class FPW_Widgets_Medium {
     async createEvChargeElement(srcField, vData, wSize = 'medium') {
         try {
             let elem = await this.WidgetHelpers.createRow(srcField, { '*layoutHorizontally': null });
-            await this.WidgetHelpers.createTitle(elem, 'evChargeStatus', wSize, this.FPW.isSmallDisplay || wSize === 'small');
+            await this.WidgetHelpers.createTitle(elem, 'evChargeStatus', wSize, true, this.FPW.isSmallDisplay || wSize === 'small');
             elem.addSpacer(2);
             let value = vData.evChargeStatus ? `${vData.evChargeStatus}` : this.FPW.textMap().errorMessages.noData;
             // console.log(`battery charge: ${value}`);
-            await this.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 });
+            await this.WidgetHelpers.createText(elem, value, { font: Font.regularSystemFont(this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
             srcField.addSpacer(3);
         } catch (e) {
             this.FPW.logger(`createEvChargeElement() Error: ${e}`, true);
@@ -604,9 +398,9 @@ module.exports = class FPW_Widgets_Medium {
         try {
             let that = this;
             const styles = {
-                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 1 },
-                statOpen: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-                statClosed: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText, lineLimit: 1 },
+                open: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.openColor, lineLimit: 1 },
+                closed: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.closedColor, lineLimit: 1 },
                 offset: 5,
             };
 
@@ -625,12 +419,12 @@ module.exports = class FPW_Widgets_Medium {
                     countOpen = Object.values(vData.statusDoors).filter((door) => door === true).length;
                     value = countOpen == 0 ? this.FPW.textMap().UIValues.closed : `${countOpen} ${this.FPW.textMap().UIValues.open}`;
                 }
-                await this.WidgetHelpers.createText(dataRow1Fld, value, countOpen > 0 ? styles.statOpen : styles.statClosed);
+                await this.WidgetHelpers.createText(dataRow1Fld, value, countOpen > 0 ? styles.open : styles.closed);
             } else {
                 let col1 = await this.WidgetHelpers.createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
                 let col1row1 = await this.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
                 await this.WidgetHelpers.createText(col1row1, 'LF (', styles.normTxt);
-                await this.WidgetHelpers.createText(col1row1, vData.statusDoors.driverFront ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.driverFront ? styles.statOpen : styles.statClosed);
+                await this.WidgetHelpers.createText(col1row1, vData.statusDoors.driverFront ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.driverFront ? styles.open : styles.closed);
                 await this.WidgetHelpers.createText(col1row1, ')', styles.normTxt);
 
                 let col2 = await this.WidgetHelpers.createColumn(dataRow1Fld, { '*setPadding': [0, 3, 0, 3] });
@@ -640,14 +434,14 @@ module.exports = class FPW_Widgets_Medium {
                 let col3 = await this.WidgetHelpers.createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
                 let col3row1 = await this.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
                 await this.WidgetHelpers.createText(col3row1, 'RF (', styles.normTxt);
-                await this.WidgetHelpers.createText(col3row1, vData.statusDoors.passFront ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.passFront ? styles.statOpen : styles.statClosed);
+                await this.WidgetHelpers.createText(col3row1, vData.statusDoors.passFront ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.passFront ? styles.open : styles.closed);
                 await this.WidgetHelpers.createText(col3row1, ')', styles.normTxt);
 
                 // Creates the second row of status elements for LR and RR
                 if (vData.statusDoors.leftRear !== null && vData.statusDoors.rightRear !== null) {
                     let col1row2 = await this.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
                     await this.WidgetHelpers.createText(col1row2, `LR (`, styles.normTxt);
-                    await this.WidgetHelpers.createText(col1row2, vData.statusDoors.leftRear ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.leftRear ? styles.statOpen : styles.statClosed);
+                    await this.WidgetHelpers.createText(col1row2, vData.statusDoors.leftRear ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.leftRear ? styles.open : styles.closed);
                     await this.WidgetHelpers.createText(col1row2, ')', styles.normTxt);
 
                     let col2row2 = await this.WidgetHelpers.createRow(col2, {});
@@ -655,7 +449,7 @@ module.exports = class FPW_Widgets_Medium {
 
                     let col3row2 = await this.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
                     await this.WidgetHelpers.createText(col3row2, `RR (`, styles.normTxt);
-                    await this.WidgetHelpers.createText(col3row2, vData.statusDoors.rightRear ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.rightRear ? styles.statOpen : styles.statClosed);
+                    await this.WidgetHelpers.createText(col3row2, vData.statusDoors.rightRear ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusDoors.rightRear ? styles.open : styles.closed);
                     await this.WidgetHelpers.createText(col3row2, ')', styles.normTxt);
                 }
 
@@ -663,7 +457,7 @@ module.exports = class FPW_Widgets_Medium {
                 async function getHoodStatusElem(stkElem, data, center = false) {
                     try {
                         await that.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}HD (`, styles.normTxt);
-                        await that.WidgetHelpers.createText(stkElem, data.statusDoors.hood ? that.FPW.textMap().symbols.open : that.FPW.textMap().symbols.closed, vData.statusDoors.hood ? styles.statOpen : styles.statClosed);
+                        await that.WidgetHelpers.createText(stkElem, data.statusDoors.hood ? that.FPW.textMap().symbols.open : that.FPW.textMap().symbols.closed, vData.statusDoors.hood ? styles.open : styles.closed);
                         await that.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
                     } catch (e) {
                         that.FPW.logger(`getHoodStatusElem() Error: ${e}`, true);
@@ -672,7 +466,7 @@ module.exports = class FPW_Widgets_Medium {
                 async function getTailgateStatusElem(stkElem, data, center = false) {
                     try {
                         await that.WidgetHelpers.createText(stkElem, `${center ? '       ' : ''}TG (`, styles.normTxt);
-                        await that.WidgetHelpers.createText(stkElem, data.statusDoors.tailgate ? that.FPW.textMap().symbols.open : that.FPW.textMap().symbols.closed, vData.statusDoors.tailgate ? styles.statOpen : styles.statClosed);
+                        await that.WidgetHelpers.createText(stkElem, data.statusDoors.tailgate ? that.FPW.textMap().symbols.open : that.FPW.textMap().symbols.closed, vData.statusDoors.tailgate ? styles.open : styles.closed);
                         await that.WidgetHelpers.createText(stkElem, ')', styles.normTxt);
                     } catch (e) {
                         that.FPW.logger(`getTailgateStatusElem() Error: ${e}`, true);
@@ -713,9 +507,9 @@ module.exports = class FPW_Widgets_Medium {
     async createWindowElement(srcField, vData, countOnly = false, wSize = 'medium') {
         try {
             const styles = {
-                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2) },
-                statOpen: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733') },
-                statClosed: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0') },
+                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText },
+                open: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.openColor },
+                closed: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.closedColor },
                 offset: 10,
             };
 
@@ -732,12 +526,12 @@ module.exports = class FPW_Widgets_Medium {
                     countOpen = Object.values(vData.statusWindows).filter((window) => window === true).length;
                     value = countOpen == 0 ? this.FPW.textMap().UIValues.closed : `${countOpenWindows} ${this.FPW.textMap().UIValues.open}`;
                 }
-                await this.WidgetHelpers.createText(dataRow1Fld, value, countOpen > 0 ? styles.statOpen : styles.statClosed);
+                await this.WidgetHelpers.createText(dataRow1Fld, value, countOpen > 0 ? styles.open : styles.closed);
             } else {
                 let col1 = await this.WidgetHelpers.createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
                 let col1row1 = await this.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
                 await this.WidgetHelpers.createText(col1row1, 'LF (', styles.normTxt);
-                await this.WidgetHelpers.createText(col1row1, vData.statusWindows.driverFront ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusWindows['driverFront'] ? styles.statOpen : styles.statClosed);
+                await this.WidgetHelpers.createText(col1row1, vData.statusWindows.driverFront ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusWindows['driverFront'] ? styles.open : styles.closed);
                 await this.WidgetHelpers.createText(col1row1, ')', styles.normTxt);
 
                 let col2 = await this.WidgetHelpers.createColumn(dataRow1Fld, { '*setPadding': [0, 3, 0, 3] });
@@ -747,14 +541,14 @@ module.exports = class FPW_Widgets_Medium {
                 let col3 = await this.WidgetHelpers.createColumn(dataRow1Fld, { '*setPadding': [0, 0, 0, 0] });
                 let col3row1 = await this.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
                 await this.WidgetHelpers.createText(col3row1, 'RF (', styles.normTxt);
-                await this.WidgetHelpers.createText(col3row1, vData.statusWindows['passFront'] ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusWindows['passFront'] ? styles.statOpen : styles.statClosed);
+                await this.WidgetHelpers.createText(col3row1, vData.statusWindows['passFront'] ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusWindows['passFront'] ? styles.open : styles.closed);
                 await this.WidgetHelpers.createText(col3row1, ')', styles.normTxt);
 
                 // Creates the second row of status elements for LR and RR
                 if (vData.statusWindows.driverRear !== null && vData.statusWindows.passRear !== null) {
                     let col1row2 = await this.WidgetHelpers.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
                     await this.WidgetHelpers.createText(col1row2, `LR (`, styles.normTxt);
-                    await this.WidgetHelpers.createText(col1row2, vData.statusWindows.driverRear ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusWindows.driverRear ? styles.statOpen : styles.statClosed);
+                    await this.WidgetHelpers.createText(col1row2, vData.statusWindows.driverRear ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusWindows.driverRear ? styles.open : styles.closed);
                     await this.WidgetHelpers.createText(col1row2, ')', styles.normTxt);
 
                     let col2row2 = await this.WidgetHelpers.createRow(col2, {});
@@ -762,7 +556,7 @@ module.exports = class FPW_Widgets_Medium {
 
                     let col3row2 = await this.WidgetHelpers.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
                     await this.WidgetHelpers.createText(col3row2, `RR (`, styles.normTxt);
-                    await this.WidgetHelpers.createText(col3row2, vData.statusWindows.passRear ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusWindows.passRear ? styles.statOpen : styles.statClosed);
+                    await this.WidgetHelpers.createText(col3row2, vData.statusWindows.passRear ? this.FPW.textMap().symbols.open : this.FPW.textMap().symbols.closed, vData.statusWindows.passRear ? styles.open : styles.closed);
                     await this.WidgetHelpers.createText(col3row2, ')', styles.normTxt);
                 }
 
@@ -779,7 +573,7 @@ module.exports = class FPW_Widgets_Medium {
     async createTireElement(srcField, vData, wSize = 'medium') {
         try {
             const styles = {
-                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2) },
+                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText },
             };
             let offset = 0;
             let titleFld = await this.WidgetHelpers.createRow(srcField);
@@ -822,7 +616,7 @@ module.exports = class FPW_Widgets_Medium {
             let dataFld = await this.WidgetHelpers.createRow(srcField);
             let url = (await this.FPW.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
             let value = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.FPW.textMap().errorMessages.noData;
-            await this.WidgetHelpers.createText(dataFld, value, { url: url, font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color(this.FPW.colorMap.textColor2), lineLimit: 2, minimumScaleFactor: 0.7 });
+            await this.WidgetHelpers.createText(dataFld, value, { url: url, font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText, lineLimit: 2, minimumScaleFactor: 0.7 });
             srcField.addSpacer(offset);
         } catch (e) {
             this.FPW.logger(`createPositionElement() Error: ${e}`, true);
@@ -832,8 +626,8 @@ module.exports = class FPW_Widgets_Medium {
     async createLockStatusElement(srcField, vData, wSize = 'medium') {
         try {
             const styles = {
-                unlocked: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#FF5733'), lineLimit: 1 },
-                locked: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: new Color('#5A65C0'), lineLimit: 1 },
+                unlocked: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.openColor, lineLimit: 1 },
+                locked: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.closedColor, lineLimit: 1 },
             };
             let offset = 2;
             let titleFld = await this.WidgetHelpers.createRow(srcField);
@@ -872,18 +666,6 @@ module.exports = class FPW_Widgets_Medium {
             srcField.addSpacer(offset);
         } catch (e) {
             this.FPW.logger(`createIgnitionStatusElement() Error: ${e}`, true);
-        }
-    }
-
-    async createTimeStampElement(stk, vData, wSize = 'medium') {
-        try {
-            // stk.setPadding(topOffset, leftOffset, bottomOffset, rightOffset);
-            // Creates the Refresh Label to show when the data was last updated from Ford
-            let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : this.FPW.textMap().UIValues.unknown;
-            await this.WidgetHelpers.createText(stk, 'Updated: ' + refreshTime, { font: Font.mediumSystemFont(8), textColor: Color.lightGray(), lineLimit: 1 });
-            return stk;
-        } catch (e) {
-            this.FPW.logger(`createTimeStampElement() Error: ${e}`, true);
         }
     }
 

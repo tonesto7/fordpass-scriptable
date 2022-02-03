@@ -205,12 +205,12 @@ class Widget {
             },
         },
         large: {
-            titleFontSize: 15,
-            fontSizeSmall: 11,
-            fontSizeMedium: 13,
-            fontSizeBig: 17,
+            titleFontSize: 13,
+            fontSizeSmall: 10,
+            fontSizeMedium: 12,
+            fontSizeBig: 16,
             barGauge: {
-                w: 300,
+                w: 275,
                 h: 20,
                 fs: 14,
             },
@@ -300,7 +300,7 @@ class Widget {
             const module = require(this.iCloudModuleDir + `/FPW_${moduleName}.js`);
             return new module(this);
         } catch (error) {
-            this.logError(`${moduleName} Load Error: ${error}`);
+            this.logError(`Module Loader | (${moduleName}) | Error: ${error}`);
         }
     }
 
@@ -338,10 +338,8 @@ class Widget {
                     // await w3.presentSmall();
                     // let w4 = await this.generateWidget('mediumSimple', fordData);
                     // await w4.presentMedium();
-                    // let w5 = await this.generateWidget('large', fordData);
-                    // await w5.presentLarge();
-                    let w6 = await this.generateWidget('mediumSimpleButtons', fordData);
-                    await w6.presentMedium();
+                    let w5 = await this.generateWidget('large', fordData);
+                    await w5.presentLarge();
 
                     // await this.Tables.MainPage.createMainPage();
                 }
@@ -447,10 +445,6 @@ class Widget {
                 case 'mediumSimple':
                     mod = await this.moduleLoader('Widgets_Medium');
                     widget = await mod.createWidget(data, 'simple');
-                    break;
-                case 'mediumSimpleButtons':
-                    mod = await this.moduleLoader('Widgets_Medium');
-                    widget = await mod.createWidget(data, 'simpleButtons');
                     break;
                 default:
                     mod = await this.moduleLoader('Widgets_Medium');

@@ -86,12 +86,11 @@ module.exports = class FPW_Widgets_Helpers {
         return _img;
     }
 
-    async createTitle(headerField, titleText, wSize = 'medium', hideTitleForSmall = false) {
+    async createTitle(headerField, titleText, wSize = 'medium', colon = true, hideTitleForSmall = false) {
         let titleParams = titleText.split('||');
         let icon = this.FPW.iconMap[titleParams[0]];
         let titleStack = await headerField.addStack({ '*bottomAlignContent': null });
         if (icon !== undefined) {
-            titleStack.layoutHorizontally();
             let imgFile = await this.FPW.Files.getImage(icon.toString());
             await this.createImage(titleStack, imgFile, { imageSize: new Size(this.FPW.sizeMap[wSize].iconSize.w, this.FPW.sizeMap[wSize].iconSize.h) });
         }
@@ -99,7 +98,7 @@ module.exports = class FPW_Widgets_Helpers {
         if (titleText && titleText.length && !hideTitleForSmall) {
             titleStack.addSpacer(2);
             let title = titleParams.length > 1 ? this.FPW.textMap(titleParams[1]).elemHeaders[titleParams[0]] : this.FPW.textMap().elemHeaders[titleParams[0]];
-            await this.createText(titleStack, title + ':', { font: Font.boldSystemFont(this.FPW.sizeMap[wSize].titleFontSize), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
+            await this.createText(titleStack, `${title}${colon ? ':' : ''}`, { font: Font.boldSystemFont(this.FPW.sizeMap[wSize].titleFontSize), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
         }
     }
 
@@ -226,5 +225,80 @@ module.exports = class FPW_Widgets_Helpers {
         }
         // console.log(`Tire Pressure | Pressure ${p}`);
         return styles.normTxt;
+    }
+
+    async createTimeStampElement(srcRow, vData, position = 'center', fontSize = undefined) {
+        try {
+            let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : this.FPW.textMap().UIValues.unknown;
+            if (position === 'center' || position === 'right') {
+                srcRow.addSpacer();
+            }
+            await this.createText(srcRow, 'Updated: ' + refreshTime, { font: Font.mediumSystemFont(fontSize || this.FPW.sizeMap[wSize].fontSizeSmall), textColor: this.FPW.colorMap.normalText, textOpacity: 0.6, lineLimit: 1 });
+            if (position === 'center' || position === 'left') {
+                srcRow.addSpacer();
+            }
+        } catch (e) {
+            this.FPW.logger(`createTimeStampElement() Error: ${e}`, true);
+        }
+    }
+
+    async imgBtnRowBuilder(srcRow, elemWidth, widthPerc, elemHeight, icon) {
+        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 8, borderWidth: 2, borderColor: Color.darkGray() });
+        btnCol.addSpacer(); // Pushes Button column down to help center in middle
+
+        const btnImgRow = await this.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
+        btnImgRow.addSpacer();
+        await this.createImage(btnImgRow, icon.image, icon.opts);
+        btnImgRow.addSpacer();
+        btnCol.addSpacer(); // Pushes Button column up to help center in middle
+    }
+
+    async createWidgetButtonRow(srcRow, vData, rowWidth, rowHeight = 40, btnSize = 24) {
+        const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
+        const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, 0, 0, Math.round(rowWidth * 0.05)], spacing: 10 });
+
+        const buttons = [
+            {
+                show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
+                icon: {
+                    image: SFSymbol.named('lock.fill').image,
+                    opts: { url: await this.FPW.buildCallbackUrl({ command: 'lock_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: caps && caps.includes('REMOTE_START'),
+                icon: {
+                    image: SFSymbol.named('power').image,
+                    opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'start_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: caps && caps.includes('REMOTE_PANIC_ALARM'),
+                icon: {
+                    image: SFSymbol.named('bell.and.waveform.fill').image,
+                    opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: true,
+                icon: {
+                    image: SFSymbol.named('menucard.fill').image,
+                    opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'show_menu' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: true,
+                icon: {
+                    image: await this.FPW.Files.getImage('FP_Logo.png'),
+                    opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'open_fp_app' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+        ];
+
+        let buttonsToShow = buttons.filter((btn) => btn.show === true);
+        buttonRow.size = new Size(Math.round(rowWidth * (0.2 * buttonsToShow.length)), rowHeight);
+        for (const [i, btn] of buttonsToShow.entries()) {
+            await this.imgBtnRowBuilder(buttonRow, Math.round(rowWidth * 0.2), Math.round(buttonsToShow.length / 100), rowHeight, btn.icon);
+        }
     }
 };
