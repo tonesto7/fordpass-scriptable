@@ -91,7 +91,7 @@ module.exports = class FPW_Tables_MainPage {
             );
 
             // Header Section - Row 3: Displays the Vehicle Image in center and doors on the left and windows on the right
-            const openDoors = await this.FPW.getOpenItems('windows', vData.statusDoors); //['LF', 'RR', 'HD'];
+            const openDoors = await this.FPW.getOpenItems('doors', vData.statusDoors); //['LF', 'RR', 'HD'];
             const openWindows = await this.FPW.getOpenItems('windows', vData.statusWindows); //['LF', 'RR', 'HD'];
             // console.log(`openDoors: ${JSON.stringify(openDoors)}`);
             // console.log(`openWindows: ${JSON.stringify(openWindows)}`);

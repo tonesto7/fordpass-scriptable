@@ -1,46 +1,11 @@
 module.exports = class FPW_Widgets_Helpers {
-    DeviceSize = {
-        '428x926': {
-            small: { width: 176, height: 176 },
-            medium: { width: 374, height: 176 },
-            large: { width: 374, height: 391 },
-        },
-        '390x844': {
-            small: { width: 161, height: 161 },
-            medium: { width: 342, height: 161 },
-            large: { width: 342, height: 359 },
-        },
-        '414x896': {
-            small: { width: 169, height: 169 },
-            medium: { width: 360, height: 169 },
-            large: { width: 360, height: 376 },
-        },
-        '375x812': {
-            small: { width: 155, height: 155 },
-            medium: { width: 329, height: 155 },
-            large: { width: 329, height: 345 },
-        },
-        '414x736': {
-            small: { width: 159, height: 159 },
-            medium: { width: 348, height: 159 },
-            large: { width: 348, height: 357 },
-        },
-        '375x667': {
-            small: { width: 148, height: 148 },
-            medium: { width: 322, height: 148 },
-            large: { width: 322, height: 324 },
-        },
-        '320x568': {
-            small: { width: 141, height: 141 },
-            medium: { width: 291, height: 141 },
-            large: { width: 291, height: 299 },
-        },
-    };
-
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
+        this.textMap = FPW.textMap();
+        this.iconMap = FPW.iconMap;
+        this.colorMap = FPW.colorMap;
     }
 
     async createColumn(srcField, styles = {}) {
@@ -86,13 +51,13 @@ module.exports = class FPW_Widgets_Helpers {
         return _img;
     }
 
-    async createTitle(headerField, titleText, wSize = 'medium', colon = true, hideTitleForSmall = false) {
+    async createTitle(srcElem, titleText, wSize = 'medium', colon = true, hideTitleForSmall = false) {
         let titleParams = titleText.split('||');
         let icon = this.FPW.iconMap[titleParams[0]];
-        let titleStack = await headerField.addStack({ '*bottomAlignContent': null });
+        let titleStack = await this.createRow(srcElem, { '*centerAlignContent': null });
         if (icon !== undefined) {
             let imgFile = await this.FPW.Files.getImage(icon.toString());
-            await this.createImage(titleStack, imgFile, { imageSize: new Size(this.FPW.sizeMap[wSize].iconSize.w, this.FPW.sizeMap[wSize].iconSize.h) });
+            await this.createImage(titleStack, imgFile, { imageSize: new Size(this.FPW.sizeMap[wSize].iconSize.w, this.FPW.sizeMap[wSize].iconSize.h), resizable: true });
         }
         // console.log(`titleParams(${titleText}): ${titleParams}`);
         if (titleText && titleText.length && !hideTitleForSmall) {
@@ -100,17 +65,6 @@ module.exports = class FPW_Widgets_Helpers {
             let title = titleParams.length > 1 ? this.FPW.textMap(titleParams[1]).elemHeaders[titleParams[0]] : this.FPW.textMap().elemHeaders[titleParams[0]];
             await this.createText(titleStack, `${title}${colon ? ':' : ''}`, { font: Font.boldSystemFont(this.FPW.sizeMap[wSize].titleFontSize), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
         }
-    }
-
-    getFont(fontName, fontSize) {
-        if (fontName == 'SF UI Display') {
-            return Font.systemFont(fontSize);
-        }
-
-        if (fontName == 'SF UI Display Bold') {
-            return Font.semiboldSystemFont(fontSize);
-        }
-        return new Font(fontName, fontSize);
     }
 
     async createProgressBar(percent, vData, wSize = 'medium') {
@@ -183,6 +137,109 @@ module.exports = class FPW_Widgets_Helpers {
         };
     }
 
+    async createDoorElement(srcStack, vData, wSize = 'medium', position = 'center') {
+        const styles = {
+            normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.colorMap.normalText, lineLimit: 2 },
+            open: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 2 },
+            closed: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.colorMap.closedColor, lineLimit: 2 },
+            offset: 5,
+        };
+
+        let titleRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+        if (position == 'center' || position == 'right') {
+            titleRow.addSpacer();
+        }
+        await this.createTitle(titleRow, 'doors', wSize, false);
+        if (position == 'center' || position == 'left') {
+            titleRow.addSpacer();
+        }
+        let valueRow = await this.createRow(srcStack, { '*setPadding': [3, 0, 0, 0], '*centerAlignContent': null });
+        const openDoors = await this.FPW.getOpenItems('createDoorElement2', vData.statusDoors); //['LF', 'RR', 'HD'];
+        let value = openDoors.length ? openDoors.join(', ') : 'All Closed';
+        if (position == 'center' || position == 'right') {
+            valueRow.addSpacer();
+        }
+        await this.createText(valueRow, value, openDoors.length > 0 ? styles.open : styles.closed);
+        if (position == 'center' || position == 'left') {
+            valueRow.addSpacer();
+        }
+    }
+
+    async createWindowElement(srcStack, vData, wSize = 'medium', position = 'center') {
+        const styles = {
+            normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.colorMap.normalText, lineLimit: 2 },
+            open: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 2 },
+            closed: { font: Font.heavySystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.colorMap.closedColor, lineLimit: 2 },
+            offset: 5,
+        };
+
+        let titleRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+        if (position == 'center' || position == 'right') {
+            titleRow.addSpacer();
+        }
+        await this.createTitle(titleRow, 'windows', wSize, false);
+        if (position == 'center' || position == 'left') {
+            titleRow.addSpacer();
+        }
+        let valueRow = await this.createRow(srcStack, { '*setPadding': [3, 0, 0, 0], '*centerAlignContent': null });
+        const openWindows = await this.FPW.getOpenItems('createWindowElement2', vData.statusDoors); //['LF', 'RR', 'HD'];
+        let value = openWindows.length ? openWindows.join(', ') : 'All Closed';
+        if (position == 'center' || position == 'right') {
+            valueRow.addSpacer();
+        }
+        await this.createText(valueRow, value, openWindows.length > 0 ? styles.open : styles.closed);
+        if (position == 'center' || position == 'left') {
+            valueRow.addSpacer();
+        }
+    }
+
+    async createTireElement(srcStack, vData, wSize = 'medium', position = 'center') {
+        try {
+            const styles = {
+                normTxt: { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.colorMap.normalText },
+            };
+            let titleRow = await this.createRow(srcStack);
+            let pressureUnits = await this.FPW.getSettingVal('fpPressureUnits');
+            let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, `tirePressure||${unitTxt}`, wSize, false);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+
+            let valueRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+            if (position == 'center' || position == 'right') {
+                valueRow.addSpacer();
+            }
+            // Row 1 - Tire Pressure Left Front amd Right Front
+            let col1 = await this.createColumn(valueRow, { '*setPadding': [0, 0, 0, 0] });
+            let col1row1 = await this.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col1row1, vData.tirePressure.leftFront, this.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt, wSize));
+            let col2 = await this.createColumn(valueRow, { '*setPadding': [0, 3, 0, 3] });
+            let col2row1 = await this.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col2row1, '|', styles.normTxt);
+            let col3 = await this.createColumn(valueRow, { '*setPadding': [0, 0, 0, 0] });
+            let col3row1 = await this.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col3row1, vData.tirePressure.rightFront, this.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt, wSize));
+
+            // Row 2 - Tire Pressure Left Rear amd Right Rear
+            let col1row2 = await this.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col1row2, vData.tirePressure.leftRear, this.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt, wSize));
+            let col2row2 = await this.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col2row2, '|', styles.normTxt);
+            let col3row2 = await this.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col3row2, vData.tirePressure.rightRear, this.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt, wSize));
+
+            if (position == 'center' || position == 'left') {
+                valueRow.addSpacer();
+            }
+        } catch (e) {
+            this.FPW.logger(`createTireElement() Error: ${e}`, true);
+        }
+    }
+
     /**
      * @description
      * @param  {any} pressure
@@ -229,7 +286,8 @@ module.exports = class FPW_Widgets_Helpers {
 
     async createTimeStampElement(srcRow, vData, position = 'center', fontSize = undefined) {
         try {
-            let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : this.FPW.textMap().UIValues.unknown;
+            let refreshTime = (await this.FPW.getLastRefreshElapsedString(vData)) || this.textMap.UIValues.unknown;
+            console.log(`createTimeStampElement() | refreshTime: ${JSON.stringify(refreshTime)}`);
             if (position === 'center' || position === 'right') {
                 srcRow.addSpacer();
             }
@@ -257,37 +315,36 @@ module.exports = class FPW_Widgets_Helpers {
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, 0, 0, Math.round(rowWidth * 0.05)], spacing: 10 });
 
-        const buttons = [
-            {
+        const buttons = [{
                 show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
                 icon: {
-                    image: SFSymbol.named('lock.fill').image,
+                    image: await this.FPW.Files.getImage(this.FPW.darkMode ? 'lock_btn_dark.png' : 'lock_btn_light.png'),
                     opts: { url: await this.FPW.buildCallbackUrl({ command: 'lock_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
             {
                 show: caps && caps.includes('REMOTE_START'),
                 icon: {
-                    image: SFSymbol.named('power').image,
+                    image: await this.FPW.Files.getImage(this.FPW.darkMode ? 'ignition_dark.png' : 'ignition_light.png'),
                     opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'start_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
             {
                 show: caps && caps.includes('REMOTE_PANIC_ALARM'),
                 icon: {
-                    image: SFSymbol.named('bell.and.waveform.fill').image,
+                    image: await this.FPW.Files.getImage(this.FPW.darkMode ? 'horn_lights_dark.png' : 'horn_lights_light.png'),
                     opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
             {
                 show: true,
                 icon: {
-                    image: SFSymbol.named('menucard.fill').image,
+                    image: await this.FPW.Files.getImage(this.FPW.darkMode ? 'menu_btn_dark.png' : 'menu_btn_light.png'),
                     opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'show_menu' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
             {
-                show: true,
+                show: false,
                 icon: {
                     image: await this.FPW.Files.getImage('FP_Logo.png'),
                     opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'open_fp_app' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
@@ -299,6 +356,54 @@ module.exports = class FPW_Widgets_Helpers {
         buttonRow.size = new Size(Math.round(rowWidth * (0.2 * buttonsToShow.length)), rowHeight);
         for (const [i, btn] of buttonsToShow.entries()) {
             await this.imgBtnRowBuilder(buttonRow, Math.round(rowWidth * 0.2), Math.round(buttonsToShow.length / 100), rowHeight, btn.icon);
+        }
+    }
+
+    async hasStatusMsg(vData) {
+        return vData.error || (!vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') || vData.deepSleepMode || vData.firmwareUpdating || this.FPW.getStateVal('updateAvailable') === true; //|| (!vData.evVehicle && vData.oilLow)
+    }
+
+    async createStatusElement(stk, vData, maxMsgs = 2, wSize = 'medium') {
+        try {
+            let cnt = 0;
+            const hasStatusMsg = await this.hasStatusMsg(vData);
+            // Creates Elements to display any errors in red at the bottom of the widget
+            if (vData.error) {
+                // stk.addSpacer(5);
+                await this.createText(stk, vData.error ? 'Error: ' + vData.error : '', { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: Color.red() });
+            } else {
+                if (cnt < maxMsgs && !vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') {
+                    stk.addSpacer(cnt > 0 ? 5 : 0);
+                    await this.createText(stk, `\u2022 12V Battery Low`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: Color.red(), lineLimit: 1 });
+                    cnt++;
+                }
+                // if (cnt < maxMsgs && !vData.evVehicle && vData.oilLow) {
+                //     stk.addSpacer(cnt > 0 ? 5 : 0);
+                //     await createText(stk, `\u2022 Oil Reporting Low`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: Color.red(), lineLimit: 1 });
+                //     cnt++;
+                // }
+                if (cnt < maxMsgs && vData.deepSleepMode) {
+                    stk.addSpacer(cnt > 0 ? 5 : 0);
+                    await this.createText(stk, `\u2022 Deep Sleep Mode`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: Color.orange(), lineLimit: 1 });
+                    cnt++;
+                }
+                if (cnt < maxMsgs && vData.firmwareUpdating) {
+                    stk.addSpacer(cnt > 0 ? 5 : 0);
+                    await this.createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: Color.green(), lineLimit: 1 });
+                    cnt++;
+                }
+                if (cnt < maxMsgs && this.FPW.getStateVal('updateAvailable') === true) {
+                    stk.addSpacer(cnt > 0 ? 5 : 0);
+                    await this.createText(stk, `\u2022 Script Update: v${this.FPW.getStateVal('LATEST_VERSION')}`, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: Color.orange(), lineLimit: 1 });
+                    cnt++;
+                }
+            }
+            if (!hasStatusMsg) {
+                // await this.createText(stk, `     `, { font: Font.mediumSystemFont(this.FPW.sizeMap[wSize].fontSizeMedium), textColor: this.FPW.colorMap.normalText, lineLimit: 1 });
+            }
+            return stk;
+        } catch (e) {
+            this.FPW.logger(`createStatusElement() Error: ${e}`, true);
         }
     }
 };

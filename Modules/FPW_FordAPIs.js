@@ -692,11 +692,9 @@ module.exports = class FPW_FordAPIs {
         // console.log(`Fordpass Rewards Info: ${JSON.stringify(vehicleData.fordpassRewardsInfo)}`);
 
         // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();
-
-        vehicleData.lastRefresh = this.FPW.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh);
-        vehicleData.lastRefreshElapsed = this.FPW.timeDifference(this.FPW.convertFordDtToLocal(vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh));
-        // console.log(`lastRefresh | raw: ${vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
-        console.log(`Last Vehicle Checkin: ${vehicleData.lastRefreshElapsed}`);
+        vehicleData.lastRefreshed = vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh;
+        // console.log(`lastRefreshed | raw: ${vehicleData.lastRefreshed} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
+        console.log(`Last Vehicle Checkin: ${this.FPW.getLastRefreshElapsedString(vehicleData)}`);
 
         // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 1);
         // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 2);

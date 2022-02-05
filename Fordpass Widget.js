@@ -46,6 +46,8 @@ Changelog:
     - figure out why fetchVehicleData is called multiple times with token expires error.
     - fix main page not refreshing every 30 seconds.
     - possibly add vehicle status overlay to image using canvas?!...
+    - Use individual file for each widget to reduce stack size.
+    - Switch to subfolder for widgets and have the app scan for the available widgets to use.
 
 // Todo: Next Release (Post 2.0.x)
 - setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
@@ -61,7 +63,7 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/01/31, 6:00 pm';
+const SCRIPT_TS = '2022/02/03, 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -86,7 +88,8 @@ const widgetConfig = {
      */
     useBetaModules: true,
     useLocalModules: false,
-    testMode: true,
+    testMode: true, // Use cached data for testing
+    iCloudFiles: false, // Use iCloud files for storing data
     ignoreHashCheck: true,
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
@@ -205,14 +208,14 @@ class Widget {
             },
         },
         large: {
-            titleFontSize: 13,
+            titleFontSize: 14,
             fontSizeSmall: 10,
-            fontSizeMedium: 12,
+            fontSizeMedium: 13,
             fontSizeBig: 16,
             barGauge: {
-                w: 275,
+                w: 295,
                 h: 20,
-                fs: 14,
+                fs: 13,
             },
             logoSize: {
                 w: 160,
@@ -241,6 +244,44 @@ class Widget {
                 w: 12,
                 h: 12,
             },
+        },
+    };
+
+    DeviceSize = {
+        '428x926': {
+            small: { width: 176, height: 176 },
+            medium: { width: 374, height: 176 },
+            large: { width: 374, height: 391 },
+        },
+        '390x844': {
+            small: { width: 161, height: 161 },
+            medium: { width: 342, height: 161 },
+            large: { width: 342, height: 359 },
+        },
+        '414x896': {
+            small: { width: 169, height: 169 },
+            medium: { width: 360, height: 169 },
+            large: { width: 360, height: 376 },
+        },
+        '375x812': {
+            small: { width: 155, height: 155 },
+            medium: { width: 329, height: 155 },
+            large: { width: 329, height: 345 },
+        },
+        '414x736': {
+            small: { width: 159, height: 159 },
+            medium: { width: 348, height: 159 },
+            large: { width: 348, height: 357 },
+        },
+        '375x667': {
+            small: { width: 148, height: 148 },
+            medium: { width: 322, height: 148 },
+            large: { width: 322, height: 324 },
+        },
+        '320x568': {
+            small: { width: 141, height: 141 },
+            medium: { width: 291, height: 141 },
+            large: { width: 291, height: 299 },
         },
     };
 
@@ -304,6 +345,15 @@ class Widget {
         }
     }
 
+    widgetModuleLoader(moduleName) {
+        try {
+            const module = require(this.iCloudModuleDir + `/FPW_${moduleName}.js`);
+            return new module(this);
+        } catch (error) {
+            this.logError(`Module Loader | (${moduleName}) | Error: ${error}`);
+        }
+    }
+
     /**
      * @description
      * @return
@@ -328,18 +378,19 @@ class Widget {
                     await Speech.speak(await this.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
                 } else if (args.queryParameters && Object.keys(args.queryParameters).length > 0) {
                     console.log(JSON.stringify(args.queryParameters));
-                    this.Alerts.showAlert('Params Received', JSON.stringify(args.queryParameters));
+                    this.Alerts.showAlert('Query Params', JSON.stringify(args.queryParameters));
+                    await this.processQueryParams(args.queryParameters, fordData);
                 } else {
-                    // let w = await this.generateWidget('medium', fordData);
-                    // await w.presentMedium();
                     // let w2 = await this.generateWidget('small', fordData);
                     // await w2.presentSmall();
                     // let w3 = await this.generateWidget('smallSimple', fordData);
                     // await w3.presentSmall();
+                    let w = await this.generateWidget('medium', fordData);
+                    await w.presentMedium();
                     // let w4 = await this.generateWidget('mediumSimple', fordData);
                     // await w4.presentMedium();
-                    let w5 = await this.generateWidget('large', fordData);
-                    await w5.presentLarge();
+                    // let w5 = await this.generateWidget('large', fordData);
+                    // await w5.presentLarge();
 
                     // await this.Tables.MainPage.createMainPage();
                 }
@@ -353,6 +404,16 @@ class Widget {
             Script.complete();
         } catch (e) {
             await this.logError(`run() Error: ${e}`, true);
+        }
+    }
+
+    async processQueryParams(params, vData) {
+        if (params && params.command) {
+            switch (params.command) {
+                case 'show_menu':
+                    await this.Tables.MainPage.createMainPage();
+                    break;
+            }
         }
     }
 
@@ -459,7 +520,7 @@ class Widget {
             this.logError(`generateWidget() Error: ${e}`);
         }
         widget.setPadding(0, 5, 0, 1);
-        widget.refreshAfterDate = new Date(Date.now() + 1000 * 60); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+        // widget.refreshAfterDate = new Date(Date.now() + 1000 * 60); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         Script.setWidget(widget);
         this.logInfo(`Created Widget(${size})...`);
         return widget;
@@ -861,6 +922,12 @@ class Widget {
             let d = Math.round(elap / year);
             return `${d} ${this.textMap().UIValues.year}${d > 1 ? this.textMap().UIValues.plural : ''} ${this.textMap().UIValues.subsequentAdverb}`;
         }
+    }
+
+    async getLastRefreshElapsedString(vData) {
+        const elap = this.timeDifference(this.convertFordDtToLocal(vData.lastRefreshed));
+        console.log(`getLastRefreshElapsedString: ${elap}`);
+        return elap;
     }
 
     /**
