@@ -13,7 +13,7 @@ module.exports = class FPW_Tables_ChangePage {
             if (changes && (changes.updated.length || changes.added.length || changes.removed.length || changes.fixed.length)) {
                 let verTs = new Date(Date.parse(this.SCRIPT_TS));
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`${this.SCRIPT_VERSION} Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title1() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`${this.SCRIPT_VERSION} Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title1() })], {
                         height: 50,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -33,7 +33,7 @@ module.exports = class FPW_Tables_ChangePage {
                             // console.log(`(RecentChanges Table) ${type} change: ${change}`);
                             let rowH = Math.ceil(change.length / 70) * (65 / 2);
                             tableRows.push(
-                                await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`\u2022 ${change}`, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.body() })], {
+                                await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`\u2022 ${change}`, undefined, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.body() })], {
                                     height: rowH < 40 ? 40 : rowH,
                                     dismissOnSelect: false,
                                 }),
@@ -42,7 +42,7 @@ module.exports = class FPW_Tables_ChangePage {
                     }
                 }
             } else {
-                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
+                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
             }
 
             await this.FPW.Tables.generateTableMenu('recentChanges', tableRows, false, false);

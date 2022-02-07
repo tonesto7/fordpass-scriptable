@@ -48,6 +48,10 @@ Changelog:
     - possibly add vehicle status overlay to image using canvas?!...
     - Use individual file for each widget to reduce stack size.
     - Switch to subfolder for widgets and have the app scan for the available widgets to use.
+    - Allow forcing of dark/light mode
+    - allow solid color backgrounds for widgets
+    - allow transparent backgrounds
+    - add attribution to bmw widget for ideas and code
 
 // Todo: Next Release (Post 2.0.x)
 - setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
@@ -63,7 +67,7 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/02/03, 6:00 pm';
+const SCRIPT_TS = '2022/02/06, 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -131,8 +135,11 @@ class Widget {
     };
 
     colorMap = {
-        textColor1: darkMode ? '#EDEDED' : '#000000', // Header Text Color
-        textColor2: darkMode ? '#EDEDED' : '#000000', // Value Text Color
+        text: {
+            system: Color.dynamic(new Color('#000000'), new Color('#EDEDED')),
+            dark: new Color('#EDEDED'),
+            light: new Color('#000000'),
+        },
         normalText: Color.dynamic(new Color('#000000'), new Color('#EDEDED')),
         lightText: Color.dynamic(Color.darkGray(), Color.lightGray()),
         openColor: new Color('#FF5733'),
@@ -143,15 +150,11 @@ class Widget {
         textWhite: '#EDEDED',
         backColor: darkMode ? '#111111' : '#FFFFFF', // Background Color'
         backColorGrad: darkMode ? ['#141414', '#13233F'] : ['#BCBBBB', '#DDDDDD'], // Background Color Gradient}
+        backColorGradDark: ['#141414', '#13233F'],
+        backColorGradLight: ['#BCBBBB', '#DDDDDD'],
     };
 
     iconMap = {
-        textColor1: darkMode ? '#EDEDED' : '#000000', // Header Text Color
-        textColor2: darkMode ? '#EDEDED' : '#000000', // Value Text Color
-        textBlack: '#000000',
-        textWhite: '#EDEDED',
-        backColor: darkMode ? '#111111' : '#FFFFFF', // Background Color'
-        backColorGrad: darkMode ? ['#141414', '#13233F'] : ['#BCBBBB', '#DDDDDD'], // Background Color Gradient
         fuelIcon: darkMode ? 'gas-station_dark.png' : 'gas-station_light.png', // Image for gas station
         lockStatus: darkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
         lockIcon: darkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
@@ -170,9 +173,9 @@ class Widget {
 
     sizeMap = {
         small: {
-            titleFontSize: isSmallDisplay ? 9 : 9,
-            fontSizeSmall: isSmallDisplay ? 8 : 8,
-            fontSizeMedium: isSmallDisplay ? 9 : 9,
+            titleFontSize: isSmallDisplay ? 9 : 10,
+            fontSizeSmall: isSmallDisplay ? 8 : 9,
+            fontSizeMedium: isSmallDisplay ? 9 : 10,
             fontSizeBig: isSmallDisplay ? 12 : 12,
             barGauge: {
                 w: isSmallDisplay ? 65 : 65,
@@ -314,9 +317,10 @@ class Widget {
         this.deviceModel = Device.model();
         this.deviceSystemVersion = Device.systemVersion();
         this.widgetConfig = widgetConfig;
-        // if (config.runsInApp) {
-        this.Timers = this.moduleLoader('Timers');
-        this.Alerts = this.moduleLoader('Alerts');
+        if (config.runsInApp) {
+            this.Timers = this.moduleLoader('Timers');
+            this.Alerts = this.moduleLoader('Alerts');
+        }
         this.Notifications = this.moduleLoader('Notifications');
         // }
         // this.ShortcutParser = this.moduleLoader('ShortcutParser');
@@ -364,7 +368,7 @@ class Widget {
             this.logInfo('---------------------------');
             this.logInfo('Widget RUN...');
             // Starts the widget load process
-            let fordData = widgetConfig.testMode ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget();
+            let fordData = widgetConfig.testMode ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget(config.runsInWidget);
             if (fordData === null) return;
             if (config.runsInWidget) {
                 if (args.widgetParameter) {
@@ -385,10 +389,10 @@ class Widget {
                     // await w2.presentSmall();
                     // let w3 = await this.generateWidget('smallSimple', fordData);
                     // await w3.presentSmall();
-                    let w = await this.generateWidget('medium', fordData);
-                    await w.presentMedium();
-                    // let w4 = await this.generateWidget('mediumSimple', fordData);
-                    // await w4.presentMedium();
+                    // let w = await this.generateWidget('medium', fordData);
+                    // await w.presentMedium();
+                    let w4 = await this.generateWidget('mediumSimple', fordData);
+                    await w4.presentMedium();
                     // let w5 = await this.generateWidget('large', fordData);
                     // await w5.presentLarge();
 
@@ -422,7 +426,7 @@ class Widget {
      * @return
      * @memberof Widget
      */
-    async prepWidget() {
+    async prepWidget(isWidget = false) {
         try {
             if (widgetConfig.clearKeychainOnNextRun) {
                 await this.clearSettings();
@@ -458,7 +462,7 @@ class Widget {
             // console.log(`(prepWidget) User Prefs Result: ${fPrefs}`);
 
             // console.log('(prepWidget) Fetching Vehicle Data...');
-            const vData = await this.FordAPI.fetchVehicleData();
+            const vData = await this.FordAPI.fetchVehicleData(false, isWidget);
             return vData;
         } catch (err) {
             this.logError(`prepWidget() Error: ${err}`);
@@ -477,39 +481,52 @@ class Widget {
         this.logInfo(`generateWidget() | Size: ${size}`);
         let mod = null;
         let widget = null;
+        let bgType = (await this.getBackgroundType()) || 'system';
+        let colorMode = await this.getUIColorMode();
+        if (size.includes('dark')) {
+            bgType = 'dark';
+            colorMode = 'dark';
+        } else if (size.includes('light')) {
+            bgType = 'light';
+            colorMode = 'light';
+        } else if (size.includes('transparent')) {
+            bgType = 'transparent';
+        }
+
+        console.log(`bgType: ${bgType} | colorMode: ${colorMode}`);
         try {
             switch (size) {
                 case 'small':
                     mod = await this.moduleLoader('Widgets_Small');
-                    widget = await mod.createWidget(data, 'detailed');
+                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
                     break;
                 case 'smallSimple':
                     mod = await this.moduleLoader('Widgets_Small');
-                    widget = await mod.createWidget(data, 'simple');
+                    widget = await mod.createWidget(data, 'simple', bgType, colorMode);
                     break;
                 case 'large':
                     mod = await this.moduleLoader('Widgets_Large');
-                    widget = await mod.createWidget(data, 'detailed');
+                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
                     break;
                 case 'largeSimple':
                     mod = await this.moduleLoader('Widgets_Large');
-                    widget = await mod.createWidget(data, 'simple');
+                    widget = await mod.createWidget(data, 'simple', bgType, colorMode);
                     break;
                 case 'extraLarge':
                     mod = await this.moduleLoader('Widgets_ExtraLarge');
-                    widget = await mod.createWidget(data, 'detailed');
+                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
                     break;
                 case 'medium':
                     mod = await this.moduleLoader('Widgets_Medium');
-                    widget = await mod.createWidget(data, 'detailed');
+                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
                     break;
                 case 'mediumSimple':
                     mod = await this.moduleLoader('Widgets_Medium');
-                    widget = await mod.createWidget(data, 'simple');
+                    widget = await mod.createWidget(data, 'simple', bgType, colorMode);
                     break;
                 default:
                     mod = await this.moduleLoader('Widgets_Medium');
-                    widget = await mod.createWidget(data, 'detailed');
+                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
                     break;
             }
             if (widget === null) {
@@ -617,12 +634,39 @@ class Widget {
         delete this.stateStore[key];
     }
 
+    setWidgetBackground(widget, mode = 'system') {
+        let grad = null;
+        switch (mode) {
+            case 'transparent':
+                // TODO Finish this.
+                break;
+            case 'dark':
+                grad = new LinearGradient();
+                grad.locations = [0, 1];
+                grad.colors = [new Color(this.colorMap.backColorGradDark[0]), new Color(this.colorMap.backColorGradDark[1])];
+                widget.backgroundGradient = grad;
+                break;
+            case 'light':
+                grad = new LinearGradient();
+                grad.locations = [0, 1];
+                grad.colors = [new Color(this.colorMap.backColorGradLight[0]), new Color(this.colorMap.backColorGradLight[1])];
+                widget.backgroundGradient = grad;
+                break;
+            default:
+                grad = new LinearGradient();
+                grad.locations = [0, 1];
+                grad.colors = [new Color(this.colorMap.backColorGrad[0]), new Color(this.colorMap.backColorGrad[1])];
+                widget.backgroundGradient = grad;
+                break;
+        }
+    }
+
     /**
      * @description
      * @return
      * @memberof Widget
      */
-    getBgGradient() {
+    getBgGradient(mode = undefined) {
         let grad = new LinearGradient();
         grad.locations = [0, 1];
         grad.colors = [new Color(this.colorMap.backColorGrad[0]), new Color(this.colorMap.backColorGrad[1])];
@@ -1214,6 +1258,30 @@ class Widget {
         }
     }
 
+    async getUIColorMode(frcMode = undefined) {
+        let modeSetting = await this.getSettingVal('fpUIColorMode');
+        let mode = frcMode || modeSetting;
+        switch (mode) {
+            case 'dark':
+            case 'light':
+                return mode;
+            default:
+                return darkMode ? 'dark' : 'light';
+        }
+    }
+
+    async setUIColorMode(mode) {
+        return await this.setSettingVal('fpUIColorMode', mode);
+    }
+
+    async getBackgroundType() {
+        return (await this.getSettingVal('fpWidgetBackground')) || 'system';
+    }
+
+    async setBackgroundType(type) {
+        return await this.setSettingVal('fpWidgetBackground', type);
+    }
+
     /**
      * @description
      * @return
@@ -1303,7 +1371,31 @@ class Widget {
      */
     async clearSettings() {
         this.logInfo('Info: Clearing All Widget Settings from Keychain');
-        const keys = ['fpToken', 'fpToken2', 'fpUsername', 'fpUser', 'fpPass', 'fpPassword', 'fpVin', 'fpUseMetricUnits', 'fpUsePsi', 'fpVehicleType', 'fpMapProvider', 'fpCat1Token', 'fpTokenExpiresAt', 'fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits', 'fpSpeedUnits', 'fpScriptVersion'];
+        const keys = [
+            'fpToken',
+            'fpToken2',
+            'fpUsername',
+            'fpUser',
+            'fpPass',
+            'fpPassword',
+            'fpVin',
+            'fpUseMetricUnits',
+            'fpUsePsi',
+            'fpVehicleType',
+            'fpMapProvider',
+            'fpCat1Token',
+            'fpTokenExpiresAt',
+            'fpCountry',
+            'fpDeviceLanguage',
+            'fpLanguage',
+            'fpTz',
+            'fpPressureUnits',
+            'fpDistanceUnits',
+            'fpSpeedUnits',
+            'fpScriptVersion',
+            'fpWidgetBackground',
+            'fpWidgetStyle',
+        ];
         for (const key in keys) {
             await this.removeSettingVal(keys[key]);
         }

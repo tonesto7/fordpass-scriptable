@@ -18,7 +18,7 @@ module.exports = class FPW_Tables_MessagePage {
                     await this.FPW.Tables.createTableRow(
                         [
                             await this.FPW.Tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
-                            await this.FPW.Tables.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() }),
+                            await this.FPW.Tables.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title2() }),
                             await this.FPW.Tables.createTextCell('All', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
                         ], {
                             height: 40,
@@ -86,7 +86,7 @@ module.exports = class FPW_Tables_MessagePage {
                         await this.FPW.Tables.createTableRow(
                             [
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 10 }),
-                                await this.FPW.Tables.createTextCell(this.FPW.Tables.getMessageDescByType(msg.messageType), undefined, { align: 'left', widthWeight: 55, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.body() }),
+                                await this.FPW.Tables.createTextCell(this.FPW.Tables.getMessageDescByType(msg.messageType), undefined, { align: 'left', widthWeight: 55, titleColor: this.FPW.colorMap.normalText, titleFont: Font.body() }),
                                 await this.FPW.Tables.createTextCell(msg.isRead === false ? 'Unread' : 'Read', undefined, { align: 'right', widthWeight: 25, titleColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), titleFont: Font.body() }),
                                 await this.FPW.Tables.createTextCell('...', undefined, { align: 'right', widthWeight: 10, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.title2() }),
                             ], {
@@ -144,26 +144,26 @@ module.exports = class FPW_Tables_MessagePage {
 
                     // Creates Message Subject Row
                     tableRows.push(
-                        await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(msg.messageSubject, timeSubtitle, { align: 'left', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                        await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(msg.messageSubject, timeSubtitle, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
                             height: 44,
                             dismissOnSelect: false,
                         }),
                     );
 
                     // Creates Message Subject and Body Row
-                    tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.body() })], { height: this.FPW.Tables.getRowHeightByTxtLength(msg.messageBody), dismissOnSelect: false }));
+                    tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.body() })], { height: this.FPW.Tables.getRowHeightByTxtLength(msg.messageBody), dismissOnSelect: false }));
                 }
             } else {
                 tableRows.push(
                     await this.FPW.Tables.createTableRow(
                         [
                             await this.FPW.Tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
-                            await this.FPW.Tables.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() }),
+                            await this.FPW.Tables.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title2() }),
                             await this.FPW.Tables.createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
                         ], { height: 44, dismissOnSelect: false },
                     ),
                 );
-                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(this.FPW.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
+                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(this.FPW.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3() })], { height: 44, dismissOnSelect: false }));
             }
             await this.FPW.Tables.generateTableMenu('messages', tableRows, false, this.FPW.isPhone, update);
         } catch (e) {

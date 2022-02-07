@@ -172,7 +172,7 @@ module.exports = class FPW_Tables {
             case 'fixed':
                 return { name: 'Fixed', color: new Color('#b605fc') };
             default:
-                return { name: '', color: new Color(this.FPW.colorMap.textColor1) };
+                return { name: '', color: this.FPW.colorMap.normalText };
         }
     }
 

@@ -128,7 +128,7 @@ module.exports = class FPW_Files {
     async getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false) {
         let fm = cloudStore ? FileManager.iCloud() : FileManager.local();
         let dir = fm.documentsDirectory();
-        let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `vehicle-${angle}_${this.SCRIPT_ID}.png` : `vehicle-${angle}.png`;
+        let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `vehicle_${angle}_${this.SCRIPT_ID}.png` : `vehicle_${angle}.png`;
         let path = fm.joinPath(dir, fileName);
         if (await fm.fileExists(path)) {
             if (asData) {

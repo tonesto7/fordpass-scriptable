@@ -17,7 +17,7 @@ module.exports = class FPW_Tables_WidgetStylePage {
                             align: 'center',
                             widthWeight: 1,
                             dismissOnTap: false,
-                            titleColor: new Color(this.FPW.colorMap.textColor1),
+                            titleColor: this.FPW.colorMap.normalText,
                             titleFont: Font.title1(),
                             subtitleColor: Color.lightGray(),
                             subtitleFont: Font.mediumSystemFont(11),
@@ -30,7 +30,7 @@ module.exports = class FPW_Tables_WidgetStylePage {
             );
             for (const [i, size] of['small', 'medium'].entries()) {
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`${this.FPW.capitalizeStr(size)}`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`${this.FPW.capitalizeStr(size)}`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3() })], {
                         height: 30,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -41,7 +41,7 @@ module.exports = class FPW_Tables_WidgetStylePage {
                     tableRows.push(
                         await this.FPW.Tables.createTableRow(
                             [
-                                await this.FPW.Tables.createTextCell(`(${this.FPW.capitalizeStr(style)})`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createTextCell(`(${this.FPW.capitalizeStr(style)})`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.subheadline() }),
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getImage(`${size}_${style}.png`), { align: 'center', widthWeight: 60 }),
                                 await this.FPW.Tables.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
                             ], {

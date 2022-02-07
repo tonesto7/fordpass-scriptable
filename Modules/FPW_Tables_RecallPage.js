@@ -12,7 +12,7 @@ module.exports = class FPW_Tables_RecallPage {
             let tableRows = [];
 
             if (recalls.length > 0) {
-                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
+                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title2() })], { height: 40, isHeader: true, dismissOnSelect: false }));
                 for (const [i, recall] of recalls.entries()) {
                     let dtTS = recall.nhtsaInfo && recall.nhtsaInfo.recallDate ? new Date(Date.parse(recall.nhtsaInfo.recallDate)) : undefined;
                     let dateStr = dtTS ? dtTS.toLocaleDateString() : undefined;
@@ -32,9 +32,9 @@ module.exports = class FPW_Tables_RecallPage {
                                 await this.FPW.Tables.createTextCell(recall.title, titleSub, {
                                     align: 'left',
                                     widthWeight: 94,
-                                    titleColor: new Color(this.FPW.colorMap.textColor1),
+                                    titleColor: this.FPW.colorMap.normalText,
                                     titleFont: Font.headline(),
-                                    subtitleColor: new Color(this.FPW.colorMap.textColor1),
+                                    subtitleColor: this.FPW.colorMap.normalText,
                                     subtitleFont: Font.regularSystemFont(10),
                                 }),
                             ], { height: 50, dismissOnSelect: false },
@@ -44,18 +44,16 @@ module.exports = class FPW_Tables_RecallPage {
                     // Creates Recall Safety Description Row
                     if (recall.nhtsaInfo && recall.nhtsaInfo.safetyDescription) {
                         tableRows.push(
-                            await this.FPW.Tables.createTableRow(
-                                [await this.FPW.Tables.createTextCell('Safety Description', recall.nhtsaInfo.safetyDescription, { align: 'left', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
-                                    height: this.FPW.Tables.getRowHeightByTxtLength(recall.nhtsaInfo.safetyDescription),
-                                    dismissOnSelect: false,
-                                },
-                            ),
+                            await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Safety Description', recall.nhtsaInfo.safetyDescription, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                                height: this.FPW.Tables.getRowHeightByTxtLength(recall.nhtsaInfo.safetyDescription),
+                                dismissOnSelect: false,
+                            }),
                         );
                     }
                     // Creates Recall Remedy Program Row
                     if (recall.nhtsaInfo && recall.nhtsaInfo.remedyProgram) {
                         tableRows.push(
-                            await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Remedy Program', recall.nhtsaInfo.remedyProgram, { align: 'left', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                            await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Remedy Program', recall.nhtsaInfo.remedyProgram, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
                                 height: this.FPW.Tables.getRowHeightByTxtLength(recall.nhtsaInfo.remedyProgram),
                                 dismissOnSelect: false,
                             }),
@@ -64,12 +62,10 @@ module.exports = class FPW_Tables_RecallPage {
                     // Creates Recall Manufacturer Notes Row
                     if (recall.nhtsaInfo && recall.nhtsaInfo.manufacturerNotes) {
                         tableRows.push(
-                            await this.FPW.Tables.createTableRow(
-                                [await this.FPW.Tables.createTextCell('Manufacturer Notes', recall.nhtsaInfo.manufacturerNotes, { align: 'left', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
-                                    height: this.FPW.Tables.getRowHeightByTxtLength(recall.nhtsaInfo.manufacturerNotes),
-                                    dismissOnSelect: false,
-                                },
-                            ),
+                            await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Manufacturer Notes', recall.nhtsaInfo.manufacturerNotes, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3(), subtitleColor: Color.lightGray(), subtitleFont: Font.mediumSystemFont(11) })], {
+                                height: this.FPW.Tables.getRowHeightByTxtLength(recall.nhtsaInfo.manufacturerNotes),
+                                dismissOnSelect: false,
+                            }),
                         );
                     }
                     // Creates a blank row
@@ -80,13 +76,13 @@ module.exports = class FPW_Tables_RecallPage {
                     await this.FPW.Tables.createTableRow(
                         [
                             await this.FPW.Tables.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
-                            await this.FPW.Tables.createTextCell(`${recalls.length} Recalls(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() }),
+                            await this.FPW.Tables.createTextCell(`${recalls.length} Recalls(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title2() }),
                             await this.FPW.Tables.createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
                         ], { height: 44, dismissOnSelect: false },
                     ),
                 );
 
-                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(this.FPW.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.body() })], { height: 44, dismissOnSelect: false }));
+                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(this.FPW.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.body() })], { height: 44, dismissOnSelect: false }));
             }
 
             await this.FPW.Tables.generateTableMenu('recalls', tableRows, false, false);

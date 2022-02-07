@@ -510,14 +510,14 @@ module.exports = class FPW_FordAPIs {
     }
 
     //from local store if last fetch is < x minutes, otherwise fetch from server
-    async fetchVehicleData(loadLocal = false) {
+    async fetchVehicleData(loadLocal = false, leanData=false) {
         //Fetch data from local store
         if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
             return await this.FPW.Files.readLocalData();
         }
 
         //fetch data from server
-        console.log('Fetching Vehicle Data from Ford Servers...');
+        console.log(`Fetching Vehicle Data from Ford Servers...${leanData ? '(Lean)' : ''}`);
         let statusData = await this.getVehicleStatus();
 
         // console.log(`statusData: ${JSON.stringify(statusData)}`);
@@ -705,6 +705,9 @@ module.exports = class FPW_FordAPIs {
         //save data to local store
         this.FPW.Files.saveDataToLocal(vehicleData);
         // console.log(JSON.stringify(vehicleData));
+        if(leanData) {
+            delete vehicleData.messages
+        }
         return vehicleData;
     }
 

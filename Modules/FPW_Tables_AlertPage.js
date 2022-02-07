@@ -13,7 +13,7 @@ module.exports = class FPW_Tables_AlertPage {
 
             let tableRows = [];
             if (vhaAlerts.length > 0) {
-                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Health Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], { height: 20, isHeader: true, dismissOnSelect: false }));
+                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Health Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title2() })], { height: 20, isHeader: true, dismissOnSelect: false }));
                 for (const [i, alert] of vhaAlerts.entries()) {
                     let dtTS = alert.eventTimeStamp ? this.FPW.convertFordDtToLocal(alert.eventTimeStamp) : undefined;
                     tableRows.push(
@@ -36,7 +36,7 @@ module.exports = class FPW_Tables_AlertPage {
 
             if (otaAlerts.length > 0) {
                 tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], { height: 20, dismissOnSelect: false }));
-                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`OTA Update Alerts`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.title2() })], { height: 20, isHeader: true, dismissOnSelect: false }));
+                tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`OTA Update Alerts`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title2() })], { height: 20, isHeader: true, dismissOnSelect: false }));
                 for (const [i, alert] of otaAlerts.entries()) {
                     let dtTS = alert.vehicleDate && alert.vehicleTime ? this.FPW.convertFordDtToLocal(`${alert.vehicleDate} ${alert.vehicleTime}`) : undefined;
                     let timeDiff = dtTS ? this.FPW.timeDifference(dtTS) : '';
@@ -56,9 +56,7 @@ module.exports = class FPW_Tables_AlertPage {
                         ),
                     );
 
-                    tableRows.push(
-                        await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(releaseNotes, undefined, { align: 'left', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textColor1), titleFont: Font.regularSystemFont(12) })], { height: this.FPW.Tables.getRowHeightByTxtLength(releaseNotes), dismissOnSelect: false }),
-                    );
+                    tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(releaseNotes, undefined, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(12) })], { height: this.FPW.Tables.getRowHeightByTxtLength(releaseNotes), dismissOnSelect: false }));
                 }
             }
 
