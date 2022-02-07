@@ -517,7 +517,7 @@ class Widget {
                     widget = await mod.createWidget(data, 'simple', bgType, colorMode);
                     break;
                 case 'extraLarge':
-                    mod = await this.moduleLoader('Widgets_ExtraLarge');
+                    mod = await this.moduleLoader('Widgets_Large');
                     widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
                     break;
                 case 'medium':

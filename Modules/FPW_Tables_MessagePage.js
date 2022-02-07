@@ -78,7 +78,7 @@ module.exports = class FPW_Tables_MessagePage {
                 for (const [i, msg] of msgs.entries()) {
                     let dtTS = msg.createdDate ? this.FPW.convertFordDtToLocal(msg.createdDate) : undefined;
                     let timeDiff = dtTS ? this.FPW.timeDifference(dtTS) : '';
-                    let timeSubtitle = `${dtTS ? dtTS.toLocaleString() : ''}${timeDiff ? ' (' + timeDiff + '})' : ''}`;
+                    let timeSubtitle = `${dtTS ? dtTS.toLocaleString() : ''}${timeDiff ? ' (' + timeDiff + ')' : ''}`;
 
                     // Creates Message Header Row
                     tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), height: 10, dismissOnSelect: false }));
@@ -151,7 +151,7 @@ module.exports = class FPW_Tables_MessagePage {
                     );
 
                     // Creates Message Subject and Body Row
-                    tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.body() })], { height: this.FPW.Tables.getRowHeightByTxtLength(msg.messageBody), dismissOnSelect: false }));
+                    tableRows.push(await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(msg.messageBody, undefined, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.body() })], { height: this.FPW.Tables.getRowHeightByTxtLength(msg.messageBody) + 10, dismissOnSelect: false }));
                 }
             } else {
                 tableRows.push(

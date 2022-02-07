@@ -90,8 +90,12 @@ module.exports = class FPW_Files {
         return await this.getImage(image, 'FP_Icons', asData);
     }
 
+    async getWidgetExampleImage(image) {
+        return await this.getImage(image, '', false, false);
+    }
+
     // get images from local filestore or download them once
-    async getImage(image, subPath = '', asData = false) {
+    async getImage(image, subPath = '', asData = false, save = true) {
         try {
             let fm = this.FPW.widgetConfig.iCloudFiles ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
@@ -116,7 +120,9 @@ module.exports = class FPW_Files {
                 const imgName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
                 console.log('Downloading Image: ' + imgName);
                 let iconImage = await this.loadImage(imageUrl);
-                await fm.writeImage(path, iconImage);
+                if (save) {
+                    await fm.writeImage(path, iconImage);
+                }
                 return iconImage;
             }
         } catch (e) {

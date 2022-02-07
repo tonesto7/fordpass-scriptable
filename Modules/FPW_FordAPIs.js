@@ -510,7 +510,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     //from local store if last fetch is < x minutes, otherwise fetch from server
-    async fetchVehicleData(loadLocal = false, leanData=false) {
+    async fetchVehicleData(loadLocal = false, leanData = false) {
         //Fetch data from local store
         if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
             return await this.FPW.Files.readLocalData();
@@ -694,7 +694,7 @@ module.exports = class FPW_FordAPIs {
         // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();
         vehicleData.lastRefreshed = vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh;
         // console.log(`lastRefreshed | raw: ${vehicleData.lastRefreshed} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
-        console.log(`Last Vehicle Checkin: ${this.FPW.getLastRefreshElapsedString(vehicleData)}`);
+        console.log(`Last Vehicle Checkin: ${await this.FPW.getLastRefreshElapsedString(vehicleData)}`);
 
         // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 1);
         // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 2);
@@ -705,8 +705,8 @@ module.exports = class FPW_FordAPIs {
         //save data to local store
         this.FPW.Files.saveDataToLocal(vehicleData);
         // console.log(JSON.stringify(vehicleData));
-        if(leanData) {
-            delete vehicleData.messages
+        if (leanData) {
+            delete vehicleData.messages;
         }
         return vehicleData;
     }
