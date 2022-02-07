@@ -23,7 +23,7 @@ module.exports = class FPW_Widgets_Large {
         switch (style) {
             // case 'simple':
             //     return await this.simpleWidget(vData);
-            default: return await this.detailedWidget(vData, background, colorMode);
+            default: return await this.detailedWidget(vData, background);
         }
     }
 
@@ -43,8 +43,6 @@ module.exports = class FPW_Widgets_Large {
             let distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
             let distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
 
-            // vData.deepSleepMode = true;
-            // vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
             const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
 
@@ -122,7 +120,7 @@ module.exports = class FPW_Widgets_Large {
             const dteRow = await this.createRow(fuelBattCol, { '*topAlignContent': null });
             let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap.errorMessages.noData;
             dteRow.addSpacer();
-            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.systemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.normal[colorMode], lineLimit: 1 });
+            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.systemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.text[this.colorMode], lineLimit: 1 });
             dteRow.addSpacer();
             fuelBattRow.addSpacer();
             fuelBattCol.addSpacer();
@@ -171,6 +169,8 @@ module.exports = class FPW_Widgets_Large {
             // //*****************************
             const controlsContainer = await this.createRow(widget, { '*setPadding': [10, paddingLeft, 5, paddingLeft] });
             controlsContainer.addSpacer();
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
             await this.createWidgetButtonRow(controlsContainer, vData, paddingLeft, width, 35, 24);
             controlsContainer.addSpacer();
 
@@ -182,6 +182,8 @@ module.exports = class FPW_Widgets_Large {
             //     let statusRow = await this.createRow(widget, { '*setPadding': [0, paddingLeft, 3, 0], '*bottomAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.075)) });
             //     await this.WidgetHelper.createStatusElement(statusRow, vData, 3);
             //     statusRow.addSpacer();
+            // } else {
+            //     widget.addSpacer();
             // }
 
             // Displays the Last Vehicle Checkin Time Elapsed...

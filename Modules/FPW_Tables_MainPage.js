@@ -6,7 +6,7 @@ module.exports = class FPW_Tables_MainPage {
         this.widgetConfig = FPW.widgetConfig;
     }
 
-    async createMainPage(update = false) {
+    async createMainPage(update = false, widgetCmd = undefined) {
         try {
             const vData = await this.FPW.FordAPI.fetchVehicleData(true);
             const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
@@ -29,7 +29,7 @@ module.exports = class FPW_Tables_MainPage {
                 this.FPW.Timers.stopTimer('remoteStartStatus');
                 ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
             }
-            let refreshTime = vData.lastRefreshElapsed ? vData.lastRefreshElapsed : this.FPW.textMap().UIValues.unknown;
+            let refreshTime = (await this.FPW.getLastRefreshElapsedString(vData)) || this.textMap.UIValues.unknown;
             const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : this.FPW.textMap().errorMessages.noData;
             const msgs = vData.messages && vData.messages.length ? vData.messages : [];
             const recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
@@ -393,7 +393,7 @@ module.exports = class FPW_Tables_MainPage {
                                     align: 'center',
                                     widthWeight: 17,
                                     onTap: async() => {
-                                        console.log('(Dashboard) Lock was pressed');
+                                        console.log('(Dashboard) Unlock was pressed');
                                         if (await this.FPW.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
                                             await this.FPW.FordAPI.sendVehicleCmd('unlock');
                                         }
@@ -671,7 +671,6 @@ module.exports = class FPW_Tables_MainPage {
                     );
                 }
             }
-            await this.FPW.Tables.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
 
             if (!update) {
                 let lastVersion = await this.FPW.getSettingVal('fpScriptVersion');
@@ -682,8 +681,74 @@ module.exports = class FPW_Tables_MainPage {
                     await this.FPW.setSettingVal('fpScriptVersion', this.FPW.SCRIPT_VERSION);
                 }
             }
+            if (widgetCmd) {
+                await this.FPW.Alerts.showAlert('Widget Command', `Widget Command: ${widgetCmd}`);
+                await this.processWidgetCommands(widgetCmd);
+            }
+            await this.FPW.Tables.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
         } catch (err) {
             this.FPW.logger(`createMainPage() Error: ${err}`, true);
+        }
+    }
+
+    async processWidgetCommands(cmd) {
+        switch (cmd) {
+            case 'lock_command':
+                await this.FPW.Alerts.showActionPrompt(
+                    'Lock Controls',
+                    undefined, [{
+                            title: 'Unlock',
+                            action: async() => {
+                                console.log('(Dashboard) Unlock was pressed');
+                                if (await this.FPW.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
+                                    await this.FPW.FordAPI.sendVehicleCmd('unlock');
+                                }
+                            },
+                            destructive: true,
+                            show: true,
+                        },
+                        {
+                            title: 'Lock',
+                            action: async() => {
+                                console.log('(Dashboard) Lock was pressed');
+                                await this.FPW.FordAPI.sendVehicleCmd('lock');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ],
+                    true,
+                );
+
+                break;
+
+            case 'start_command':
+                await this.FPW.Alerts.showActionPrompt(
+                    'Remote Start Controls',
+                    undefined, [{
+                            title: 'Start',
+                            action: async() => {
+                                console.log('(Dashboard) Start was pressed');
+                                if (await this.FPW.Alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
+                                    await this.FPW.FordAPI.sendVehicleCmd('start');
+                                }
+                            },
+                            destructive: true,
+                            show: true,
+                        },
+                        {
+                            title: 'Stop',
+                            action: async() => {
+                                console.log('(Dashboard) Stop was pressed');
+                                await this.FPW.FordAPI.sendVehicleCmd('stop');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ],
+                    true,
+                );
+                break;
         }
     }
 };

@@ -23,9 +23,9 @@ module.exports = class FPW_Widgets_Medium {
         this.colorMode = colorMode;
         switch (style) {
             case 'simple':
-                return await this.simpleWidget(vData, background, colorMode);
+                return await this.simpleWidget(vData, background);
             default:
-                return await this.detailedWidget(vData, background, colorMode);
+                return await this.detailedWidget(vData, background);
         }
     }
 
@@ -157,8 +157,6 @@ module.exports = class FPW_Widgets_Medium {
             let paddingLeft = Math.round(width * 0.04);
             // let paddingLeft = 6;
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
-            vData.deepSleepMode = true;
-            vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
             //_______________________________
             //|         |         |         |
@@ -227,15 +225,12 @@ module.exports = class FPW_Widgets_Medium {
             //**********************
             //* Refresh and error
             //*********************
-            // const bottomContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
-            // const bottomCol = await this.createColumn(bottomContainer, { '*setPadding': [0, 0, 0, 0] });
-            // bottomCol.addSpacer();
-            // widget.addSpacer();
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
             if (hasStatusMsg) {
                 let statusRow = await this.createRow(widget, { '*setPadding': [0, paddingLeft, 0, 0], '*centerAlignContent': null });
                 await this.createStatusElement(statusRow, vData, 2);
                 statusRow.addSpacer(); // Pushes Status Message to the left
-                // bottomCol.addSpacer();
             } else {
                 widget.addSpacer();
             }

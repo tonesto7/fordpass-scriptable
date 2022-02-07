@@ -20,6 +20,7 @@
  *  - The original Fordpass Scriptable script by Damian Schablowsky  <dschablowsky.dev@gmail.com> (https://github.com/dschablowsky/FordPassWidget)
  *  - Api Logic based on ffpass from https://github.com/d4v3y0rk - thanks a lot for the work!
  *  - Borrowed a couple method mapping functions from WidgetMarkup.js by @rafaelgandi (https://github.com/rafaelgandi/WidgetMarkup-Scriptable)
+ *  - Borrowed a couple method mapping functions from bmw-linker script by @opp100 (https://github.com/opp100/bmw-scriptable-widgets)
  *
  * IMPORTANT NOTE: This widget will only work with vehicles that show up in the FordPassFordPass app!
  */
@@ -35,23 +36,22 @@ Changelog:
             (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything)
         
 // Todo: This Release (v2.0.0)) 
-    - use OTA info to show when an update is available or pending.
-    - move OTA info to table view.
-    - Show notifications for specific events or errors (like low battery, low oil, ota updates)
-    - add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
-    - Create widgets with less details and larger image.
-    - Change module storage from iCloud to local storage.
-    - add a hash to the modules so we make sure it loads the correct modules.
-    - add test mode to use cached data for widget testing
-    - figure out why fetchVehicleData is called multiple times with token expires error.
-    - fix main page not refreshing every 30 seconds.
-    - possibly add vehicle status overlay to image using canvas?!...
-    - Use individual file for each widget to reduce stack size.
-    - Switch to subfolder for widgets and have the app scan for the available widgets to use.
-    - Allow forcing of dark/light mode
-    - allow solid color backgrounds for widgets
-    - allow transparent backgrounds
-    - add attribution to bmw widget for ideas and code
+    [-] use OTA info to show when an update is available or pending.
+    [-] move OTA info to table view.
+    [-] Show notifications for specific events or errors (like low battery, low oil, ota updates)
+    [-] add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
+    [x] Create widgets with less details and larger image.
+    [x] Change module storage from iCloud to local storage.
+    [x] add a hash to the modules so we make sure it loads the correct modules.
+    [x] add test mode to use cached data for widget testing
+    [-] figure out why fetchVehicleData is called multiple times with token expires error.
+    [-] fix main page not refreshing every 30 seconds.
+    [-] possibly add vehicle status overlay to image using canvas?!...
+    [x] Use individual file for each widget to reduce stack size.
+    [-] Switch to subfolder for widgets and have the app scan for the available widgets to use.
+    [x] Allow forcing of dark/light mode
+    [x] allow solid color backgrounds for widgets
+    [-] allow transparent backgrounds
 
 // Todo: Next Release (Post 2.0.x)
 - setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
@@ -90,9 +90,9 @@ const widgetConfig = {
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
+    testMode: false, // Use cached data for testing
     useBetaModules: true,
     useLocalModules: false,
-    testMode: true, // Use cached data for testing
     iCloudFiles: false, // Use iCloud files for storing data
     ignoreHashCheck: true,
     clearKeychainOnNextRun: false, // false or true
@@ -382,7 +382,7 @@ class Widget {
                     await Speech.speak(await this.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
                 } else if (args.queryParameters && Object.keys(args.queryParameters).length > 0) {
                     console.log(JSON.stringify(args.queryParameters));
-                    this.Alerts.showAlert('Query Params', JSON.stringify(args.queryParameters));
+                    // this.Alerts.showAlert('Query Params', JSON.stringify(args.queryParameters));
                     await this.processQueryParams(args.queryParameters, fordData);
                 } else {
                     // let w2 = await this.generateWidget('small', fordData);
@@ -391,12 +391,12 @@ class Widget {
                     // await w3.presentSmall();
                     // let w = await this.generateWidget('medium', fordData);
                     // await w.presentMedium();
-                    let w4 = await this.generateWidget('mediumSimple', fordData);
-                    await w4.presentMedium();
+                    // let w4 = await this.generateWidget('mediumSimple', fordData);
+                    // await w4.presentMedium();
                     // let w5 = await this.generateWidget('large', fordData);
                     // await w5.presentLarge();
 
-                    // await this.Tables.MainPage.createMainPage();
+                    await this.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -415,7 +415,11 @@ class Widget {
         if (params && params.command) {
             switch (params.command) {
                 case 'show_menu':
-                    await this.Tables.MainPage.createMainPage();
+                    this.Tables.MainPage.createMainPage();
+                    break;
+                case 'lock_command':
+                case 'start_command':
+                    this.Tables.MainPage.createMainPage(false, params.command);
                     break;
             }
         }

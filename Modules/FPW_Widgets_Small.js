@@ -22,9 +22,9 @@ module.exports = class FPW_Widgets_Small {
         this.colorMode = colorMode;
         switch (style) {
             case 'simple':
-                return await this.simpleWidget(vData, background, colorMode);
+                return await this.simpleWidget(vData, background);
             case 'detailed':
-                return await this.detailedWidget(vData, background, colorMode);
+                return await this.detailedWidget(vData, background);
         }
     }
 
