@@ -126,13 +126,16 @@ class Widget {
         '2.0.0': {
             added: [
                 'All new menu that functions like an app interface',
+                'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
+                'For users who use multiple widgets for the same device you can define the widget type and color using the Edit Widget on the homescreen and use one of the following params: smallSimple, smallDetailed, and an optional definition of color (no color = use system color mode) Dark, Light, the same applies to the medium and large widgets.  The large Widget only has a detailed version of the layout',
                 'Setup menu now includes widget style and color mode settings, links to setup videos and documentation.',
                 'Added new option to advanced info menu to allow emailing your anonymous vehicle data to me (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything).',
-                'Script changes are show in a window when new versions are released.',
+                'Script changes are shown in a window when new versions are released.',
+                "Lot's of other items I can't remember yet",
             ],
-            fixed: ['Modified the margins of the widget to be more consistent and be better on small screens and small widgets.', 'Vehicle images should now load correctly.'],
+            fixed: ['Modified the margins of the widget to be more consistent and be better on small screens and small widgets.', 'Vehicle images should now load correctly.', "Lot's of other items I can't remember yet"],
             removed: ['Removed vehicle odometer from the widget UI to save space (moved it to the dashboard menu section).'],
-            updated: ['Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%.', 'Renamed debug menu to advanced info menu.'],
+            updated: ['Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%.', 'Renamed debug menu to advanced info menu.', "Lot's of other items I can't remember yet"],
         },
     };
 
@@ -602,7 +605,6 @@ class Widget {
             let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_${logType}_${this.SCRIPT_ID}.log` : `fp_${devName}_${logType}.log`;
             let path = fm.joinPath(logDir, fileName);
             if (fm.fileExists(path)) {
-                console.log(`getLogFilePath() | File Exists: ${path}`);
                 return path;
             } else {
                 return undefined;
@@ -983,7 +985,6 @@ class Widget {
 
     async getLastRefreshElapsedString(vData) {
         const elap = this.timeDifference(this.convertFordDtToLocal(vData.lastRefreshed));
-        console.log(`getLastRefreshElapsedString: ${elap}`);
         return elap;
     }
 
@@ -1676,7 +1677,7 @@ async function validateModules() {
                     available.push(fileName);
                 }
             } else {
-                if (!useLocal) {
+                if (!widgetConfig.useLocalModules) {
                     await fm.downloadFileFromiCloud(filePath);
                 }
                 let fileCode = await fm.readString(filePath);

@@ -687,7 +687,7 @@ module.exports = class FPW_Tables_MainPage {
             }
             await this.FPW.Tables.generateTableMenu('main', tableRows, false, false, update);
         } catch (err) {
-            this.FPW.logger(`createMainPage() Error: ${err}`, true);
+            this.FPW.logError(`createMainPage() Error: ${err}`);
         }
     }
 

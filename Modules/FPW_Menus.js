@@ -87,481 +87,485 @@ module.exports = class FPW_Menus {
                     return false;
             }
         } catch (err) {
-            this.FPW.logger(`(Required Prefs Menu) Error: ${err}`, true);
+            this.FPW.logError(`(Required Prefs Menu) Error: ${err}`);
             throw err;
         }
     }
 
     async menuBuilderByType(type, prefsMenu = false) {
-        const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
-        // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
-        const typeDesc = this.FPW.capitalizeStr(type);
-        let title = undefined;
-        let message = undefined;
-        let items = [];
+        try {
+            const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
+            // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
+            const typeDesc = this.FPW.capitalizeStr(type);
+            let title = undefined;
+            let message = undefined;
+            let items = [];
 
-        switch (type) {
-            case 'main':
-                title = `Widget Menu`;
-                message = `Widget Version: (${this.FPW.SCRIPT_VERSION})`.trim();
-                items = [{
-                        title: 'View Widget',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) View Widget was pressed`);
-                            this.menuBuilderByType('widgetView');
-                            // const w = await generateWidget('medium', fordData);
-                            // await w.presentMedium();
+            switch (type) {
+                case 'main':
+                    title = `Widget Menu`;
+                    message = `Widget Version: (${this.FPW.SCRIPT_VERSION})`.trim();
+                    items = [{
+                            title: 'View Widget',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) View Widget was pressed`);
+                                this.menuBuilderByType('widgetView');
+                                // const w = await generateWidget('medium', fordData);
+                                // await w.presentMedium();
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Request Refresh',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Refresh was pressed`);
-                            if (await this.FPW.Alerts.showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
-                                await this.FPW.FordAPI.sendVehicleCmd('status');
-                            }
+                        {
+                            title: 'Request Refresh',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Refresh was pressed`);
+                                if (await this.FPW.Alerts.showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
+                                    await this.FPW.FordAPI.sendVehicleCmd('status');
+                                }
+                            },
+                            destructive: true,
+                            show: true,
                         },
-                        destructive: true,
-                        show: true,
-                    },
-                    {
-                        title: 'Widget Appearance',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Widget Appearance was pressed`);
-                            this.menuBuilderByType('widget_settings');
+                        {
+                            title: 'Widget Appearance',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Widget Appearance was pressed`);
+                                this.menuBuilderByType('widget_settings');
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Settings',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Settings was pressed`);
-                            this.menuBuilderByType('settings');
+                        {
+                            title: 'Settings',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Settings was pressed`);
+                                this.menuBuilderByType('settings');
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Help & Info',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Help & Info was pressed`);
-                            await this.menuBuilderByType('helpInfo');
+                        {
+                            title: 'Help & Info',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Help & Info was pressed`);
+                                await this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Close',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Close was pressed`);
+                        {
+                            title: 'Close',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Close was pressed`);
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                ];
-                break;
+                    ];
+                    break;
 
-            case 'helpInfo':
-                title = `Help & About`;
-                items = [{
-                        title: 'Recent Changes',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) About was pressed`);
-                            await this.FPW.Tables.ChangesPage.createRecentChangesPage();
-                            this.menuBuilderByType('helpInfo');
+                case 'helpInfo':
+                    title = `Help & About`;
+                    items = [{
+                            title: 'Recent Changes',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) About was pressed`);
+                                await this.FPW.Tables.ChangesPage.createRecentChangesPage();
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'View Documentation',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Small Widget was pressed`);
-                            await Safari.openInApp(this.FPW.textMap().about.documentationUrl);
-                            this.menuBuilderByType('helpInfo');
+                        {
+                            title: 'View Documentation',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Small Widget was pressed`);
+                                await Safari.openInApp(this.FPW.textMap().about.documentationUrl);
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Report Issues',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Report Issues was pressed`);
-                            await Safari.openInApp(this.FPW.textMap().about.issuesUrl);
-                            this.menuBuilderByType('helpInfo');
+                        {
+                            title: 'Report Issues',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Report Issues was pressed`);
+                                await Safari.openInApp(this.FPW.textMap().about.issuesUrl);
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Donate',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Donate was pressed`);
-                            await Safari.open(this.FPW.textMap().about.donationUrl);
-                            this.menuBuilderByType('helpInfo');
+                        {
+                            title: 'Donate',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Donate was pressed`);
+                                await Safari.open(this.FPW.textMap().about.donationUrl);
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Diagnostics',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Diagnostics was pressed`);
-                            await this.menuBuilderByType('diagnostics');
+                        {
+                            title: 'Diagnostics',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Diagnostics was pressed`);
+                                await this.menuBuilderByType('diagnostics');
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Back',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Back was pressed`);
-                            this.menuBuilderByType('main');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                ];
-
-                break;
-            case 'widgetView':
-                title = 'View Widget';
-                items = [{
-                        title: 'Small',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Small Widget was pressed`);
-                            const w = await this.FPW.generateWidget('small', vehicleData);
-                            await w.presentSmall();
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Medium',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Medium Widget was pressed`);
-                            const w = await this.FPW.generateWidget('medium', vehicleData);
-                            await w.presentMedium();
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Large',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Large Widget was pressed`);
-                            const w = await this.FPW.generateWidget('large', vehicleData);
-                            await w.presentLarge();
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Extra-Large',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Extra-Large Widget was pressed`);
-                            const w = await this.FPW.generateWidget('extraLarge', vehicleData);
-                            await w.presentExtraLarge();
-                        },
-                        destructive: false,
-                        show: this.FPW.isPad,
-                    },
-                    {
-                        title: 'Back',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Back was pressed`);
-                            this.menuBuilderByType('main');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                ];
-                break;
-
-            case 'diagnostics':
-                title = 'Diagnostics Menu';
-                items = [{
-                        title: 'View OTA API Info',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) View OTA Info was pressed`);
-                            let data = await this.FPW.FordAPI.getVehicleOtaInfo();
-                            await this.FPW.Tables.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
-                            this.menuBuilderByType('diagnostics');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'View All Data',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) View All Data was pressed`);
-                            let data = await this.FPW.FordAPI.collectAllData(false);
-                            await this.FPW.Tables.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
-                            this.menuBuilderByType('diagnostics');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Copy All Data to Clipboard',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Copy Data was pressed`);
-                            let data = await this.FPW.FordAPI.collectAllData(true);
-                            await Pasteboard.copyString(JSON.stringify(data, null, 4));
-                            await this.FPW.Alerts.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
-                            this.menuBuilderByType('diagnostics');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Send Data to Developer',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
-                            let data = await this.FPW.FordAPI.collectAllData(true);
-                            await this.FPW.createVehicleDataEmail(data, true);
-                            this.menuBuilderByType('diagnostics');
-                        },
-                        destructive: true,
-                        show: true,
-                    },
-                    {
-                        title: 'Send Widget Logs to Developer',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Email Logs was pressed`);
-                            await this.FPW.createLogEmail();
-                            this.menuBuilderByType('diagnostics');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Back',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Back was pressed`);
-                            this.menuBuilderByType('main');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                ];
-                break;
-
-            case 'reset':
-                title = 'Reset Data Menu';
-                items = [{
-                        title: 'Clear Cached Files/Images',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Clear Files/Images was pressed`);
-                            await this.FPW.Files.clearFileManager();
-                            await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
-                            this.menuBuilderByType('main');
-                            // this.quit();
-                        },
-                        destructive: true,
-                        show: true,
-                    },
-                    {
-                        title: 'Clear Login Info',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Clear Login Info was pressed`);
-                            if (await this.FPW.Alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
-                                await this.FPW.clearSettings();
-                                await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease close out the menus and restart the script again to re-initialize the widget.');
+                        {
+                            title: 'Back',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Back was pressed`);
                                 this.menuBuilderByType('main');
-                            } else {
-                                this.menuBuilderByType('reset');
-                            }
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: true,
-                        show: true,
-                    },
-                    {
-                        title: 'Reset Everything',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Reset Everything was pressed`);
-                            if (await this.FPW.Alerts.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
-                                await this.FPW.clearSettings();
+                    ];
+
+                    break;
+                case 'widgetView':
+                    title = 'View Widget';
+                    items = [{
+                            title: 'Small',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Small Widget was pressed`);
+                                const w = await this.FPW.generateWidget('small', vehicleData);
+                                await w.presentSmall();
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Medium',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Medium Widget was pressed`);
+                                const w = await this.FPW.generateWidget('medium', vehicleData);
+                                await w.presentMedium();
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Large',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Large Widget was pressed`);
+                                const w = await this.FPW.generateWidget('large', vehicleData);
+                                await w.presentLarge();
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Extra-Large',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Extra-Large Widget was pressed`);
+                                const w = await this.FPW.generateWidget('extraLarge', vehicleData);
+                                await w.presentExtraLarge();
+                            },
+                            destructive: false,
+                            show: this.FPW.isPad,
+                        },
+                        {
+                            title: 'Back',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Back was pressed`);
+                                this.menuBuilderByType('main');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ];
+                    break;
+
+                case 'diagnostics':
+                    title = 'Diagnostics Menu';
+                    items = [{
+                            title: 'View OTA API Info',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) View OTA Info was pressed`);
+                                let data = await this.FPW.FordAPI.getVehicleOtaInfo();
+                                await this.FPW.Tables.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
+                                this.menuBuilderByType('diagnostics');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'View All Data',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) View All Data was pressed`);
+                                let data = await this.FPW.FordAPI.collectAllData(false);
+                                await this.FPW.Tables.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
+                                this.menuBuilderByType('diagnostics');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Copy All Data to Clipboard',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Copy Data was pressed`);
+                                let data = await this.FPW.FordAPI.collectAllData(true);
+                                await Pasteboard.copyString(JSON.stringify(data, null, 4));
+                                await this.FPW.Alerts.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
+                                this.menuBuilderByType('diagnostics');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Send Data to Developer',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
+                                let data = await this.FPW.FordAPI.collectAllData(true);
+                                await this.FPW.createVehicleDataEmail(data, true);
+                                this.menuBuilderByType('diagnostics');
+                            },
+                            destructive: true,
+                            show: true,
+                        },
+                        {
+                            title: 'Send Widget Logs to Developer',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Email Logs was pressed`);
+                                await this.FPW.createLogEmail();
+                                this.menuBuilderByType('diagnostics');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Back',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Back was pressed`);
+                                this.menuBuilderByType('main');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ];
+                    break;
+
+                case 'reset':
+                    title = 'Reset Data Menu';
+                    items = [{
+                            title: 'Clear Cached Files/Images',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Clear Files/Images was pressed`);
                                 await this.FPW.Files.clearFileManager();
-                                await this.FPW.Alerts.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nClose out the menus and restart the app.');
+                                await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
                                 this.menuBuilderByType('main');
-                            } else {
+                                // this.quit();
+                            },
+                            destructive: true,
+                            show: true,
+                        },
+                        {
+                            title: 'Clear Login Info',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Clear Login Info was pressed`);
+                                if (await this.FPW.Alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
+                                    await this.FPW.clearSettings();
+                                    await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease close out the menus and restart the script again to re-initialize the widget.');
+                                    this.menuBuilderByType('main');
+                                } else {
+                                    this.menuBuilderByType('reset');
+                                }
+                            },
+                            destructive: true,
+                            show: true,
+                        },
+                        {
+                            title: 'Reset Everything',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Reset Everything was pressed`);
+                                if (await this.FPW.Alerts.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
+                                    await this.FPW.clearSettings();
+                                    await this.FPW.Files.clearFileManager();
+                                    await this.FPW.Alerts.showAlert('Widget Reset Menu', 'All Files, Settings, and Login Info Cleared\n\nClose out the menus and restart the app.');
+                                    this.menuBuilderByType('main');
+                                } else {
+                                    this.menuBuilderByType('reset');
+                                }
+                            },
+                            destructive: true,
+                            show: true,
+                        },
+                        {
+                            title: 'Back',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Back was pressed`);
+                                this.menuBuilderByType('main');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ];
+                    break;
+
+                case 'color_mode':
+                    title = 'Widget Color Mode';
+                    items = [{
+                            title: `System`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Dark Mode pressed`);
+                                await this.FPW.setUIColorMode('system');
+                                if (!prefsMenu) {
+                                    this.menuBuilderByType('widget_settings');
+                                }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Light`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Dark Mode pressed`);
+                                await this.FPW.setUIColorMode('light');
+                                if (!prefsMenu) {
+                                    this.menuBuilderByType('widget_settings');
+                                }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Dark`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Dark Mode pressed`);
+                                await this.FPW.setUIColorMode('dark');
+                                if (!prefsMenu) {
+                                    this.menuBuilderByType('widget_settings');
+                                }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Back`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Back pressed`);
+                                if (!prefsMenu) {
+                                    this.menuBuilderByType('widget_settings');
+                                }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ];
+                    break;
+
+                case 'widget_settings':
+                    const widgetStyle = await this.FPW.getWidgetStyle();
+                    const colorMode = await this.FPW.getColorMode();
+                    title = 'Widget Settings';
+                    items = [{
+                            title: `Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Style pressed`);
+                                await this.FPW.Tables.WidgetStylePage.createWidgetStylePage();
+                                if (!prefsMenu) {
+                                    this.menuBuilderByType('widget_settings');
+                                }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Color Mode: ${this.FPW.capitalizeStr(colorMode)}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Color Mode pressed`);
+                                await this.menuBuilderByType('color_mode');
+                                // this.menuBuilderByType('widget_settings');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Back',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Close was pressed`);
+                                if (!prefsMenu) {
+                                    this.menuBuilderByType('main');
+                                }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ];
+                    break;
+
+                case 'settings':
+                    let mapProvider = await this.FPW.getMapProvider();
+                    title = 'Widget Settings';
+                    items = [{
+                            title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Map Provider pressed`);
+                                await this.FPW.toggleMapProvider();
+                                this.menuBuilderByType('settings');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Reset Login/File Options',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Clear All Data was pressed`);
                                 this.menuBuilderByType('reset');
-                            }
+                                // menuBuilderByType('settings');
+                            },
+                            destructive: true,
+                            show: true,
                         },
-                        destructive: true,
-                        show: true,
-                    },
-                    {
-                        title: 'Back',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Back was pressed`);
-                            this.menuBuilderByType('main');
+                        {
+                            title: 'View Scriptable Settings',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) View Scriptable Settings was pressed`);
+                                await Safari.open(URLScheme.forOpeningScriptSettings());
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                ];
-                break;
-
-            case 'color_mode':
-                title = 'Widget Color Mode';
-                items = [{
-                        title: `System`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Dark Mode pressed`);
-                            await this.FPW.setUIColorMode('system');
-                            if (!prefsMenu) {
-                                this.menuBuilderByType('widget_settings');
-                            }
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: `Light`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Dark Mode pressed`);
-                            await this.FPW.setUIColorMode('light');
-                            if (!prefsMenu) {
-                                this.menuBuilderByType('widget_settings');
-                            }
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: `Dark`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Dark Mode pressed`);
-                            await this.FPW.setUIColorMode('dark');
-                            if (!prefsMenu) {
-                                this.menuBuilderByType('widget_settings');
-                            }
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: `Back`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Back pressed`);
-                            if (!prefsMenu) {
-                                this.menuBuilderByType('widget_settings');
-                            }
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                ];
-                break;
-
-            case 'widget_settings':
-                const widgetStyle = await this.FPW.getWidgetStyle();
-                const colorMode = await this.FPW.getColorMode();
-                title = 'Widget Settings';
-                items = [{
-                        title: `Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Style pressed`);
-                            await this.FPW.Tables.WidgetStylePage.createWidgetStylePage();
-                            if (!prefsMenu) {
-                                this.menuBuilderByType('widget_settings');
-                            }
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: `Color Mode: ${this.FPW.capitalizeStr(colorMode)}`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Color Mode pressed`);
-                            await this.menuBuilderByType('color_mode');
-                            // this.menuBuilderByType('widget_settings');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Back',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Close was pressed`);
-                            if (!prefsMenu) {
+                        {
+                            title: `Back`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Back was pressed`);
                                 this.menuBuilderByType('main');
-                            }
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    },
-                ];
-                break;
-
-            case 'settings':
-                let mapProvider = await this.FPW.getMapProvider();
-                title = 'Widget Settings';
-                items = [{
-                        title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Map Provider pressed`);
-                            await this.FPW.toggleMapProvider();
-                            this.menuBuilderByType('settings');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: 'Reset Login/File Options',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Clear All Data was pressed`);
-                            this.menuBuilderByType('reset');
-                            // menuBuilderByType('settings');
-                        },
-                        destructive: true,
-                        show: true,
-                    },
-                    {
-                        title: 'View Scriptable Settings',
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) View Scriptable Settings was pressed`);
-                            await Safari.open(URLScheme.forOpeningScriptSettings());
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: `Back`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Back was pressed`);
-                            this.menuBuilderByType('main');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                ];
-                break;
-        }
-        if (title.length > 0 && items.length > 0) {
-            let menuItems = items.filter((item) => item.show === true);
-            // console.log(`subcontrol menuItems(${menuItems.length}): ${JSON.stringify(menuItems)}`);
-            const subMenu = new Alert();
-            subMenu.title = title;
-            subMenu.message = message;
-            menuItems.forEach((item, ind) => {
-                if (item.destructive) {
-                    subMenu.addDestructiveAction(item.title);
-                } else {
-                    subMenu.addAction(item.title);
-                }
-            });
-            const respInd = await subMenu.presentSheet();
-            if (respInd !== null) {
-                const menuItem = menuItems[respInd];
-                // console.log(`(Sub Control Menu) Selected: ${JSON.stringify(menuItem)}`);
-                menuItem.action();
+                    ];
+                    break;
             }
+            if (title.length > 0 && items.length > 0) {
+                let menuItems = items.filter((item) => item.show === true);
+                // console.log(`subcontrol menuItems(${menuItems.length}): ${JSON.stringify(menuItems)}`);
+                const subMenu = new Alert();
+                subMenu.title = title;
+                subMenu.message = message;
+                menuItems.forEach((item, ind) => {
+                    if (item.destructive) {
+                        subMenu.addDestructiveAction(item.title);
+                    } else {
+                        subMenu.addAction(item.title);
+                    }
+                });
+                const respInd = await subMenu.presentSheet();
+                if (respInd !== null) {
+                    const menuItem = menuItems[respInd];
+                    // console.log(`(Sub Control Menu) Selected: ${JSON.stringify(menuItem)}`);
+                    menuItem.action();
+                }
+            }
+        } catch (err) {
+            this.FPW.logError(`(${typeDesc} Menu) Error: ${err}`);
         }
     }
 };

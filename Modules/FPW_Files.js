@@ -27,7 +27,7 @@ module.exports = class FPW_Files {
             } //clean old data
             await fm.writeString(path, JSON.stringify(data));
         } catch (e) {
-            this.FPW.logger(`saveDataToLocal Error: ${e}`, true);
+            this.FPW.logError(`saveDataToLocal Error: ${e}`);
         }
     }
 
@@ -43,7 +43,7 @@ module.exports = class FPW_Files {
                 return JSON.parse(localData);
             }
         } catch (e) {
-            this.FPW.logger(`readLocalData Error: ${e}`, true);
+            this.FPW.logError(`readLocalData Error: ${e}`);
         }
         return null;
     }
@@ -57,7 +57,7 @@ module.exports = class FPW_Files {
                 await fm.remove(path);
             }
         } catch (e) {
-            this.FPW.logger(`removeLocalData Error: ${e}`, true);
+            this.FPW.logError(`removeLocalData Error: ${e}`);
         }
     }
 
@@ -79,7 +79,7 @@ module.exports = class FPW_Files {
                 await this.removeLocalData(file);
             });
         } catch (e) {
-            this.FPW.logger(`clearFileManager Error: ${e}`, true);
+            this.FPW.logError(`clearFileManager Error: ${e}`);
         }
     }
 
@@ -126,7 +126,7 @@ module.exports = class FPW_Files {
                 return iconImage;
             }
         } catch (e) {
-            this.FPW.logger(`getImage(${image}) Error: ${e}`, true);
+            this.FPW.logError(`getImage(${image}) Error: ${e}`);
             return null;
         }
     }
@@ -171,7 +171,7 @@ module.exports = class FPW_Files {
                     return await this.getImage('placeholder.png');
                 }
             } catch (e) {
-                this.FPW.logger(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`, true);
+                this.FPW.logError(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
                 return await this.getImage('placeholder.png');
             }
         }

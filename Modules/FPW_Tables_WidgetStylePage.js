@@ -38,9 +38,6 @@ module.exports = class FPW_Tables_WidgetStylePage {
                     }),
                 );
                 for (const [i, style] of['simple', 'detailed'].entries()) {
-                    // console.log(`Style: ${style} | Image: ${size}_${style}.png`);
-                    // for (const [i, color] of['dark', 'light'].entries()) {
-                    // let c = color === 'system' ? systemMode : color;
                     if (!(size === 'large' && style === 'simple')) {
                         tableRows.push(
                             await this.FPW.Tables.createTableRow(
@@ -55,7 +52,6 @@ module.exports = class FPW_Tables_WidgetStylePage {
                                     onSelect: async() => {
                                         console.log(`Setting WidgetStyle to ${style}`);
                                         await this.FPW.setWidgetStyle(style);
-                                        // await this.FPW.setUIColorMode(color);
                                         this.widgetStyleSelector(size);
                                     },
                                 },
