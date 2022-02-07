@@ -332,7 +332,6 @@ class Widget {
         this.Files = this.moduleLoader('Files');
         this.FordAPI = this.moduleLoader('FordAPIs');
         if (config.runsInApp) {
-            this.Images = this.moduleLoader('Images');
             this.Tables = this.moduleLoader('Tables');
             this.Menus = this.moduleLoader('Menus');
         }
