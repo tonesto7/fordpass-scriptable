@@ -8,7 +8,7 @@ module.exports = class FPW_Tables_MessagePage {
 
     async createMessagesPage(vData, unreadOnly = false, update = false) {
         try {
-            let msgs = vData.messages && vData.messages && vData.messages && vData.messages.length ? vData.messages : messageTest || [];
+            let msgs = vData.messages && vData.messages && vData.messages && vData.messages.length ? vData.messages : [];
             msgs = unreadOnly ? msgs.filter((msg) => msg.isRead === false) : msgs;
 
             let tableRows = [];

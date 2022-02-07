@@ -33,6 +33,13 @@ module.exports = class FPW_Widgets_Medium {
         console.log(`simpleWidget(medium) called...`);
         // Defines the Widget Object
         const widget = new ListWidget();
+        // let fm = FileManager.iCloud();
+        // let dir = fm.documentsDirectory();
+        // let path = fm.joinPath(dir, 'gray_grad_bg.png');
+        // if (await fm.fileExists(path)) {
+        //     widget.backgroundImage = await fm.readImage(path);
+        //     this.colorMode = 'light';
+        // }
         this.FPW.setWidgetBackground(widget, bgType);
         try {
             const { width, height } = this.widgetSize[this.wSize];
@@ -73,7 +80,7 @@ module.exports = class FPW_Widgets_Medium {
 
                 let levelContainer = await this.createRow(miContainer, {});
                 // DTE + Level Separator
-                await this.createText(levelContainer, ' / ', { font: Font.systemFont(14), textColor: this.colorMap.lighterText, textOpacity: 0.6 });
+                await this.createText(levelContainer, ' / ', { font: Font.systemFont(14), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
                 // Level Text
                 await this.createText(levelContainer, `${lvlValue}%`, { font: Font.systemFont(16), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
 
@@ -248,7 +255,7 @@ module.exports = class FPW_Widgets_Medium {
         try {
             const styles = {
                 open: { font: Font.semiboldSystemFont(10), textColor: this.colorMap.openColor, lineLimit: 2 },
-                closed: { font: Font.systemFont(10), textColor: this.colorMap.lighterText, textOpacity: 0.5, lineLimit: 2 },
+                closed: { font: Font.systemFont(10), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7, lineLimit: 2 },
             };
             let container = await this.createRow(srcElem, { '*setPadding': [0, 0, 0, 0] });
             // container.addSpacer();
@@ -802,7 +809,7 @@ module.exports = class FPW_Widgets_Medium {
     }
 
     async imgBtnRowBuilder(srcRow, elemWidth, widthPerc, elemHeight, icon) {
-        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 8, borderWidth: 2, borderColor: Color.darkGray() });
+        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 8, borderWidth: 2, borderColor: this.colorMap.text[this.colorMode] });
         btnCol.addSpacer(); // Pushes Button column down to help center in middle
 
         const btnImgRow = await this.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });

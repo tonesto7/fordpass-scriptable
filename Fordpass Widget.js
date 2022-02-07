@@ -67,13 +67,13 @@ Changelog:
 **************/
 
 const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/02/06, 6:00 pm';
+const SCRIPT_TS = '2022/02/07, 6:00 pm';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
 //* Customize Widget Options
 //******************************************************************
-//test
+
 const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
@@ -93,7 +93,8 @@ const widgetConfig = {
     testMode: false, // Use cached data for testing
     useBetaModules: true,
     useLocalModules: false,
-    iCloudFiles: false, // Use iCloud files for storing data
+    useLocalLogs: false,
+    useLocalFiles: true, // Use iCloud files for storing data
     ignoreHashCheck: true,
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
@@ -125,6 +126,7 @@ class Widget {
         '2.0.0': {
             added: [
                 'All new menu that functions like an app interface',
+                'Setup menu now includes widget style and color mode settings, links to setup videos and documentation.',
                 'Added new option to advanced info menu to allow emailing your anonymous vehicle data to me (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything).',
                 'Script changes are show in a window when new versions are released.',
             ],
@@ -541,7 +543,7 @@ class Widget {
             this.logError(`generateWidget() Error: ${e}`);
         }
         widget.setPadding(0, 5, 0, 1);
-        // widget.refreshAfterDate = new Date(Date.now() + 1000 * 60); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+        widget.refreshAfterDate = new Date(Date.now() + 1000 * 240); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         Script.setWidget(widget);
         this.logInfo(`Created Widget(${size})...`);
         return widget;
@@ -565,15 +567,15 @@ class Widget {
      * @return
      * @memberof Widget
      */
-    async readLogFile() {
+    async readLogFile(logType) {
         try {
-            let fm = FileManager.iCloud();
+            let fm = widgetConfig.useLocalLogs ? FileManager.local() : FileManager.iCloud();
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
                 .replace(/\s/g, '_')
                 .toLowerCase();
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_${logType}_${this.SCRIPT_ID}.log` : `fp_${devName}_${logType}.log`;
             let path = fm.joinPath(logDir, fileName);
             if (await fm.fileExists(path)) {
                 return await fm.readString(path);
@@ -590,16 +592,17 @@ class Widget {
      * @return
      * @memberof Widget
      */
-    async getLogFilePath() {
+    async getLogFilePath(logType) {
         try {
-            let fm = FileManager.iCloud();
+            const fm = widgetConfig.useLocalLogs ? FileManager.local() : FileManager.iCloud();
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
                 .toLowerCase();
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_log_${this.SCRIPT_ID}.log` : `fp_${devName}_log.log`;
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_${devName}_${logType}_${this.SCRIPT_ID}.log` : `fp_${devName}_${logType}.log`;
             let path = fm.joinPath(logDir, fileName);
-            if (await fm.fileExists(path)) {
+            if (fm.fileExists(path)) {
+                console.log(`getLogFilePath() | File Exists: ${path}`);
                 return path;
             } else {
                 return undefined;
@@ -895,13 +898,19 @@ class Widget {
      */
     async createLogEmail() {
         try {
-            let email = new Mail();
+            const email = new Mail();
             email.subject = `FordPass Widget Logs`;
             email.toRecipients = [this.textMap().about.email]; // This is my anonymous email address provided by Apple,
             email.body = 'Widget Logs are Attached';
             email.isBodyHTML = true;
-            let logFile = await this.getLogFilePath();
-            await email.addFileAttachment(logFile);
+            let appLogs = await this.getLogFilePath('app');
+            if (appLogs) {
+                await email.addFileAttachment(appLogs);
+            }
+            let widgetLogs = await this.getLogFilePath('widget');
+            if (widgetLogs) {
+                await email.addFileAttachment(widgetLogs);
+            }
             await email.send();
         } catch (e) {
             this.logError(`createLogEmail Error: Could Not Send Log Email. ${e}`);
@@ -1260,18 +1269,28 @@ class Widget {
             key = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `${key}_${this.SCRIPT_ID}` : key;
             await Keychain.set(key, value);
         }
+        return false;
     }
 
     async getUIColorMode(frcMode = undefined) {
-        let modeSetting = await this.getSettingVal('fpUIColorMode');
-        let mode = frcMode || modeSetting;
-        switch (mode) {
-            case 'dark':
-            case 'light':
-                return mode;
-            default:
-                return darkMode ? 'dark' : 'light';
+        try {
+            const modeSetting = await this.getSettingVal('fpUIColorMode');
+            const mode = frcMode !== undefined ? frcMode : modeSetting;
+            // console.log(`getUIColorMode(${mode})`);
+            switch (mode) {
+                case 'dark':
+                case 'light':
+                    return mode;
+                default:
+                    return this.darkMode ? 'dark' : 'light';
+            }
+        } catch (e) {
+            this.FPW.logger(`getUIColorMode() Error: ${e}`, true);
         }
+    }
+
+    async getColorMode() {
+        return (await this.getSettingVal('fpUIColorMode')) || 'system';
     }
 
     async setUIColorMode(mode) {
@@ -1399,6 +1418,7 @@ class Widget {
             'fpScriptVersion',
             'fpWidgetBackground',
             'fpWidgetStyle',
+            'fpUIColorMode',
         ];
         for (const key in keys) {
             await this.removeSettingVal(keys[key]);
@@ -1599,34 +1619,32 @@ class Widget {
 
 /**
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
- * @param  {boolean} [useLocal=false] Tells the function to use the local file manager versus icloud version.
  * @return
  */
-async function validateModules(useLocal = false) {
+async function validateModules() {
     const moduleFiles = [
         'FPW_Alerts.js||1575654697',
-        'FPW_Files.js||-1368940717',
-        'FPW_FordAPIs.js||-1527776815',
-        'FPW_Images.js||-1368940717',
+        'FPW_Files.js||-732942791',
+        'FPW_FordAPIs.js||908574209',
         'FPW_Keychain.js||865182748',
-        'FPW_Menus.js||1069934756',
+        'FPW_Menus.js||566532256',
         'FPW_Notifications.js||-168421043',
         'FPW_ShortcutParser.js||2076658623',
-        'FPW_Tables.js||1668082861',
-        'FPW_Tables_AlertPage.js||1112174215',
-        'FPW_Tables_ChangesPage.js||226382571',
-        'FPW_Tables_MainPage.js||-531891446',
-        'FPW_Tables_MessagePage.js||-848345285',
-        'FPW_Tables_RecallPage.js||-169548452',
-        'FPW_Tables_WidgetStylePage.js||-1509087067',
+        'FPW_Tables.js||-102791873',
+        'FPW_Tables_AlertPage.js||-1687899018',
+        'FPW_Tables_ChangesPage.js||-1348322738',
+        'FPW_Tables_MainPage.js||-189298638',
+        'FPW_Tables_MessagePage.js||-1931255899',
+        'FPW_Tables_RecallPage.js||1094245826',
+        'FPW_Tables_WidgetStylePage.js||1814395347',
         'FPW_Timers.js||-1888476318',
-        'FPW_Widgets_ExtraLarge.js||1913554047',
-        'FPW_Widgets_Helpers.js||384162293',
-        'FPW_Widgets_Large.js||692726051',
-        'FPW_Widgets_Medium.js||-219951054',
-        'FPW_Widgets_Small.js||-76095761',
+        'FPW_Widgets_ExtraLarge.js||1098647483',
+        'FPW_Widgets_Helpers.js||1392293995',
+        'FPW_Widgets_Large.js||1561128693',
+        'FPW_Widgets_Medium.js||21895432',
+        'FPW_Widgets_Small.js||-219679237',
     ];
-    const fm = useLocal ? FileManager.local() : FileManager.iCloud();
+    const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
     moduleRepo = widgetConfig.useBetaModules ? moduleRepo.replace('main', 'beta') : moduleRepo;
     async function downloadModule(fileName, filePath) {
@@ -1694,7 +1712,7 @@ async function validateModules(useLocal = false) {
 async function appendToLogFile(txt) {
     // console.log('appendToLogFile: Saving Data to Log...');
     try {
-        const fm = FileManager.iCloud();
+        const fm = widgetConfig.useLocalLogs ? FileManager.iCloud() : FileManager.local();
         const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
         const devName = Device.name()
             .replace(/[^a-zA-Z\s]/g, '')

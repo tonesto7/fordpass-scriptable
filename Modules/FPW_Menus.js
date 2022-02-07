@@ -11,8 +11,8 @@ module.exports = class FPW_Menus {
             pass = pass || (await this.FPW.getSettingVal('fpPass'));
             vin = vin || (await this.FPW.getSettingVal('fpVin'));
             let mapProvider = await this.FPW.getMapProvider();
-            let widgetStyle = await this.FPW.getWidgetStyle();
-            let uiColorMode = await this.FPW.getUIColorMode();
+            const widgetStyle = await this.FPW.getWidgetStyle();
+            const colorMode = await this.FPW.getColorMode();
             let prefsMenu = new Alert();
             prefsMenu.title = 'Required Settings Missing';
             prefsMenu.message = 'Please enter you FordPass Credentials and Vehicle VIN.\n\nTap a setting to toggle change\nPress Done to Save.';
@@ -21,7 +21,8 @@ module.exports = class FPW_Menus {
             prefsMenu.addSecureTextField('FordPass Password', pass || '');
             prefsMenu.addTextField('Vehicle VIN', vin || '');
 
-            prefsMenu.addAction(`Widget Style/Appearance`);
+            prefsMenu.addAction(`Widget Style: ${this.FPW.capitalizeStr(widgetStyle)}`);
+            prefsMenu.addAction(`Widget Color: ${this.FPW.capitalizeStr(colorMode)}`);
             prefsMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //0
             prefsMenu.addAction('View Documentation'); //1
             prefsMenu.addAction('Watch Setup Video'); //2
@@ -35,12 +36,12 @@ module.exports = class FPW_Menus {
             vin = prefsMenu.textFieldValue(2);
             switch (respInd) {
                 case 0:
-                    console.log(`(Require Prefs Menu) Widget Style pressed`);
+                    console.log(`(Required Prefs Menu) Widget Style pressed`);
                     await this.FPW.Tables.WidgetStylePage.createWidgetStylePage();
                     return await this.requiredPrefsMenu(user, pass, vin);
                 case 1:
                     console.log('(Required Prefs Menu) Widget Style pressed');
-                    await this.FPW.toggleMapProvider();
+                    await this.menuBuilderByType('color_mode', true);
                     return await this.requiredPrefsMenu(user, pass, vin);
                 case 2:
                     console.log('(Required Prefs Menu) Map Provider pressed');
@@ -91,7 +92,7 @@ module.exports = class FPW_Menus {
         }
     }
 
-    async menuBuilderByType(type) {
+    async menuBuilderByType(type, prefsMenu = false) {
         const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
         // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
         const typeDesc = this.FPW.capitalizeStr(type);
@@ -129,7 +130,7 @@ module.exports = class FPW_Menus {
                         title: 'Widget Appearance',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Widget Appearance was pressed`);
-                            this.menuBuilderByType('widget_customization');
+                            this.menuBuilderByType('widget_settings');
                         },
                         destructive: false,
                         show: true,
@@ -405,37 +406,81 @@ module.exports = class FPW_Menus {
                     },
                 ];
                 break;
-            case 'widget_customization':
-                let widgetStyle = await this.FPW.getWidgetStyle();
-                let bgType = await this.FPW.getBackgroundType();
-                let txtColor = await this.FPW.getUIColorMode();
+
+            case 'color_mode':
+                title = 'Widget Color Mode';
+                items = [{
+                        title: `System`,
+                        action: async() => {
+                            console.log(`(${typeDesc} Menu) Dark Mode pressed`);
+                            await this.FPW.setUIColorMode('system');
+                            if (!prefsMenu) {
+                                this.menuBuilderByType('widget_settings');
+                            }
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                    {
+                        title: `Light`,
+                        action: async() => {
+                            console.log(`(${typeDesc} Menu) Dark Mode pressed`);
+                            await this.FPW.setUIColorMode('light');
+                            if (!prefsMenu) {
+                                this.menuBuilderByType('widget_settings');
+                            }
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                    {
+                        title: `Dark`,
+                        action: async() => {
+                            console.log(`(${typeDesc} Menu) Dark Mode pressed`);
+                            await this.FPW.setUIColorMode('dark');
+                            if (!prefsMenu) {
+                                this.menuBuilderByType('widget_settings');
+                            }
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                    {
+                        title: `Back`,
+                        action: async() => {
+                            console.log(`(${typeDesc} Menu) Back pressed`);
+                            if (!prefsMenu) {
+                                this.menuBuilderByType('widget_settings');
+                            }
+                        },
+                        destructive: false,
+                        show: true,
+                    },
+                ];
+                break;
+
+            case 'widget_settings':
+                const widgetStyle = await this.FPW.getWidgetStyle();
+                const colorMode = await this.FPW.getColorMode();
                 title = 'Widget Settings';
                 items = [{
-                        title: `Widget Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
+                        title: `Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
                         action: async() => {
-                            console.log(`(${typeDesc} Menu) Widget Style pressed`);
+                            console.log(`(${typeDesc} Menu) Style pressed`);
                             await this.FPW.Tables.WidgetStylePage.createWidgetStylePage();
-                            this.menuBuilderByType('widget_customization');
+                            if (!prefsMenu) {
+                                this.menuBuilderByType('widget_settings');
+                            }
                         },
                         destructive: false,
                         show: true,
                     },
                     {
-                        title: `Widget Background: ${this.FPW.capitalizeStr(bgType)}`,
+                        title: `Color Mode: ${this.FPW.capitalizeStr(colorMode)}`,
                         action: async() => {
-                            console.log(`(${typeDesc} Menu) Widget Background pressed`);
-                            await this.menuBuilderByType('widget_bg_types');
-                            this.menuBuilderByType('widget_customization');
-                        },
-                        destructive: false,
-                        show: true,
-                    },
-                    {
-                        title: `Widget Text Color: ${this.FPW.capitalizeStr(txtColor)}`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Widget Text pressed`);
-                            await this.menuBuilderByType('widget_text_colors');
-                            this.menuBuilderByType('widget_customization');
+                            console.log(`(${typeDesc} Menu) Color Mode pressed`);
+                            await this.menuBuilderByType('color_mode');
+                            // this.menuBuilderByType('widget_settings');
                         },
                         destructive: false,
                         show: true,
@@ -444,7 +489,9 @@ module.exports = class FPW_Menus {
                         title: 'Back',
                         action: async() => {
                             console.log(`(${typeDesc} Menu) Close was pressed`);
-                            this.menuBuilderByType('main');
+                            if (!prefsMenu) {
+                                this.menuBuilderByType('main');
+                            }
                         },
                         destructive: false,
                         show: true,

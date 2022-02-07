@@ -14,7 +14,7 @@ module.exports = class FPW_Tables_WidgetStylePage {
             tableRows.push(
                 await this.FPW.Tables.createTableRow(
                     [
-                        await this.FPW.Tables.createTextCell(`Widget Styles`, `This page shows an example of the different sizes, types and colors\nTap on type to set it.`, {
+                        await this.FPW.Tables.createTextCell(`Default Widget Style`, `This page shows an example of the different sizes, types and colors\nTap on type to set it as the default for any widgets used. \nYou can manually set each widget using the edit widget from the homescreen and defining the necessary parameter.`, {
                             align: 'center',
                             widthWeight: 1,
                             dismissOnTap: false,
@@ -24,7 +24,7 @@ module.exports = class FPW_Tables_WidgetStylePage {
                             subtitleFont: Font.mediumSystemFont(11),
                         }),
                     ], {
-                        height: 70,
+                        height: 80,
                         dismissOnSelect: false,
                     },
                 ),
@@ -39,29 +39,30 @@ module.exports = class FPW_Tables_WidgetStylePage {
                 );
                 for (const [i, style] of['simple', 'detailed'].entries()) {
                     // console.log(`Style: ${style} | Image: ${size}_${style}.png`);
-                    for (const [i, color] of['system', 'dark', 'light'].entries()) {
-                        let c = color === 'system' ? systemMode : color;
-                        if (!(size === 'large' && style === 'simple')) {
-                            tableRows.push(
-                                await this.FPW.Tables.createTableRow(
-                                    [
-                                        await this.FPW.Tables.createTextCell(`${this.FPW.capitalizeStr(style)}\n(${this.FPW.capitalizeStr(color)})`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.subheadline() }),
-                                        await this.FPW.Tables.createImageCell(await this.FPW.Files.getImage(`${size}${this.FPW.capitalizeStr(style)}${this.FPW.capitalizeStr(c)}.png`), { align: 'center', widthWeight: 60 }),
-                                        await this.FPW.Tables.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
-                                    ], {
-                                        height: 150,
-                                        dismissOnSelect: true,
-                                        backgroundColor: widgetStyle === style ? Color.lightGray() : undefined,
-                                        onSelect: async() => {
-                                            console.log(`Setting WidgetStyle to ${style}`);
-                                            await this.FPW.setWidgetStyle(style);
-                                            this.widgetStyleSelector(size);
-                                        },
+                    // for (const [i, color] of['dark', 'light'].entries()) {
+                    // let c = color === 'system' ? systemMode : color;
+                    if (!(size === 'large' && style === 'simple')) {
+                        tableRows.push(
+                            await this.FPW.Tables.createTableRow(
+                                [
+                                    await this.FPW.Tables.createTextCell(`${this.FPW.capitalizeStr(style)}`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.subheadline() }),
+                                    await this.FPW.Tables.createImageCell(await this.FPW.Files.getImage(`${size}${this.FPW.capitalizeStr(style)}Light.png`), { align: 'center', widthWeight: 60 }),
+                                    await this.FPW.Tables.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
+                                ], {
+                                    height: 150,
+                                    dismissOnSelect: true,
+                                    backgroundColor: widgetStyle === style ? Color.lightGray() : undefined,
+                                    onSelect: async() => {
+                                        console.log(`Setting WidgetStyle to ${style}`);
+                                        await this.FPW.setWidgetStyle(style);
+                                        // await this.FPW.setUIColorMode(color);
+                                        this.widgetStyleSelector(size);
                                     },
-                                ),
-                            );
-                        }
+                                },
+                            ),
+                        );
                     }
+                    // }
                 }
                 tableRows.push(
                     await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(``, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false })], {

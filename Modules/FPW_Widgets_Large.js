@@ -672,7 +672,7 @@ module.exports = class FPW_Widgets_Large {
     }
 
     async imgBtnRowBuilder(srcRow, elemWidth, widthPerc, elemHeight, icon) {
-        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 8, borderWidth: 2, borderColor: Color.darkGray() });
+        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 8, borderWidth: 2, borderColor: this.colorMap.text[this.colorMode] });
         btnCol.addSpacer(); // Pushes Button column down to help center in middle
 
         const btnImgRow = await this.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
