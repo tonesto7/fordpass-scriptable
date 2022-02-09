@@ -2,16 +2,16 @@ module.exports = class FPW_Tables_ChangePage {
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_VERSION = FPW.SCRIPT_VERSION;
-        this.SCRIPT_TS = FPW.SCRIPT_TS;
+        // this.SCRIPT_TS = FPW.SCRIPT_TS;
         this.widgetConfig = FPW.widgetConfig;
     }
 
     async createRecentChangesPage() {
         try {
-            let changes = this.FPW.changelog[this.SCRIPT_VERSION];
+            let changes = this.FPW.changelogs[this.SCRIPT_VERSION];
             let tableRows = [];
             if (changes && (changes.updated.length || changes.added.length || changes.removed.length || changes.fixed.length)) {
-                let verTs = new Date(Date.parse(this.SCRIPT_TS));
+                // let verTs = new Date(Date.parse(this.SCRIPT_TS));
                 tableRows.push(
                     await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`${this.SCRIPT_VERSION} Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title1() })], {
                         height: 50,
@@ -47,7 +47,7 @@ module.exports = class FPW_Tables_ChangePage {
 
             await this.FPW.Tables.generateTableMenu('recentChanges', tableRows, false, false);
         } catch (error) {
-            this.FPW.logger(`(RecentChanges Table) ${error}`, true);
+            await this.FPW.logger(`(RecentChanges Table) ${error}`, true);
         }
     }
 };

@@ -65,9 +65,24 @@ Changelog:
         * handle context and tense of command
     
 **************/
+const changelogs = {
+    '2022.02.08': {
+        added: [
+            'All new menu that functions like an app interface',
+            'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
+            'For users who use multiple widgets for the same device you can define the widget type and color using the Edit Widget on the homescreen and use one of the following params: smallSimple, smallDetailed, and an optional definition of color (no color = use system color mode) Dark, Light, the same applies to the medium and large widgets.  The large Widget only has a detailed version of the layout',
+            'Setup menu now includes widget style and color mode settings, links to setup videos and documentation.',
+            'Added new option to advanced info menu to allow emailing your anonymous vehicle data to me (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything).',
+            'Script changes are shown in a window when new versions are released.',
+            "Lot's of other items I can't remember yet",
+        ],
+        fixed: ['Modified the margins of the widget to be more consistent and be better on small screens and small widgets.', 'Vehicle images should now load correctly.', "Lot's of other items I can't remember yet"],
+        removed: ['Removed vehicle odometer from the widget UI to save space (moved it to the dashboard menu section).'],
+        updated: ['Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%.', 'Renamed debug menu to advanced info menu.', "Lot's of other items I can't remember yet"],
+    },
+};
 
-const SCRIPT_VERSION = '2.0.0';
-const SCRIPT_TS = '2022/02/07, 6:00 pm';
+const SCRIPT_VERSION = '2022.02.08';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -90,10 +105,10 @@ const widgetConfig = {
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
-    testMode: false, // Use cached data for testing
+    testMode: true, // Use cached data for testing
     useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     useLocalModules: false, // Stores and loads modules from local storage instead of iCloud.  disable to access the module files under the scriptable folder in iCloud Drive.
-    useLocalLogs: true, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
+    useLocalLogs: false, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
     useLocalFiles: true, // Use iCloud files for storing data
     ignoreHashCheck: true, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
     clearKeychainOnNextRun: false, // false or true
@@ -104,9 +119,10 @@ const widgetConfig = {
 //************************************************************************* */
 //*                  Device Detail Functions
 //************************************************************************* */
-const screenSize = Device.screenResolution();
+const screenResolution = Device.screenResolution();
+const screenSize = Device.screenSize();
 const screenScale = Device.screenScale();
-const isSmallDisplay = screenSize.width < 1200 === true;
+const isSmallDisplay = screenResolution.width < 1200 === true;
 const darkMode = Device.isUsingDarkAppearance();
 if (typeof require === 'undefined') require = importModule;
 const runningWidgetSize = config.widgetFamily;
@@ -122,23 +138,6 @@ const runningWidgetSize = config.widgetFamily;
 //******************************************************************************
 
 class Widget {
-    changelog = {
-        '2.0.0': {
-            added: [
-                'All new menu that functions like an app interface',
-                'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
-                'For users who use multiple widgets for the same device you can define the widget type and color using the Edit Widget on the homescreen and use one of the following params: smallSimple, smallDetailed, and an optional definition of color (no color = use system color mode) Dark, Light, the same applies to the medium and large widgets.  The large Widget only has a detailed version of the layout',
-                'Setup menu now includes widget style and color mode settings, links to setup videos and documentation.',
-                'Added new option to advanced info menu to allow emailing your anonymous vehicle data to me (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything).',
-                'Script changes are shown in a window when new versions are released.',
-                "Lot's of other items I can't remember yet",
-            ],
-            fixed: ['Modified the margins of the widget to be more consistent and be better on small screens and small widgets.', 'Vehicle images should now load correctly.', "Lot's of other items I can't remember yet"],
-            removed: ['Removed vehicle odometer from the widget UI to save space (moved it to the dashboard menu section).'],
-            updated: ['Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%.', 'Renamed debug menu to advanced info menu.', "Lot's of other items I can't remember yet"],
-        },
-    };
-
     colorMap = {
         text: {
             system: Color.dynamic(new Color('#000000'), new Color('#EDEDED')),
@@ -255,49 +254,11 @@ class Widget {
         },
     };
 
-    DeviceSize = {
-        '428x926': {
-            small: { width: 176, height: 176 },
-            medium: { width: 374, height: 176 },
-            large: { width: 374, height: 391 },
-        },
-        '390x844': {
-            small: { width: 161, height: 161 },
-            medium: { width: 342, height: 161 },
-            large: { width: 342, height: 359 },
-        },
-        '414x896': {
-            small: { width: 169, height: 169 },
-            medium: { width: 360, height: 169 },
-            large: { width: 360, height: 376 },
-        },
-        '375x812': {
-            small: { width: 155, height: 155 },
-            medium: { width: 329, height: 155 },
-            large: { width: 329, height: 345 },
-        },
-        '414x736': {
-            small: { width: 159, height: 159 },
-            medium: { width: 348, height: 159 },
-            large: { width: 348, height: 357 },
-        },
-        '375x667': {
-            small: { width: 148, height: 148 },
-            medium: { width: 322, height: 148 },
-            large: { width: 322, height: 324 },
-        },
-        '320x568': {
-            small: { width: 141, height: 141 },
-            medium: { width: 291, height: 141 },
-            large: { width: 291, height: 299 },
-        },
-    };
-
     constructor() {
         this.SCRIPT_NAME = 'Fordpass Widget';
         this.SCRIPT_ID = SCRIPT_ID;
         this.SCRIPT_VERSION = SCRIPT_VERSION;
-        this.SCRIPT_TS = SCRIPT_TS;
+        // this.SCRIPT_TS = SCRIPT_TS;
         this.stateStore = {};
         this.moduleMap = {};
         this.localFM = FileManager.local();
@@ -312,11 +273,13 @@ class Widget {
         //************************************************************************* */
         //*                  Device Detail Functions
         //************************************************************************* */
+        this.screenResolution = screenResolution;
         this.screenSize = screenSize;
         this.screenScale = screenScale;
         this.isSmallDisplay = isSmallDisplay;
         this.darkMode = darkMode;
         this.runningWidgetSize = config.widgetFamily;
+        this.widgetSizes = this.getWidgetSizeInPoint();
         this.isPhone = Device.isPhone();
         this.isPad = Device.isPad();
         this.deviceModel = Device.model();
@@ -332,6 +295,7 @@ class Widget {
         this.Files = this.moduleLoader('Files');
         this.FordAPI = this.moduleLoader('FordAPIs');
         if (config.runsInApp) {
+            this.changelogs = changelogs;
             this.Tables = this.moduleLoader('Tables');
             this.Menus = this.moduleLoader('Menus');
         }
@@ -372,6 +336,7 @@ class Widget {
             this.logInfo('---------------------------');
             this.logInfo('Widget RUN...');
             // Starts the widget load process
+            console.log(`widgetSize: ${JSON.stringify(await this.getWidgetSizeInPoint())}`);
             let fordData = widgetConfig.testMode ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget(config.runsInWidget);
             if (fordData === null) return;
             if (config.runsInWidget) {
@@ -844,7 +809,7 @@ class Widget {
      * @memberof Widget
      */
     async getLatestScriptVersion() {
-        let req = new Request(`https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/latest.json`);
+        let req = new Request(`https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/latest_v2.json`);
         req.headers = {
             'Content-Type': 'application/json',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -1495,121 +1460,162 @@ class Widget {
         return false;
     }
 
-    /**
-     * @description
-     * @return
-     * @memberof Widget
-     */
-    phoneSizes() {
-        return {
-            // 12 and 12 Pro
-            2532: {
-                small: 474,
-                medium: 1014,
-                large: 1062,
-                left: 78,
-                right: 618,
-                top: 231,
-                middle: 819,
-                bottom: 1407,
+    // widgetSizes() {
+    //     return {
+    //         old: {
+    //             '428x926': {
+    //                 small: { width: 176, height: 176 },
+    //                 medium: { width: 374, height: 176 },
+    //                 large: { width: 374, height: 391 },
+    //             },
+    //             '390x844': {
+    //                 small: { width: 161, height: 161 },
+    //                 medium: { width: 342, height: 161 },
+    //                 large: { width: 342, height: 359 },
+    //             },
+    //             '414x896': {
+    //                 small: { width: 169, height: 169 },
+    //                 medium: { width: 360, height: 169 },
+    //                 large: { width: 360, height: 376 },
+    //             },
+    //             '375x812': {
+    //                 small: { width: 155, height: 155 },
+    //                 medium: { width: 329, height: 155 },
+    //                 large: { width: 329, height: 345 },
+    //             },
+    //             '414x736': {
+    //                 small: { width: 159, height: 159 },
+    //                 medium: { width: 348, height: 159 },
+    //                 large: { width: 348, height: 357 },
+    //             },
+    //             '375x667': {
+    //                 small: { width: 148, height: 148 },
+    //                 medium: { width: 322, height: 148 },
+    //                 large: { width: 322, height: 324 },
+    //             },
+    //             '320x568': {
+    //                 small: { width: 141, height: 141 },
+    //                 medium: { width: 291, height: 141 },
+    //                 large: { width: 291, height: 299 },
+    //             },
+    //         },
+    //     };
+    // }
+
+    // Modified version of this https://talk.automators.fm/t/get-available-widget-height-and-width-depending-on-the-devices-screensize/9258/5
+    async getWidgetSizeInPoint(widgetSize = config.runsInWidget ? config.widgetFamily : null) {
+        // RegExp to verify widgetSize
+        const sizes = /^(?:small|medium|large|extraLarge)$/;
+        // stringify device screen size
+        const devSize = (({ width: w, height: h }) => (w > h ? `${h}x${w}` : `${w}x${h}`))(Device.screenSize());
+        // console.log(`devSize: ${devSize}`);
+        // screen size to widget size mapping for iPhone and iPad viewport sizes
+        const sizeMap = {
+            // IPAD_VIEWPORT_SIZES
+            '768x1024': {
+                devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
+                small: { width: 120, height: 120 },
+                medium: { width: 260, height: 120 },
+                large: { width: 260, height: 260 },
+                extraLarge: { width: 540, height: 260 },
+            },
+            '810x1080': {
+                devices: ['10.2" iPad'],
+                small: { width: 124, height: 124 },
+                medium: { width: 272, height: 124 },
+                large: { width: 272, height: 272 },
+                extraLarge: { width: 568, height: 272 },
+            },
+            '834x1112': {
+                devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
+                small: { width: 132, height: 132 },
+                medium: { width: 288, height: 132 },
+                large: { width: 288, height: 288 },
+                extraLarge: { width: 600, height: 288 },
+            },
+            '820x1180': {
+                devices: ['10.9" iPad Air 4th Gen'],
+                small: { width: 136, height: 136 },
+                medium: { width: 300, height: 136 },
+                large: { width: 300, height: 300 },
+                extraLarge: { width: 628, height: 300 },
+            },
+            '834x1194': {
+                devices: ['11" iPad Pro'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 345, height: 329 },
+                extraLarge: { width: 628, height: 300 },
+            },
+            '1024x1366': {
+                devices: ['12.9" iPad Pro'],
+                small: { width: 170, height: 170 },
+                medium: { width: 332, height: 170 },
+                large: { width: 382, height: 332 },
+                extraLarge: { width: 748, height: 356 },
             },
 
-            // 11 Pro Max, XS Max
-            2688: {
-                small: 507,
-                medium: 1080,
-                large: 1137,
-                left: 81,
-                right: 654,
-                top: 228,
-                middle: 858,
-                bottom: 1488,
+            // IPHONE_VIEWPORT_SIZES
+            '428x926': {
+                devices: ['12 Pro Max'],
+                small: { width: 170, height: 170 },
+                medium: { width: 364, height: 170 },
+                large: { width: 364, height: 382 },
             },
-
-            // 11, XR
-            1792: {
-                small: 338,
-                medium: 720,
-                large: 758,
-                left: 54,
-                right: 436,
-                top: 160,
-                middle: 580,
-                bottom: 1000,
+            '360x780': {
+                devices: ['12 Mini'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 329, height: 345 },
             },
-
-            // 11 Pro, XS, X
-            2436: {
-                small: 465,
-                medium: 987,
-                large: 1035,
-                left: 69,
-                right: 591,
-                top: 213,
-                middle: 783,
-                bottom: 1353,
+            '414x896': {
+                devices: ['XR', 'XS Max', '11', '11 Pro Max'],
+                small: { width: 169, height: 169 },
+                medium: { width: 360, height: 169 },
+                large: { width: 360, height: 376 },
             },
-
-            // Plus phones
-            2208: {
-                small: 471,
-                medium: 1044,
-                large: 1071,
-                left: 99,
-                right: 672,
-                top: 114,
-                middle: 696,
-                bottom: 1278,
+            '390x844': {
+                devices: ['12', '12 Pro'],
+                small: { width: 158, height: 158 },
+                medium: { width: 338, height: 158 },
+                large: { width: 338, height: 354 },
             },
-
-            // SE2 and 6/6S/7/8
-            1334: {
-                small: 296,
-                medium: 642,
-                large: 648,
-                left: 54,
-                right: 400,
-                top: 60,
-                middle: 412,
-                bottom: 764,
+            '375x812': {
+                devices: ['X', 'XS', '11 Pro'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 329, height: 345 },
             },
-
-            // SE1
-            1136: {
-                small: 282,
-                medium: 584,
-                large: 622,
-                left: 30,
-                right: 332,
-                top: 59,
-                middle: 399,
-                bottom: 399,
+            '414x736': {
+                devices: ['6S Plus', '7 Plus', '8 Plus'],
+                small: { width: 159, height: 159 },
+                medium: { width: 348, height: 159 },
+                large: { width: 348, height: 357 },
             },
-
-            // 11 and XR in Display Zoom mode
-            1624: {
-                small: 310,
-                medium: 658,
-                large: 690,
-                left: 46,
-                right: 394,
-                top: 142,
-                middle: 522,
-                bottom: 902,
+            '375x667': {
+                devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
+                small: { width: 148, height: 148 },
+                medium: { width: 322, height: 148 },
+                large: { width: 322, height: 324 },
             },
-
-            // Plus in Display Zoom mode
-            2001: {
-                small: 444,
-                medium: 963,
-                large: 972,
-                left: 81,
-                right: 600,
-                top: 90,
-                middle: 618,
-                bottom: 1146,
+            '320x568': {
+                devices: ['SE (1st Gen)'],
+                small: { width: 141, height: 141 },
+                medium: { width: 291, height: 141 },
+                large: { width: 291, height: 299 },
             },
         };
+        let widgetSizeInPoint = null;
+
+        if (widgetSize && sizes.test(widgetSize)) {
+            if (sizeMap[devSize]) {
+                // widgetSizeInPoint = new Size(...sizeMap[devSize][widgetSize]);
+                console.log(`widgetSizeInPoint: ${JSON.stringify(sizeMap[devSize])}`);
+                return sizeMap[devSize][widgetSize];
+            }
+        } else {
+            return widgetSizeInPoint;
+        }
     }
 }
 
@@ -1712,7 +1718,7 @@ async function validateModules() {
 async function appendToLogFile(txt) {
     // console.log('appendToLogFile: Saving Data to Log...');
     try {
-        const fm = widgetConfig.useLocalLogs ? FileManager.iCloud() : FileManager.local();
+        const fm = widgetConfig.useLocalLogs ? FileManager.local() : FileManager.iCloud();
         const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
         const devName = Device.name()
             .replace(/[^a-zA-Z\s]/g, '')
@@ -1784,6 +1790,7 @@ async function logError(msg, saveToLog = true) {
 // try {
 if (await validateModules()) {
     const wc = new Widget();
+
     await wc.run();
 }
 // } catch (error) {

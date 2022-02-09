@@ -12,10 +12,15 @@ module.exports = class FPW_Widgets_Small {
         this.iconMap = FPW.iconMap;
         this.colorMap = FPW.colorMap;
         this.colorMode = 'system';
-        this.widgetSize = this.FPW.DeviceSize[`${this.FPW.screenSize.width / this.FPW.deviceScale}x${this.FPW.screenSize.height / this.FPW.deviceScale}`] || this.FPW.DeviceSize['375x812'];
+        // this.widgetSize = this.FPW.widgetSizes()['phones'][`${this.FPW.screenSize.width / this.FPW.deviceScale}x${this.FPW.screenSize.height / this.FPW.screenScale}`] || this.FPW.widgetSizes()['phones']['375x812'];
+        this.widgetSize = this.FPW.getWidgetSizeInPoint();
     }
 
     async createWidget(vData, style = undefined, background = undefined, colorMode = 'system') {
+        await this.FPW.logger(`widgetSize: ${JSON.stringify(this.widgetSize)}`);
+        await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget | W: ${this.FPW.screenSize.width} H: ${this.FPW.screenSize.height} | ${this.FPW.screenScale}x`);
+        // await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget | Resolution: (${this.FPW.screenResolution.width}x${this.FPW.screenResolution.height})`);
+        // await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget (${Math.round(this.FPW.screenSize.width / this.FPW.screenScale)}x${Math.round(this.FPW.screenSize.height / this.FPW.screenScale)}) | WidgetSize: (${JSON.stringify(this.widgetSize[this.wSize])})`);
         const wStyle = await this.FPW.getWidgetStyle();
         style = style || wStyle;
         background = background || 'system';
@@ -34,7 +39,7 @@ module.exports = class FPW_Widgets_Small {
         widget.setPadding(0, 0, 0, 0);
         this.FPW.setWidgetBackground(widget, bgType);
         try {
-            const { width, height } = this.widgetSize[this.wSize];
+            const { width, height } = this.widgetSize;
             let paddingTop = Math.round(height * 0.09);
             // let paddingLeft = Math.round(width * 0.07);
             let paddingLeft = 6;
@@ -143,7 +148,7 @@ module.exports = class FPW_Widgets_Small {
 
             // ***************** RIGHT BODY CONTAINER END *****************
         } catch (e) {
-            this.FPW.logger(`simpleWidget(small) Error: ${e}`, true);
+            await this.FPW.logger(`simpleWidget(small) Error: ${e}`, true);
         }
         return widget;
     }
@@ -182,7 +187,7 @@ module.exports = class FPW_Widgets_Small {
             await this.createText(container, openStatus, alertStatus ? styles.open : styles.closed);
             container.addSpacer();
         } catch (err) {
-            this.FPW.logError(`createDoorWindowText(medium) ${err}`);
+            await this.FPW.logError(`createDoorWindowText(medium) ${err}`);
         }
         return srcElem;
     }
@@ -192,7 +197,7 @@ module.exports = class FPW_Widgets_Small {
         const widget = new ListWidget();
         this.FPW.setWidgetBackground(widget, bgType);
         try {
-            const { width, height } = this.widgetSize[this.wSize];
+            const { width, height } = this.widgetSize;
             let paddingTop = Math.round(height * 0.08);
             let paddingLeft = Math.round(width * 0.04);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
@@ -260,7 +265,7 @@ module.exports = class FPW_Widgets_Small {
             let timestampRow = await this.createRow(widget, { '*setPadding': [3, 0, 5, paddingLeft], '*bottomAlignContent': null });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
         } catch (e) {
-            this.FPW.logger(`detailedWidget(small) Error: ${e}`, true);
+            await this.FPW.logger(`detailedWidget(small) Error: ${e}`, true);
         }
         return widget;
     }
@@ -287,7 +292,7 @@ module.exports = class FPW_Widgets_Small {
             await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.sizeMap[this.wSize].fontSizeSmall), textColor: this.colorMap.text[this.colorMode], lineLimit: 1 });
             srcElem.addSpacer(3);
         } catch (e) {
-            this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
+            await this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
         }
     }
 
@@ -320,7 +325,7 @@ module.exports = class FPW_Widgets_Small {
             await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.sizeMap[this.wSize].fontSizeSmall), textColor: this.colorMap.text[this.colorMode], lineLimit: 1 });
             srcElem.addSpacer(3);
         } catch (e) {
-            this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
+            await this.FPW.logger(`createFuelRangeElements() Error: ${e}`, true);
         }
     }
 
@@ -335,7 +340,7 @@ module.exports = class FPW_Widgets_Small {
             await this.createText(elem, value, { font: Font.regularSystemFont(this.sizeMap[this.wSize].fontSizeSmall), textColor: lowBattery ? Color.red() : this.FPW.colorMap.text[this.colorMode], lineLimit: 1 });
             srcElem.addSpacer(3);
         } catch (e) {
-            this.FPW.logger(`createBatteryElement() Error: ${e}`, true);
+            await this.FPW.logger(`createBatteryElement() Error: ${e}`, true);
         }
     }
 
@@ -358,7 +363,7 @@ module.exports = class FPW_Widgets_Small {
             await this.createText(elem, text, txtStyle);
             srcElem.addSpacer(3);
         } catch (e) {
-            this.FPW.logger(`createOilElement() Error: ${e}`, true);
+            await this.FPW.logger(`createOilElement() Error: ${e}`, true);
         }
     }
 
@@ -372,7 +377,7 @@ module.exports = class FPW_Widgets_Small {
             await this.createText(elem, value, { font: Font.regularSystemFont(this.sizeMap[this.wSize].fontSizeSmall), textColor: this.colorMap.text[this.colorMode], lineLimit: 1 });
             srcElem.addSpacer(3);
         } catch (e) {
-            this.FPW.logger(`createEvChargeElement() Error: ${e}`, true);
+            await this.FPW.logger(`createEvChargeElement() Error: ${e}`, true);
         }
     }
 
@@ -389,7 +394,7 @@ module.exports = class FPW_Widgets_Small {
             }
             return col;
         } catch (e) {
-            this.FPW.logError(`createColumn Error: ${e}`);
+            await this.FPW.logError(`createColumn Error: ${e}`);
         }
     }
 
@@ -402,7 +407,7 @@ module.exports = class FPW_Widgets_Small {
             }
             return row;
         } catch (e) {
-            this.FPW.logError(`createRow Error: ${e}`);
+            await this.FPW.logError(`createRow Error: ${e}`);
             return null;
         }
     }
@@ -531,7 +536,7 @@ module.exports = class FPW_Widgets_Small {
                 valueRow.addSpacer();
             }
         } catch (e) {
-            this.FPW.logger(`createPositionElement() Error: ${e}`, true);
+            await this.FPW.logger(`createPositionElement() Error: ${e}`, true);
         }
     }
 
@@ -563,14 +568,14 @@ module.exports = class FPW_Widgets_Small {
                 srcStack.addSpacer();
             }
         } catch (e) {
-            this.FPW.logger(`createLockStatusElement() Error: ${e}`, true);
+            await this.FPW.logger(`createLockStatusElement() Error: ${e}`, true);
         }
     }
 
     async createIgnitionStatusElement(srcStack, vData, position = 'center', postSpace = false) {
         try {
             const styles = {
-                on: { font: Font.heavySystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.openColor },
+                on: { font: Font.heavySystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.6 },
                 off: { font: Font.heavySystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.closedColor },
             };
             let remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
@@ -603,7 +608,7 @@ module.exports = class FPW_Widgets_Small {
                 srcStack.addSpacer();
             }
         } catch (e) {
-            this.FPW.logger(`createIgnitionStatusElement() Error: ${e}`, true);
+            await this.FPW.logger(`createIgnitionStatusElement() Error: ${e}`, true);
         }
     }
 
@@ -638,7 +643,7 @@ module.exports = class FPW_Widgets_Small {
                 srcStack.addSpacer();
             }
         } catch (e) {
-            this.FPW.logger(`createDoorElement() Error: ${e}`, true);
+            await this.FPW.logger(`createDoorElement() Error: ${e}`, true);
         }
     }
 
@@ -673,7 +678,7 @@ module.exports = class FPW_Widgets_Small {
                 srcStack.addSpacer();
             }
         } catch (e) {
-            this.FPW.logger(`createWindowElement() Error: ${e}`, true);
+            await this.FPW.logger(`createWindowElement() Error: ${e}`, true);
         }
     }
 
@@ -720,7 +725,7 @@ module.exports = class FPW_Widgets_Small {
                 valueRow.addSpacer();
             }
         } catch (e) {
-            this.FPW.logger(`createTireElement() Error: ${e}`, true);
+            await this.FPW.logger(`createTireElement() Error: ${e}`, true);
         }
     }
 
@@ -779,7 +784,7 @@ module.exports = class FPW_Widgets_Small {
                 srcRow.addSpacer();
             }
         } catch (e) {
-            this.FPW.logger(`createTimeStampElement() Error: ${e}`, true);
+            await this.FPW.logger(`createTimeStampElement() Error: ${e}`, true);
         }
     }
 
@@ -885,7 +890,7 @@ module.exports = class FPW_Widgets_Small {
             }
             return stk;
         } catch (e) {
-            this.FPW.logger(`createStatusElement() Error: ${e}`, true);
+            await this.FPW.logger(`createStatusElement() Error: ${e}`, true);
         }
     }
 };

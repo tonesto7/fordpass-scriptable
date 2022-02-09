@@ -3,7 +3,7 @@ module.exports = class FPW_FordAPIs {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.SCRIPT_VERSION = FPW.SCRIPT_VERSION;
-        this.SCRIPT_TS = FPW.SCRIPT_TS;
+        // this.SCRIPT_TS = FPW.SCRIPT_TS;
         this.widgetConfig = FPW.widgetConfig;
     }
 
@@ -124,7 +124,7 @@ module.exports = class FPW_FordAPIs {
                 }
             }
         } catch (e) {
-            this.FPW.logInfo(`fetchToken() Error: ${e}`);
+            await this.FPW.logInfo(`fetchToken() Error: ${e}`);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -171,7 +171,7 @@ module.exports = class FPW_FordAPIs {
                 await this.fetchToken();
             }
         } catch (e) {
-            this.FPW.logInfo(`refreshToken() Error: ${e}`);
+            await this.FPW.logInfo(`refreshToken() Error: ${e}`);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -411,7 +411,7 @@ module.exports = class FPW_FordAPIs {
                         return true;
                     } catch (e) {
                         console.log(`queryFordPassPrefs SET Error: ${e}`);
-                        this.FPW.logger(`queryFordPassPrefs() SET Error: ${e}`);
+                        await this.FPW.logger(`queryFordPassPrefs() SET Error: ${e}`);
                         return false;
                     }
                 } else {
@@ -421,7 +421,7 @@ module.exports = class FPW_FordAPIs {
                 return true;
             }
         } catch (e) {
-            this.FPW.logInfo(`queryFordPassPrefs() Error: ${e}`);
+            await this.FPW.logInfo(`queryFordPassPrefs() Error: ${e}`);
             return false;
         }
     }
@@ -504,7 +504,7 @@ module.exports = class FPW_FordAPIs {
             }
             return data;
         } catch (e) {
-            this.FPW.logInfo(`makeFordRequest(${desc}) Error: ${e}`);
+            await this.FPW.logInfo(`makeFordRequest(${desc}) Error: ${e}`);
             return this.FPW.textMap().errorMessages.unknownError;
         }
     }
@@ -523,7 +523,7 @@ module.exports = class FPW_FordAPIs {
         // console.log(`statusData: ${JSON.stringify(statusData)}`);
         let vehicleData = new Object();
         vehicleData.SCRIPT_VERSION = this.SCRIPT_VERSION;
-        vehicleData.SCRIPT_TS = this.SCRIPT_TS;
+        // vehicleData.SCRIPT_TS = this.SCRIPT_TS;
         if (statusData == this.FPW.textMap().errorMessages.invalidGrant || statusData == this.FPW.textMap().errorMessages.connectionErrorOrVin || statusData == this.FPW.textMap().errorMessages.unknownError || statusData == this.FPW.textMap().errorMessages.noVin || statusData == this.FPW.textMap().errorMessages.noCredentials) {
             // console.log('fetchVehicleData | Error: ' + statusData);
             let localData = this.FPW.Files.readLocalData();
@@ -890,7 +890,7 @@ module.exports = class FPW_FordAPIs {
                 if (wasError) {
                     if (errMsg) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
-                        this.FPW.logInfo(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
+                        await this.FPW.logInfo(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
                     }
                     if (outMsg.message !== '') {
                         await this.FPW.Alerts.showAlert(outMsg.title, outMsg.message);
@@ -917,7 +917,7 @@ module.exports = class FPW_FordAPIs {
                     }
                 }
             } catch (e) {
-                this.FPW.logInfo(`sendVehicleCmd() Catch Error: ${e}`);
+                await this.FPW.logInfo(`sendVehicleCmd() Catch Error: ${e}`);
                 return;
             }
         }

@@ -685,9 +685,9 @@ module.exports = class FPW_Tables_MainPage {
                 await this.FPW.Alerts.showAlert('Widget Command', `Widget Command: ${widgetCmd}`);
                 await this.processWidgetCommands(widgetCmd);
             }
-            await this.FPW.Tables.generateTableMenu('main', tableRows, false, false, update);
+            await this.FPW.Tables.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
         } catch (err) {
-            this.FPW.logError(`createMainPage() Error: ${err}`);
+            await this.FPW.logError(`createMainPage() Error: ${err}`);
         }
     }
 

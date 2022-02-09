@@ -571,6 +571,7 @@ if (config.runsInApp || config.runsFromHomeScreen) {
     } else {
         console.log('start | showing Main Menu');
         // console.log(JSON.stringify(await wI.getFileDetails(fnd[0])));
-        menuBuilderByType('main');
+        await menuBuilderByType('main');
     }
+    Script.complete();
 }
