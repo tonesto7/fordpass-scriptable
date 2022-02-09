@@ -13,15 +13,9 @@ module.exports = class FPW_Widgets_Medium {
         this.iconMap = FPW.iconMap;
         this.colorMap = FPW.colorMap;
         this.colorMode = 'system';
-        // this.widgetSize = this.FPW.widgetSizes()['phones'][`${this.FPW.screenSize.width / this.FPW.deviceScale}x${this.FPW.screenSize.height / this.FPW.screenScale}`] || this.FPW.widgetSizes()['phones']['375x812'];
-        this.widgetSize = this.FPW.getWidgetSizeInPoint();
     }
 
     async createWidget(vData, style = undefined, background = undefined, colorMode = 'system') {
-        await this.FPW.logger(`widgetSize: ${JSON.stringify(this.widgetSize)}`);
-        await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget | W: ${this.FPW.screenSize.width} H: ${this.FPW.screenSize.height} | ${this.FPW.screenScale}x`);
-        // await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget | Resolution: (${this.FPW.screenResolution.width}x${this.FPW.screenResolution.height})`);
-        // await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget (${Math.round(this.FPW.screenSize.width / this.FPW.screenScale)}x${Math.round(this.FPW.screenSize.height / this.FPW.screenScale)}) | WidgetSize: (${JSON.stringify(this.widgetSize[this.wSize])})`);
         const wStyle = await this.FPW.getWidgetStyle();
         style = style || wStyle;
         background = background || 'system';
@@ -38,6 +32,7 @@ module.exports = class FPW_Widgets_Medium {
         console.log(`simpleWidget(medium) called...`);
         // Defines the Widget Object
         const widget = new ListWidget();
+
         // let fm = FileManager.iCloud();
         // let dir = fm.documentsDirectory();
         // let path = fm.joinPath(dir, 'gray_grad_bg.png');
@@ -47,7 +42,9 @@ module.exports = class FPW_Widgets_Medium {
         // }
         this.FPW.setWidgetBackground(widget, bgType);
         try {
-            const { width, height } = this.widgetSize;
+            const widgetSizes = await this.FPW.getViewPortSizes(this.wSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
             let paddingTop = Math.round(height * 0.04);
             let paddingLeft = Math.round(width * 0.03);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
@@ -163,11 +160,16 @@ module.exports = class FPW_Widgets_Medium {
         const widget = new ListWidget();
         this.FPW.setWidgetBackground(widget, bgType);
         try {
-            const { width, height } = this.widgetSize;
-            let paddingTop = Math.round(height * 0.08);
-            // let paddingTop = 6;
+            const widgetSizes = await this.FPW.getViewPortSizes(this.wSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
+            // const width = 329;
+            // const height = 155;
+            let paddingTop = Math.round(height * 0.05);
+            // let paddingTop = 20;
             let paddingLeft = Math.round(width * 0.04);
-            // let paddingLeft = 6;
+            // let paddingLeft = 25;
+            widget.setPadding(paddingTop, paddingLeft, 0, paddingLeft);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
             const hasStatusMsg = await this.hasStatusMsg(vData);
             //_______________________________
@@ -178,11 +180,11 @@ module.exports = class FPW_Widgets_Medium {
             //|                             |
             //-------------------------------
 
-            let bodyContainer = await this.createRow(widget, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+            let bodyContainer = await this.createRow(widget, { '*setPadding': [paddingTop, 0, 0, 0] });
             //*****************
             //* First column
             //*****************
-            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 0.85)) });
+            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 0.85)) });
 
             // Vehicle Image Container
             let imgWidth = Math.round(width * 0.33);
@@ -222,7 +224,7 @@ module.exports = class FPW_Widgets_Medium {
             //****************
             //* Third column
             //****************
-            let mainCol3 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 0.85)) });
+            let mainCol3 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, 0, 0, paddingLeft], size: new Size(Math.round(width * 0.333), Math.round(height * 0.85)) });
 
             // Creates the Ignition Status Elements
             await this.createIgnitionStatusElement(mainCol3, vData, 'center', true);

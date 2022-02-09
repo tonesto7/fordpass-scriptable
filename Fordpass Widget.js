@@ -105,7 +105,7 @@ const widgetConfig = {
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
-    testMode: true, // Use cached data for testing
+    testMode: false, // Use cached data for testing
     useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     useLocalModules: false, // Stores and loads modules from local storage instead of iCloud.  disable to access the module files under the scriptable folder in iCloud Drive.
     useLocalLogs: false, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
@@ -279,7 +279,6 @@ class Widget {
         this.isSmallDisplay = isSmallDisplay;
         this.darkMode = darkMode;
         this.runningWidgetSize = config.widgetFamily;
-        this.widgetSizes = this.getWidgetSizeInPoint();
         this.isPhone = Device.isPhone();
         this.isPad = Device.isPad();
         this.deviceModel = Device.model();
@@ -336,7 +335,8 @@ class Widget {
             this.logInfo('---------------------------');
             this.logInfo('Widget RUN...');
             // Starts the widget load process
-            console.log(`widgetSize: ${JSON.stringify(await this.getWidgetSizeInPoint())}`);
+            // console.log(`Device Models From ViewPort: ${await this.viewPortSizes.devices}`);
+            // console.log(`widgetSize(run): ${JSON.stringify(await this.viewPortSizes)}`);
             let fordData = widgetConfig.testMode ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget(config.runsInWidget);
             if (fordData === null) return;
             if (config.runsInWidget) {
@@ -354,16 +354,16 @@ class Widget {
                     // this.Alerts.showAlert('Query Params', JSON.stringify(args.queryParameters));
                     await this.processQueryParams(args.queryParameters, fordData);
                 } else {
-                    // let w2 = await this.generateWidget('small', fordData);
-                    // await w2.presentSmall();
-                    // let w3 = await this.generateWidget('smallSimple', fordData);
-                    // await w3.presentSmall();
-                    // let w = await this.generateWidget('medium', fordData);
-                    // await w.presentMedium();
-                    // let w4 = await this.generateWidget('mediumSimple', fordData);
-                    // await w4.presentMedium();
-                    // let w5 = await this.generateWidget('large', fordData);
-                    // await w5.presentLarge();
+                    let w2 = await this.generateWidget('small', fordData);
+                    await w2.presentSmall();
+                    let w3 = await this.generateWidget('smallSimple', fordData);
+                    await w3.presentSmall();
+                    let w = await this.generateWidget('medium', fordData);
+                    await w.presentMedium();
+                    let w4 = await this.generateWidget('mediumSimple', fordData);
+                    await w4.presentMedium();
+                    let w5 = await this.generateWidget('large', fordData);
+                    await w5.presentLarge();
 
                     await this.Tables.MainPage.createMainPage();
                 }
@@ -514,6 +514,123 @@ class Widget {
         Script.setWidget(widget);
         this.logInfo(`Created Widget(${size})...`);
         return widget;
+    }
+
+    // Modified version of this https://talk.automators.fm/t/get-available-widget-height-and-width-depending-on-the-devices-screensize/9258/5
+    async getViewPortSizes(widgetFamily) {
+        const vpSize = `${this.screenSize.width}x${this.screenSize.height}`;
+        await this.logInfo(`getViewPortSizes | ViewPort Size: ${vpSize}`);
+        const sizeMap = {
+            // IPAD_VIEWPORT_SIZES
+            '768x1024': {
+                devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
+                small: { width: 120, height: 120 },
+                medium: { width: 260, height: 120 },
+                large: { width: 260, height: 260 },
+                extraLarge: { width: 540, height: 260 },
+            },
+            '810x1080': {
+                devices: ['10.2" iPad'],
+                small: { width: 124, height: 124 },
+                medium: { width: 272, height: 124 },
+                large: { width: 272, height: 272 },
+                extraLarge: { width: 568, height: 272 },
+            },
+            '834x1112': {
+                devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
+                small: { width: 132, height: 132 },
+                medium: { width: 288, height: 132 },
+                large: { width: 288, height: 288 },
+                extraLarge: { width: 600, height: 288 },
+            },
+            '820x1180': {
+                devices: ['10.9" iPad Air 4th Gen'],
+                small: { width: 136, height: 136 },
+                medium: { width: 300, height: 136 },
+                large: { width: 300, height: 300 },
+                extraLarge: { width: 628, height: 300 },
+            },
+            '834x1194': {
+                devices: ['11" iPad Pro'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 345, height: 329 },
+                extraLarge: { width: 628, height: 300 },
+            },
+            '1024x1366': {
+                devices: ['12.9" iPad Pro'],
+                small: { width: 170, height: 170 },
+                medium: { width: 332, height: 170 },
+                large: { width: 382, height: 332 },
+                extraLarge: { width: 748, height: 356 },
+            },
+
+            // IPHONE_VIEWPORT_SIZES
+            '428x926': {
+                devices: ['12 Pro Max'],
+                small: { width: 170, height: 170 },
+                medium: { width: 364, height: 170 },
+                large: { width: 364, height: 382 },
+            },
+            '360x780': {
+                devices: ['12 Mini'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 329, height: 345 },
+            },
+            '414x896': {
+                devices: ['XR', 'XS Max', '11', '11 Pro Max'],
+                small: { width: 169, height: 169 },
+                medium: { width: 360, height: 169 },
+                large: { width: 360, height: 376 },
+            },
+            '390x844': {
+                devices: ['12', '12 Pro'],
+                small: { width: 158, height: 158 },
+                medium: { width: 338, height: 158 },
+                large: { width: 338, height: 354 },
+            },
+            '375x812': {
+                devices: ['X', 'XS', '11 Pro'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 329, height: 345 },
+            },
+            '414x736': {
+                devices: ['6S Plus', '7 Plus', '8 Plus'],
+                small: { width: 159, height: 159 },
+                medium: { width: 348, height: 159 },
+                large: { width: 348, height: 357 },
+            },
+            '375x667': {
+                devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
+                small: { width: 148, height: 148 },
+                medium: { width: 322, height: 148 },
+                large: { width: 322, height: 324 },
+            },
+            '320x568': {
+                devices: ['SE (1st Gen)'],
+                small: { width: 141, height: 141 },
+                medium: { width: 291, height: 141 },
+                large: { width: 291, height: 299 },
+            },
+        };
+
+        if (sizeMap[vpSize]) {
+            await this.logger(`getViewPortSizes | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`);
+            // console.log(`getViewPortSizes | Sizes: ${JSON.stringify(sizeMap[vpSize])}`);
+            return sizeMap[vpSize][widgetFamily];
+        } else {
+            let fallback = {
+                devices: ['Fallback'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 329, height: 345 },
+                extraLarge: { width: 329, height: 345 },
+            };
+            // await this.logger(`getViewPortSizes(fallback) | Device Models: ${fallback.devices.join(', ') || 'Unknown'}`);
+            return fallback[widgetFamily];
+        }
     }
 
     /**
@@ -1501,122 +1618,6 @@ class Widget {
     //         },
     //     };
     // }
-
-    // Modified version of this https://talk.automators.fm/t/get-available-widget-height-and-width-depending-on-the-devices-screensize/9258/5
-    async getWidgetSizeInPoint(widgetSize = config.runsInWidget ? config.widgetFamily : null) {
-        // RegExp to verify widgetSize
-        const sizes = /^(?:small|medium|large|extraLarge)$/;
-        // stringify device screen size
-        const devSize = (({ width: w, height: h }) => (w > h ? `${h}x${w}` : `${w}x${h}`))(Device.screenSize());
-        // console.log(`devSize: ${devSize}`);
-        // screen size to widget size mapping for iPhone and iPad viewport sizes
-        const sizeMap = {
-            // IPAD_VIEWPORT_SIZES
-            '768x1024': {
-                devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
-                small: { width: 120, height: 120 },
-                medium: { width: 260, height: 120 },
-                large: { width: 260, height: 260 },
-                extraLarge: { width: 540, height: 260 },
-            },
-            '810x1080': {
-                devices: ['10.2" iPad'],
-                small: { width: 124, height: 124 },
-                medium: { width: 272, height: 124 },
-                large: { width: 272, height: 272 },
-                extraLarge: { width: 568, height: 272 },
-            },
-            '834x1112': {
-                devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
-                small: { width: 132, height: 132 },
-                medium: { width: 288, height: 132 },
-                large: { width: 288, height: 288 },
-                extraLarge: { width: 600, height: 288 },
-            },
-            '820x1180': {
-                devices: ['10.9" iPad Air 4th Gen'],
-                small: { width: 136, height: 136 },
-                medium: { width: 300, height: 136 },
-                large: { width: 300, height: 300 },
-                extraLarge: { width: 628, height: 300 },
-            },
-            '834x1194': {
-                devices: ['11" iPad Pro'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 345, height: 329 },
-                extraLarge: { width: 628, height: 300 },
-            },
-            '1024x1366': {
-                devices: ['12.9" iPad Pro'],
-                small: { width: 170, height: 170 },
-                medium: { width: 332, height: 170 },
-                large: { width: 382, height: 332 },
-                extraLarge: { width: 748, height: 356 },
-            },
-
-            // IPHONE_VIEWPORT_SIZES
-            '428x926': {
-                devices: ['12 Pro Max'],
-                small: { width: 170, height: 170 },
-                medium: { width: 364, height: 170 },
-                large: { width: 364, height: 382 },
-            },
-            '360x780': {
-                devices: ['12 Mini'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-            },
-            '414x896': {
-                devices: ['XR', 'XS Max', '11', '11 Pro Max'],
-                small: { width: 169, height: 169 },
-                medium: { width: 360, height: 169 },
-                large: { width: 360, height: 376 },
-            },
-            '390x844': {
-                devices: ['12', '12 Pro'],
-                small: { width: 158, height: 158 },
-                medium: { width: 338, height: 158 },
-                large: { width: 338, height: 354 },
-            },
-            '375x812': {
-                devices: ['X', 'XS', '11 Pro'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-            },
-            '414x736': {
-                devices: ['6S Plus', '7 Plus', '8 Plus'],
-                small: { width: 159, height: 159 },
-                medium: { width: 348, height: 159 },
-                large: { width: 348, height: 357 },
-            },
-            '375x667': {
-                devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
-                small: { width: 148, height: 148 },
-                medium: { width: 322, height: 148 },
-                large: { width: 322, height: 324 },
-            },
-            '320x568': {
-                devices: ['SE (1st Gen)'],
-                small: { width: 141, height: 141 },
-                medium: { width: 291, height: 141 },
-                large: { width: 291, height: 299 },
-            },
-        };
-        let widgetSizeInPoint = null;
-
-        if (widgetSize && sizes.test(widgetSize)) {
-            if (sizeMap[devSize]) {
-                // widgetSizeInPoint = new Size(...sizeMap[devSize][widgetSize]);
-                console.log(`widgetSizeInPoint: ${JSON.stringify(sizeMap[devSize])}`);
-                return sizeMap[devSize][widgetSize];
-            }
-        } else {
-            return widgetSizeInPoint;
-        }
-    }
 }
 
 //********************************************************************************************************************************

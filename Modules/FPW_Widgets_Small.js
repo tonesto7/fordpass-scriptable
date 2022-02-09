@@ -12,15 +12,9 @@ module.exports = class FPW_Widgets_Small {
         this.iconMap = FPW.iconMap;
         this.colorMap = FPW.colorMap;
         this.colorMode = 'system';
-        // this.widgetSize = this.FPW.widgetSizes()['phones'][`${this.FPW.screenSize.width / this.FPW.deviceScale}x${this.FPW.screenSize.height / this.FPW.screenScale}`] || this.FPW.widgetSizes()['phones']['375x812'];
-        this.widgetSize = this.FPW.getWidgetSizeInPoint();
     }
 
     async createWidget(vData, style = undefined, background = undefined, colorMode = 'system') {
-        await this.FPW.logger(`widgetSize: ${JSON.stringify(this.widgetSize)}`);
-        await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget | W: ${this.FPW.screenSize.width} H: ${this.FPW.screenSize.height} | ${this.FPW.screenScale}x`);
-        // await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget | Resolution: (${this.FPW.screenResolution.width}x${this.FPW.screenResolution.height})`);
-        // await this.FPW.logInfo(`${this.FPW.capitalizeStr(this.wSize)} Widget (${Math.round(this.FPW.screenSize.width / this.FPW.screenScale)}x${Math.round(this.FPW.screenSize.height / this.FPW.screenScale)}) | WidgetSize: (${JSON.stringify(this.widgetSize[this.wSize])})`);
         const wStyle = await this.FPW.getWidgetStyle();
         style = style || wStyle;
         background = background || 'system';
@@ -39,21 +33,23 @@ module.exports = class FPW_Widgets_Small {
         widget.setPadding(0, 0, 0, 0);
         this.FPW.setWidgetBackground(widget, bgType);
         try {
-            const { width, height } = this.widgetSize;
+            const widgetSizes = await this.FPW.getViewPortSizes(this.wSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
             let paddingTop = Math.round(height * 0.09);
             // let paddingLeft = Math.round(width * 0.07);
-            let paddingLeft = 6;
+            let paddingLeft = 8;
             // console.log(`padding | Left: ${paddingLeft}`);
             //************************
             //* TOP LEFT BOX CONTAINER
             //************************
-            const topBox = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
+            const topBox = await this.createRow(widget, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
 
             // ---Top left part---
             const topLeftContainer = await this.createRow(topBox, {});
 
             // Vehicle Title
-            const vehicleNameContainer = await this.createRow(topLeftContainer, { '*setPadding': [paddingLeft, paddingLeft, 0, 0] });
+            const vehicleNameContainer = await this.createRow(topLeftContainer, { '*setPadding': [0, 0, 0, 0] });
 
             let vehicleNameStr = vData.info.vehicle.vehicleType || '';
             // get dynamic size
@@ -68,11 +64,8 @@ module.exports = class FPW_Widgets_Small {
             //************************
             //* TOP Right BOX CONTAINER
             //************************
-            // ---Top Right part---
-            const topRightContainer = await this.createRow(topBox, {});
 
             // ---The top right part is finished---
-
             //***********************************
             //* MIDDLE ROW CONTAINER
             //***********************************
@@ -197,7 +190,9 @@ module.exports = class FPW_Widgets_Small {
         const widget = new ListWidget();
         this.FPW.setWidgetBackground(widget, bgType);
         try {
-            const { width, height } = this.widgetSize;
+            const widgetSizes = await this.FPW.getViewPortSizes(this.wSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
             let paddingTop = Math.round(height * 0.08);
             let paddingLeft = Math.round(width * 0.04);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
@@ -205,12 +200,12 @@ module.exports = class FPW_Widgets_Small {
             // vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
 
-            let bodyContainer = await this.createRow(widget, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+            let bodyContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
 
             //*****************
             //* First column
             //*****************
-            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, 0, 0, 0], size: new Size(Math.round(width * 0.5), Math.round(height * 0.85)) });
+            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0], size: new Size(Math.round(width * 0.5), Math.round(height * 0.85)) });
 
             // Vehicle Logo
             await this.createVehicleImageElement(mainCol1, vData, this.sizeMap[this.wSize].logoSize.w, this.sizeMap[this.wSize].logoSize.h);
