@@ -30,7 +30,7 @@ module.exports = class FPW_Widgets_Small {
     async simpleWidget(vData, bgType = undefined) {
         // Defines the Widget Object
         const widget = new ListWidget();
-        widget.setPadding(0, 0, 0, 0);
+        // widget.setPadding(0, 0, 0, 0);
         this.FPW.setWidgetBackground(widget, bgType);
         try {
             const widgetSizes = await this.FPW.getViewPortSizes(this.wSize);
@@ -138,6 +138,7 @@ module.exports = class FPW_Widgets_Small {
             // Displays the Last Vehicle Checkin Time Elapsed...
             const timestampRow = await this.createRow(widget, { '*setPadding': [5, 0, 5, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+            widget.addSpacer();
 
             // ***************** RIGHT BODY CONTAINER END *****************
         } catch (e) {

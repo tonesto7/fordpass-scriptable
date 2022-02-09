@@ -37,69 +37,71 @@ module.exports = class FPW_Widgets_Large {
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
             const { width, height } = widgetSizes;
 
-            let paddingTop = Math.round(height * 0.05);
-            let paddingLeft = Math.round(width * 0.05);
-            console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
-            widget.setPadding(0, 0, 0, 0);
-
+            let paddingY = 10; //Math.round(height * 0.08);
+            let paddingX = 7; //Math.round(width * 0.06);
+            console.log(`padding | Top: ${paddingY} | Left: ${paddingX}`);
+            widget.setPadding(paddingY, paddingX, paddingY, paddingX);
+            widget.addSpacer();
             const isEV = vData.evVehicle === true;
             let dtePostfix = isEV ? 'Range' : 'to E';
             let distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
             let distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
 
             const hasStatusMsg = await this.hasStatusMsg(vData);
-            const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
 
             //*****************
             //* TOP ROW
             //*****************
-            const topRowContainer = await this.createRow(widget, { '*setPadding': [paddingTop, paddingLeft, 0, 0], size: new Size(Math.round(width * 1), Math.round(height * 0.35)) });
+            let topRowContainer = await this.createRow(widget, {});
 
             //*****************
             //* TOP LEFT COLUMN
             //*****************
 
-            let topRowLeftCol = await this.createColumn(topRowContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0], '*bottomAlignContent': null });
+            let topRowLeftCol = await this.createColumn(topRowContainer, { '*bottomAlignContent': null });
 
             // Vehicle Title
-            const vehicleNameContainer = await this.createRow(topRowLeftCol, { '*setPadding': [0, 0, 0, 0] });
-            let vehicleNameStr = vData.info.vehicle.vehicleType || '';
+            let nameContainer = await this.createRow(topRowLeftCol, {});
+            nameContainer.addSpacer(); // Pushes the vehicle name to the left
+            let nameStr = vData.info.vehicle.vehicleType || '';
 
-            let vehicleNameSize = 24;
-            if (vehicleNameStr.length >= 10) {
-                vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
+            let nameSize = 24;
+            if (nameStr.length >= 10) {
+                nameSize = nameSize - Math.round(nameStr.length / 4);
             }
-            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[this.colorMode] });
-            vehicleNameContainer.addSpacer(); // Pushes the vehicle name to the left
+            await this.createText(nameContainer, nameStr, { font: Font.semiboldSystemFont(nameSize), textColor: this.colorMap.text[this.colorMode] });
+            nameContainer.addSpacer(); // Pushes the vehicle name to the left
 
             topRowLeftCol.addSpacer();
-            const topRowInfoContainer = await this.createRow(topRowLeftCol, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
+            const topRowInfoContainer = await this.createRow(topRowLeftCol, { '*centerAlignContent': null });
             topRowInfoContainer.addSpacer();
+
             // Creates Battery Level Elements
-            await this.createBatteryElement(topRowLeftCol, vData, 'left');
+            await this.createBatteryElement(topRowInfoContainer, vData, 'left');
 
             // Creates Oil Life Elements
             if (!vData.evVehicle) {
-                await this.createOilElement(topRowLeftCol, vData, 'left');
+                await this.createOilElement(topRowInfoContainer, vData, 'left');
             } else {
                 // Creates EV Plug Elements
-                await this.createEvChargeElement(topRowLeftCol, vData, 'left');
+                await this.createEvChargeElement(topRowInfoContainer, vData, 'left');
             }
-            topRowLeftCol.addSpacer();
+            // topRowInfoContainer.addSpacer();
+            // topRowLeftCol.addSpacer();
 
             //*********************
             //* TOP RIGHT COLUMN
             //*********************
 
-            let topRowRightCol = await this.createColumn(topRowContainer, { '*setPadding': [0, 0, 0, 0] });
+            let topRowRightCol = await this.createColumn(topRowContainer, {});
             topRowRightCol.addSpacer(); // Pushes Content to the middle to help center
 
             // Vehicle Image Container
             let imgWidth = Math.round(width * 0.4);
             let imgHeight = Math.round(height * 0.25);
-            const carImageContainer = await this.createRow(topRowRightCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-            carImageContainer.addSpacer();
-            await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { '*rightAlignImage': null, resizable: true });
+            const carImageContainer = await this.createRow(topRowRightCol, { '*centerAlignContent': null });
+            // carImageContainer.addSpacer();
+            await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { resizable: true, imageSize: new Size(imgWidth, imgHeight) });
             carImageContainer.addSpacer();
             topRowRightCol.addSpacer(); // Pushes Content to the middle to help center
 
@@ -107,10 +109,10 @@ module.exports = class FPW_Widgets_Large {
             //* FUEL/BATTERY BAR CONTAINER
             //*******************************
             // Creates the Fuel/Battery Info Elements
-            const fuelBattRow = await this.createRow(widget, { '*setPadding': [0, paddingLeft, 0, paddingLeft] });
+            const fuelBattRow = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
 
             // Fuel/Battery Section
-            const fuelBattCol = await this.createColumn(fuelBattRow, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.14)) });
+            const fuelBattCol = await this.createColumn(fuelBattRow, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null /*, size: new Size(Math.round(width * 1), Math.round(height * 0.14))*/ });
 
             // Fuel/Battery Level BAR
             const barRow = await this.createRow(fuelBattCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
@@ -121,7 +123,7 @@ module.exports = class FPW_Widgets_Large {
             barRow.addSpacer();
 
             // Distance/Range to Empty
-            const dteRow = await this.createRow(fuelBattCol, { '*topAlignContent': null });
+            const dteRow = await this.createRow(fuelBattCol, { '*setPadding': [0, 0, 0, 0] });
             let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap.errorMessages.noData;
             dteRow.addSpacer();
             await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.systemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.text[this.colorMode], lineLimit: 1 });
@@ -132,10 +134,10 @@ module.exports = class FPW_Widgets_Large {
             //*****************
             //* Row 3 Container
             //*****************
-            const row3Container = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
+            const row3Container = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
 
             row3Container.addSpacer();
-            const row3LeftCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 0.3)) });
+            const row3LeftCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] /*, size: new Size(Math.round(width * 0.3), Math.round(height * 0.27))*/ });
             // Creates the Lock Status Elements
             await this.createLockStatusElement(row3LeftCol, vData);
             row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
@@ -144,14 +146,14 @@ module.exports = class FPW_Widgets_Large {
 
             row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
 
-            const row3CenterCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 0.3)) });
+            const row3CenterCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] /* size: new Size(Math.round(width * 0.3), Math.round(height * 0.27))*/ });
             row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
             // Create Tire Pressure Elements
             await this.createTireElement(row3CenterCol, vData);
             row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
-            row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
+            // row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
 
-            const row3RightCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 0.3)) });
+            const row3RightCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] /* size: new Size(Math.round(width * 0.3), Math.round(height * 0.27))*/ });
             // Creates the Ignition Status Elements
             await this.createIgnitionStatusElement(row3RightCol, vData);
             row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
@@ -160,6 +162,7 @@ module.exports = class FPW_Widgets_Large {
             row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
 
             row3Container.addSpacer();
+            // widget.addSpacer();
 
             const row5Container = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
             const row5CenterCol = await this.createColumn(row5Container, { '*setPadding': [0, 0, 0, 0] });
@@ -167,32 +170,34 @@ module.exports = class FPW_Widgets_Large {
             await this.createPositionElement(row5CenterCol, vData, 'center');
 
             widget.addSpacer(); // Pushes all content to the top
-
-            // //*****************************
-            // //* COMMAND BUTTONS CONTAINER
-            // //*****************************
-            const controlsContainer = await this.createRow(widget, { '*setPadding': [10, 0, 5, 0] });
-            controlsContainer.addSpacer();
-            // vData.deepSleepMode = true;
-            // vData.firmwareUpdating = true;
-            await this.createWidgetButtonRow(controlsContainer, vData, paddingLeft, width, 35, 24);
-            controlsContainer.addSpacer();
+            widget.addSpacer(); // Pushes all content to the top
 
             // //**********************
             // //* Status Row
             // //*********************
 
-            // if (hasStatusMsg) {
-            //     let statusRow = await this.createRow(widget, { '*setPadding': [0, paddingLeft, 3, 0], '*bottomAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.075)) });
-            //     await this.WidgetHelper.createStatusElement(statusRow, vData, 3);
-            //     statusRow.addSpacer();
-            // } else {
-            //     widget.addSpacer();
-            // }
+            if (hasStatusMsg) {
+                let statusRow = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*bottomAlignContent': null });
+                statusRow.addSpacer();
+                await this.WidgetHelper.createStatusElement(statusRow, vData, 3);
+                // statusRow.addSpacer();
+            } else {
+                widget.addSpacer();
+            }
+            // //*****************************
+            // //* COMMAND BUTTONS CONTAINER
+            // //*****************************
+            const controlsContainer = await this.createRow(widget, { '*setPadding': [7, 0, 5, 0] });
+            controlsContainer.addSpacer();
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
+            await this.createWidgetButtonRow(controlsContainer, vData, paddingX, width, 35, 24);
+            controlsContainer.addSpacer();
 
             // Displays the Last Vehicle Checkin Time Elapsed...
             let timestampRow = await this.createRow(widget, { '*setPadding': [3, 0, 3, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+            // widget.addSpacer();
         } catch (e) {
             await this.FPW.logger(`detailedWidget(large) Error: ${e}`, true);
         }
@@ -676,7 +681,7 @@ module.exports = class FPW_Widgets_Large {
     }
 
     async imgBtnRowBuilder(srcRow, elemWidth, widthPerc, elemHeight, icon) {
-        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 8, borderWidth: 2, borderColor: this.colorMap.text[this.colorMode] });
+        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 10, borderWidth: 2, borderColor: this.colorMap.text[this.colorMode] });
         btnCol.addSpacer(); // Pushes Button column down to help center in middle
 
         const btnImgRow = await this.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
@@ -686,7 +691,7 @@ module.exports = class FPW_Widgets_Large {
         btnCol.addSpacer(); // Pushes Button column up to help center in middle
     }
 
-    async createWidgetButtonRow(srcRow, vData, paddingLeft, rowWidth, rowHeight = 40, btnSize = 24) {
+    async createWidgetButtonRow(srcRow, vData, padding, rowWidth, rowHeight = 40, btnSize = 24) {
         const darkMode = this.colorMode === 'dark';
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         const hasStatusMsg = await this.hasStatusMsg(vData);
@@ -695,7 +700,7 @@ module.exports = class FPW_Widgets_Large {
         const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red.png' : darkMode ? 'ignition_dark.png' : 'ignition_light.png';
         const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png' : darkMode ? 'menu_btn_dark.png' : 'menu_btn_light.png';
 
-        const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, paddingLeft || 0, 0, Math.round(rowWidth * 0.05)], spacing: 10 });
+        const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, padding || 0, 0, padding || 0], spacing: 10 });
 
         const buttons = [{
                 show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
@@ -721,10 +726,18 @@ module.exports = class FPW_Widgets_Large {
             {
                 show: true,
                 icon: {
+                    image: SFSymbol.named('arrow.triangle.2.circlepath.circle').image,
+                    opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: true,
+                icon: {
                     image: await this.FPW.Files.getImage(menuBtnIcon),
                     opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'show_menu' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
+
             {
                 show: false,
                 icon: {
@@ -735,7 +748,7 @@ module.exports = class FPW_Widgets_Large {
         ];
 
         let buttonsToShow = buttons.filter((btn) => btn.show === true);
-        buttonRow.size = new Size(Math.round(rowWidth * (0.2 * buttonsToShow.length)), rowHeight);
+        buttonRow.size = new Size(Math.round(rowWidth * (0.17 * buttonsToShow.length)), rowHeight);
         for (const [i, btn] of buttonsToShow.entries()) {
             await this.imgBtnRowBuilder(buttonRow, Math.round(rowWidth * 0.2), Math.round(buttonsToShow.length / 100), rowHeight, btn.icon);
         }

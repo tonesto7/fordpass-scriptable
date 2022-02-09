@@ -32,14 +32,6 @@ module.exports = class FPW_Widgets_Medium {
         console.log(`simpleWidget(medium) called...`);
         // Defines the Widget Object
         const widget = new ListWidget();
-
-        // let fm = FileManager.iCloud();
-        // let dir = fm.documentsDirectory();
-        // let path = fm.joinPath(dir, 'gray_grad_bg.png');
-        // if (await fm.fileExists(path)) {
-        //     widget.backgroundImage = await fm.readImage(path);
-        //     this.colorMode = 'light';
-        // }
         this.FPW.setWidgetBackground(widget, bgType);
         try {
             const widgetSizes = await this.FPW.getViewPortSizes(this.wSize);
@@ -53,7 +45,6 @@ module.exports = class FPW_Widgets_Medium {
             //************************
             //* TOP ROW CONTAINER
             //************************
-            // let topRowContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
 
             let bodyContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
             // ****************************************
@@ -171,6 +162,8 @@ module.exports = class FPW_Widgets_Medium {
             // let paddingLeft = 25;
             widget.setPadding(paddingTop, paddingLeft, 0, paddingLeft);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            vData.deepSleepMode = true;
+            vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
             //_______________________________
             //|         |         |         |
@@ -239,8 +232,7 @@ module.exports = class FPW_Widgets_Medium {
             //**********************
             //* Refresh and error
             //*********************
-            // vData.deepSleepMode = true;
-            // vData.firmwareUpdating = true;
+
             if (hasStatusMsg) {
                 let statusRow = await this.createRow(widget, { '*setPadding': [0, paddingLeft, 0, 0], '*centerAlignContent': null });
                 await this.createStatusElement(statusRow, vData, 2);
@@ -250,8 +242,9 @@ module.exports = class FPW_Widgets_Medium {
             }
 
             // Displays the Last Vehicle Checkin Time Elapsed...
-            const timestampRow = await this.createRow(widget, { '*setPadding': [5, 0, 5, 0] });
+            const timestampRow = await this.createRow(widget, { '*setPadding': [5, 0, 0, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+            widget.addSpacer();
         } catch (e) {
             await this.FPW.logger(`detailedWidget(medium) Error: ${e}`, true);
         }

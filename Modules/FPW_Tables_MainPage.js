@@ -682,7 +682,7 @@ module.exports = class FPW_Tables_MainPage {
                 }
             }
             if (widgetCmd) {
-                await this.FPW.Alerts.showAlert('Widget Command', `Widget Command: ${widgetCmd}`);
+                // await this.FPW.Alerts.showAlert('Widget Command', `Widget Command: ${widgetCmd}`);
                 await this.processWidgetCommands(widgetCmd);
             }
             await this.FPW.Tables.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
@@ -695,14 +695,12 @@ module.exports = class FPW_Tables_MainPage {
         switch (cmd) {
             case 'lock_command':
                 await this.FPW.Alerts.showActionPrompt(
-                    'Lock Controls',
-                    undefined, [{
+                    'Locks',
+                    'Are you sure you want to unlock the vehicle?', [{
                             title: 'Unlock',
                             action: async() => {
-                                console.log('(Dashboard) Unlock was pressed');
-                                if (await this.FPW.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
-                                    await this.FPW.FordAPI.sendVehicleCmd('unlock');
-                                }
+                                console.log('(WidgetCommand) Unlock was pressed');
+                                await this.FPW.FordAPI.sendVehicleCmd('unlock');
                             },
                             destructive: true,
                             show: true,
@@ -710,7 +708,7 @@ module.exports = class FPW_Tables_MainPage {
                         {
                             title: 'Lock',
                             action: async() => {
-                                console.log('(Dashboard) Lock was pressed');
+                                console.log('(WidgetCommand) Lock was pressed');
                                 await this.FPW.FordAPI.sendVehicleCmd('lock');
                             },
                             destructive: false,
@@ -723,14 +721,12 @@ module.exports = class FPW_Tables_MainPage {
 
             case 'start_command':
                 await this.FPW.Alerts.showActionPrompt(
-                    'Remote Start Controls',
-                    undefined, [{
+                    'Remote Start',
+                    'Are you sure you want to start the vehicle?', [{
                             title: 'Start',
                             action: async() => {
-                                console.log('(Dashboard) Start was pressed');
-                                if (await this.FPW.Alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
-                                    await this.FPW.FordAPI.sendVehicleCmd('start');
-                                }
+                                console.log('(WidgetCommand) Start was pressed');
+                                await this.FPW.FordAPI.sendVehicleCmd('start');
                             },
                             destructive: true,
                             show: true,
@@ -738,7 +734,7 @@ module.exports = class FPW_Tables_MainPage {
                         {
                             title: 'Stop',
                             action: async() => {
-                                console.log('(Dashboard) Stop was pressed');
+                                console.log('(WidgetCommand) Stop was pressed');
                                 await this.FPW.FordAPI.sendVehicleCmd('stop');
                             },
                             destructive: false,
@@ -748,6 +744,20 @@ module.exports = class FPW_Tables_MainPage {
                     true,
                 );
                 break;
+            case 'request_refresh':
+                await this.FPW.Alerts.showActionPrompt(
+                    'Vehicle Data Refresh',
+                    "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...", [{
+                        title: 'Refresh',
+                        action: async() => {
+                            console.log(`(WidgetCommand) Refresh was pressed`);
+                            await this.FPW.FordAPI.sendVehicleCmd('status');
+                        },
+                        destructive: true,
+                        show: true,
+                    }, ],
+                    true,
+                );
         }
     }
 };
