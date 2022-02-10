@@ -40,8 +40,8 @@ module.exports = class FPW_Widgets_Large {
             let paddingY = 10; //Math.round(height * 0.08);
             let paddingX = 7; //Math.round(width * 0.06);
             console.log(`padding | Top: ${paddingY} | Left: ${paddingX}`);
-            widget.setPadding(paddingY, paddingX, paddingY, paddingX);
-            widget.addSpacer();
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingY, paddingX, paddingY, paddingX] });
+
             const isEV = vData.evVehicle === true;
             let dtePostfix = isEV ? 'Range' : 'to E';
             let distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
@@ -52,54 +52,53 @@ module.exports = class FPW_Widgets_Large {
             //*****************
             //* TOP ROW
             //*****************
-            let topRowContainer = await this.createRow(widget, {});
+            let topRowContainer = await this.createRow(wContent, {});
 
             //*****************
             //* TOP LEFT COLUMN
             //*****************
 
             let topRowLeftCol = await this.createColumn(topRowContainer, { '*bottomAlignContent': null });
-
+            // topRowLeftCol.addSpacer();
             // Vehicle Title
-            let nameContainer = await this.createRow(topRowLeftCol, {});
-            nameContainer.addSpacer(); // Pushes the vehicle name to the left
+            let nameContainer = await this.createRow(topRowLeftCol, { '*setPadding': [paddingY, paddingX, 0, 0] });
+            // nameContainer.addSpacer(); // Pushes the vehicle name to the left
             let nameStr = vData.info.vehicle.vehicleType || '';
 
             let nameSize = 24;
             if (nameStr.length >= 10) {
                 nameSize = nameSize - Math.round(nameStr.length / 4);
             }
-            await this.createText(nameContainer, nameStr, { font: Font.semiboldSystemFont(nameSize), textColor: this.colorMap.text[this.colorMode] });
+            await this.createText(nameContainer, nameStr, { font: Font.semiboldSystemFont(nameSize), textColor: this.colorMap.text[this.colorMode], minimumScaleFactor: 0.9, lineLimit: 1 });
             nameContainer.addSpacer(); // Pushes the vehicle name to the left
 
             topRowLeftCol.addSpacer();
-            const topRowInfoContainer = await this.createRow(topRowLeftCol, { '*centerAlignContent': null });
-            topRowInfoContainer.addSpacer();
 
+            const topLeftInfoCol = await this.createColumn(topRowLeftCol, { '*setPadding': [0, paddingX + 15, 0, 0] });
             // Creates Battery Level Elements
-            await this.createBatteryElement(topRowInfoContainer, vData, 'left');
+            topLeftInfoCol.addSpacer();
+            await this.createBatteryElement(topLeftInfoCol, vData, 'left');
 
             // Creates Oil Life Elements
             if (!vData.evVehicle) {
-                await this.createOilElement(topRowInfoContainer, vData, 'left');
+                await this.createOilElement(topLeftInfoCol, vData, 'left');
             } else {
                 // Creates EV Plug Elements
-                await this.createEvChargeElement(topRowInfoContainer, vData, 'left');
+                await this.createEvChargeElement(topLeftInfoCol, vData, 'left');
             }
-            // topRowInfoContainer.addSpacer();
             // topRowLeftCol.addSpacer();
 
             //*********************
             //* TOP RIGHT COLUMN
             //*********************
 
-            let topRowRightCol = await this.createColumn(topRowContainer, {});
-            topRowRightCol.addSpacer(); // Pushes Content to the middle to help center
+            let topRowRightCol = await this.createColumn(topRowContainer, { '*setPadding': [0, 0, 0, 0] });
+            // topRowRightCol.addSpacer(); // Pushes Content to the middle to help center
 
             // Vehicle Image Container
             let imgWidth = Math.round(width * 0.4);
             let imgHeight = Math.round(height * 0.25);
-            const carImageContainer = await this.createRow(topRowRightCol, { '*centerAlignContent': null });
+            const carImageContainer = await this.createRow(topRowRightCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             // carImageContainer.addSpacer();
             await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { resizable: true, imageSize: new Size(imgWidth, imgHeight) });
             carImageContainer.addSpacer();
@@ -109,10 +108,10 @@ module.exports = class FPW_Widgets_Large {
             //* FUEL/BATTERY BAR CONTAINER
             //*******************************
             // Creates the Fuel/Battery Info Elements
-            const fuelBattRow = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
+            const fuelBattRow = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
 
             // Fuel/Battery Section
-            const fuelBattCol = await this.createColumn(fuelBattRow, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null /*, size: new Size(Math.round(width * 1), Math.round(height * 0.14))*/ });
+            const fuelBattCol = await this.createColumn(fuelBattRow, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
 
             // Fuel/Battery Level BAR
             const barRow = await this.createRow(fuelBattCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
@@ -134,10 +133,10 @@ module.exports = class FPW_Widgets_Large {
             //*****************
             //* Row 3 Container
             //*****************
-            const row3Container = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
+            const row3Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
 
             row3Container.addSpacer();
-            const row3LeftCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] /*, size: new Size(Math.round(width * 0.3), Math.round(height * 0.27))*/ });
+            const row3LeftCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
             // Creates the Lock Status Elements
             await this.createLockStatusElement(row3LeftCol, vData);
             row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
@@ -146,14 +145,14 @@ module.exports = class FPW_Widgets_Large {
 
             row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
 
-            const row3CenterCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] /* size: new Size(Math.round(width * 0.3), Math.round(height * 0.27))*/ });
+            const row3CenterCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
             row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
             // Create Tire Pressure Elements
             await this.createTireElement(row3CenterCol, vData);
             row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
             // row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
 
-            const row3RightCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] /* size: new Size(Math.round(width * 0.3), Math.round(height * 0.27))*/ });
+            const row3RightCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
             // Creates the Ignition Status Elements
             await this.createIgnitionStatusElement(row3RightCol, vData);
             row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
@@ -162,32 +161,31 @@ module.exports = class FPW_Widgets_Large {
             row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
 
             row3Container.addSpacer();
-            // widget.addSpacer();
+            wContent.addSpacer();
 
-            const row5Container = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
+            const row5Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
             const row5CenterCol = await this.createColumn(row5Container, { '*setPadding': [0, 0, 0, 0] });
             // Creates the Vehicle Location Element
             await this.createPositionElement(row5CenterCol, vData, 'center');
 
-            widget.addSpacer(); // Pushes all content to the top
-            widget.addSpacer(); // Pushes all content to the top
+            wContent.addSpacer(); // Pushes all content to the top
 
             // //**********************
             // //* Status Row
             // //*********************
 
             if (hasStatusMsg) {
-                let statusRow = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*bottomAlignContent': null });
-                statusRow.addSpacer();
-                await this.WidgetHelper.createStatusElement(statusRow, vData, 3);
+                let statusRow = await this.createRow(wContent, { '*setPadding': [0, paddingX, 0, 0], '*bottomAlignContent': null });
                 // statusRow.addSpacer();
-            } else {
-                widget.addSpacer();
+                await this.createStatusElement(statusRow, vData, 3);
+                statusRow.addSpacer();
+            } else if (!this.FPW.isSmallDisplay) {
+                wContent.addSpacer();
             }
             // //*****************************
             // //* COMMAND BUTTONS CONTAINER
             // //*****************************
-            const controlsContainer = await this.createRow(widget, { '*setPadding': [7, 0, 5, 0] });
+            const controlsContainer = await this.createRow(wContent, { '*setPadding': [7, 0, 5, 0] });
             controlsContainer.addSpacer();
             // vData.deepSleepMode = true;
             // vData.firmwareUpdating = true;
@@ -195,7 +193,7 @@ module.exports = class FPW_Widgets_Large {
             controlsContainer.addSpacer();
 
             // Displays the Last Vehicle Checkin Time Elapsed...
-            let timestampRow = await this.createRow(widget, { '*setPadding': [3, 0, 3, 0] });
+            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 3, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
             // widget.addSpacer();
         } catch (e) {
@@ -298,7 +296,7 @@ module.exports = class FPW_Widgets_Large {
             if (position == 'center' || position == 'right') {
                 valueRow.addSpacer();
             }
-            await this.createText(valueRow, value, { url: url, font: Font.mediumSystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.text[this.colorMode], lineLimit: 2, minimumScaleFactor: 0.9 });
+            await this.createText(valueRow, value, { url: url, font: Font.mediumSystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.text[this.colorMode], lineLimit: 2, minimumScaleFactor: 0.8 });
             if (position == 'center' || position == 'left') {
                 valueRow.addSpacer();
             }
@@ -342,7 +340,7 @@ module.exports = class FPW_Widgets_Large {
     async createIgnitionStatusElement(srcStack, vData, position = 'center', postSpace = false) {
         try {
             const styles = {
-                on: { font: Font.heavySystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.6 },
+                on: { font: Font.heavySystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.7 },
                 off: { font: Font.heavySystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.closedColor },
             };
             let remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;

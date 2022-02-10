@@ -91,7 +91,7 @@ module.exports = class FPW_Widgets_Medium {
             const locationContainer = await this.createRow(leftContainer, { '*setPadding': [5, paddingLeft, 0, 0], '*topAlignContent': null });
             let url = (await this.FPW.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
             let locationStr = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.textMap.errorMessages.noData;
-            await this.createText(locationContainer, locationStr, { url: url, font: Font.body(), textColor: this.colorMap.text[this.colorMode], lineLimit: 2, minimumScaleFactor: 0.7, textOpacity: 0.7 });
+            await this.createText(locationContainer, locationStr, { url: url, font: Font.body(), textColor: this.colorMap.text[this.colorMode], lineLimit: 2, minimumScaleFactor: 0.6, textOpacity: 0.7 });
 
             leftContainer.addSpacer();
 
