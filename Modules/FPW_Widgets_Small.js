@@ -112,13 +112,15 @@ module.exports = class FPW_Widgets_Small {
                 carStatusRow.addText(`Lock Status Failed`);
             }
             carStatusBox.addSpacer();
+            carStatusContainer.addSpacer();
 
             // Vehicle Image Container
             const carImageContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             carImageContainer.addSpacer();
             let canvasWidth = Math.round(width * 0.85);
-            let canvasHeight = Math.round(width * 0.35);
+            let canvasHeight = Math.round(width * 0.3);
             await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(canvasWidth, canvasHeight), resizable: true, '*rightAlignImage': null });
+            carImageContainer.addSpacer();
 
             //**************************
             //* BOTTOM ROW CONTAINER
@@ -131,6 +133,7 @@ module.exports = class FPW_Widgets_Small {
             // wContent.addSpacer();
             let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 3, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+            wContent.addSpacer();
             // ***************** RIGHT BODY CONTAINER END *****************
         } catch (e) {
             await this.FPW.logger(`simpleWidget(small) Error: ${e}`, true);
