@@ -118,7 +118,8 @@ module.exports = class FPW_Widgets_Small {
             const carImageContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             carImageContainer.addSpacer();
             let canvasWidth = Math.round(width * 0.85);
-            let canvasHeight = Math.round(width * 0.3);
+            let newH = this.FPW.isSmallDisplay ? 0.27 : 0.32;
+            let canvasHeight = Math.round(width * newH);
             await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(canvasWidth, canvasHeight), resizable: true, '*rightAlignImage': null });
             carImageContainer.addSpacer();
 
