@@ -74,15 +74,16 @@ module.exports = class FPW_Widgets_Small {
 
             try {
                 const { isEV, lvlValue, dteValue, odometerVal, dtePostfix, distanceMultiplier, distanceUnit, dteInfo } = await this.getRangeData(vData);
+                const fs = this.FPW.isSmallDisplay ? 14 : 16;
 
                 // DTE Text
-                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(16), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
 
                 let levelContainer = await this.createRow(miContainer, {});
                 // DTE + Level Separator
-                await this.createText(levelContainer, ' / ', { font: Font.systemFont(14), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, `${lvlValue}%`, { font: Font.systemFont(16), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
 
                 // Odometer Text
                 let mileageContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });
@@ -118,8 +119,8 @@ module.exports = class FPW_Widgets_Small {
             const carImageContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             carImageContainer.addSpacer();
             let canvasWidth = Math.round(width * 0.85);
-            let newH = this.FPW.isSmallDisplay ? 0.27 : 0.32;
-            let canvasHeight = Math.round(width * newH);
+            // let newH = this.FPW.isSmallDisplay ? 0.27 : 0.32;
+            let canvasHeight = Math.round(width * 0.32);
             await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(canvasWidth, canvasHeight), resizable: true, '*rightAlignImage': null });
             carImageContainer.addSpacer();
 
