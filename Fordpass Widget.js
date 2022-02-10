@@ -105,7 +105,7 @@ const widgetConfig = {
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
-    testMode: false, // Use cached data for testing
+    testMode: true, // Use cached data for testing
     useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     useLocalModules: false, // Stores and loads modules from local storage instead of iCloud.  disable to access the module files under the scriptable folder in iCloud Drive.
     useLocalLogs: false, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
@@ -316,15 +316,6 @@ class Widget {
         }
     }
 
-    widgetModuleLoader(moduleName) {
-        try {
-            const module = require(this.iCloudModuleDir + `/FPW_${moduleName}.js`);
-            return new module(this);
-        } catch (error) {
-            this.logError(`Module Loader | (${moduleName}) | Error: ${error}`);
-        }
-    }
-
     /**
      * @description
      * @return
@@ -356,14 +347,14 @@ class Widget {
                 } else {
                     // let s1 = await this.generateWidget('small', fordData);
                     // await s1.presentSmall();
-                    // let s2 = await this.generateWidget('smallSimple', fordData);
-                    // await s2.presentSmall();
+                    let s2 = await this.generateWidget('smallSimple', fordData);
+                    await s2.presentSmall();
                     // let m1 = await this.generateWidget('medium', fordData);
                     // await m1.presentMedium();
                     // let m2 = await this.generateWidget('mediumSimple', fordData);
                     // await m2.presentMedium();
-                    let w5 = await this.generateWidget('large', fordData);
-                    await w5.presentLarge();
+                    // let w5 = await this.generateWidget('large', fordData);
+                    // await w5.presentLarge();
 
                     // await this.Tables.MainPage.createMainPage();
                 }
@@ -1648,7 +1639,6 @@ async function validateModules() {
         'FPW_Tables_WidgetStylePage.js||1814395347',
         'FPW_Timers.js||-1888476318',
         'FPW_Widgets_ExtraLarge.js||1098647483',
-        'FPW_Widgets_Helpers.js||1392293995',
         'FPW_Widgets_Large.js||1561128693',
         'FPW_Widgets_Medium.js||21895432',
         'FPW_Widgets_Small.js||-219679237',

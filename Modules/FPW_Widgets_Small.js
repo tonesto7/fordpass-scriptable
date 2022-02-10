@@ -1,6 +1,3 @@
-// const fm = FileManager.iCloud();
-// const FPW_WidgetHelpers = importModule(fm.joinPath(fm.documentsDirectory(), 'FPWModules') + '/FPW_Widgets_Helpers.js');
-
 module.exports = class FPW_Widgets_Small {
     constructor(FPW) {
         this.FPW = FPW;
@@ -36,14 +33,16 @@ module.exports = class FPW_Widgets_Small {
             const widgetSizes = await this.FPW.getViewPortSizes(this.wSize);
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
             const { width, height } = widgetSizes;
-            let paddingTop = Math.round(height * 0.09);
-            // let paddingLeft = Math.round(width * 0.07);
-            let paddingLeft = 8;
+            let paddingTop = Math.round(height * 0.08);
+            let paddingLeft = Math.round(width * 0.04);
+            // let paddingLeft = 8;
             // console.log(`padding | Left: ${paddingLeft}`);
             //************************
             //* TOP LEFT BOX CONTAINER
             //************************
-            const topBox = await this.createRow(widget, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, paddingLeft] });
+            const topBox = await this.createRow(wContent, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
 
             // ---Top left part---
             const topLeftContainer = await this.createRow(topBox, {});
@@ -61,15 +60,10 @@ module.exports = class FPW_Widgets_Small {
             // ---The top left part is finished---
             topBox.addSpacer();
 
-            //************************
-            //* TOP Right BOX CONTAINER
-            //************************
-
-            // ---The top right part is finished---
             //***********************************
             //* MIDDLE ROW CONTAINER
             //***********************************
-            const carInfoContainer = await this.createColumn(widget, { '*setPadding': [8, paddingLeft, 0, 0] });
+            const carInfoContainer = await this.createColumn(wContent, { '*setPadding': [8, paddingLeft, 0, 0] });
 
             // ****************************************
             // * LEFT BODY COLUMN CONTAINER
@@ -101,9 +95,9 @@ module.exports = class FPW_Widgets_Small {
             // Car Status box
             const carStatusContainer = await this.createColumn(carInfoContainer, { '*setPadding': [4, 0, 4, 0] });
             const carStatusBox = await this.createRow(carStatusContainer, { '*setPadding': [3, 3, 3, 3], '*centerAlignContent': null, cornerRadius: 4, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)), size: new Size(Math.round(width * 0.55), Math.round(height * 0.12)) });
+            const doorsLocked = vData.lockStatus === 'LOCKED';
+            const carStatusRow = await this.createRow(carStatusBox, { '*setPadding': [0, 0, 0, 0] });
             try {
-                const doorsLocked = vData.lockStatus === 'LOCKED';
-                const carStatusRow = await this.createRow(carStatusBox, { '*setPadding': [0, 0, 0, 0] });
                 carStatusRow.addSpacer();
                 await this.createText(carStatusRow, `${doorsLocked ? 'Locked' : 'Unlocked'}`, {
                     '*centerAlignText': null,
@@ -120,26 +114,23 @@ module.exports = class FPW_Widgets_Small {
             carStatusBox.addSpacer();
 
             // Vehicle Image Container
-            const carImageContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+            const carImageContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             carImageContainer.addSpacer();
             let canvasWidth = Math.round(width * 0.85);
             let canvasHeight = Math.round(width * 0.35);
-
-            // let image = await this.getCarCanvasImage(data, canvasWidth, canvasHeight, 0.95);
             await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(canvasWidth, canvasHeight), resizable: true, '*rightAlignImage': null });
-
-            // Creates the Door/Window Status Message
 
             //**************************
             //* BOTTOM ROW CONTAINER
             //**************************
-            widget.addSpacer(); // Pushes Timestamp to the bottom
+            // wContent.addSpacer(); // Pushes Timestamp to the bottom
 
             // Displays the Last Vehicle Checkin Time Elapsed...
-            const timestampRow = await this.createRow(widget, { '*setPadding': [5, 0, 5, 0] });
+            // const timestampRow = await this.createRow(wContent, { '*setPadding': [5, 0, 5, 0] });
+            // await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+            // wContent.addSpacer();
+            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 3, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
-            widget.addSpacer();
-
             // ***************** RIGHT BODY CONTAINER END *****************
         } catch (e) {
             await this.FPW.logger(`simpleWidget(small) Error: ${e}`, true);

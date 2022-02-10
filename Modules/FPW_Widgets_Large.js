@@ -1,6 +1,3 @@
-// const fm = FileManager.iCloud();
-// const FPW_WidgetHelpers = importModule(fm.joinPath(fm.documentsDirectory(), 'FPWModules') + '/FPW_Widgets_Helpers.js');
-
 module.exports = class FPW_Widgets_Large {
     constructor(FPW) {
         this.FPW = FPW;
@@ -12,7 +9,6 @@ module.exports = class FPW_Widgets_Large {
         this.iconMap = FPW.iconMap;
         this.colorMap = FPW.colorMap;
         this.colorMode = 'system';
-        // this.widgetSize = this.FPW.widgetSizes()['phones'][`${this.FPW.screenSize.width / this.FPW.deviceScale}x${this.FPW.screenSize.height / this.FPW.screenScale}`] || this.FPW.widgetSizes()['phones']['375x812'];
     }
 
     async createWidget(vData, style = undefined, background = undefined, colorMode = 'system') {
@@ -73,8 +69,8 @@ module.exports = class FPW_Widgets_Large {
             nameContainer.addSpacer(); // Pushes the vehicle name to the left
 
             topRowLeftCol.addSpacer();
-
-            const topLeftInfoCol = await this.createColumn(topRowLeftCol, { '*setPadding': [0, paddingX + 15, 0, 0] });
+            const extraPadding = this.FPW.isSmallDisplay ? 0 : 15;
+            const topLeftInfoCol = await this.createColumn(topRowLeftCol, { '*setPadding': [0, paddingX + extraPadding, 0, 0] });
             // Creates Battery Level Elements
             topLeftInfoCol.addSpacer();
             await this.createBatteryElement(topLeftInfoCol, vData, 'left');

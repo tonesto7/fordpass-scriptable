@@ -1,6 +1,3 @@
-// const fm = FileManager.iCloud();
-// const FPW_WidgetHelpers = importModule(fm.joinPath(fm.documentsDirectory(), 'FPWModules') + '/FPW_Widgets_Helpers.js');
-
 module.exports = class FPW_Widgets_Medium {
     constructor(FPW) {
         this.FPW = FPW;
@@ -119,7 +116,7 @@ module.exports = class FPW_Widgets_Medium {
             //*****************************
             //* COMMAND BUTTONS CONTAINER
             //*****************************
-            const controlsContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
+            const controlsContainer = await this.createRow(widget, { '*setPadding': [7, 0, 5, 0] });
             controlsContainer.addSpacer();
             // vData.deepSleepMode = true;
             // vData.firmwareUpdating = true;
@@ -154,13 +151,9 @@ module.exports = class FPW_Widgets_Medium {
             const widgetSizes = await this.FPW.getViewPortSizes(this.wSize);
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
             const { width, height } = widgetSizes;
-            // const width = 329;
-            // const height = 155;
-            let paddingTop = Math.round(height * 0.05);
-            // let paddingTop = 20;
+            let paddingTop = Math.round(height * 0.08);
             let paddingLeft = Math.round(width * 0.04);
-            // let paddingLeft = 25;
-            widget.setPadding(paddingTop, paddingLeft, 0, paddingLeft);
+            // widget.setPadding(paddingTop, paddingLeft, 0, paddingLeft);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
             vData.deepSleepMode = true;
             vData.firmwareUpdating = true;
@@ -173,11 +166,13 @@ module.exports = class FPW_Widgets_Medium {
             //|                             |
             //-------------------------------
 
-            let bodyContainer = await this.createRow(widget, { '*setPadding': [paddingTop, 0, 0, 0] });
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, paddingLeft] });
+
+            let bodyContainer = await this.createRow(wContent, { '*setPadding': [paddingTop, 0, 0, 0] });
             //*****************
             //* First column
             //*****************
-            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 0.85)) });
+            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
 
             // Vehicle Image Container
             let imgWidth = Math.round(width * 0.33);
@@ -202,7 +197,8 @@ module.exports = class FPW_Widgets_Medium {
             //************************
             //* Second column
             //************************
-            let mainCol2 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, 0, 0, 0], size: new Size(Math.round(width * 0.333), Math.round(height * 0.85)) });
+            let mainCol2 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+            mainCol2.addSpacer();
 
             // Creates the Lock Status Elements
             await this.createLockStatusElement(mainCol2, vData, 'center', true);
@@ -212,12 +208,13 @@ module.exports = class FPW_Widgets_Medium {
 
             // Create Tire Pressure Elements
             await this.createTireElement(mainCol2, vData, 'center');
-            mainCol2.addSpacer();
+            // mainCol2.addSpacer();
 
             //****************
             //* Third column
             //****************
-            let mainCol3 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, 0, 0, paddingLeft], size: new Size(Math.round(width * 0.333), Math.round(height * 0.85)) });
+            let mainCol3 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+            mainCol3.addSpacer();
 
             // Creates the Ignition Status Elements
             await this.createIgnitionStatusElement(mainCol3, vData, 'center', true);
@@ -227,24 +224,24 @@ module.exports = class FPW_Widgets_Medium {
 
             // Creates the Vehicle Location Element
             await this.createPositionElement(mainCol3, vData, 'center');
-            mainCol3.addSpacer();
+            // mainCol3.addSpacer();
 
             //**********************
             //* Refresh and error
             //*********************
 
             if (hasStatusMsg) {
-                let statusRow = await this.createRow(widget, { '*setPadding': [0, paddingLeft, 0, 0], '*centerAlignContent': null });
+                let statusRow = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
                 await this.createStatusElement(statusRow, vData, 2);
                 statusRow.addSpacer(); // Pushes Status Message to the left
             } else {
-                widget.addSpacer();
+                wContent.addSpacer();
             }
 
             // Displays the Last Vehicle Checkin Time Elapsed...
-            const timestampRow = await this.createRow(widget, { '*setPadding': [5, 0, 0, 0] });
+            const timestampRow = await this.createRow(wContent, { '*setPadding': [5, 0, 0, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
-            widget.addSpacer();
+            wContent.addSpacer();
         } catch (e) {
             await this.FPW.logger(`detailedWidget(medium) Error: ${e}`, true);
         }
@@ -551,7 +548,7 @@ module.exports = class FPW_Widgets_Medium {
             if (position == 'center' || position == 'right') {
                 valueRow.addSpacer();
             }
-            await this.createText(valueRow, value, { url: url, font: Font.mediumSystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.text[this.colorMode], lineLimit: 2, minimumScaleFactor: 0.9 });
+            await this.createText(valueRow, value, { url: url, font: Font.mediumSystemFont(this.sizeMap[this.wSize].fontSizeMedium), textColor: this.colorMap.text[this.colorMode], lineLimit: 2 });
             if (position == 'center' || position == 'left') {
                 valueRow.addSpacer();
             }
@@ -819,7 +816,7 @@ module.exports = class FPW_Widgets_Medium {
         btnCol.addSpacer(); // Pushes Button column up to help center in middle
     }
 
-    async createWidgetButtonRow(srcRow, vData, paddingLeft, rowWidth, rowHeight = 40, btnSize = 24) {
+    async createWidgetButtonRow(srcRow, vData, padding, rowWidth, rowHeight = 40, btnSize = 24) {
         const darkMode = this.colorMode === 'dark';
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         const hasStatusMsg = await this.hasStatusMsg(vData);
@@ -828,7 +825,7 @@ module.exports = class FPW_Widgets_Medium {
         const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red.png' : darkMode ? 'ignition_dark.png' : 'ignition_light.png';
         const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png' : darkMode ? 'menu_btn_dark.png' : 'menu_btn_light.png';
 
-        const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, paddingLeft || 0, 0, Math.round(rowWidth * 0.05)], spacing: 10 });
+        const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, padding || 0, 0, padding || 0], spacing: 10 });
 
         const buttons = [{
                 show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
@@ -854,10 +851,18 @@ module.exports = class FPW_Widgets_Medium {
             {
                 show: true,
                 icon: {
+                    image: SFSymbol.named('arrow.triangle.2.circlepath.circle').image,
+                    opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: true,
+                icon: {
                     image: await this.FPW.Files.getImage(menuBtnIcon),
                     opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'show_menu' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
+
             {
                 show: false,
                 icon: {
@@ -868,7 +873,7 @@ module.exports = class FPW_Widgets_Medium {
         ];
 
         let buttonsToShow = buttons.filter((btn) => btn.show === true);
-        buttonRow.size = new Size(Math.round(rowWidth * (0.2 * buttonsToShow.length)), rowHeight);
+        buttonRow.size = new Size(Math.round(rowWidth * (0.17 * buttonsToShow.length)), rowHeight);
         for (const [i, btn] of buttonsToShow.entries()) {
             await this.imgBtnRowBuilder(buttonRow, Math.round(rowWidth * 0.2), Math.round(buttonsToShow.length / 100), rowHeight, btn.icon);
         }
