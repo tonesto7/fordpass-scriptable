@@ -133,7 +133,7 @@ module.exports = class FPW_Widgets_Small {
             // const timestampRow = await this.createRow(wContent, { '*setPadding': [5, 0, 5, 0] });
             // await this.createTimeStampElement(timestampRow, vData, 'center', 8);
             // wContent.addSpacer();
-            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 3, 0] });
+            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, paddingLeft, 3, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
             wContent.addSpacer();
             // ***************** RIGHT BODY CONTAINER END *****************
