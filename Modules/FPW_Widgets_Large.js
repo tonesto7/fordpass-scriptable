@@ -554,7 +554,7 @@ module.exports = class FPW_Widgets_Large {
             titleRow.addSpacer();
         }
         let valueRow = await this.createRow(srcStack, { '*setPadding': [3, 0, 0, 0], '*centerAlignContent': null });
-        const openWindows = await this.FPW.getOpenItems('createWindowElement2', vData.statusDoors); //['LF', 'RR', 'HD'];
+        const openWindows = await this.FPW.getOpenItems('createWindowElement2', vData.statusWindows); //['LF', 'RR', 'HD'];
         let value = openWindows.length ? openWindows.join(', ') : 'All Closed';
         if (position == 'center' || position == 'right') {
             valueRow.addSpacer();

@@ -66,7 +66,7 @@ Changelog:
     
 **************/
 const changelogs = {
-    '2022.02.08': {
+    '2022.02.11': {
         added: [
             'All new menu that functions like an app interface',
             'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
@@ -82,7 +82,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.08';
+const SCRIPT_VERSION = '2022.02.11';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -349,14 +349,14 @@ class Widget {
                     // await s1.presentSmall();
                     // let s2 = await this.generateWidget('smallSimple', fordData);
                     // await s2.presentSmall();
-                    // let m1 = await this.generateWidget('medium', fordData);
-                    // await m1.presentMedium();
-                    // let m2 = await this.generateWidget('mediumSimple', fordData);
-                    // await m2.presentMedium();
+                    let m1 = await this.generateWidget('medium', fordData);
+                    await m1.presentMedium();
+                    let m2 = await this.generateWidget('mediumSimple', fordData);
+                    await m2.presentMedium();
                     // let w5 = await this.generateWidget('large', fordData);
                     // await w5.presentLarge();
 
-                    await this.Tables.MainPage.createMainPage();
+                    // await this.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);

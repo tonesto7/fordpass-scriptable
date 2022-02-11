@@ -235,7 +235,7 @@ module.exports = class FPW_Widgets_Medium {
                 statusRow.addSpacer(); // Pushes Status Message to the left
             }
             // else if (!this.FPW.isSmallDisplay) {
-            wContent.addSpacer(this.FPW.isSmallDisplay ? 4 : null);
+            // wContent.addSpacer(this.FPW.isSmallDisplay ? 4 : null);
             // }
 
             // Displays the Last Vehicle Checkin Time Elapsed...
@@ -251,36 +251,35 @@ module.exports = class FPW_Widgets_Medium {
     async createDoorWindowText(srcElem, vData) {
         try {
             const styles = {
-                open: { font: Font.semiboldSystemFont(10), textColor: this.colorMap.openColor, lineLimit: 2 },
-                closed: { font: Font.systemFont(10), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7, lineLimit: 2 },
+                open: { font: Font.semiboldSystemFont(10), textColor: this.colorMap.openColor, lineLimit: 2, minimumScaleFactor: 0.9 },
+                closed: { font: Font.systemFont(10), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7, lineLimit: 2, minimumScaleFactor: 0.9 },
             };
-            let container = await this.createRow(srcElem, { '*setPadding': [0, 0, 0, 0] });
-            // container.addSpacer();
+            const statusCol = await this.createColumn(srcElem, { '*setPadding': [0, 0, 0, 0] });
             let doorsOpen = await this.FPW.getOpenItems('createDoorWindowText', vData.statusDoors); //['LF', 'RR', 'HD'];
-            let hoodOpen = false;
-            let tailgateOpen = false;
-            if (doorsOpen.includes('HD')) {
-                hoodOpen = true;
-                delete doorsOpen['HD'];
-            }
-            if (doorsOpen.includes('TG') || doorsOpen.includes('ITG')) {
-                tailgateOpen = true;
-                delete doorsOpen['TG'];
-                delete doorsOpen['ITG'];
-            }
-
             let windowsOpen = await this.FPW.getOpenItems('createDoorWindowText', vData.statusWindows);
-            let openStatus = 'All Doors and Windows Closed';
+
+            console.log(`doorsOpen: ${doorsOpen.join(', ')}`);
+            console.log(`windowsOpen: ${windowsOpen.join(', ')}`);
+
             if (Object.keys(doorsOpen).length > 0 || Object.keys(windowsOpen).length > 0) {
-                openStatus = doorsOpen.length ? `${doorsOpen.length} Doors Open` : 'All Doors Closed, ';
-                openStatus += hoodOpen ? `Hood Open, ${tailgateOpen ? '' : 'and '}` : '';
-                openStatus += tailgateOpen ? `Tailgate Open, and ` : '';
-                openStatus += windowsOpen.length ? `${windowsOpen.length} Windows Open` : 'All Windows Closed';
+                const dRow = await this.createRow(statusCol, { '*setPadding': [0, 0, 0, 0] });
+                dRow.addSpacer();
+                const ds = doorsOpen.length ? `Door${doorsOpen.length > 1 ? 's' : ''}: ${doorsOpen.join(', ')} Open` : 'All Doors Closed';
+                await this.createText(dRow, ds, doorsOpen.length > 0 ? styles.open : styles.closed);
+                dRow.addSpacer();
+
+                const wRow = await this.createRow(statusCol, { '*setPadding': [0, 0, 0, 0] });
+                wRow.addSpacer();
+                const ws = windowsOpen.length ? `Window${windowsOpen.length > 1 ? 's' : ''}: ${windowsOpen.join(', ')} Open` : 'All Windows Closed';
+                await this.createText(wRow, ws, windowsOpen.length > 0 ? styles.open : styles.closed);
+                wRow.addSpacer();
+            } else {
+                const os = 'All Doors and Windows Closed';
+                const sRow = await this.createRow(statusCol, { '*setPadding': [0, 0, 0, 0] });
+                sRow.addSpacer();
+                await this.createText(sRow, os, styles.closed);
+                sRow.addSpacer();
             }
-            // console.log(`openStatus: ${openStatus}`);
-            const alertStatus = Object.keys(doorsOpen).length > 0 || Object.keys(windowsOpen).length > 0 || hoodOpen || tailgateOpen;
-            await this.createText(container, openStatus, alertStatus ? styles.open : styles.closed);
-            // container.addSpacer();
         } catch (err) {
             await this.FPW.logError(`createDoorWindowText(medium) ${err}`);
         }
@@ -682,7 +681,7 @@ module.exports = class FPW_Widgets_Medium {
                 titleRow.addSpacer();
             }
             let valueRow = await this.createRow(srcStack, { '*setPadding': [3, 0, 0, 0], '*centerAlignContent': null });
-            const openWindows = await this.FPW.getOpenItems('createWindowElement2', vData.statusDoors); //['LF', 'RR', 'HD'];
+            const openWindows = await this.FPW.getOpenItems('createWindowElement2', vData.statusWindows); //['LF', 'RR', 'HD'];
             let value = openWindows.length ? openWindows.join(', ') : 'All Closed';
             if (position == 'center' || position == 'right') {
                 valueRow.addSpacer();
