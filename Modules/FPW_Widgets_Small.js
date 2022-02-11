@@ -48,7 +48,7 @@ module.exports = class FPW_Widgets_Small {
             const topLeftContainer = await this.createRow(topBox, {});
 
             // Vehicle Title
-            const vehicleNameContainer = await this.createRow(topLeftContainer, { '*setPadding': [0, 0, 0, 0] });
+            const vehicleNameContainer = await this.createRow(topLeftContainer, { '*setPadding': [paddingTop, 0, 0, 0] });
 
             let vehicleNameStr = vData.info.vehicle.vehicleType || '';
             // get dynamic size
@@ -63,7 +63,7 @@ module.exports = class FPW_Widgets_Small {
             //***********************************
             //* MIDDLE ROW CONTAINER
             //***********************************
-            const carInfoContainer = await this.createColumn(wContent, { '*setPadding': [8, paddingLeft, 0, 0] });
+            const carInfoContainer = await this.createColumn(wContent, { '*setPadding': [0, paddingLeft, 0, 0] });
 
             // ****************************************
             // * LEFT BODY COLUMN CONTAINER
@@ -97,12 +97,12 @@ module.exports = class FPW_Widgets_Small {
             const carStatusContainer = await this.createColumn(carInfoContainer, { '*setPadding': [4, 0, 4, 0] });
             const carStatusBox = await this.createRow(carStatusContainer, { '*setPadding': [3, 3, 3, 3], '*centerAlignContent': null, cornerRadius: 4, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)), size: new Size(Math.round(width * 0.55), Math.round(height * 0.12)) });
             const doorsLocked = vData.lockStatus === 'LOCKED';
-            const carStatusRow = await this.createRow(carStatusBox, { '*setPadding': [0, 0, 0, 0] });
+            const carStatusRow = await this.createRow(carStatusBox, { '*setPadding': [0, paddingLeft, 0, 0] });
             try {
                 carStatusRow.addSpacer();
                 await this.createText(carStatusRow, `${doorsLocked ? 'Locked' : 'Unlocked'}`, {
                     '*centerAlignText': null,
-                    font: doorsLocked ? Font.systemFont(10) : Font.heavySystemFont(this.sizeMap[this.wSize].fontSizeMedium),
+                    font: doorsLocked ? Font.mediumSystemFont(this.sizeMap[this.wSize].fontSizeMedium) : Font.heavySystemFont(this.sizeMap[this.wSize].fontSizeMedium),
                     textColor: doorsLocked ? this.colorMap.text[this.colorMode] : this.colorMap.openColor,
                     textOpacity: 0.7,
                     '*centerAlignText': null,
@@ -113,7 +113,7 @@ module.exports = class FPW_Widgets_Small {
                 carStatusRow.addText(`Lock Status Failed`);
             }
             carStatusBox.addSpacer();
-            carStatusContainer.addSpacer();
+            // carStatusContainer.addSpacer();
 
             // Vehicle Image Container
             const carImageContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
