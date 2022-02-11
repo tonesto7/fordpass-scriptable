@@ -36,7 +36,7 @@ module.exports = class FPW_Widgets_Medium {
             const { width, height } = widgetSizes;
             let paddingTop = Math.round(height * 0.04);
             let paddingLeft = Math.round(width * 0.03);
-            console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            // console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
             widget.setPadding(paddingTop, paddingLeft, 0, 0);
 
             //************************
@@ -101,10 +101,10 @@ module.exports = class FPW_Widgets_Medium {
 
             // Vehicle Image Container
             let imgWidth = Math.round(width * 0.5);
-            let imgHeight = Math.round(height * 0.5);
+            let imgHeight = Math.round(height * 0.4);
             const carImageContainer = await this.createRow(rightContainer, { '*setPadding': [paddingTop, 0, 0, 0], '*centerAlignContent': null });
             carImageContainer.addSpacer();
-            await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { /*imageSize: new Size(imgWidth, imgHeight),*/ '*rightAlignImage': null, resizable: true });
+            await this.createImage(carImageContainer, await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), '*rightAlignImage': null, resizable: true });
             carImageContainer.addSpacer();
             const doorWindStatusContainer = await this.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0] });
             doorWindStatusContainer.addSpacer();
@@ -153,10 +153,9 @@ module.exports = class FPW_Widgets_Medium {
             const { width, height } = widgetSizes;
             let paddingTop = Math.round(height * 0.08);
             let paddingLeft = Math.round(width * 0.04);
-            // widget.setPadding(paddingTop, paddingLeft, 0, paddingLeft);
-            console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
-            vData.deepSleepMode = true;
-            vData.firmwareUpdating = true;
+            // console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
             //_______________________________
             //|         |         |         |
@@ -234,7 +233,7 @@ module.exports = class FPW_Widgets_Medium {
                 let statusRow = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
                 await this.createStatusElement(statusRow, vData, 2);
                 statusRow.addSpacer(); // Pushes Status Message to the left
-            } else {
+            } else if (!this.FPW.isSmallDisplay) {
                 wContent.addSpacer();
             }
 
