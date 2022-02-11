@@ -345,16 +345,16 @@ class Widget {
                     // this.Alerts.showAlert('Query Params', JSON.stringify(args.queryParameters));
                     await this.processQueryParams(args.queryParameters, fordData);
                 } else {
-                    let s1 = await this.generateWidget('small', fordData);
-                    await s1.presentSmall();
-                    let s2 = await this.generateWidget('smallSimple', fordData);
-                    await s2.presentSmall();
-                    let m1 = await this.generateWidget('medium', fordData);
-                    await m1.presentMedium();
-                    let m2 = await this.generateWidget('mediumSimple', fordData);
-                    await m2.presentMedium();
-                    let w5 = await this.generateWidget('large', fordData);
-                    await w5.presentLarge();
+                    // let s1 = await this.generateWidget('small', fordData);
+                    // await s1.presentSmall();
+                    // let s2 = await this.generateWidget('smallSimple', fordData);
+                    // await s2.presentSmall();
+                    // let m1 = await this.generateWidget('medium', fordData);
+                    // await m1.presentMedium();
+                    // let m2 = await this.generateWidget('mediumSimple', fordData);
+                    // await m2.presentMedium();
+                    // let w5 = await this.generateWidget('large', fordData);
+                    // await w5.presentLarge();
 
                     await this.Tables.MainPage.createMainPage();
                 }
