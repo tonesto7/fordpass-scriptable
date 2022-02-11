@@ -42,7 +42,8 @@ module.exports = class FPW_Widgets_Large {
             let dtePostfix = isEV ? 'Range' : 'to E';
             let distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
             let distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
-
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
 
             //*****************
@@ -183,8 +184,7 @@ module.exports = class FPW_Widgets_Large {
             // //*****************************
             const controlsContainer = await this.createRow(wContent, { '*setPadding': [7, 0, 5, 0] });
             controlsContainer.addSpacer();
-            // vData.deepSleepMode = true;
-            // vData.firmwareUpdating = true;
+
             await this.createWidgetButtonRow(controlsContainer, vData, paddingX, width, 35, 24);
             controlsContainer.addSpacer();
 
@@ -720,7 +720,7 @@ module.exports = class FPW_Widgets_Large {
             {
                 show: true,
                 icon: {
-                    image: SFSymbol.named('arrow.triangle.2.circlepath.circle').image,
+                    image: await this.FPW.Files.getImage(darkMode ? 'refresh_btn_dark.png' : 'refresh_btn_light.png'),
                     opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },

@@ -64,15 +64,15 @@ module.exports = class FPW_Widgets_Medium {
 
             try {
                 const { isEV, lvlValue, dteValue, odometerVal, dtePostfix, distanceMultiplier, distanceUnit, dteInfo } = await this.getRangeData(vData);
-
+                const fs = this.FPW.isSmallDisplay ? 14 : 16;
                 // DTE Text
-                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(16), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
 
                 let levelContainer = await this.createRow(miContainer, {});
                 // DTE + Level Separator
-                await this.createText(levelContainer, ' / ', { font: Font.systemFont(14), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, `${lvlValue}%`, { font: Font.systemFont(16), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
 
                 // leftContainer.addSpacer();
                 let mileageContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0] });
@@ -233,9 +233,10 @@ module.exports = class FPW_Widgets_Medium {
                 let statusRow = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
                 await this.createStatusElement(statusRow, vData, 2);
                 statusRow.addSpacer(); // Pushes Status Message to the left
-            } else if (!this.FPW.isSmallDisplay) {
-                wContent.addSpacer();
             }
+            // else if (!this.FPW.isSmallDisplay) {
+            wContent.addSpacer(this.FPW.isSmallDisplay ? 4 : null);
+            // }
 
             // Displays the Last Vehicle Checkin Time Elapsed...
             const timestampRow = await this.createRow(wContent, { '*setPadding': [5, 0, 0, 0] });
@@ -850,7 +851,7 @@ module.exports = class FPW_Widgets_Medium {
             {
                 show: true,
                 icon: {
-                    image: SFSymbol.named('arrow.triangle.2.circlepath.circle').image,
+                    image: await this.FPW.Files.getImage(darkMode ? 'refresh_btn_dark.png' : 'refresh_btn_light.png'),
                     opts: { resizable: true, url: await this.FPW.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
