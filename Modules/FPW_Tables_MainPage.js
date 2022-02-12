@@ -42,6 +42,17 @@ module.exports = class FPW_Tables_MainPage {
 
             let tableRows = [];
 
+            const fontSizes = {
+                medium: 10,
+                title1: 24,
+                title2: 22,
+                title3: 20,
+                body: 10,
+                footnote: 14,
+                headline: 15,
+                subheadline: 13,
+            };
+
             // Header Section - Row 1: vehicle messages, vehicle type, vehicle alerts
             tableRows.push(
                 await this.FPW.Tables.createTableRow(
@@ -56,7 +67,15 @@ module.exports = class FPW_Tables_MainPage {
                             },
                         }),
 
-                        await this.FPW.Tables.createTextCell(vData.info.vehicle.vehicleType, odometerVal, { align: 'center', widthWeight: 40, dismissOnTap: false, titleColor: new Color(this.FPW.colorMap.textWhite), subtitleColor: Color.lightGray(), titleFont: Font.title3(), subtitleFont: Font.footnote() }),
+                        await this.FPW.Tables.createTextCell(vData.info.vehicle.vehicleType, odometerVal, {
+                            align: 'center',
+                            widthWeight: 40,
+                            dismissOnTap: false,
+                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            subtitleColor: Color.lightGray(),
+                            titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
+                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
+                        }),
                         await this.FPW.Tables.createButtonCell('Menu', {
                             align: 'right',
                             widthWeight: 30,
@@ -80,7 +99,7 @@ module.exports = class FPW_Tables_MainPage {
                 await this.FPW.Tables.createTableRow(
                     [
                         await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
-                        await this.FPW.Tables.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.subheadline() }),
+                        await this.FPW.Tables.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.semiboldSystemFont(fontSizes.subheadline) }),
                         await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
                     ], {
                         backgroundColor: new Color(headerColor),
@@ -105,22 +124,22 @@ module.exports = class FPW_Tables_MainPage {
                             widthWeight: 25,
                             dismissOnTap: false,
                             titleColor: new Color(this.FPW.colorMap.textWhite),
-                            titleFont: Font.headline(),
+                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
                             subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
-                            subtitleFont: Font.subheadline(),
+                            subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                         }),
-                        await this.FPW.Tables.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
+                        await this.FPW.Tables.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         await this.FPW.Tables.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 20 }),
-                        await this.FPW.Tables.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(9) }),
+                        await this.FPW.Tables.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         // Window Status Cells
                         await this.FPW.Tables.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                             align: 'right',
                             widthWeight: 25,
                             dismissOnTap: false,
                             titleColor: new Color(this.FPW.colorMap.textWhite),
-                            titleFont: Font.headline(),
+                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
                             subtitleColor: new Color(openWindows.length ? '#FF5733' : '#5A65C0'),
-                            subtitleFont: Font.subheadline(),
+                            subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                         }),
                         await this.FPW.Tables.createImageCell(await this.FPW.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                     ], {
@@ -137,7 +156,14 @@ module.exports = class FPW_Tables_MainPage {
                 await this.FPW.Tables.createTableRow(
                     [
                         await this.FPW.Tables.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                        await this.FPW.Tables.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, { align: 'left', widthWeight: 45, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.headline(), subtitleColor: Color.lightGray(), subtitleFont: Font.subheadline() }),
+                        await this.FPW.Tables.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, {
+                            align: 'left',
+                            widthWeight: 45,
+                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                            subtitleColor: Color.lightGray(),
+                            subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                        }),
                         await this.FPW.Tables.createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
                     ], {
                         backgroundColor: new Color(headerColor),
@@ -162,7 +188,7 @@ module.exports = class FPW_Tables_MainPage {
                 ),
             );
 
-            let update = false;
+            updateAvailable = false;
             // console.log(`showTestUIStuff: ${showTestUIStuff}`);
             if (showTestUIStuff) {
                 vData.alerts = {
@@ -214,7 +240,7 @@ module.exports = class FPW_Tables_MainPage {
                                 align: 'center',
                                 widthWeight: 100,
                                 titleColor: new Color('#b605fc'),
-                                titleFont: Font.subheadline(),
+                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
@@ -234,12 +260,22 @@ module.exports = class FPW_Tables_MainPage {
             if (recalls && recalls.length) {
                 // Creates the Vehicle Recalls Title Row
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Recall(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3() })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
+                    await this.FPW.Tables.createTableRow(
+                        [
+                            await this.FPW.Tables.createTextCell(`Recall(s)`, undefined, {
+                                align: 'center',
+                                widthWeight: 1,
+                                dismissOnTap: false,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.regularRoundedSystemFont(fontSizes.title3),
+                            }),
+                        ], {
+                            height: 25,
+                            isHeader: true,
+                            dismissOnSelect: false,
+                            backgroundColor: new Color(titleBgColor),
+                        },
+                    ),
                 );
                 // Creates a single row for each recall in the top 10 of recalls array
                 for (const [i, recall] of recalls.entries()) {
@@ -250,7 +286,7 @@ module.exports = class FPW_Tables_MainPage {
                         await this.FPW.Tables.createTableRow(
                             [
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.FPW.Tables.createTextCell(recall.title, `${recall.type}\n(ID: ${recall.id})`, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.body(), subtitleColor: this.FPW.colorMap.normalText, subtitleFont: Font.regularSystemFont(9) }),
+                                await this.FPW.Tables.createTextCell(recall.title, `${recall.type}\n(ID: ${recall.id})`, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.mediumSystemFont(fontSizes.headline), subtitleColor: this.FPW.colorMap.normalText, subtitleFont: Font.regularSystemFont(10) }),
                             ], {
                                 height: recall.id && recall.id.length ? 60 : 44,
                                 dismissOnSelect: false,
@@ -278,7 +314,7 @@ module.exports = class FPW_Tables_MainPage {
 
                 // Creates the Vehicle Alerts Title Row
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -298,9 +334,9 @@ module.exports = class FPW_Tables_MainPage {
                                     align: 'left',
                                     widthWeight: 93,
                                     titleColor: new Color(this.FPW.Tables.getAlertColorByCode(alert.colorCode)),
-                                    titleFont: Font.body(),
+                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
                                     subtitleColor: this.FPW.colorMap.normalText,
-                                    subtitleFont: Font.regularSystemFont(9),
+                                    subtitleFont: Font.regularSystemFont(10),
                                 }),
                             ], {
                                 height: 44,
@@ -322,7 +358,7 @@ module.exports = class FPW_Tables_MainPage {
             // Unread Messages Section - Displays a count of unread messages and a button to view all messages
             if (msgsUnread.length) {
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -367,7 +403,7 @@ module.exports = class FPW_Tables_MainPage {
             if (caps && caps.length && (caps.includes('DOOR_LOCK_UNLOCK') || caps.includes('REMOTE_START') || caps.includes('REMOTE_PANIC_ALARM'))) {
                 // Creates the Status & Remote Controls Header Row
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -386,8 +422,8 @@ module.exports = class FPW_Tables_MainPage {
                                     widthWeight: 59,
                                     titleColor: this.FPW.colorMap.normalText,
                                     subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'),
-                                    titleFont: Font.headline(),
-                                    subtitleFont: Font.subheadline(),
+                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                                 }),
                                 await this.FPW.Tables.createButtonCell('Unlock', {
                                     align: 'center',
@@ -418,7 +454,14 @@ module.exports = class FPW_Tables_MainPage {
                         await this.FPW.Tables.createTableRow(
                             [
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.FPW.Tables.createTextCell('Ignition', ignStatus, { align: 'left', widthWeight: 59, titleColor: this.FPW.colorMap.normalText, subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createTextCell('Ignition', ignStatus, {
+                                    align: 'left',
+                                    widthWeight: 59,
+                                    titleColor: this.FPW.colorMap.normalText,
+                                    subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'),
+                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                }),
                                 await this.FPW.Tables.createButtonCell('Stop', {
                                     align: 'center',
                                     widthWeight: 17,
@@ -448,7 +491,14 @@ module.exports = class FPW_Tables_MainPage {
                         await this.FPW.Tables.createTableRow(
                             [
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.FPW.Tables.createTextCell('Sound Horn/Lights', undefined, { align: 'left', widthWeight: 76, titleColor: this.FPW.colorMap.normalText, subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createTextCell('Sound Horn/Lights', undefined, {
+                                    align: 'left',
+                                    widthWeight: 76,
+                                    titleColor: this.FPW.colorMap.normalText,
+                                    subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'),
+                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                }),
 
                                 await this.FPW.Tables.createButtonCell('Start', {
                                     align: 'center',
@@ -470,7 +520,7 @@ module.exports = class FPW_Tables_MainPage {
             if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES' || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT'))) {
                 // Creates the Advanced Controls Header Text
                 tableRows.push(
-                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.title3() })], {
+                    await this.FPW.Tables.createTableRow([await this.FPW.Tables.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -484,7 +534,14 @@ module.exports = class FPW_Tables_MainPage {
                         await this.FPW.Tables.createTableRow(
                             [
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.FPW.Tables.createTextCell('SecuriAlert', vData.alarmStatus, { align: 'left', widthWeight: 59, titleColor: this.FPW.colorMap.normalText, subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createTextCell('SecuriAlert', vData.alarmStatus, {
+                                    align: 'left',
+                                    widthWeight: 59,
+                                    titleColor: this.FPW.colorMap.normalText,
+                                    subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
+                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                }),
                                 await this.FPW.Tables.createButtonCell('Enable', {
                                     align: 'center',
                                     widthWeight: 17,
@@ -514,7 +571,14 @@ module.exports = class FPW_Tables_MainPage {
                         await this.FPW.Tables.createTableRow(
                             [
                                 await this.FPW.Tables.createImageCell(await this.FPW.Files.getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.FPW.Tables.createTextCell('Zone Lighting', vData.zoneLightingStatus, { align: 'left', widthWeight: 59, titleColor: this.FPW.colorMap.normalText, subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'), titleFont: Font.headline(), subtitleFont: Font.subheadline() }),
+                                await this.FPW.Tables.createTextCell('Zone Lighting', vData.zoneLightingStatus, {
+                                    align: 'left',
+                                    widthWeight: 59,
+                                    titleColor: this.FPW.colorMap.normalText,
+                                    subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'),
+                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                }),
                                 await this.FPW.Tables.createButtonCell('Enable', {
                                     align: 'center',
                                     widthWeight: 17,
@@ -645,8 +709,8 @@ module.exports = class FPW_Tables_MainPage {
                                     widthWeight: 59,
                                     titleColor: this.FPW.colorMap.normalText,
                                     subtitleColor: new Color(vData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'),
-                                    titleFont: Font.headline(),
-                                    subtitleFont: Font.subheadline(),
+                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                                 }),
                                 await this.FPW.Tables.createButtonCell('Start', {
                                     align: 'center',

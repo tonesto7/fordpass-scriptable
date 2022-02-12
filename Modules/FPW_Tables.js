@@ -7,6 +7,33 @@ FPW_Tables_WidgetStylePage = importModule('/FPW_Tables_WidgetStylePage.js');
 const darkMode = Device.isUsingDarkAppearance();
 
 module.exports = class FPW_Tables {
+    tableFonts = {
+        small: {
+            title: Font.mediumSystemFont(12),
+            subtitle: Font.mediumSystemFont(11),
+            body: Font.mediumSystemFont(10),
+            headline: Font.mediumSystemFont(14),
+        },
+        medium: {
+            title: Font.mediumSystemFont(12),
+            subtitle: Font.mediumSystemFont(11),
+            body: Font.mediumSystemFont(10),
+            headline: Font.mediumSystemFont(14),
+        },
+        large: {
+            title: Font.mediumSystemFont(12),
+            subtitle: Font.mediumSystemFont(11),
+            body: Font.mediumSystemFont(10),
+            headline: Font.mediumSystemFont(14),
+        },
+        extraLarge: {
+            title: Font.mediumSystemFont(12),
+            subtitle: Font.mediumSystemFont(11),
+            body: Font.mediumSystemFont(10),
+            headline: Font.mediumSystemFont(14),
+        },
+    };
+
     constructor(FPW) {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;

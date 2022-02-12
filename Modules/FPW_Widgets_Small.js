@@ -83,7 +83,7 @@ module.exports = class FPW_Widgets_Small {
                 // DTE + Level Separator
                 await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
 
                 // Odometer Text
                 let mileageContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });

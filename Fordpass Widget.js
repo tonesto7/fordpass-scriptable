@@ -66,7 +66,7 @@ Changelog:
     
 **************/
 const changelogs = {
-    '2022.02.11': {
+    '2022.02.12': {
         added: [
             'All new menu that functions like an app interface',
             'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
@@ -82,7 +82,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.11';
+const SCRIPT_VERSION = '2022.02.12';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -105,12 +105,12 @@ const widgetConfig = {
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
-    testMode: false, // Use cached data for testing
+    testMode: false, // Use cached data for quick testing of widget and menu viewing
     useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     useLocalModules: false, // Stores and loads modules from local storage instead of iCloud.  disable to access the module files under the scriptable folder in iCloud Drive.
-    useLocalLogs: false, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
+    useLocalLogs: true, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
     useLocalFiles: true, // Use iCloud files for storing data
-    ignoreHashCheck: true, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
+    ignoreHashCheck: false, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
     showTestUIStuff: false,
@@ -349,14 +349,14 @@ class Widget {
                     // await s1.presentSmall();
                     // let s2 = await this.generateWidget('smallSimple', fordData);
                     // await s2.presentSmall();
-                    let m1 = await this.generateWidget('medium', fordData);
-                    await m1.presentMedium();
-                    let m2 = await this.generateWidget('mediumSimple', fordData);
-                    await m2.presentMedium();
+                    // let m1 = await this.generateWidget('medium', fordData);
+                    // await m1.presentMedium();
+                    // let m2 = await this.generateWidget('mediumSimple', fordData);
+                    // await m2.presentMedium();
                     // let w5 = await this.generateWidget('large', fordData);
                     // await w5.presentLarge();
 
-                    // await this.Tables.MainPage.createMainPage();
+                    await this.Tables.MainPage.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -1624,24 +1624,24 @@ class Widget {
 async function validateModules() {
     const moduleFiles = [
         'FPW_Alerts.js||1575654697',
-        'FPW_Files.js||-732942791',
-        'FPW_FordAPIs.js||908574209',
+        'FPW_Files.js||879879289',
+        'FPW_FordAPIs.js||-1514803303',
         'FPW_Keychain.js||865182748',
-        'FPW_Menus.js||566532256',
+        'FPW_Menus.js||-81580035',
         'FPW_Notifications.js||-168421043',
         'FPW_ShortcutParser.js||2076658623',
-        'FPW_Tables.js||-102791873',
-        'FPW_Tables_AlertPage.js||-1687899018',
-        'FPW_Tables_ChangesPage.js||-1348322738',
-        'FPW_Tables_MainPage.js||-189298638',
-        'FPW_Tables_MessagePage.js||-1931255899',
-        'FPW_Tables_RecallPage.js||1094245826',
-        'FPW_Tables_WidgetStylePage.js||1814395347',
+        'FPW_Tables.js||-1007128697',
+        'FPW_Tables_AlertPage.js||-1243229135',
+        'FPW_Tables_ChangesPage.js||2029682360',
+        'FPW_Tables_MainPage.js||-1032839635',
+        'FPW_Tables_MessagePage.js||136135527',
+        'FPW_Tables_RecallPage.js||1671208125',
+        'FPW_Tables_WidgetStylePage.js||1545966548',
         'FPW_Timers.js||-1888476318',
         'FPW_Widgets_ExtraLarge.js||1098647483',
-        'FPW_Widgets_Large.js||1561128693',
-        'FPW_Widgets_Medium.js||21895432',
-        'FPW_Widgets_Small.js||-219679237',
+        'FPW_Widgets_Large.js||-1563517069',
+        'FPW_Widgets_Medium.js||-1810046530',
+        'FPW_Widgets_Small.js||-1893254486',
     ];
     const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
