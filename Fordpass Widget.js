@@ -108,9 +108,9 @@ const widgetConfig = {
     testMode: false, // Use cached data for quick testing of widget and menu viewing
     useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     useLocalModules: false, // Stores and loads modules from local storage instead of iCloud.  disable to access the module files under the scriptable folder in iCloud Drive.
-    useLocalLogs: true, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
+    useLocalLogs: false, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
     useLocalFiles: true, // Use iCloud files for storing data
-    ignoreHashCheck: false, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
+    ignoreHashCheck: true, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
     showTestUIStuff: false,
@@ -502,7 +502,7 @@ class Widget {
             this.logError(`generateWidget() Error: ${e}`);
         }
         widget.setPadding(0, 5, 0, 1);
-        widget.refreshAfterDate = new Date(Date.now() + 1000 * 240); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+        widget.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         Script.setWidget(widget);
         this.logInfo(`Created Widget(${size})...`);
         return widget;

@@ -185,13 +185,15 @@ module.exports = class FPW_Widgets_Small {
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
             const { width, height } = widgetSizes;
             let paddingTop = Math.round(height * 0.08);
-            let paddingLeft = Math.round(width * 0.04);
+            let paddingLeft = Math.round(width * 0.07);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
             // vData.deepSleepMode = true;
             // vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
 
-            let bodyContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0] });
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, 0] });
+
+            let bodyContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
 
             //*****************
             //* First column
@@ -242,13 +244,13 @@ module.exports = class FPW_Widgets_Small {
             //* Refresh and error
             //*********************
             if (hasStatusMsg) {
-                let statusRow = await this.createRow(widget, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+                let statusRow = await this.createRow(wContent, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
                 await this.createStatusElement(statusRow, vData, 1);
             } else {
-                widget.addSpacer();
+                wContent.addSpacer();
             }
             // Displays the Last Vehicle Checkin Time Elapsed...
-            let timestampRow = await this.createRow(widget, { '*setPadding': [3, 0, 5, paddingLeft], '*bottomAlignContent': null });
+            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 0, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
         } catch (e) {
             await this.FPW.logger(`detailedWidget(small) Error: ${e}`, true);
