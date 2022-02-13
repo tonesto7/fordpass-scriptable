@@ -93,7 +93,7 @@ const widgetConfig = {
     debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
-    screenShotMode: true, // Places a dummy address in the widget for anonymous screenshots.
+    screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     tirePressureThresholds: {
@@ -1641,7 +1641,7 @@ async function validateModules() {
         'FPW_Widgets_ExtraLarge.js||1098647483',
         'FPW_Widgets_Large.js||-1563517069',
         'FPW_Widgets_Medium.js||-1810046530',
-        'FPW_Widgets_Small.js||-1893254486',
+        'FPW_Widgets_Small.js||-1295124757',
     ];
     const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
