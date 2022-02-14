@@ -27,18 +27,8 @@ class WidgetInstaller {
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Menus.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Notifications.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_AlertPage.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_ChangesPage.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_MainPage.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_MessagePage.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_RecallPage.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_WidgetStylePage.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_App.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Small.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Medium.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Large.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_ExtraLarge.js',
             ],
             docsUrl: 'https://github.com/tonesto7/fordpass-scriptable#readme',
             cleanup: {
@@ -145,7 +135,7 @@ class WidgetInstaller {
     }
 
     async getReleaseMode() {
-        return (await wI.getKeychainValue('fpWtReleaseMode')) || 'public';
+        return (await wTool.getKeychainValue('fpWtReleaseMode')) || 'public';
     }
 
     async showAlert(title, message) {
@@ -409,16 +399,16 @@ class WidgetInstaller {
     }
 }
 
-const wI = new WidgetInstaller();
-await wI.getScriptConfig();
+const wTool = new WidgetInstaller();
+await wTool.getScriptConfig();
 
 async function menuBuilderByType(type) {
     try {
         let title = undefined;
         let message = undefined;
-        const releaseMode = await wI.getReleaseMode();
+        const releaseMode = await wTool.getReleaseMode();
         let items = [];
-        let filesFnd = await wI.getAllInstances();
+        let filesFnd = await wTool.getAllInstances();
         switch (type) {
             case 'main':
                 title = `FordWidget Tool Menu`;
@@ -428,7 +418,7 @@ async function menuBuilderByType(type) {
                         title: `Update ${filesFnd.length} Instance${filesFnd.length > 1 ? 's' : ''}`,
                         action: async () => {
                             console.log('(Main Menu) Update Widgets was pressed');
-                            await wI.updateScripts(wI.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), wI.scriptConfig.scriptGlyph, wI.scriptConfig.scriptColor);
+                            await wTool.updateScripts(wTool.scriptConfig.scriptName, await wTool.getSrcUrl(), await wTool.getDocUrl(), wTool.scriptConfig.scriptGlyph, wTool.scriptConfig.scriptColor);
                         },
                         destructive: true,
                         show: filesFnd.length >= 1,
@@ -437,7 +427,7 @@ async function menuBuilderByType(type) {
                         title: 'Create New Instance',
                         action: async () => {
                             console.log('(Main Menu) Create New Instance was pressed');
-                            await wI.newScript(wI.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), wI.scriptConfig.scriptGlyph, wI.scriptConfig.scriptColor);
+                            await wTool.newScript(wTool.scriptConfig.scriptName, await wTool.getSrcUrl(), await wTool.getDocUrl(), wTool.scriptConfig.scriptGlyph, wTool.scriptConfig.scriptColor);
                         },
                         destructive: false,
                         show: true,
@@ -478,7 +468,7 @@ async function menuBuilderByType(type) {
                         title: `Release Mode: ${releaseMode}`,
                         action: async () => {
                             console.log(`(${type} Menu) Toggle Release Mode was pressed`);
-                            await wI.toggleReleaseMode();
+                            await wTool.toggleReleaseMode();
                             menuBuilderByType('setting');
                         },
                         destructive: false,
@@ -504,8 +494,8 @@ async function menuBuilderByType(type) {
                             title: filesFnd[i],
                             action: async () => {
                                 console.log(`(Removal Menu) ${filesFnd[i]} was pressed`);
-                                await wI.removeInstance(filesFnd[i]);
-                                await wI.showAlert('Widget Tool - Instance Removal', `${filesFnd[i]} Instance removed...`);
+                                await wTool.removeInstance(filesFnd[i]);
+                                await wTool.showAlert('Widget Tool - Instance Removal', `${filesFnd[i]} Instance removed...`);
                                 menuBuilderByType('main');
                             },
                             destructive: true,
@@ -518,8 +508,8 @@ async function menuBuilderByType(type) {
                         title: 'Remove All Instances',
                         action: async () => {
                             console.log(`(Removal Menu) Remove All was pressed`);
-                            await wI.removeAllInstances();
-                            await wI.showAlert('Widget Tool - Instances Removal', `All ${filesFnd.length} Instances were removed`);
+                            await wTool.removeAllInstances();
+                            await wTool.showAlert('Widget Tool - Instances Removal', `All ${filesFnd.length} Instances were removed`);
                             menuBuilderByType('main');
                         },
                         destructive: true,
@@ -563,14 +553,14 @@ async function menuBuilderByType(type) {
 }
 
 if (config.runsInApp || config.runsFromHomeScreen) {
-    let fnd = await wI.getAllInstances();
+    let fnd = await wTool.getAllInstances();
     // console.log('start | fnd: ' + fnd.length);
     if (fnd.length < 1) {
         console.log('start | no scripts found creating new one');
-        await wI.newScript(wI.scriptConfig.scriptName, await wI.getSrcUrl(), await wI.getDocUrl(), wI.scriptConfig.scriptGlyph, wI.scriptConfig.scriptColor);
+        await wTool.newScript(wTool.scriptConfig.scriptName, await wTool.getSrcUrl(), await wTool.getDocUrl(), wTool.scriptConfig.scriptGlyph, wTool.scriptConfig.scriptColor);
     } else {
         console.log('start | showing Main Menu');
-        // console.log(JSON.stringify(await wI.getFileDetails(fnd[0])));
+        // console.log(JSON.stringify(await wTool.getFileDetails(fnd[0])));
         await menuBuilderByType('main');
     }
     Script.complete();
