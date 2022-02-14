@@ -1,9 +1,3 @@
-// const FPW_Tables_AlertPage = importModule('/FPW_Tables_AlertPage.js'),
-//     FPW_Tables_ChangesPage = importModule('/FPW_Tables_ChangesPage.js'),
-//     FPW_Tables_MainPage = importModule('/FPW_Tables_MainPage.js'),
-//     FPW_Tables_MessagePage = importModule('/FPW_Tables_MessagePage.js'),
-//     FPW_Tables_RecallPage = importModule('/FPW_Tables_RecallPage.js');
-// FPW_Tables_WidgetStylePage = importModule('/FPW_Tables_WidgetStylePage.js');
 const darkMode = Device.isUsingDarkAppearance();
 
 module.exports = class FPW_App {
@@ -11,12 +5,6 @@ module.exports = class FPW_App {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
-        // this.MainPage = new FPW_Tables_MainPage(FPW);
-        // this.AlertPage = new FPW_Tables_AlertPage(FPW);
-        // this.ChangesPage = new FPW_Tables_ChangesPage(FPW);
-        // this.MessagePage = new FPW_Tables_MessagePage(FPW);
-        // this.RecallPage = new FPW_Tables_RecallPage(FPW);
-        // this.WidgetStylePage = new FPW_Tables_WidgetStylePage(FPW);
         this.tableMap = {};
     }
 
@@ -58,7 +46,7 @@ module.exports = class FPW_App {
                 await table.present(fullscreen);
             }
         } catch (e) {
-            this.FPW.logger(`generateTableMenu() error: ${e}`, true);
+            this.FPW.logError(`generateTableMenu() error: ${e}`);
         }
     }
 
@@ -87,7 +75,7 @@ module.exports = class FPW_App {
             });
             row = await this.applyTableOptions(row, options);
         } catch (err) {
-            this.FPW.logger(`createTableRow() error: ${err}`, true);
+            this.FPW.logError(`createTableRow() error: ${err}`);
         }
         return row;
     }
@@ -100,7 +88,7 @@ module.exports = class FPW_App {
             }
             return cell;
         } catch (err) {
-            this.FPW.logger(`Error creating text cell: ${err}`, true);
+            this.FPW.logError(`Error creating text cell: ${err}`);
         }
     }
 
@@ -112,7 +100,7 @@ module.exports = class FPW_App {
             }
             return cell;
         } catch (err) {
-            this.FPW.logger(`Error creating image cell: ${err}`, true);
+            this.FPW.logError(`Error creating image cell: ${err}`);
         }
     }
 
@@ -124,7 +112,7 @@ module.exports = class FPW_App {
             }
             return cell;
         } catch (err) {
-            this.FPW.logger(`Error creating button cell: ${err}`, true);
+            this.FPW.logError(`Error creating button cell: ${err}`);
         }
     }
 
@@ -143,7 +131,7 @@ module.exports = class FPW_App {
                 }
             }
         } catch (err) {
-            this.FPW.logger(`Error applying options: ${err}`, true);
+            this.FPW.logError(`Error applying options: ${err}`);
         }
         return src;
     }
@@ -326,7 +314,7 @@ module.exports = class FPW_App {
             // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
             await wv.present(true);
         } catch (e) {
-            this.FPW.logger(`showDataWebView() | Error: ${e}`, true);
+            this.FPW.logError(`showDataWebView() | Error: ${e}`);
         }
     }
 
@@ -476,25 +464,39 @@ module.exports = class FPW_App {
             );
 
             // Header Section - Row 4: Shows fuel/EV battery level and range
+            let row4Items = [
+                await this.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
+                await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, {
+                    align: 'left',
+                    widthWeight: 45,
+                    titleColor: new Color(this.FPW.colorMap.textWhite),
+                    titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                    subtitleColor: Color.lightGray(),
+                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                }),
+            ];
+            if (vData.alarmStatus && vData.alarmStatus.length) {
+                row4Items.push(
+                    await this.createTextCell('Alarm', vData.alarmStatus && vData.alarmStatus === 'On' ? 'Active' : 'Inactive', {
+                        align: 'right',
+                        widthWeight: 45,
+                        dismissOnTap: false,
+                        titleColor: new Color(this.FPW.colorMap.textWhite),
+                        titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                        subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
+                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                    }),
+                    await this.createImageCell(await this.FPW.Files.getImage(`alarm_dark_menu.png`), { align: 'center', widthWeight: 5 }),
+                );
+            } else {
+                row4Items.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 50 }));
+            }
             tableRows.push(
-                await this.createTableRow(
-                    [
-                        await this.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                        await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, {
-                            align: 'left',
-                            widthWeight: 45,
-                            titleColor: new Color(this.FPW.colorMap.textWhite),
-                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                            subtitleColor: Color.lightGray(),
-                            subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                        }),
-                        await this.createTextCell('', undefined, { align: 'center', widthWeight: 50 }),
-                    ], {
-                        backgroundColor: new Color(headerColor),
-                        height: 40,
-                        dismissOnSelect: false,
-                    },
-                ),
+                await this.createTableRow(row4Items, {
+                    backgroundColor: new Color(headerColor),
+                    height: 40,
+                    dismissOnSelect: false,
+                }),
             );
 
             // Header Section - Row 5: Shows vehicle checkin timestamp
@@ -858,11 +860,11 @@ module.exports = class FPW_App {
                         await this.createTableRow(
                             [
                                 await this.createImageCell(await this.FPW.Files.getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell('SecuriAlert', vData.alarmStatus, {
+                                await this.createTextCell('SecuriAlert', vData.securiAlertStatus === 'enable' ? 'On' : 'Off', {
                                     align: 'left',
                                     widthWeight: 59,
                                     titleColor: this.FPW.colorMap.normalText,
-                                    subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
+                                    subtitleColor: new Color(vData.securiAlertStatus === 'enable' ? '#FF5733' : '#5A65C0'),
                                     titleFont: Font.mediumSystemFont(fontSizes.headline),
                                     subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                                 }),
@@ -1065,6 +1067,10 @@ module.exports = class FPW_App {
                 let reqOk = await this.FPW.requiredPrefsOk(this.FPW.prefKeys().core);
                 // console.log(`(Dashboard) Last Version: ${lastVersion}`);
                 if (reqOk && lastVersion !== this.FPW.SCRIPT_VERSION) {
+                    let changes = this.FPW.changelogs[this.SCRIPT_VERSION];
+                    if (changes && changes.clearImgCache) {
+                        await this.FPW.Files.clearImageCache();
+                    }
                     this.createRecentChangesPage();
                     await this.FPW.setSettingVal('fpScriptVersion', this.FPW.SCRIPT_VERSION);
                 }
@@ -1328,7 +1334,7 @@ module.exports = class FPW_App {
             }
             await this.generateTableMenu('messages', tableRows, false, false, update);
         } catch (e) {
-            this.FPW.logger(`createMessagesPage() error: ${e}`, true);
+            this.FPW.logError(`createMessagesPage() error: ${e}`);
         }
     }
 
@@ -1412,7 +1418,7 @@ module.exports = class FPW_App {
 
             await this.generateTableMenu('alerts', tableRows, false, false);
         } catch (e) {
-            this.FPW.logger(`createAlertsPage() Error: ${e}`, true);
+            this.FPW.logError(`createAlertsPage() Error: ${e}`);
         }
     }
 
@@ -1430,38 +1436,81 @@ module.exports = class FPW_App {
             headline2: 17,
             subheadline: 13,
         };
+        const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
         try {
-            let changes = this.FPW.changelogs[this.SCRIPT_VERSION];
             let tableRows = [];
-            if (changes && (changes.updated.length || changes.added.length || changes.removed.length || changes.fixed.length)) {
-                // let verTs = new Date(Date.parse(this.SCRIPT_TS));
-                tableRows.push(
-                    await this.createTableRow([await this.createTextCell(`Changes (v${this.SCRIPT_VERSION})`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
-                        height: 50,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                    }),
-                );
-                for (const [i, type] of['added', 'fixed', 'updated', 'removed'].entries()) {
-                    if (changes[type].length) {
-                        // console.log(`(RecentChanges Table) ${type} changes: ${changes[type].length}`);
-                        let { name, color } = this.getChangeLabelColorAndNameByType(type);
+            let changes = this.FPW.changelogs; //[this.SCRIPT_VERSION];
+            if (Object.keys(changes).length > 0) {
+                let versions = Object.keys(changes);
+                for (const version in versions) {
+                    let release = changes[versions[version]];
+
+                    if (release && (release.updated.length || release.added.length || release.removed.length || changes.fixed.length)) {
+                        // let verTs = new Date(Date.parse(this.SCRIPT_TS));
                         tableRows.push(
-                            await this.createTableRow([await this.createTextCell(`${name}`, undefined, { align: 'left', widthWeight: 100, titleColor: color, titleFont: Font.mediumRoundedSystemFont(fontSizes.headline2) })], {
-                                height: 30,
-                                dismissOnSelect: false,
-                            }),
-                        );
-                        for (const [index, change] of changes[type].entries()) {
-                            // console.log(`(RecentChanges Table) ${type} change: ${change}`);
-                            let rowH = Math.ceil(change.length / 70) * (55 / 2);
-                            tableRows.push(
-                                await this.createTableRow([await this.createTextCell(`\u2022 ${change}`, undefined, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body3) })], {
-                                    height: rowH < 40 ? 40 : rowH,
+                            await this.createTableRow(
+                                [
+                                    await this.createTextCell(`Release Notes`, `v${versions[version]}`, {
+                                        align: 'center',
+                                        widthWeight: 100,
+                                        dismissOnTap: false,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        titleFont: Font.regularRoundedSystemFont(fontSizes.title3),
+                                        subTitleFont: Font.mediumRoundedSystemFont(fontSizes.headline2),
+                                        subTitleColor: this.FPW.colorMap.normalText,
+                                    }),
+                                ], {
+                                    height: 50,
+                                    isHeader: true,
                                     dismissOnSelect: false,
-                                }),
-                            );
+                                    backgroundColor: new Color(titleBgColor),
+                                },
+                            ),
+                        );
+                        for (const [i, type] of['added', 'fixed', 'updated', 'removed'].entries()) {
+                            if (release[type].length) {
+                                // console.log(`(RecentChanges Table) ${type} changes: ${release[type].length}`);
+                                let { name, color } = this.getChangeLabelColorAndNameByType(type);
+                                tableRows.push(
+                                    await this.createTableRow([await this.createTextCell(`${name}`, undefined, { align: 'left', widthWeight: 100, titleColor: color, titleFont: Font.mediumRoundedSystemFont(fontSizes.headline2) })], {
+                                        height: 30,
+                                        dismissOnSelect: false,
+                                    }),
+                                );
+                                for (const [index, change] of release[type].entries()) {
+                                    // console.log(`(RecentChanges Table) ${type} change: ${change}`);
+                                    let rowH = Math.ceil(change.length / 70) * (55 / 2);
+                                    tableRows.push(
+                                        await this.createTableRow([await this.createTextCell(`\u2022 ${change}`, undefined, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body3) })], {
+                                            height: rowH < 40 ? 40 : rowH,
+                                            dismissOnSelect: false,
+                                        }),
+                                    );
+                                }
+                            }
                         }
+                    } else {
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createTextCell(`Release Notes`, `v${versions[version]}`, {
+                                        align: 'center',
+                                        widthWeight: 100,
+                                        dismissOnTap: false,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        titleFont: Font.regularRoundedSystemFont(fontSizes.title3),
+                                        subTitleFont: Font.mediumRoundedSystemFont(fontSizes.headline2),
+                                        subTitleColor: this.FPW.colorMap.normalText,
+                                    }),
+                                ], {
+                                    height: 50,
+                                    isHeader: true,
+                                    dismissOnSelect: false,
+                                    backgroundColor: new Color(titleBgColor),
+                                },
+                            ),
+                        );
+                        tableRows.push(await this.createTableRow([await this.createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body3) })], { height: 44, dismissOnSelect: false }));
                     }
                 }
             } else {
@@ -1470,6 +1519,7 @@ module.exports = class FPW_App {
                         height: 50,
                         isHeader: true,
                         dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
                     }),
                 );
                 tableRows.push(await this.createTableRow([await this.createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body3) })], { height: 44, dismissOnSelect: false }));
@@ -1477,7 +1527,7 @@ module.exports = class FPW_App {
 
             await this.generateTableMenu('recentChanges', tableRows, false, false);
         } catch (error) {
-            await this.FPW.logger(`(RecentChanges Table) ${error}`, true);
+            await this.FPW.logError(`(RecentChanges Table) ${error}`);
         }
     }
 
@@ -1598,7 +1648,7 @@ module.exports = class FPW_App {
 
             await this.generateTableMenu('recalls', tableRows, false, false);
         } catch (err) {
-            this.FPW.logger(`createRecallPage() Error: ${err}`, true);
+            this.FPW.logError(`createRecallPage() Error: ${err}`);
         }
     }
 

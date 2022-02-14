@@ -10,7 +10,7 @@ module.exports = class FPW_Files {
             const req = new Request(imgUrl);
             return await req.loadImage();
         } catch (e) {
-            this.FPW.logger(`loadImage Error: Could Not Load Image from ${imgUrl}.`, true);
+            this.FPW.logError(`loadImage Error: Could Not Load Image from ${imgUrl}.`);
             return undefined;
         }
     }
@@ -67,6 +67,23 @@ module.exports = class FPW_Files {
             return true;
         } else {
             return false;
+        }
+    }
+
+    async clearImageCache() {
+        console.log('FileManager: Clearing All Image Files from Local Cache...');
+        try {
+            let fm = this.FPW.widgetConfig.useLocalFiles ? FileManager.local() : FileManager.iCloud();
+            let dir = fm.documentsDirectory();
+            fm.listContents(dir).forEach(async(file) => {
+                const fp = fm.joinPath(dir, file);
+                if ((await fm.fileExtension(fp)) === 'png') {
+                    console.log(`FileManager: Removing Image File: ${file}`);
+                    await fm.remove(fp);
+                }
+            });
+        } catch (e) {
+            this.FPW.logError(`clearImageCache Error: ${e}`);
         }
     }
 
@@ -131,7 +148,16 @@ module.exports = class FPW_Files {
         }
     }
 
-    async getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false) {
+    async downloadAllVehicleImagesToIcloud(vData) {
+        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 1);
+        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 2);
+        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 3);
+        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 4);
+        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 5);
+        return;
+    }
+
+    async getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false, secondAttempt = false) {
         let fm = cloudStore || this.widgetConfig.useLocalFiles ? FileManager.local() : FileManager.iCloud();
         let dir = fm.documentsDirectory();
         let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `vehicle_${angle}_${this.SCRIPT_ID}.png` : `vehicle_${angle}.png`;
@@ -171,8 +197,14 @@ module.exports = class FPW_Files {
                     return await this.getImage('placeholder.png');
                 }
             } catch (e) {
-                this.FPW.logError(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
-                return await this.getImage('placeholder.png');
+                console.log(e.message);
+                if (e.message === 'Cannot parse response to an image.' && !secondAttempt) {
+                    secondAttempt = true;
+                    return await this.getVehicleImage(modelYear, cloudStore, 4, asData, secondAttempt);
+                } else {
+                    this.FPW.logError(`getVehicleImage Error: Could Not Load Vehicle Image. ${e}`);
+                    return await this.getImage('placeholder.png');
+                }
             }
         }
     }

@@ -124,7 +124,7 @@ module.exports = class FPW_FordAPIs {
                 }
             }
         } catch (e) {
-            await this.FPW.logInfo(`fetchToken() Error: ${e}`);
+            await this.FPW.logInfo(`fetchToken() Error: ${e}`, true);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -171,7 +171,7 @@ module.exports = class FPW_FordAPIs {
                 await this.fetchToken();
             }
         } catch (e) {
-            await this.FPW.logInfo(`refreshToken() Error: ${e}`);
+            await this.FPW.logInfo(`refreshToken() Error: ${e}`, true);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
@@ -411,7 +411,7 @@ module.exports = class FPW_FordAPIs {
                         return true;
                     } catch (e) {
                         console.log(`queryFordPassPrefs SET Error: ${e}`);
-                        await this.FPW.logger(`queryFordPassPrefs() SET Error: ${e}`);
+                        await this.FPW.logInfo(`queryFordPassPrefs() SET Error: ${e}`);
                         return false;
                     }
                 } else {
@@ -421,7 +421,7 @@ module.exports = class FPW_FordAPIs {
                 return true;
             }
         } catch (e) {
-            await this.FPW.logInfo(`queryFordPassPrefs() Error: ${e}`);
+            await this.FPW.logInfo(`queryFordPassPrefs() Error: ${e}`, true);
             return false;
         }
     }
@@ -504,7 +504,7 @@ module.exports = class FPW_FordAPIs {
             }
             return data;
         } catch (e) {
-            await this.FPW.logInfo(`makeFordRequest(${desc}) Error: ${e}`);
+            await this.FPW.logInfo(`makeFordRequest(${desc}) Error: ${e}`, true);
             return this.FPW.textMap().errorMessages.unknownError;
         }
     }
@@ -557,6 +557,13 @@ module.exports = class FPW_FordAPIs {
         vehicleData.capabilities = capData;
         if (this.widgetConfig.logVehicleData) {
             console.log(`Capabilities: ${JSON.stringify(capData)}`);
+        }
+
+        if (vehicleData.capabilities.includes('GUARD_MODE')) {
+            vehicleData.securiAlertStatus = await this.getSecuriAlertStatus();
+            if (this.widgetConfig.logVehicleData) {
+                console.log(`SecuriAlert Status: ${vehicleData.securiAlertStatus}`);
+            }
         }
 
         vehicleData.messages = await this.getUserMessages();
@@ -621,7 +628,7 @@ module.exports = class FPW_FordAPIs {
         // console.log(`Remote Start Status: ${JSON.stringify(vehicleStatus.remoteStart)}`);
 
         // Alarm status
-        vehicleData.alarmStatus = vehicleStatus.alarm ? (vehicleStatus.alarm.value === 'SET' ? 'On' : 'Off') : 'Off';
+        vehicleData.alarmStatus = vehicleStatus.alarm ? (vehicleStatus.alarm.value === 'SET' ? 'On' : 'Off') : undefined;
 
         //Battery info
         vehicleData.batteryStatus = vehicleStatus.battery && vehicleStatus.battery.batteryHealth ? vehicleStatus.battery.batteryHealth.value : this.FPW.textMap().UIValues.unknown;
@@ -696,11 +703,9 @@ module.exports = class FPW_FordAPIs {
         // console.log(`lastRefreshed | raw: ${vehicleData.lastRefreshed} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
         console.log(`Last Vehicle Checkin: ${await this.FPW.getLastRefreshElapsedString(vehicleData)}`);
 
-        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 1);
-        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 2);
-        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 3);
-        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 4);
-        // await this.FPW.Files.getVehicleImage(vehicleData.info.vehicle.modelYear, true, 5);
+        if (this.widgetConfig.saveAllVehicleImagesToIcloud) {
+            await this.FPW.Files.downloadAllVehicleImagesToIcloud(vehicleData);
+        }
 
         //save data to local store
         this.FPW.Files.saveDataToLocal(vehicleData);
@@ -890,7 +895,7 @@ module.exports = class FPW_FordAPIs {
                 if (wasError) {
                     if (errMsg) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
-                        await this.FPW.logInfo(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`);
+                        await this.FPW.logInfo(`sendVehicleCmd(${cmd_type}) | Error: ${errMsg}`, true);
                     }
                     if (outMsg.message !== '') {
                         await this.FPW.Alerts.showAlert(outMsg.title, outMsg.message);
@@ -917,7 +922,7 @@ module.exports = class FPW_FordAPIs {
                     }
                 }
             } catch (e) {
-                await this.FPW.logInfo(`sendVehicleCmd() Catch Error: ${e}`);
+                await this.FPW.logInfo(`sendVehicleCmd() Catch Error: ${e}`, true);
                 return;
             }
         }

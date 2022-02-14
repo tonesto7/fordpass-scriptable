@@ -36,7 +36,7 @@ module.exports = class FPW_Timers {
                 console.log(`createTimer Error: Could Not Create Timer | Name: ${name} | Interval: ${interval} | Repeat: ${repeat} | Actions: ${actions}`);
             }
         } catch (e) {
-            this.FPW.logger(`createTimer Error: Could Not Create Timer | ${e}`, true);
+            this.FPW.logError(`createTimer Error: Could Not Create Timer | ${e}`);
         }
     }
 

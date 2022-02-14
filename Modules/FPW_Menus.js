@@ -499,7 +499,33 @@ module.exports = class FPW_Menus {
                         },
                     ];
                     break;
-
+                case 'notifications':
+                    const alerts = await this.FPW.getShowAlertNotifications();
+                    const updates = await this.FPW.getShowUpdNotifications();
+                    title = 'Widget Settings';
+                    message = 'Update Notifications: Once per 24H.\n\nVehicle Alerts: Once every 6H';
+                    items = [{
+                            title: `Script Updates: ${updates === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Update Notification Toggle pressed`);
+                                await this.FPW.toggleShowUpdNotifications();
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Vehicle Alerts: ${alerts === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Alert Notification Toggle pressed`);
+                                await this.FPW.toggleShowAlertNotifications();
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ];
+                    break;
                 case 'settings':
                     let mapProvider = await this.FPW.getMapProvider();
                     title = 'Widget Settings';
@@ -511,6 +537,15 @@ module.exports = class FPW_Menus {
                                 this.menuBuilderByType('settings');
                             },
                             destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Notifications',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Notifications was pressed`);
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: true,
                             show: true,
                         },
                         {

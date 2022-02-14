@@ -58,7 +58,7 @@ module.exports = class FPW_Keychain {
                 return await Keychain.get(key);
             }
         } catch (e) {
-            this.FPW.logger(`getSettingVal(${key}) Error: ${e}`, true);
+            this.FPW.logError(`getSettingVal(${key}) Error: ${e}`);
         }
         return null;
     }

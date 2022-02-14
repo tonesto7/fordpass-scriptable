@@ -30,13 +30,18 @@ module.exports = class FPW_Notifications {
                 // console.log(key, value);
                 if (value !== undefined) {
                     switch (key) {
-                        case 'addAction':
+                        case 'actions':
                             if (value.length > 0) {
                                 for (const [i, action] of value.entries()) {
                                     if (i < 10) {
                                         notif.addAction(action.title, action.url);
                                     }
                                 }
+                            }
+                            break;
+                        case 'addAction':
+                            if (value && value.title && value.url) {
+                                notif.addAction(value.title, value.url);
                             }
                             break;
                         case 'setTriggerDate':
@@ -82,5 +87,46 @@ module.exports = class FPW_Notifications {
 
     async removeAllDeliveredNotification() {
         return await Notification.removeAllDelivered();
+    }
+
+    async processNotification(nType) {
+        switch (nType) {
+            case 'update':
+                if ((await this.FPW.getShowUpdNotifications()) && (await this.FPW.getLastNotifElapsedOk('fpLastUpdateNotificationDt', this.widgetConfig.updateNotificationRate))) {
+                    await this.FPW.storeLastNotificationDt('fpLastUpdateNotificationDt');
+                    await this.createNotification(`Newer Version Available: ${this.FPW.getStateVal('LATEST_VERSION')}`, 'subtitle', `You are running an older version of the Ford Pass Widget (${this.FPW.SCRIPT_VERSION}). Please update to the latest version.`, {
+                        actions: [{
+                            title: 'Update Widget',
+                            url: await this.FPW.buildCallbackUrl({ command: 'open_updater' }),
+                        }, ],
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_script_update`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_script_update`,
+                        scriptName: Script.name(),
+                    });
+                }
+                return;
+
+            case 'firmwareUpdating':
+                if ((await this.FPW.getShowAlertNotifications()) && (await this.FPW.getLastNotifElapsedOk('fpLastFirmUpdNotificationDt', this.widgetConfig.alertNotificationRate))) {
+                    await this.FPW.storeLastNotificationDt('fpLastFirmUpdNotificationDt');
+                    await this.createNotification(`Your Vehicles Firmware is Upgrading...`, 'subtitle', `Your vehicle has indicated that there is a firmware upgrade in progress.`, {
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_firmware_update`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_firmware_update`,
+                        scriptName: Script.name(),
+                    });
+                }
+                return;
+
+            case 'deepSleepMode':
+                if ((await this.FPW.getShowAlertNotifications()) && (await this.FPW.getLastNotifElapsedOk('fpLastDeepSleepNotificationDt', this.widgetConfig.alertNotificationRate))) {
+                    await this.FPW.storeLastNotificationDt('fpLastDeepSleepNotificationDt');
+                    await this.createNotification(`Vehicle in Deep Sleep Mode`, 'subtitle', `Your vehicle has indicated that it is in Deep Sleep Mode to conserve battery.`, {
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_deep_sleep`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_deep_sleep`,
+                        scriptName: Script.name(),
+                    });
+                }
+                return;
+        }
     }
 };

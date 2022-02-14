@@ -26,30 +26,12 @@
  */
 
 /**************
-Changelog:
-    v2.0.0:
-        - Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%;
-        - Removed vehicle odometer from the widget UI to save space (moved it to the dashboard menu section)
-        - Modified the margins of the widget to be more consistent and be better on small screens and small widgets.
-        - Renamed debug menu to advanced info menu.
-        - Added new option to advanced info menu to allow emailing your anonymous vehicle data to me 
-            (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything)
-        
 // Todo: This Release (v2.0.0)) 
     [-] use OTA info to show when an update is available or pending.
     [-] move OTA info to table view.
-    [-] Show notifications for specific events or errors (like low battery, low oil, ota updates)
     [-] add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
-    [x] Create widgets with less details and larger image.
-    [x] Change module storage from iCloud to local storage.
-    [x] add a hash to the modules so we make sure it loads the correct modules.
-    [x] add test mode to use cached data for widget testing
     [-] figure out why fetchVehicleData is called multiple times with token expires error.
     [-] fix main page not refreshing every 30 seconds.
-    [-] possibly add vehicle status overlay to image using canvas?!...
-    [x] Use individual file for each widget to reduce stack size.
-    [-] Switch to subfolder for widgets and have the app scan for the available widgets to use.
-    [x] Allow forcing of dark/light mode
     [x] allow solid color backgrounds for widgets
     [-] allow transparent backgrounds
 
@@ -58,7 +40,6 @@ Changelog:
     - add support for other languages
     - add charge scheduling to dashboard menu
     - add support for right hand drive (driver side windows, and doors etc.)
-    - add option to define dark or light mode (this might not work because the UI is driven based on OS theme)
     - add voice interface using siri shortcut
         * generate list of actionable commands based on capability
         * generate list of request command info available (are the doors locked, is the vehicle on, current fuel level, etc)
@@ -67,6 +48,13 @@ Changelog:
 **************/
 const changelogs = {
     '2022.02.14.1': {
+        added: ['Alarm status now shown in the dashboard menu.', 'Receive push notification for script updates (every 24H) as well as notifications for deep sleep mode, and firmware updates every 6H (Can turn the notifications off in Widget Menu > Settings > Notifications).'],
+        fixed: ['Fixed widget layouts to be consistent', 'Fixed vehicle image not loading alternate angles for some vehicles.', 'Fixed SecuriAlert not representing the correct state'],
+        removed: [],
+        updated: ['Release notes now contain a list of releases.'],
+        clearImgCache: true,
+    },
+    '2022.02.14.0': {
         added: [
             'All new menu that functions like an app interface',
             'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
@@ -82,7 +70,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.14.0';
+const SCRIPT_VERSION = '2022.02.14.1';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -96,6 +84,8 @@ const widgetConfig = {
     screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
+    updateNotificationRate: 86400, // How often to allow available update notifications (in seconds - 86400 = 1 day)
+    alertNotificationRate: Math.round(86400 * 0.25), // How often to allow available alert notifications (in seconds - 86400 * 0.25 = every 6 hours)
     tirePressureThresholds: {
         // Tire Pressure Thresholds in PSI
         low: 27,
@@ -108,9 +98,11 @@ const widgetConfig = {
     testMode: false, // Use cached data for quick testing of widget and menu viewing
     useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     useLocalModules: false, // Stores and loads modules from local storage instead of iCloud.  disable to access the module files under the scriptable folder in iCloud Drive.
+    writeToLog: false, // Writes to the log file.
     useLocalLogs: false, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
     useLocalFiles: true, // Use iCloud files for storing data
     ignoreHashCheck: false, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
+    saveAllVehicleImagesToIcloud: false, // This will download all 5 vehicle angle images to the Sciptable iCloud Folder as PNG files for use elsewhere.
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
     showTestUIStuff: false,
@@ -255,52 +247,54 @@ class Widget {
     };
 
     constructor() {
-        this.SCRIPT_NAME = 'Fordpass Widget';
-        this.SCRIPT_ID = SCRIPT_ID;
-        this.SCRIPT_VERSION = SCRIPT_VERSION;
-        // this.SCRIPT_TS = SCRIPT_TS;
-        this.stateStore = {};
-        this.moduleMap = {};
-        this.localFM = FileManager.local();
-        this.localDocs = this.localFM.documentsDirectory();
-        this.localModuleDir = this.localFM.joinPath(this.localDocs, 'FPWModules');
-        this.iCloudFM = FileManager.iCloud();
-        this.iCloudDocs = this.iCloudFM.documentsDirectory();
-        this.iCloudModuleDir = this.iCloudFM.joinPath(this.iCloudDocs, 'FPWModules');
-        this.logger = logger.bind(this);
-        this.logInfo = logInfo.bind(this);
-        this.logError = logError.bind(this);
-        //************************************************************************* */
-        //*                  Device Detail Functions
-        //************************************************************************* */
-        this.screenResolution = screenResolution;
-        this.screenSize = screenSize;
-        this.screenScale = screenScale;
-        this.isSmallDisplay = isSmallDisplay;
-        this.darkMode = darkMode;
-        this.widgetSize = 'medium';
-        this.widgetColor = 'system';
-        this.runningWidgetSize = config.widgetFamily;
-        this.isPhone = Device.isPhone();
-        this.isPad = Device.isPad();
-        this.deviceModel = Device.model();
-        this.deviceSystemVersion = Device.systemVersion();
-        this.widgetConfig = widgetConfig;
-        if (config.runsInApp) {
-            this.Timers = this.moduleLoader('Timers');
-            this.Alerts = this.moduleLoader('Alerts');
+        try {
+            this.SCRIPT_NAME = 'Fordpass Widget';
+            this.SCRIPT_ID = SCRIPT_ID;
+            this.SCRIPT_VERSION = SCRIPT_VERSION;
+            this.stateStore = {};
+            this.moduleMap = {};
+            this.localFM = FileManager.local();
+            this.localDocs = this.localFM.documentsDirectory();
+            this.localModuleDir = this.localFM.joinPath(this.localDocs, 'FPWModules');
+            this.iCloudFM = FileManager.iCloud();
+            this.iCloudDocs = this.iCloudFM.documentsDirectory();
+            this.iCloudModuleDir = this.iCloudFM.joinPath(this.iCloudDocs, 'FPWModules');
+            // this.logger = logger.bind(this);
+            this.logInfo = logInfo.bind(this);
+            this.logError = logError.bind(this);
+            //************************************************************************* */
+            //*                  Device Detail Functions
+            //************************************************************************* */
+            this.screenResolution = screenResolution;
+            this.screenSize = screenSize;
+            this.screenScale = screenScale;
+            this.isSmallDisplay = isSmallDisplay;
+            this.darkMode = darkMode;
+            this.widgetSize = 'medium';
+            this.widgetColor = 'system';
+            this.runningWidgetSize = config.widgetFamily;
+            this.isPhone = Device.isPhone();
+            this.isPad = Device.isPad();
+            this.deviceModel = Device.model();
+            this.deviceSystemVersion = Device.systemVersion();
+            this.widgetConfig = widgetConfig;
+            if (config.runsInApp) {
+                this.Timers = this.moduleLoader('Timers');
+                this.Alerts = this.moduleLoader('Alerts');
+            }
+            this.Notifications = this.moduleLoader('Notifications');
+            // this.ShortcutParser = this.moduleLoader('ShortcutParser');
+            this.Files = this.moduleLoader('Files');
+            this.FordAPI = this.moduleLoader('FordAPIs');
+            if (config.runsInApp) {
+                this.changelogs = changelogs;
+                this.App = this.moduleLoader('App');
+                this.Menus = this.moduleLoader('Menus');
+            }
+            this.checkForUpdates();
+        } catch (e) {
+            this.logError(e);
         }
-        this.Notifications = this.moduleLoader('Notifications');
-        // }
-        // this.ShortcutParser = this.moduleLoader('ShortcutParser');
-        this.Files = this.moduleLoader('Files');
-        this.FordAPI = this.moduleLoader('FordAPIs');
-        if (config.runsInApp) {
-            this.changelogs = changelogs;
-            this.App = this.moduleLoader('App');
-            this.Menus = this.moduleLoader('Menus');
-        }
-        this.checkForUpdates();
     }
 
     /**
@@ -364,9 +358,10 @@ class Widget {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
                 // console.log('runsInActionExtension: ' + config.runsInActionExtension);
             } else {
-                // this.logInfo('(generateWidget) Running in Widget (else)...');
+                await this.logInfo('(generateWidget) Running in Widget (else)...');
                 await this.generateWidget(runningWidgetSize, fordData);
             }
+            await this.checkForVehicleAlerts(fordData);
             Script.complete();
         } catch (e) {
             await this.logError(`run() Error: ${e}`, true);
@@ -378,6 +373,9 @@ class Widget {
             switch (params.command) {
                 case 'show_menu':
                     await this.App.createMainPage();
+                    break;
+                case 'show_updater':
+                    this.runScript('FordWidgetTool');
                     break;
                 case 'lock_command':
                 case 'start_command':
@@ -432,7 +430,7 @@ class Widget {
             const vData = await this.FordAPI.fetchVehicleData(false, isWidget);
             return vData;
         } catch (err) {
-            this.logError(`prepWidget() Error: ${err}`);
+            this.logError(`prepWidget() Error: ${err}`, true);
             return null;
         }
     }
@@ -463,7 +461,7 @@ class Widget {
         }
         this.widgetColor = widgetColor;
 
-        this.logInfo(`Style: ${wStyle} | Color: ${widgetColor}`);
+        // await this.logInfo(`Style: ${wStyle} | Color: ${widgetColor}`, true);
         try {
             if (size.includes('small')) {
                 this.widgetSize = 'small';
@@ -487,7 +485,7 @@ class Widget {
                 widget = await this.largeDetailedWidget(data, widgetColor);
             }
             if (widget === null) {
-                this.logError(`generateWidget() | Widget is null!`);
+                await this.logError(`generateWidget() | Widget is null!`, true);
                 return;
             }
         } catch (e) {
@@ -496,7 +494,7 @@ class Widget {
         widget.setPadding(0, 5, 0, 1);
         widget.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         Script.setWidget(widget);
-        this.logInfo(`Created Widget(${size})...`);
+        await this.logInfo(`Created Widget(${size})...`);
         return widget;
     }
 
@@ -505,12 +503,31 @@ class Widget {
      * @return {void}@memberof Widget
      */
     async checkForUpdates() {
-        const v = await this.getLatestScriptVersion();
-        this.setStateVal('LATEST_VERSION', v);
-        this.setStateVal('updateAvailable', this.isNewerVersion(this.SCRIPT_VERSION, v));
+        const latest = await this.getLatestScriptVersion();
+        this.setStateVal('LATEST_VERSION', latest);
+        const isNewerVersion = this.isNewerVersion(this.SCRIPT_VERSION, latest);
+        this.setStateVal('updateAvailable', isNewerVersion);
         console.log(`Script Version: ${this.SCRIPT_VERSION}`);
         console.log(`Update Available: ${this.getStateVal('updateAvailable')}`);
         console.log(`Latest Version: ${this.getStateVal('LATEST_VERSION')}`);
+        if (!isNewerVersion) {
+            await this.Notifications.processNotification('update');
+        }
+    }
+
+    async checkForVehicleAlerts(vData) {
+        if (vData) {
+            if (vData.deepSleepMode !== undefined && vData.deepSleepMode) {
+                await this.Notifications.processNotification('deepSleepMode');
+                return;
+            }
+            if (vData.firmwareUpdating !== undefined && vData.firmwareUpdating) {
+                await this.Notifications.processNotification('firmwareUpdating');
+                return;
+            }
+        } else {
+            return;
+        }
     }
 
     /**
@@ -534,7 +551,7 @@ class Widget {
                 return undefined;
             }
         } catch (e) {
-            this.logError(`readLogFile Error: ${e}`);
+            await this.logError(`readLogFile Error: ${e}`);
         }
     }
 
@@ -558,7 +575,7 @@ class Widget {
                 return undefined;
             }
         } catch (e) {
-            this.logError(`getLogFilePath Error: ${e}`);
+            await this.logError(`getLogFilePath Error: ${e}`);
         }
     }
 
@@ -695,7 +712,7 @@ class Widget {
                 desc: "This is a custom widget for Ford's Vehicle Connect app.\n\nIt is a work in progress and is not yet complete.\n\nIf you have any questions or comments, please contact me at",
                 email: 'purer_06_fidget@icloud.com',
                 donationsDesc: 'If you like this widget, please consider making a donation to the author.\n\nYou can do so by clicking the button below.',
-                donationUrl: 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HWBN4LB9NMHZ4',
+                donationUrl: 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5GMA6C3RTLXH6',
                 documentationUrl: 'https://github.com/tonesto7/fordpass-scriptable#readme',
                 issuesUrl: 'https://github.com/tonesto7/fordpass-scriptable/issues',
                 helpVideos: {
@@ -779,7 +796,7 @@ class Widget {
                 }
             }
         } catch (e) {
-            this.logError(`getReleaseNotes Error: Could Not Load Release Notes. ${e}`);
+            await this.logError(`getReleaseNotes Error: Could Not Load Release Notes. ${e}`);
         }
         return undefined;
     }
@@ -802,7 +819,7 @@ class Widget {
             let ver = await req.loadJSON();
             return ver && ver.version ? ver.version.replace('v', '') : undefined;
         } catch (e) {
-            this.logError(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`);
+            await this.logError(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`, true);
         }
     }
 
@@ -835,7 +852,7 @@ class Widget {
             await email.send();
             await fm.remove(path);
         } catch (e) {
-            this.logError(`createVehicleDataEmail Error: Could Not Create Email | ${e}`);
+            await this.logError(`createVehicleDataEmail Error: Could Not Create Email | ${e}`, true);
         }
     }
 
@@ -852,15 +869,15 @@ class Widget {
             email.isBodyHTML = true;
             let appLogs = await this.getLogFilePath('app');
             if (appLogs) {
-                await email.addFileAttachment(appLogs);
+                email.addFileAttachment(appLogs);
             }
             let widgetLogs = await this.getLogFilePath('widget');
             if (widgetLogs) {
-                await email.addFileAttachment(widgetLogs);
+                email.addFileAttachment(widgetLogs);
             }
             await email.send();
         } catch (e) {
-            this.logError(`createLogEmail Error: Could Not Send Log Email. ${e}`);
+            await this.logError(`createLogEmail Error: Could Not Send Log Email. ${e}`, true);
         }
     }
 
@@ -1199,7 +1216,7 @@ class Widget {
                 return await Keychain.get(key);
             }
         } catch (e) {
-            this.logger(`getSettingVal(${key}) Error: ${e}`, true);
+            await this.logError(`getSettingVal(${key}) Error: ${e}`, true);
         }
         return null;
     }
@@ -1214,6 +1231,7 @@ class Widget {
         if (key && value) {
             key = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `${key}_${this.SCRIPT_ID}` : key;
             await Keychain.set(key, value);
+            return true;
         }
         return false;
     }
@@ -1231,7 +1249,7 @@ class Widget {
                     return this.darkMode ? 'dark' : 'light';
             }
         } catch (e) {
-            this.logger(`getUIColorMode() Error: ${e}`, true);
+            await this.logError(`getUIColorMode() Error: ${e}`, true);
         }
     }
 
@@ -1268,6 +1286,47 @@ class Widget {
      */
     async setWidgetStyle(style) {
         return await this.setSettingVal('fpWidgetStyle', style);
+    }
+
+    async getShowUpdNotifications() {
+        return (await this.getSettingVal('fpShowUpdateNotifications')) || true;
+    }
+
+    async setShowUpdNotifications(show = true) {
+        return this.setSettingVal('fpShowUpdateNotifications', show);
+    }
+
+    async storeLastNotificationDt(dtSetKey) {
+        if (dtSetKey !== undefined) {
+            this.setSettingVal(dtSetKey, Date.now().toString());
+        }
+    }
+
+    async getLastNotifElapsedOk(dtSetKey, requiredSeconds = 86400) {
+        const lastNotif = await this.getSettingVal(dtSetKey);
+        if (lastNotif === null || lastNotif === undefined) {
+            return true;
+        }
+        const lastDt = parseInt(lastNotif);
+        const nowDt = Date.now();
+        const elap = Math.round((nowDt - lastDt) / 1000);
+        return elap > requiredSeconds;
+    }
+
+    async toggleShowUpdNotifications(show) {
+        await this.setShowUpdNotifications((await this.getShowUpdNotifications()) === false ? true : false);
+    }
+
+    async getShowAlertNotifications() {
+        return (await this.getSettingVal('fpShowAlertNotifications')) || true;
+    }
+
+    async setShowAlertNotifications(show = true) {
+        return this.setSettingVal('fpShowAlertNotifications', show);
+    }
+
+    async toggleShowAlertNotifications(show) {
+        await this.setShowAlertNotifications((await this.getShowAlertNotifications()) === false ? true : false);
     }
 
     /**
@@ -1365,6 +1424,9 @@ class Widget {
             'fpWidgetBackground',
             'fpWidgetStyle',
             'fpUIColorMode',
+            'fpShowUpdateNotifications',
+            'fpShowAlertNotifications',
+            'fpLastUpdateNotificationDt',
         ];
         for (const key in keys) {
             await this.removeSettingVal(keys[key]);
@@ -1550,7 +1612,7 @@ class Widget {
             wContent.addSpacer();
             // ***************** BOTTOM ROW CONTAINER END *****************
         } catch (e) {
-            await this.logger(`smallSimpleWidget Error: ${e}`, true);
+            await this.logError(`smallSimpleWidget Error: ${e}`, true);
         }
         return widget;
     }
@@ -1632,7 +1694,7 @@ class Widget {
             let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 0, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
         } catch (e) {
-            await this.logger(`smallDetailedWidget Error: ${e}`, true);
+            await this.logError(`smallDetailedWidget Error: ${e}`, true);
         }
         return widget;
     }
@@ -1751,7 +1813,7 @@ class Widget {
 
             // ***************** RIGHT BODY CONTAINER END *****************
         } catch (e) {
-            await this.logger(`mediumSimpleWidget Error: ${e}`, true);
+            await this.logError(`mediumSimpleWidget Error: ${e}`, true);
         }
         return widget;
     }
@@ -1855,7 +1917,7 @@ class Widget {
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
             wContent.addSpacer();
         } catch (e) {
-            await this.logger(`mediumDetailedWidget Error: ${e}`, true);
+            await this.logError(`mediumDetailedWidget Error: ${e}`, true);
         }
         return widget;
     }
@@ -2029,7 +2091,7 @@ class Widget {
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
             // widget.addSpacer();
         } catch (e) {
-            await this.logger(`largeDetailedWidget Error: ${e}`, true);
+            await this.logError(`largeDetailedWidget Error: ${e}`, true);
         }
         return widget;
     }
@@ -2067,7 +2129,7 @@ class Widget {
                 sRow.addSpacer();
             }
         } catch (err) {
-            await this.logError(`createDoorWindowText(medium) ${err}`);
+            await this.logError(`createDoorWindowText(medium) ${err}`, true);
         }
         return srcElem;
     }
@@ -2101,7 +2163,7 @@ class Widget {
             await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.sizeMap[this.widgetSize].fontSizeSmall), textColor: this.colorMap.text[this.colorMode], lineLimit: 1 });
             srcElem.addSpacer(3);
         } catch (e) {
-            await this.logger(`createFuelRangeElements() Error: ${e}`, true);
+            await this.logError(`createFuelRangeElements() Error: ${e}`, true);
         }
     }
 
@@ -2130,7 +2192,7 @@ class Widget {
                 titleRow.addSpacer();
             }
         } catch (e) {
-            await this.logger(`createBatteryElement() Error: ${e}`, true);
+            await this.logError(`createBatteryElement() Error: ${e}`, true);
         }
     }
 
@@ -2158,7 +2220,7 @@ class Widget {
                 titleRow.addSpacer();
             }
         } catch (e) {
-            await this.logger(`createOilElement() Error: ${e}`, true);
+            await this.logError(`createOilElement() Error: ${e}`, true);
         }
     }
 
@@ -2178,7 +2240,7 @@ class Widget {
                 titleRow.addSpacer();
             }
         } catch (e) {
-            await this.logger(`createEvChargeElement() Error: ${e}`, true);
+            await this.logError(`createEvChargeElement() Error: ${e}`, true);
         }
     }
 
@@ -2204,7 +2266,7 @@ class Widget {
                 valueRow.addSpacer();
             }
         } catch (e) {
-            await this.logger(`createPositionElement() Error: ${e}`, true);
+            await this.logError(`createPositionElement() Error: ${e}`, true);
         }
     }
 
@@ -2236,7 +2298,7 @@ class Widget {
                 srcStack.addSpacer();
             }
         } catch (e) {
-            await this.logger(`createLockStatusElement() Error: ${e}`, true);
+            await this.logError(`createLockStatusElement() Error: ${e}`, true);
         }
     }
 
@@ -2276,7 +2338,7 @@ class Widget {
                 srcStack.addSpacer();
             }
         } catch (e) {
-            await this.logger(`createIgnitionStatusElement() Error: ${e}`, true);
+            await this.logError(`createIgnitionStatusElement() Error: ${e}`, true);
         }
     }
 
@@ -2518,7 +2580,7 @@ class Widget {
                 valueRow.addSpacer();
             }
         } catch (e) {
-            await this.logger(`createTireElement() Error: ${e}`, true);
+            await this.logError(`createTireElement() Error: ${e}`, true);
         }
     }
 
@@ -2577,7 +2639,7 @@ class Widget {
                 srcRow.addSpacer();
             }
         } catch (e) {
-            await this.logger(`createTimeStampElement() Error: ${e}`, true);
+            await this.logError(`createTimeStampElement() Error: ${e}`, true);
         }
     }
 
@@ -2699,7 +2761,7 @@ class Widget {
             }
             return stk;
         } catch (e) {
-            await this.logger(`createStatusElement() Error: ${e}`, true);
+            await this.logError(`createStatusElement() Error: ${e}`, true);
         }
     }
 
@@ -2805,8 +2867,7 @@ class Widget {
         };
 
         if (sizeMap[vpSize]) {
-            await this.logger(`ViewPort Size: ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`);
-            // console.log(`getViewPortSizes | Sizes: ${JSON.stringify(sizeMap[vpSize])}`);
+            await this.logInfo(`ViewPort Size: ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
             return sizeMap[vpSize][widgetFamily];
         } else {
             let fallback = {
@@ -2816,7 +2877,7 @@ class Widget {
                 large: { width: 329, height: 345 },
                 extraLarge: { width: 329, height: 345 },
             };
-            // await this.logger(`getViewPortSizes(fallback) | Device Models: ${fallback.devices.join(', ') || 'Unknown'}`);
+            await this.logInfo(`ViewPort Size (FALLBACK): ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
             return fallback[widgetFamily];
         }
     }
@@ -2830,7 +2891,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||347428935', 'FPW_Files.js||879879289', 'FPW_FordAPIs.js||1092222997', 'FPW_Keychain.js||865182748', 'FPW_Menus.js||-1902715391', 'FPW_Notifications.js||-168421043', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-1888476318'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-69505145', 'FPW_Files.js||61757870', 'FPW_FordAPIs.js||1998618948', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1971164419', 'FPW_Notifications.js||1153434231', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
 
 async function validateModules() {
     const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();
@@ -2844,7 +2905,7 @@ async function validateModules() {
             await fm.write(filePath, codeData);
             return true;
         } catch (error) {
-            logger(`(downloadModule) ${error}`, true);
+            logError(`(downloadModule) ${error}`, true);
             return false;
         }
     }
@@ -2853,14 +2914,14 @@ async function validateModules() {
     try {
         const moduleDir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
         if (!(await fm.isDirectory(moduleDir))) {
-            logger('Creating FPWModules directory...');
+            logInfo('Creating FPWModules directory...');
             await fm.createDirectory(moduleDir);
         }
         for (const [i, file] of moduleFiles.entries()) {
             const [fileName, fileHash] = file.split('||');
             const filePath = fm.joinPath(moduleDir, fileName);
             if (!(await fm.fileExists(filePath))) {
-                logger(`Required Module Missing... Downloading ${fileName}`);
+                logInfo(`Required Module Missing... Downloading ${fileName}`);
                 if (await downloadModule(fileName, filePath)) {
                     available.push(fileName);
                 }
@@ -2872,7 +2933,7 @@ async function validateModules() {
                 const hash = Array.from(fileCode).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
                 // console.log(`${fileName} hash: ${hash} | ${fileHash}`);
                 if (widgetConfig.ignoreHashCheck === false && hash.toString() !== fileHash.toString()) {
-                    logger(`Module Hash Missmatch... Downloading ${fileName}`);
+                    logInfo(`Module Hash Missmatch... Downloading ${fileName}`);
                     if (await downloadModule(fileName, filePath)) {
                         available.push(fileName);
                     }
@@ -2882,13 +2943,13 @@ async function validateModules() {
             }
         }
         if (available.length === moduleFiles.length) {
-            logger(`All (${moduleFiles.length}) Required Modules Found!`);
+            logInfo(`All (${moduleFiles.length}) Required Modules Found!`);
             return true;
         } else {
             return false;
         }
     } catch (error) {
-        logError(`validateModules() Error: ${error}`);
+        logError(`validateModules() Error: ${error}`, true);
         return undefined;
     }
 }
@@ -2937,7 +2998,7 @@ async function appendToLogFile(txt) {
  * @return {void}
  */
 async function logger(msg, error = false, saveToLog = true) {
-    if (saveToLog) {
+    if (widgetConfig.writeToLog && saveToLog) {
         appendToLogFile(msg);
     }
     if (error) {
