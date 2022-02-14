@@ -66,7 +66,7 @@ Changelog:
     
 **************/
 const changelogs = {
-    '2022.02.14': {
+    '2022.02.14.0': {
         added: [
             'All new menu that functions like an app interface',
             'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
@@ -82,7 +82,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.14';
+const SCRIPT_VERSION = '2022.02.14.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -446,10 +446,8 @@ class Widget {
      */
     async generateWidget(size, data) {
         this.logInfo(`generateWidget() | Size: ${size}`);
-        let mod = null;
         let widget = null;
         let wStyle = await this.getWidgetStyle();
-        let bgType = (await this.getBackgroundType()) || 'system';
         let widgetColor = await this.getUIColorMode();
         if (size.includes('Dark') || size.includes('dark')) {
             bgType = 'dark';
@@ -465,28 +463,28 @@ class Widget {
         }
         this.widgetColor = widgetColor;
 
-        console.log(`bgType: ${bgType} | widgetColor: ${widgetColor}`);
+        this.logInfo(`Style: ${wStyle} | Color: ${widgetColor}`);
         try {
             if (size.includes('small')) {
                 this.widgetSize = 'small';
                 if (wStyle === 'simple') {
-                    widget = await this.smallSimpleWidget(data, bgType);
+                    widget = await this.smallSimpleWidget(data, widgetColor);
                 } else {
-                    widget = await this.smallDetailedWidget(data, bgType);
+                    widget = await this.smallDetailedWidget(data, widgetColor);
                 }
             } else if (size.includes('medium')) {
                 this.widgetSize = 'medium';
                 if (wStyle === 'simple') {
-                    widget = await this.mediumSimpleWidget(data, bgType);
+                    widget = await this.mediumSimpleWidget(data, widgetColor);
                 } else {
-                    widget = await this.mediumDetailedWidget(data, bgType);
+                    widget = await this.mediumDetailedWidget(data, widgetColor);
                 }
             } else if (size.includes('large')) {
                 this.widgetSize = 'large';
-                widget = await this.largeDetailedWidget(data, bgType);
+                widget = await this.largeDetailedWidget(data, widgetColor);
             } else if (size.includes('extraLarge')) {
                 this.widgetSize = 'extraLarge';
-                widget = await this.largeDetailedWidget(data, bgType);
+                widget = await this.largeDetailedWidget(data, widgetColor);
             }
             if (widget === null) {
                 this.logError(`generateWidget() | Widget is null!`);
@@ -596,9 +594,6 @@ class Widget {
     setWidgetBackground(widget, mode = 'system') {
         let grad = null;
         switch (mode) {
-            case 'transparent':
-                // TODO Finish this.
-                break;
             case 'dark':
                 grad = new LinearGradient();
                 grad.locations = [0, 1];
@@ -1226,7 +1221,7 @@ class Widget {
     async getUIColorMode(frcMode = undefined) {
         try {
             const modeSetting = await this.getSettingVal('fpUIColorMode');
-            const mode = frcMode !== undefined ? frcMode : modeSetting;
+            const mode = frcMode || modeSetting;
             // console.log(`getUIColorMode(${mode})`);
             switch (mode) {
                 case 'dark':
@@ -2712,7 +2707,7 @@ class Widget {
     async getViewPortSizes(widgetFamily) {
         // const vpSize = `${this.screenSize.width}x${this.screenSize.height}`;
         const vpSize = (({ width: w, height: h }) => (w > h ? `${h}x${w}` : `${w}x${h}`))(this.screenSize);
-        await this.logInfo(`getViewPortSizes | ViewPort Size: ${vpSize}`);
+
         const sizeMap = {
             // IPAD_VIEWPORT_SIZES
             '768x1024': {
@@ -2810,7 +2805,7 @@ class Widget {
         };
 
         if (sizeMap[vpSize]) {
-            await this.logger(`getViewPortSizes | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`);
+            await this.logger(`ViewPort Size: ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`);
             // console.log(`getViewPortSizes | Sizes: ${JSON.stringify(sizeMap[vpSize])}`);
             return sizeMap[vpSize][widgetFamily];
         } else {
