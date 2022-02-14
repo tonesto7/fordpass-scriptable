@@ -500,12 +500,10 @@ module.exports = class FPW_Menus {
                     ];
                     break;
                 case 'notifications':
-                    const alerts = await this.FPW.getShowAlertNotifications();
-                    const updates = await this.FPW.getShowUpdNotifications();
-                    title = 'Widget Settings';
+                    title = 'Notification Settings';
                     message = 'Update Notifications: Once per 24H.\n\nVehicle Alerts: Once every 6H';
                     items = [{
-                            title: `Script Updates: ${updates === false ? 'Off' : 'On'}`,
+                            title: `Script Updates: ${(await this.FPW.getShowUpdNotifications()) === false ? 'Off' : 'On'}`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Update Notification Toggle pressed`);
                                 await this.FPW.toggleShowUpdNotifications();
@@ -515,11 +513,20 @@ module.exports = class FPW_Menus {
                             show: true,
                         },
                         {
-                            title: `Vehicle Alerts: ${alerts === false ? 'Off' : 'On'}`,
+                            title: `Vehicle Alerts: ${(await this.FPW.getShowAlertNotifications()) === false ? 'Off' : 'On'}`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Alert Notification Toggle pressed`);
                                 await this.FPW.toggleShowAlertNotifications();
                                 this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Back`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Back was pressed`);
+                                this.menuBuilderByType('settings');
                             },
                             destructive: false,
                             show: true,
@@ -545,7 +552,7 @@ module.exports = class FPW_Menus {
                                 console.log(`(${typeDesc} Menu) Notifications was pressed`);
                                 this.menuBuilderByType('notifications');
                             },
-                            destructive: true,
+                            destructive: false,
                             show: true,
                         },
                         {

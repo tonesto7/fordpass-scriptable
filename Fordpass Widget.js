@@ -1289,11 +1289,11 @@ class Widget {
     }
 
     async getShowUpdNotifications() {
-        return (await this.getSettingVal('fpShowUpdateNotifications')) || true;
+        return (await this.getSettingVal('fpShowUpdateNotifications')) === 'true';
     }
 
     async setShowUpdNotifications(show = true) {
-        return this.setSettingVal('fpShowUpdateNotifications', show);
+        return this.setSettingVal('fpShowUpdateNotifications', show.toString());
     }
 
     async storeLastNotificationDt(dtSetKey) {
@@ -1318,14 +1318,14 @@ class Widget {
     }
 
     async getShowAlertNotifications() {
-        return (await this.getSettingVal('fpShowAlertNotifications')) || true;
+        return (await this.getSettingVal('fpShowAlertNotifications')) === 'true';
     }
 
     async setShowAlertNotifications(show = true) {
-        return this.setSettingVal('fpShowAlertNotifications', show);
+        await this.setSettingVal('fpShowAlertNotifications', show.toString());
     }
 
-    async toggleShowAlertNotifications(show) {
+    async toggleShowAlertNotifications() {
         await this.setShowAlertNotifications((await this.getShowAlertNotifications()) === false ? true : false);
     }
 
@@ -2891,7 +2891,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-69505145', 'FPW_Files.js||61757870', 'FPW_FordAPIs.js||1998618948', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1971164419', 'FPW_Notifications.js||1153434231', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-69505145', 'FPW_Files.js||61757870', 'FPW_FordAPIs.js||1998618948', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||866150048', 'FPW_Notifications.js||1153434231', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
 
 async function validateModules() {
     const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();
