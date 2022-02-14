@@ -11,18 +11,8 @@
         "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Menus.js",
         "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Notifications.js",
         "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_AlertPage.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_ChangesPage.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_MainPage.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_MessagePage.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_RecallPage.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Tables_WidgetStylePage.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Small.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Medium.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_Large.js",
-        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Widgets_ExtraLarge.js"
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_App.js",
+        "https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js"
     ],
     "docsUrl": "https://github.com/tonesto7/fordpass-scriptable#readme",
     "cleanup": {
