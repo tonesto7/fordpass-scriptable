@@ -37,7 +37,7 @@ module.exports = class FPW_Menus {
             switch (respInd) {
                 case 0:
                     console.log(`(Required Prefs Menu) Widget Style pressed`);
-                    await this.FPW.Tables.WidgetStylePage.createWidgetStylePage();
+                    await this.FPW.App.createWidgetStylePage();
                     return await this.requiredPrefsMenu(user, pass, vin);
                 case 1:
                     console.log('(Required Prefs Menu) Widget Style pressed');
@@ -171,7 +171,7 @@ module.exports = class FPW_Menus {
                             title: 'Recent Changes',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) About was pressed`);
-                                await this.FPW.Tables.ChangesPage.createRecentChangesPage();
+                                await this.FPW.App.createRecentChangesPage();
                                 this.menuBuilderByType('helpInfo');
                             },
                             destructive: false,
@@ -289,7 +289,7 @@ module.exports = class FPW_Menus {
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) View OTA Info was pressed`);
                                 let data = await this.FPW.FordAPI.getVehicleOtaInfo();
-                                await this.FPW.Tables.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
+                                await this.FPW.App.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
                                 this.menuBuilderByType('diagnostics');
                             },
                             destructive: false,
@@ -300,7 +300,7 @@ module.exports = class FPW_Menus {
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) View All Data was pressed`);
                                 let data = await this.FPW.FordAPI.collectAllData(false);
-                                await this.FPW.Tables.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
+                                await this.FPW.App.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
                                 this.menuBuilderByType('diagnostics');
                             },
                             destructive: false,
@@ -468,7 +468,7 @@ module.exports = class FPW_Menus {
                             title: `Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Style pressed`);
-                                await this.FPW.Tables.WidgetStylePage.createWidgetStylePage();
+                                await this.FPW.App.createWidgetStylePage();
                                 if (!prefsMenu) {
                                     this.menuBuilderByType('widget_settings');
                                 }
