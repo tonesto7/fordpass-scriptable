@@ -66,7 +66,7 @@ Changelog:
     
 **************/
 const changelogs = {
-    '2022.02.12': {
+    '2022.02.14': {
         added: [
             'All new menu that functions like an app interface',
             'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
@@ -82,7 +82,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.12';
+const SCRIPT_VERSION = '2022.02.14';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
