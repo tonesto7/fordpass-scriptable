@@ -110,7 +110,7 @@ const widgetConfig = {
     useLocalModules: false, // Stores and loads modules from local storage instead of iCloud.  disable to access the module files under the scriptable folder in iCloud Drive.
     useLocalLogs: false, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
     useLocalFiles: true, // Use iCloud files for storing data
-    ignoreHashCheck: true, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
+    ignoreHashCheck: false, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
     showTestUIStuff: false,
@@ -278,6 +278,8 @@ class Widget {
         this.screenScale = screenScale;
         this.isSmallDisplay = isSmallDisplay;
         this.darkMode = darkMode;
+        this.widgetSize = 'medium';
+        this.widgetColor = 'system';
         this.runningWidgetSize = config.widgetFamily;
         this.isPhone = Device.isPhone();
         this.isPad = Device.isPad();
@@ -295,7 +297,7 @@ class Widget {
         this.FordAPI = this.moduleLoader('FordAPIs');
         if (config.runsInApp) {
             this.changelogs = changelogs;
-            this.Tables = this.moduleLoader('Tables');
+            this.App = this.moduleLoader('App');
             this.Menus = this.moduleLoader('Menus');
         }
         this.checkForUpdates();
@@ -356,7 +358,7 @@ class Widget {
                     // let w5 = await this.generateWidget('large', fordData);
                     // await w5.presentLarge();
 
-                    await this.Tables.MainPage.createMainPage();
+                    await this.App.createMainPage();
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -375,12 +377,12 @@ class Widget {
         if (params && params.command) {
             switch (params.command) {
                 case 'show_menu':
-                    await this.Tables.MainPage.createMainPage();
+                    await this.App.createMainPage();
                     break;
                 case 'lock_command':
                 case 'start_command':
                 case 'request_refresh':
-                    await this.Tables.MainPage.createMainPage(false, params.command);
+                    await this.App.createMainPage(false, params.command);
                     break;
             }
         }
@@ -446,53 +448,45 @@ class Widget {
         this.logInfo(`generateWidget() | Size: ${size}`);
         let mod = null;
         let widget = null;
+        let wStyle = await this.getWidgetStyle();
         let bgType = (await this.getBackgroundType()) || 'system';
-        let colorMode = await this.getUIColorMode();
-        if (size.includes('dark')) {
+        let widgetColor = await this.getUIColorMode();
+        if (size.includes('Dark') || size.includes('dark')) {
             bgType = 'dark';
-            colorMode = 'dark';
-        } else if (size.includes('light')) {
+            widgetColor = 'dark';
+        } else if (size.includes('Light') || size.includes('light')) {
             bgType = 'light';
-            colorMode = 'light';
-        } else if (size.includes('transparent')) {
-            bgType = 'transparent';
+            widgetColor = 'light';
         }
+        if (size.includes('Simple')) {
+            wStyle = 'simple';
+        } else if (size.includes('Detailed')) {
+            wStyle = 'detailed';
+        }
+        this.widgetColor = widgetColor;
 
-        console.log(`bgType: ${bgType} | colorMode: ${colorMode}`);
+        console.log(`bgType: ${bgType} | widgetColor: ${widgetColor}`);
         try {
-            switch (size) {
-                case 'small':
-                    mod = await this.moduleLoader('Widgets_Small');
-                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
-                    break;
-                case 'smallSimple':
-                    mod = await this.moduleLoader('Widgets_Small');
-                    widget = await mod.createWidget(data, 'simple', bgType, colorMode);
-                    break;
-                case 'large':
-                    mod = await this.moduleLoader('Widgets_Large');
-                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
-                    break;
-                case 'largeSimple':
-                    mod = await this.moduleLoader('Widgets_Large');
-                    widget = await mod.createWidget(data, 'simple', bgType, colorMode);
-                    break;
-                case 'extraLarge':
-                    mod = await this.moduleLoader('Widgets_Large');
-                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
-                    break;
-                case 'medium':
-                    mod = await this.moduleLoader('Widgets_Medium');
-                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
-                    break;
-                case 'mediumSimple':
-                    mod = await this.moduleLoader('Widgets_Medium');
-                    widget = await mod.createWidget(data, 'simple', bgType, colorMode);
-                    break;
-                default:
-                    mod = await this.moduleLoader('Widgets_Medium');
-                    widget = await mod.createWidget(data, 'detailed', bgType, colorMode);
-                    break;
+            if (size.includes('small')) {
+                this.widgetSize = 'small';
+                if (wStyle === 'simple') {
+                    widget = await this.smallSimpleWidget(data, bgType);
+                } else {
+                    widget = await this.smallDetailedWidget(data, bgType);
+                }
+            } else if (size.includes('medium')) {
+                this.widgetSize = 'medium';
+                if (wStyle === 'simple') {
+                    widget = await this.mediumSimpleWidget(data, bgType);
+                } else {
+                    widget = await this.mediumDetailedWidget(data, bgType);
+                }
+            } else if (size.includes('large')) {
+                this.widgetSize = 'large';
+                widget = await this.largeDetailedWidget(data, bgType);
+            } else if (size.includes('extraLarge')) {
+                this.widgetSize = 'extraLarge';
+                widget = await this.largeDetailedWidget(data, bgType);
             }
             if (widget === null) {
                 this.logError(`generateWidget() | Widget is null!`);
@@ -506,124 +500,6 @@ class Widget {
         Script.setWidget(widget);
         this.logInfo(`Created Widget(${size})...`);
         return widget;
-    }
-
-    // Modified version of this https://talk.automators.fm/t/get-available-widget-height-and-width-depending-on-the-devices-screensize/9258/5
-    async getViewPortSizes(widgetFamily) {
-        // const vpSize = `${this.screenSize.width}x${this.screenSize.height}`;
-        const vpSize = (({ width: w, height: h }) => (w > h ? `${h}x${w}` : `${w}x${h}`))(this.screenSize);
-        await this.logInfo(`getViewPortSizes | ViewPort Size: ${vpSize}`);
-        const sizeMap = {
-            // IPAD_VIEWPORT_SIZES
-            '768x1024': {
-                devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
-                small: { width: 120, height: 120 },
-                medium: { width: 260, height: 120 },
-                large: { width: 260, height: 260 },
-                extraLarge: { width: 540, height: 260 },
-            },
-            '810x1080': {
-                devices: ['10.2" iPad'],
-                small: { width: 124, height: 124 },
-                medium: { width: 272, height: 124 },
-                large: { width: 272, height: 272 },
-                extraLarge: { width: 568, height: 272 },
-            },
-            '834x1112': {
-                devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
-                small: { width: 132, height: 132 },
-                medium: { width: 288, height: 132 },
-                large: { width: 288, height: 288 },
-                extraLarge: { width: 600, height: 288 },
-            },
-            '820x1180': {
-                devices: ['10.9" iPad Air 4th Gen'],
-                small: { width: 136, height: 136 },
-                medium: { width: 300, height: 136 },
-                large: { width: 300, height: 300 },
-                extraLarge: { width: 628, height: 300 },
-            },
-            '834x1194': {
-                devices: ['11" iPad Pro'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 345, height: 329 },
-                extraLarge: { width: 628, height: 300 },
-            },
-            '1024x1366': {
-                devices: ['12.9" iPad Pro'],
-                small: { width: 170, height: 170 },
-                medium: { width: 332, height: 170 },
-                large: { width: 382, height: 332 },
-                extraLarge: { width: 748, height: 356 },
-            },
-
-            // IPHONE_VIEWPORT_SIZES
-            '428x926': {
-                devices: ['12 Pro Max'],
-                small: { width: 170, height: 170 },
-                medium: { width: 364, height: 170 },
-                large: { width: 364, height: 382 },
-            },
-            '360x780': {
-                devices: ['12 Mini'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-            },
-            '414x896': {
-                devices: ['XR', 'XS Max', '11', '11 Pro Max'],
-                small: { width: 169, height: 169 },
-                medium: { width: 360, height: 169 },
-                large: { width: 360, height: 376 },
-            },
-            '390x844': {
-                devices: ['12', '12 Pro'],
-                small: { width: 158, height: 158 },
-                medium: { width: 338, height: 158 },
-                large: { width: 338, height: 354 },
-            },
-            '375x812': {
-                devices: ['X', 'XS', '11 Pro'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-            },
-            '414x736': {
-                devices: ['6S Plus', '7 Plus', '8 Plus'],
-                small: { width: 159, height: 159 },
-                medium: { width: 348, height: 159 },
-                large: { width: 348, height: 357 },
-            },
-            '375x667': {
-                devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
-                small: { width: 148, height: 148 },
-                medium: { width: 322, height: 148 },
-                large: { width: 322, height: 324 },
-            },
-            '320x568': {
-                devices: ['SE (1st Gen)'],
-                small: { width: 141, height: 141 },
-                medium: { width: 291, height: 141 },
-                large: { width: 291, height: 299 },
-            },
-        };
-
-        if (sizeMap[vpSize]) {
-            await this.logger(`getViewPortSizes | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`);
-            // console.log(`getViewPortSizes | Sizes: ${JSON.stringify(sizeMap[vpSize])}`);
-            return sizeMap[vpSize][widgetFamily];
-        } else {
-            let fallback = {
-                devices: ['Fallback'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-                extraLarge: { width: 329, height: 345 },
-            };
-            // await this.logger(`getViewPortSizes(fallback) | Device Models: ${fallback.devices.join(', ') || 'Unknown'}`);
-            return fallback[widgetFamily];
-        }
     }
 
     /**
@@ -1270,7 +1146,7 @@ class Widget {
                 console.log(`VIN Format Issues (${msgs.length}) | Current VIN: ${vin} | Errors: ${msgs.join('\n')}`);
                 if (!config.runsInWidget) {
                     //Added this to prevent the Alerts not supported in widgets error
-                    // await this.FPW.Alerts.showAlert('VIN Validation Error', msgs.join('\n'));
+                    // await this.Alerts.showAlert('VIN Validation Error', msgs.join('\n'));
                 }
                 return false;
             } else {
@@ -1328,7 +1204,7 @@ class Widget {
                 return await Keychain.get(key);
             }
         } catch (e) {
-            this.FPW.logger(`getSettingVal(${key}) Error: ${e}`, true);
+            this.logger(`getSettingVal(${key}) Error: ${e}`, true);
         }
         return null;
     }
@@ -1360,7 +1236,7 @@ class Widget {
                     return this.darkMode ? 'dark' : 'light';
             }
         } catch (e) {
-            this.FPW.logger(`getUIColorMode() Error: ${e}`, true);
+            this.logger(`getUIColorMode() Error: ${e}`, true);
         }
     }
 
@@ -1570,47 +1446,1385 @@ class Widget {
         return false;
     }
 
-    // widgetSizes() {
-    //     return {
-    //         old: {
-    //             '428x926': {
-    //                 small: { width: 176, height: 176 },
-    //                 medium: { width: 374, height: 176 },
-    //                 large: { width: 374, height: 391 },
-    //             },
-    //             '390x844': {
-    //                 small: { width: 161, height: 161 },
-    //                 medium: { width: 342, height: 161 },
-    //                 large: { width: 342, height: 359 },
-    //             },
-    //             '414x896': {
-    //                 small: { width: 169, height: 169 },
-    //                 medium: { width: 360, height: 169 },
-    //                 large: { width: 360, height: 376 },
-    //             },
-    //             '375x812': {
-    //                 small: { width: 155, height: 155 },
-    //                 medium: { width: 329, height: 155 },
-    //                 large: { width: 329, height: 345 },
-    //             },
-    //             '414x736': {
-    //                 small: { width: 159, height: 159 },
-    //                 medium: { width: 348, height: 159 },
-    //                 large: { width: 348, height: 357 },
-    //             },
-    //             '375x667': {
-    //                 small: { width: 148, height: 148 },
-    //                 medium: { width: 322, height: 148 },
-    //                 large: { width: 322, height: 324 },
-    //             },
-    //             '320x568': {
-    //                 small: { width: 141, height: 141 },
-    //                 medium: { width: 291, height: 141 },
-    //                 large: { width: 291, height: 299 },
-    //             },
-    //         },
-    //     };
-    // }
+    async smallSimpleWidget(vData, bgType = undefined) {
+        // Defines the Widget Object
+        const widget = new ListWidget();
+        // widget.setPadding(0, 0, 0, 0);
+        this.setWidgetBackground(widget, bgType);
+        try {
+            const widgetSizes = await this.getViewPortSizes(this.widgetSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
+            let paddingTop = Math.round(height * 0.08);
+            let paddingLeft = Math.round(width * 0.04);
+            // let paddingLeft = 8;
+            // console.log(`padding | Left: ${paddingLeft}`);
+            //************************
+            //* TOP LEFT BOX CONTAINER
+            //************************
+
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, paddingLeft] });
+            const topBox = await this.createRow(wContent, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+
+            // ---Top left part---
+            const topLeftContainer = await this.createRow(topBox, {});
+
+            // Vehicle Title
+            const vehicleNameContainer = await this.createRow(topLeftContainer, { '*setPadding': [paddingTop, 0, 0, 0] });
+
+            let vehicleNameStr = vData.info.vehicle.vehicleType || '';
+            // get dynamic size
+            let vehicleNameSize = Math.round(width * 0.12);
+            if (vehicleNameStr.length >= 10) {
+                vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
+            }
+            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[this.colorMode], '*leftAlignText': null });
+            // ---The top left part is finished---
+            topBox.addSpacer();
+
+            //***********************************
+            //* MIDDLE ROW CONTAINER
+            //***********************************
+            const carInfoContainer = await this.createColumn(wContent, { '*setPadding': [0, paddingLeft, 0, 0] });
+
+            // ****************************************
+            // * LEFT BODY COLUMN CONTAINER
+            // ****************************************
+
+            // Range and Odometer
+            const miContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });
+
+            try {
+                const { isEV, lvlValue, dteValue, odometerVal, dtePostfix, distanceMultiplier, distanceUnit, dteInfo } = await this.getRangeData(vData);
+                const fs = this.isSmallDisplay ? 14 : 16;
+
+                // DTE Text
+                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+
+                let levelContainer = await this.createRow(miContainer, {});
+                // DTE + Level Separator
+                await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                // Level Text
+                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+
+                // Odometer Text
+                let mileageContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });
+                await this.createText(mileageContainer, `Odometer: ${odometerVal}`, { font: Font.systemFont(9), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+            } catch (e) {
+                console.error(e.message);
+                miContainer.addText('Error Getting Range Data');
+            }
+
+            // Car Status box
+            const carStatusContainer = await this.createColumn(carInfoContainer, { '*setPadding': [4, 0, 4, 0] });
+            const carStatusBox = await this.createRow(carStatusContainer, { '*setPadding': [3, 3, 3, 3], '*centerAlignContent': null, cornerRadius: 4, backgroundColor: Color.dynamic(new Color('#f5f5f8', 0.45), new Color('#fff', 0.2)), size: new Size(Math.round(width * 0.55), Math.round(height * 0.12)) });
+            const doorsLocked = vData.lockStatus === 'LOCKED';
+            const carStatusRow = await this.createRow(carStatusBox, { '*setPadding': [0, paddingLeft, 0, 0] });
+            try {
+                carStatusRow.addSpacer();
+                await this.createText(carStatusRow, `${doorsLocked ? 'Locked' : 'Unlocked'}`, {
+                    '*centerAlignText': null,
+                    font: doorsLocked ? Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium) : Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium),
+                    textColor: doorsLocked ? this.colorMap.text[this.colorMode] : this.colorMap.openColor,
+                    textOpacity: 0.7,
+                    '*centerAlignText': null,
+                });
+                carStatusRow.addSpacer();
+            } catch (e) {
+                console.error(e.message);
+                carStatusRow.addText(`Lock Status Failed`);
+            }
+            carStatusBox.addSpacer();
+            // carStatusContainer.addSpacer();
+
+            // Vehicle Image Container
+            const carImageContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+            carImageContainer.addSpacer();
+            let canvasWidth = Math.round(width * 0.85);
+            // let newH = this.isSmallDisplay ? 0.27 : 0.32;
+            let canvasHeight = Math.round(width * 0.32);
+            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(canvasWidth, canvasHeight), resizable: true, '*rightAlignImage': null });
+            carImageContainer.addSpacer();
+
+            //**************************
+            //* BOTTOM ROW CONTAINER
+            //**************************
+            // Displays the Last Vehicle Checkin Time Elapsed...
+            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, paddingLeft, 3, 0] });
+            await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+            wContent.addSpacer();
+            // ***************** BOTTOM ROW CONTAINER END *****************
+        } catch (e) {
+            await this.logger(`smallSimpleWidget Error: ${e}`, true);
+        }
+        return widget;
+    }
+
+    async smallDetailedWidget(vData, bgType = undefined) {
+        // Defines the Widget Object
+        const widget = new ListWidget();
+        this.setWidgetBackground(widget, bgType);
+        try {
+            const widgetSizes = await this.getViewPortSizes(this.widgetSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
+            let paddingTop = Math.round(height * 0.08);
+            let paddingLeft = Math.round(width * 0.07);
+            console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
+            const hasStatusMsg = await this.hasStatusMsg(vData);
+
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, 0] });
+
+            let bodyContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
+
+            //*****************
+            //* First column
+            //*****************
+            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0], size: new Size(Math.round(width * 0.5), Math.round(height * 0.85)) });
+
+            // Vehicle Logo
+            await this.createVehicleImageElement(mainCol1, vData, this.sizeMap[this.widgetSize].logoSize.w, this.sizeMap[this.widgetSize].logoSize.h);
+
+            // Creates the Vehicle Logo, Odometer, Fuel/Battery and Distance Info Elements
+            await this.createFuelRangeElements(mainCol1, vData);
+
+            // Creates Low-Voltage Battery Voltage Elements
+            await this.createBatteryElement(mainCol1, vData);
+
+            // Creates Oil Life Elements
+            if (!vData.evVehicle) {
+                await this.createOilElement(mainCol1, vData);
+            } else {
+                // Creates EV Plug Elements
+                await this.createEvChargeElement(mainCol1, vData);
+            }
+            mainCol1.addSpacer();
+            // bodyContainer.addSpacer();
+
+            //************************
+            //* Second column
+            //************************
+            let mainCol2 = await this.createColumn(bodyContainer, { '*setPadding': [paddingTop, 0, 0, 0], size: new Size(Math.round(width * 0.5), Math.round(height * 0.85)) });
+
+            // Creates the Lock Status Elements
+            await this.createLockStatusElement(mainCol2, vData, 'left');
+
+            // Creates the Ignition Status Elements
+            await this.createIgnitionStatusElement(mainCol2, vData, 'left');
+
+            // Creates the Door Status Elements
+            await this.createDoorElement(mainCol2, vData, 'left');
+
+            // Creates the Door Status Elements
+            await this.createWindowElement(mainCol2, vData, 'left');
+
+            mainCol2.addSpacer();
+
+            // bodyContainer.addSpacer();
+
+            //**********************
+            //* Refresh and error
+            //*********************
+            if (hasStatusMsg) {
+                let statusRow = await this.createRow(wContent, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+                await this.createStatusElement(statusRow, vData, 1);
+            } else {
+                wContent.addSpacer();
+            }
+            // Displays the Last Vehicle Checkin Time Elapsed...
+            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 0, 0] });
+            await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+        } catch (e) {
+            await this.logger(`smallDetailedWidget Error: ${e}`, true);
+        }
+        return widget;
+    }
+
+    async mediumSimpleWidget(vData, bgType = undefined) {
+        // console.log(`mediumSimpleWidget called...`);
+        // Defines the Widget Object
+        const widget = new ListWidget();
+        this.setWidgetBackground(widget, bgType);
+        try {
+            const widgetSizes = await this.getViewPortSizes(this.widgetSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
+            let paddingTop = Math.round(height * 0.04);
+            let paddingLeft = Math.round(width * 0.03);
+            // console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            widget.setPadding(paddingTop, paddingLeft, 0, 0);
+
+            //************************
+            //* TOP ROW CONTAINER
+            //************************
+
+            let bodyContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
+            // ****************************************
+            // * LEFT BODY COLUMN CONTAINER
+            // ****************************************
+            let leftContainer = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+            leftContainer.addSpacer();
+            // Vehicle Title
+            const vehicleNameContainer = await this.createRow(leftContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+            let vehicleNameStr = vData.info.vehicle.vehicleType || '';
+
+            let vehicleNameSize = 24;
+            if (vehicleNameStr.length >= 10) {
+                vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
+            }
+            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[this.colorMode], '*rightAlignText': null });
+            vehicleNameContainer.addSpacer();
+            // Range and Odometer
+            let miContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
+
+            try {
+                const { isEV, lvlValue, dteValue, odometerVal, dtePostfix, distanceMultiplier, distanceUnit, dteInfo } = await this.getRangeData(vData);
+                const fs = this.isSmallDisplay ? 14 : 16;
+                // DTE Text
+                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+
+                let levelContainer = await this.createRow(miContainer, {});
+                // DTE + Level Separator
+                await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                // Level Text
+                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+
+                // leftContainer.addSpacer();
+                let mileageContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0] });
+
+                // Odometer Text
+                await this.createText(mileageContainer, `Odometer: ${odometerVal}`, { font: Font.systemFont(10), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+            } catch (e) {
+                console.error(e.message);
+                miContainer.addText('Error Getting Range Data');
+            }
+
+            // Vehicle Location Row
+            const locationContainer = await this.createRow(leftContainer, { '*setPadding': [5, paddingLeft, 0, 0], '*topAlignContent': null });
+            let url = (await this.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
+            let locationStr = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.textMap().errorMessages.noData;
+            await this.createText(locationContainer, locationStr, { url: url, font: Font.body(), textColor: this.colorMap.text[this.colorMode], lineLimit: 2, minimumScaleFactor: 0.6, textOpacity: 0.7 });
+
+            leftContainer.addSpacer();
+
+            //***********************************
+            //* RIGHT BODY CONTAINER
+            //***********************************
+
+            const rightContainer = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+            rightContainer.addSpacer();
+
+            // Vehicle Image Container
+            let imgWidth = Math.round(width * 0.5);
+            let imgHeight = Math.round(height * 0.4);
+            const carImageContainer = await this.createRow(rightContainer, { '*setPadding': [paddingTop, 0, 0, 0], '*centerAlignContent': null });
+            carImageContainer.addSpacer();
+            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), '*rightAlignImage': null, resizable: true });
+            carImageContainer.addSpacer();
+            const doorWindStatusContainer = await this.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0] });
+            doorWindStatusContainer.addSpacer();
+            await this.createDoorWindowText(doorWindStatusContainer, vData);
+            doorWindStatusContainer.addSpacer();
+
+            rightContainer.addSpacer();
+
+            //*****************************
+            //* COMMAND BUTTONS CONTAINER
+            //*****************************
+            const controlsContainer = await this.createRow(widget, { '*setPadding': [7, 0, 5, 0] });
+            controlsContainer.addSpacer();
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
+            await this.createWidgetButtonRow(controlsContainer, vData, paddingLeft, width, 35, 24);
+            controlsContainer.addSpacer();
+
+            //**************************
+            //* BOTTOM ROW CONTAINER
+            //**************************
+            // if (hasStatusMsg) {
+            //     let statusRow = await this.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*centerAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.1)) });
+            //     await this.createStatusElement(statusRow, vData, 2, this.widgetSize);
+            //     statusRow.addSpacer();
+            // }
+
+            // Displays the Last Vehicle Checkin Time Elapsed...
+            let timestampRow = await this.createRow(widget, { '*setPadding': [3, 0, 5, paddingLeft], '*bottomAlignContent': null });
+            await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+
+            // ***************** RIGHT BODY CONTAINER END *****************
+        } catch (e) {
+            await this.logger(`mediumSimpleWidget Error: ${e}`, true);
+        }
+        return widget;
+    }
+
+    async mediumDetailedWidget(vData, bgType = undefined) {
+        // Defines the Widget Object
+        const widget = new ListWidget();
+        this.setWidgetBackground(widget, bgType);
+        try {
+            const widgetSizes = await this.getViewPortSizes(this.widgetSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
+            let paddingTop = Math.round(height * 0.08);
+            let paddingLeft = Math.round(width * 0.04);
+            // console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
+            const hasStatusMsg = await this.hasStatusMsg(vData);
+            //_______________________________
+            //|         |         |         |
+            //|         |         |         |
+            //|         |         |         |
+            //|_________|_________|_________|
+            //|                             |
+            //-------------------------------
+
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, paddingLeft] });
+
+            let bodyContainer = await this.createRow(wContent, { '*setPadding': [paddingTop, 0, 0, 0] });
+            //*****************
+            //* First column
+            //*****************
+            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+
+            // Vehicle Image Container
+            let imgWidth = Math.round(width * 0.33);
+            let imgHeight = Math.round(height * 0.3);
+            await this.createVehicleImageElement(mainCol1, vData, this.sizeMap[this.widgetSize].logoSize.w, this.sizeMap[this.widgetSize].logoSize.h + 10);
+
+            // Creates the Odometer, Fuel/Battery and Distance Info Elements
+            await this.createFuelRangeElements(mainCol1, vData);
+
+            // Creates Low-Voltage Battery Voltage Elements
+            await this.createBatteryElement(mainCol1, vData);
+
+            // Creates Oil Life Elements
+            if (!vData.evVehicle) {
+                await this.createOilElement(mainCol1, vData);
+            } else {
+                // Creates EV Plug Elements
+                await this.createEvChargeElement(mainCol1, vData);
+            }
+            mainCol1.addSpacer();
+
+            //************************
+            //* Second column
+            //************************
+            let mainCol2 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+            mainCol2.addSpacer();
+
+            // Creates the Lock Status Elements
+            await this.createLockStatusElement(mainCol2, vData, 'center', true);
+
+            // Creates the Door Status Elements
+            await this.createDoorElement(mainCol2, vData, 'center', true);
+
+            // Create Tire Pressure Elements
+            await this.createTireElement(mainCol2, vData, 'center');
+            // mainCol2.addSpacer();
+
+            //****************
+            //* Third column
+            //****************
+            let mainCol3 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+            mainCol3.addSpacer();
+
+            // Creates the Ignition Status Elements
+            await this.createIgnitionStatusElement(mainCol3, vData, 'center', true);
+
+            // Creates the Door Status Elements
+            await this.createWindowElement(mainCol3, vData, 'center', true);
+
+            // Creates the Vehicle Location Element
+            await this.createPositionElement(mainCol3, vData, 'center');
+            // mainCol3.addSpacer();
+
+            //**********************
+            //* Refresh and error
+            //*********************
+
+            if (hasStatusMsg) {
+                let statusRow = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+                await this.createStatusElement(statusRow, vData, 2);
+                statusRow.addSpacer(); // Pushes Status Message to the left
+            }
+            // else if (!this.isSmallDisplay) {
+            // wContent.addSpacer(this.isSmallDisplay ? 4 : null);
+            // }
+
+            // Displays the Last Vehicle Checkin Time Elapsed...
+            const timestampRow = await this.createRow(wContent, { '*setPadding': [5, 0, 0, 0] });
+            await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+            wContent.addSpacer();
+        } catch (e) {
+            await this.logger(`mediumDetailedWidget Error: ${e}`, true);
+        }
+        return widget;
+    }
+
+    async largeDetailedWidget(vData, bgType = undefined) {
+        // Defines the Widget Object
+        const widget = new ListWidget();
+        this.setWidgetBackground(widget, bgType);
+        try {
+            const widgetSizes = await this.getViewPortSizes(this.widgetSize);
+            console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
+            const { width, height } = widgetSizes;
+
+            let paddingY = 10; //Math.round(height * 0.08);
+            let paddingX = 7; //Math.round(width * 0.06);
+            console.log(`padding | Top: ${paddingY} | Left: ${paddingX}`);
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingY, paddingX, paddingY, paddingX] });
+
+            const isEV = vData.evVehicle === true;
+            let dtePostfix = isEV ? 'Range' : 'to E';
+            let distanceMultiplier = (await this.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+            let distanceUnit = (await this.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+            // vData.deepSleepMode = true;
+            // vData.firmwareUpdating = true;
+            const hasStatusMsg = await this.hasStatusMsg(vData);
+
+            //*****************
+            //* TOP ROW
+            //*****************
+            let topRowContainer = await this.createRow(wContent, {});
+
+            //*****************
+            //* TOP LEFT COLUMN
+            //*****************
+
+            let topRowLeftCol = await this.createColumn(topRowContainer, { '*bottomAlignContent': null });
+            // topRowLeftCol.addSpacer();
+            // Vehicle Title
+            let nameContainer = await this.createRow(topRowLeftCol, { '*setPadding': [paddingY, paddingX, 0, 0] });
+            // nameContainer.addSpacer(); // Pushes the vehicle name to the left
+            let nameStr = vData.info.vehicle.vehicleType || '';
+
+            let nameSize = 24;
+            if (nameStr.length >= 10) {
+                nameSize = nameSize - Math.round(nameStr.length / 4);
+            }
+            await this.createText(nameContainer, nameStr, { font: Font.semiboldSystemFont(nameSize), textColor: this.colorMap.text[this.widgetColor], minimumScaleFactor: 0.9, lineLimit: 1 });
+            nameContainer.addSpacer(); // Pushes the vehicle name to the left
+
+            topRowLeftCol.addSpacer();
+            const extraPadding = this.isSmallDisplay ? 0 : 15;
+            const topLeftInfoCol = await this.createColumn(topRowLeftCol, { '*setPadding': [0, paddingX + extraPadding, 0, 0] });
+            // Creates Battery Level Elements
+            topLeftInfoCol.addSpacer();
+            await this.createBatteryElement(topLeftInfoCol, vData, 'left');
+
+            // Creates Oil Life Elements
+            if (!vData.evVehicle) {
+                await this.createOilElement(topLeftInfoCol, vData, 'left');
+            } else {
+                // Creates EV Plug Elements
+                await this.createEvChargeElement(topLeftInfoCol, vData, 'left');
+            }
+            // topRowLeftCol.addSpacer();
+
+            //*********************
+            //* TOP RIGHT COLUMN
+            //*********************
+
+            let topRowRightCol = await this.createColumn(topRowContainer, { '*setPadding': [0, 0, 0, 0] });
+            // topRowRightCol.addSpacer(); // Pushes Content to the middle to help center
+
+            // Vehicle Image Container
+            let imgWidth = Math.round(width * 0.4);
+            let imgHeight = Math.round(height * 0.25);
+            const carImageContainer = await this.createRow(topRowRightCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+            // carImageContainer.addSpacer();
+            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { resizable: true, imageSize: new Size(imgWidth, imgHeight) });
+            carImageContainer.addSpacer();
+            topRowRightCol.addSpacer(); // Pushes Content to the middle to help center
+
+            //*******************************
+            //* FUEL/BATTERY BAR CONTAINER
+            //*******************************
+            // Creates the Fuel/Battery Info Elements
+            const fuelBattRow = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
+
+            // Fuel/Battery Section
+            const fuelBattCol = await this.createColumn(fuelBattRow, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+
+            // Fuel/Battery Level BAR
+            const barRow = await this.createRow(fuelBattCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+            let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
+            let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
+            barRow.addSpacer();
+            await this.createImage(barRow, await this.createProgressBar(lvlValue ? lvlValue : 50, vData), { '*centerAlignImage': null, imageSize: new Size(this.sizeMap[this.widgetSize].barGauge.w, this.sizeMap[this.widgetSize].barGauge.h + 3) });
+            barRow.addSpacer();
+
+            // Distance/Range to Empty
+            const dteRow = await this.createRow(fuelBattCol, { '*setPadding': [0, 0, 0, 0] });
+            let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap().errorMessages.noData;
+            dteRow.addSpacer();
+            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.systemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 });
+            dteRow.addSpacer();
+            fuelBattRow.addSpacer();
+            fuelBattCol.addSpacer();
+
+            //*****************
+            //* Row 3 Container
+            //*****************
+            const row3Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
+
+            row3Container.addSpacer();
+            const row3LeftCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
+            // Creates the Lock Status Elements
+            await this.createLockStatusElement(row3LeftCol, vData);
+            row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
+            // Creates the Door Status Elements
+            await this.createDoorElement(row3LeftCol, vData);
+
+            row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
+
+            const row3CenterCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
+            row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
+            // Create Tire Pressure Elements
+            await this.createTireElement(row3CenterCol, vData);
+            row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
+            // row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
+
+            const row3RightCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
+            // Creates the Ignition Status Elements
+            await this.createIgnitionStatusElement(row3RightCol, vData);
+            row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
+            // Creates the Window Status Elements
+            await this.createWindowElement(row3RightCol, vData);
+            row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
+
+            row3Container.addSpacer();
+            wContent.addSpacer();
+
+            const row5Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
+            const row5CenterCol = await this.createColumn(row5Container, { '*setPadding': [0, 0, 0, 0] });
+            // Creates the Vehicle Location Element
+            await this.createPositionElement(row5CenterCol, vData, 'center');
+
+            wContent.addSpacer(); // Pushes all content to the top
+
+            // //**********************
+            // //* Status Row
+            // //*********************
+
+            // if (hasStatusMsg) {
+            //     let statusRow = await this.createRow(wContent, { '*setPadding': [0, paddingX, 0, 0], '*bottomAlignContent': null });
+            //     // statusRow.addSpacer();
+            //     await this.createStatusElement(statusRow, vData, 3);
+            //     statusRow.addSpacer();
+            // } else if (!this.isSmallDisplay) {
+            //     wContent.addSpacer();
+            // }
+            // //*****************************
+            // //* COMMAND BUTTONS CONTAINER
+            // //*****************************
+            const controlsContainer = await this.createRow(wContent, { '*setPadding': [7, 0, 5, 0] });
+            controlsContainer.addSpacer();
+
+            await this.createWidgetButtonRow(controlsContainer, vData, paddingX, width, 35, 24);
+            controlsContainer.addSpacer();
+
+            // Displays the Last Vehicle Checkin Time Elapsed...
+            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 3, 0] });
+            await this.createTimeStampElement(timestampRow, vData, 'center', 8);
+            // widget.addSpacer();
+        } catch (e) {
+            await this.logger(`largeDetailedWidget Error: ${e}`, true);
+        }
+        return widget;
+    }
+
+    async createDoorWindowText(srcElem, vData) {
+        try {
+            const styles = {
+                open: { font: Font.semiboldSystemFont(10), textColor: this.colorMap.openColor, lineLimit: 2, minimumScaleFactor: 0.9 },
+                closed: { font: Font.systemFont(10), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7, lineLimit: 2, minimumScaleFactor: 0.9 },
+            };
+            const statusCol = await this.createColumn(srcElem, { '*setPadding': [0, 0, 0, 0] });
+            let doorsOpen = await this.getOpenItems('createDoorWindowText', vData.statusDoors); //['LF', 'RR', 'HD'];
+            let windowsOpen = await this.getOpenItems('createDoorWindowText', vData.statusWindows);
+
+            console.log(`doorsOpen: ${doorsOpen.join(', ')}`);
+            console.log(`windowsOpen: ${windowsOpen.join(', ')}`);
+
+            if (Object.keys(doorsOpen).length > 0 || Object.keys(windowsOpen).length > 0) {
+                const dRow = await this.createRow(statusCol, { '*setPadding': [0, 0, 0, 0] });
+                dRow.addSpacer();
+                const ds = doorsOpen.length ? `Door${doorsOpen.length > 1 ? 's' : ''}: ${doorsOpen.join(', ')} Open` : 'All Doors Closed';
+                await this.createText(dRow, ds, doorsOpen.length > 0 ? styles.open : styles.closed);
+                dRow.addSpacer();
+
+                const wRow = await this.createRow(statusCol, { '*setPadding': [0, 0, 0, 0] });
+                wRow.addSpacer();
+                const ws = windowsOpen.length ? `Window${windowsOpen.length > 1 ? 's' : ''}: ${windowsOpen.join(', ')} Open` : 'All Windows Closed';
+                await this.createText(wRow, ws, windowsOpen.length > 0 ? styles.open : styles.closed);
+                wRow.addSpacer();
+            } else {
+                const os = 'All Doors and Windows Closed';
+                const sRow = await this.createRow(statusCol, { '*setPadding': [0, 0, 0, 0] });
+                sRow.addSpacer();
+                await this.createText(sRow, os, styles.closed);
+                sRow.addSpacer();
+            }
+        } catch (err) {
+            await this.logError(`createDoorWindowText(medium) ${err}`);
+        }
+        return srcElem;
+    }
+
+    async createFuelRangeElements(srcElem, vData) {
+        try {
+            const isEV = vData.evVehicle === true;
+            let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
+            let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
+            let dtePostfix = isEV ? 'Range' : 'to E';
+            let distanceMultiplier = (await this.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+            let distanceUnit = (await this.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+            // console.log('isEV: ' + isEV);
+            // console.log(`fuelLevel: ${vData.fuelLevel}`);
+            // console.log(`distanceToEmpty: ${vData.distanceToEmpty}`);
+            // console.log(`evBatteryLevel: ${vData.evBatteryLevel}`);
+            // console.log('evDistanceToEmpty: ' + vData.evDistanceToEmpty);
+            // console.log(`lvlValue: ${lvlValue}`);
+            // console.log(`dteValue: ${dteValue}`);
+
+            // Fuel/Battery Section
+            let elemCol = await this.createColumn(srcElem, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+
+            // Fuel/Battery Level BAR
+            let barRow = await this.createRow(elemCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+            await this.createImage(barRow, await this.createProgressBar(lvlValue ? lvlValue : 50, vData), { '*centerAlignImage': null, imageSize: new Size(this.sizeMap[this.widgetSize].barGauge.w, this.sizeMap[this.widgetSize].barGauge.h + 3) });
+
+            // Distance to Empty
+            let dteRow = await this.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
+            let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap().errorMessages.noData;
+            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.sizeMap[this.widgetSize].fontSizeSmall), textColor: this.colorMap.text[this.colorMode], lineLimit: 1 });
+            srcElem.addSpacer(3);
+        } catch (e) {
+            await this.logger(`createFuelRangeElements() Error: ${e}`, true);
+        }
+    }
+
+    async createBatteryElement(srcStack, vData, position = 'center') {
+        try {
+            const styles = {
+                normal: { font: Font.systemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 },
+                warning: { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.orangeColor, lineLimit: 1 },
+                critical: { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.redColor, lineLimit: 1 },
+            };
+            const titleRow = await this.createRow(srcStack, { '*setPadding': [0, 0, 3, 0] });
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, 'batteryStatus');
+            titleRow.addSpacer(3);
+            let txtStyle = styles.normal;
+            let value = vData.batteryLevel ? `${vData.batteryLevel}V` : 'N/A';
+            // console.log(`batteryLevel: ${value}`);
+            let lowBattery = vData.batteryStatus === 'STATUS_LOW' ? true : false;
+            if (lowBattery) {
+                txtStyle = styles.critical;
+            }
+            await this.createText(titleRow, value, txtStyle);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+        } catch (e) {
+            await this.logger(`createBatteryElement() Error: ${e}`, true);
+        }
+    }
+
+    async createOilElement(srcStack, vData, position = 'center') {
+        try {
+            const styles = {
+                normal: { font: Font.systemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 },
+                warning: { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.orangeColor, lineLimit: 1 },
+                critical: { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.redColor, lineLimit: 1 },
+            };
+            const titleRow = await this.createRow(srcStack, { '*setPadding': [0, 0, 3, 0] });
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, 'oil');
+            titleRow.addSpacer(3);
+            let txtStyle = styles.normal;
+            if (vData.oilLife && vData.oilLife >= 0 && vData.oilLife <= 25) {
+                txtStyle = styles.warning;
+            }
+            // console.log(`oilLife: ${vData.oilLife}`);
+            let text = vData.oilLife ? `${vData.oilLife}%` : this.textMap().errorMessages.noData;
+            await this.createText(titleRow, text, txtStyle);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+        } catch (e) {
+            await this.logger(`createOilElement() Error: ${e}`, true);
+        }
+    }
+
+    async createEvChargeElement(srcStack, vData, position = 'center') {
+        try {
+            const txtStyle = { font: Font.systemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 };
+            const titleRow = await this.createRow(srcStack, { '*setPadding': [0, 0, 3, 0] });
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, 'evChargeStatus');
+            titleRow.addSpacer(2);
+            let value = vData.evChargeStatus ? `${vData.evChargeStatus}` : this.textMap().errorMessages.noData;
+            // console.log(`battery charge: ${value}`);
+            await this.createText(titleRow, value, txtStyle);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+        } catch (e) {
+            await this.logger(`createEvChargeElement() Error: ${e}`, true);
+        }
+    }
+
+    async createPositionElement(srcStack, vData, position = 'center') {
+        try {
+            const titleRow = await this.createRow(srcStack);
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, 'position', false);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+
+            const valueRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+            let url = (await this.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
+            let value = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.textMap().errorMessages.noData;
+            if (position == 'center' || position == 'right') {
+                valueRow.addSpacer();
+            }
+            await this.createText(valueRow, value, { url: url, font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor], lineLimit: 2, minimumScaleFactor: 0.8 });
+            if (position == 'center' || position == 'left') {
+                valueRow.addSpacer();
+            }
+        } catch (e) {
+            await this.logger(`createPositionElement() Error: ${e}`, true);
+        }
+    }
+
+    async createLockStatusElement(srcStack, vData, position = 'center', postSpace = false) {
+        try {
+            const styles = {
+                unlocked: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1 },
+                locked: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor, lineLimit: 1 },
+            };
+            let titleRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, 'lockStatus', false);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+
+            let valueRow = await this.createRow(srcStack, { '*setPadding': [3, 0, 0, 0], '*centerAlignContent': null });
+            let value = vData.lockStatus ? vData.lockStatus.toLowerCase().charAt(0).toUpperCase() + vData.lockStatus.toLowerCase().slice(1) : this.textMap().errorMessages.noData;
+            if (position == 'center' || position == 'right') {
+                valueRow.addSpacer();
+            }
+            await this.createText(valueRow, value, vData.lockStatus !== undefined && vData.lockStatus === 'LOCKED' ? styles.locked : styles.unlocked);
+            if (position == 'center' || position == 'left') {
+                valueRow.addSpacer();
+            }
+            if (postSpace) {
+                srcStack.addSpacer();
+            }
+        } catch (e) {
+            await this.logger(`createLockStatusElement() Error: ${e}`, true);
+        }
+    }
+
+    async createIgnitionStatusElement(srcStack, vData, position = 'center', postSpace = false) {
+        try {
+            const styles = {
+                on: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.7 },
+                off: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor },
+            };
+            let remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
+            let status = '';
+            if (remStartOn) {
+                status = `Remote Start (ON)`;
+            } else if (vData.ignitionStatus !== undefined) {
+                status = vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1); //vData.ignitionStatus.toUpperCase();
+            } else {
+                this.textMap().errorMessages.noData;
+            }
+            let titleRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, 'ignitionStatus', false);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+
+            let valueRow = await this.createRow(srcStack, { '*setPadding': [3, 0, 0, 0], '*centerAlignContent': null });
+            if (position == 'center' || position == 'right') {
+                valueRow.addSpacer();
+            }
+            await this.createText(valueRow, status, vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
+            if (position == 'center' || position == 'left') {
+                valueRow.addSpacer();
+            }
+            if (postSpace) {
+                srcStack.addSpacer();
+            }
+        } catch (e) {
+            await this.logger(`createIgnitionStatusElement() Error: ${e}`, true);
+        }
+    }
+
+    // ********************************
+    // |.  HELPER FUNCTIONS
+    // ********************************
+
+    async createColumn(srcElem, styles = {}) {
+        try {
+            let col = srcElem.addStack();
+            col.layoutVertically();
+            if (styles && Object.keys(styles).length > 0) {
+                this._mapMethodsAndCall(col, styles);
+            }
+            return col;
+        } catch (e) {
+            await this.logError(`createColumn Error: ${e}`);
+        }
+    }
+
+    async createRow(srcElem, styles = {}) {
+        try {
+            let row = srcElem.addStack();
+            row.layoutHorizontally();
+            if (styles && Object.keys(styles).length > 0) {
+                this._mapMethodsAndCall(row, styles);
+            }
+            return row;
+        } catch (e) {
+            await this.logError(`createRow Error: ${e}`);
+            return null;
+        }
+    }
+
+    async createText(srcElem, text, styles = {}) {
+        let txt = srcElem.addText(text);
+        if (styles && Object.keys(styles).length > 0) {
+            this._mapMethodsAndCall(txt, styles);
+        }
+        return txt;
+    }
+
+    async createImage(srcElem, image, styles = {}) {
+        let _img = srcElem.addImage(image);
+        if (styles && Object.keys(styles).length > 0) {
+            this._mapMethodsAndCall(_img, styles);
+        }
+        return _img;
+    }
+
+    async createTitle(srcElem, titleText, colon = true, hideTitleForSmall = false) {
+        let titleParams = titleText.split('||');
+        let icon = this.iconMap[titleParams[0]];
+        let titleStack = await this.createRow(srcElem, { '*centerAlignContent': null });
+        if (icon !== undefined) {
+            let imgFile = await this.Files.getImage(icon.toString());
+            await this.createImage(titleStack, imgFile, { imageSize: new Size(this.sizeMap[this.widgetSize].iconSize.w, this.sizeMap[this.widgetSize].iconSize.h), resizable: true });
+        }
+        // console.log(`titleParams(${titleText}): ${titleParams}`);
+        if (titleText && titleText.length && !hideTitleForSmall) {
+            titleStack.addSpacer(2);
+            let title = titleParams.length > 1 ? this.textMap(titleParams[1]).elemHeaders[titleParams[0]] : this.textMap().elemHeaders[titleParams[0]];
+            await this.createText(titleStack, `${title}${colon ? ':' : ''}`, { font: Font.boldSystemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 });
+        }
+    }
+
+    async createProgressBar(percent, vData) {
+        // percent = 12;
+        const isEV = vData.evVehicle === true;
+        let fillLevel = percent > 100 ? 100 : percent;
+        const barWidth = this.sizeMap[this.widgetSize].barGauge.w;
+        const context = new DrawContext();
+        context.size = new Size(barWidth, this.sizeMap[this.widgetSize].barGauge.h + 3);
+        context.opaque = false;
+        context.respectScreenScale = true;
+
+        // Bar Background Gradient
+        const lvlBgPath = new Path();
+        lvlBgPath.addRoundedRect(new Rect(0, 0, barWidth, this.sizeMap[this.widgetSize].barGauge.h), 3, 2);
+        context.addPath(lvlBgPath);
+        context.setFillColor(Color.lightGray());
+        context.fillPath();
+
+        // Bar Level Background
+        const lvlBarPath = new Path();
+        lvlBarPath.addRoundedRect(new Rect(0, 0, (barWidth * fillLevel) / 100, this.sizeMap[this.widgetSize].barGauge.h), 3, 2);
+        context.addPath(lvlBarPath);
+        let barColor = isEV ? '#94ef4a' : '#619ded';
+        if (percent >= 0 && percent <= 10) {
+            barColor = '#FF6700';
+        } else if (percent > 10 && percent <= 20) {
+            barColor = '#FFCD00';
+        }
+        context.setFillColor(new Color(barColor));
+        context.fillPath();
+
+        let xPos = barWidth / 2 - 20;
+        context.setFont(Font.mediumSystemFont(this.sizeMap[this.widgetSize].barGauge.fs));
+        context.setTextColor(Color.black());
+
+        // if (fillLevel > 75) {
+        //     context.setTextColor(Color.white());
+        // }
+        const icon = isEV ? String.fromCodePoint('0x1F50B') : '\u26FD';
+        const lvlStr = fillLevel < 0 || fillLevel > 100 ? '--' : `${fillLevel}%`;
+        context.drawTextInRect(`${icon} ${lvlStr}`, new Rect(xPos, this.sizeMap[this.widgetSize].barGauge.h / this.sizeMap[this.widgetSize].barGauge.fs, this.sizeMap[this.widgetSize].barGauge.w, this.sizeMap[this.widgetSize].barGauge.h));
+        context.setTextAlignedCenter();
+        return await context.getImage();
+    }
+
+    async createVehicleImageElement(srcElem, vData, width, height, angle = 4) {
+        let logoRow = await this.createRow(srcElem, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
+        if (vData.info !== undefined && vData.info.vehicle !== undefined) {
+            await this.createImage(logoRow, await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, angle), { imageSize: new Size(width, height), '*centerAlignImage': null, resizable: true });
+            srcElem.addSpacer(3);
+        }
+    }
+
+    async getRangeData(data) {
+        const isEV = data.evVehicle === true;
+        const dtePostfix = isEV ? 'Range' : 'to E';
+        const distanceMultiplier = (await this.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+        const distanceUnit = (await this.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+        const dteValueRaw = !isEV ? (data.distanceToEmpty ? data.distanceToEmpty : undefined) : data.evDistanceToEmpty ? data.evDistanceToEmpty : undefined;
+        return {
+            isEV: isEV,
+            lvlValue: !isEV ? (data.fuelLevel ? data.fuelLevel : 0) : data.evBatteryLevel ? data.evBatteryLevel : 0,
+            dteValue: dteValueRaw ? Math.round(dteValueRaw * distanceMultiplier) : undefined,
+            odometerVal: data.odometer ? `${Math.round(data.odometer * distanceMultiplier)} ${distanceUnit}` : this.textMap().errorMessages.noData,
+            dtePostfix: dtePostfix,
+            // distanceMultiplier: distanceMultiplier, // distance multiplier
+            distanceUnit: distanceUnit, // unit of length
+            dteInfo: dteValueRaw ? `${Math.round(dteValueRaw * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap().errorMessages.noData,
+        };
+    }
+
+    async createDoorElement(srcStack, vData, position = 'center', postSpace = false) {
+        const styles = {
+            normTxt: { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor], lineLimit: 2 },
+            open: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 2 },
+            closed: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor, lineLimit: 2 },
+            offset: 5,
+        };
+
+        let titleRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+        if (position == 'center' || position == 'right') {
+            titleRow.addSpacer();
+        }
+        await this.createTitle(titleRow, 'doors', false);
+        if (position == 'center' || position == 'left') {
+            titleRow.addSpacer();
+        }
+        let valueRow = await this.createRow(srcStack, { '*setPadding': [3, 0, 0, 0], '*centerAlignContent': null });
+        const openDoors = await this.getOpenItems('createDoorElement2', vData.statusDoors); //['LF', 'RR', 'HD'];
+        let value = openDoors.length ? openDoors.join(', ') : 'All Closed';
+        if (position == 'center' || position == 'right') {
+            valueRow.addSpacer();
+        }
+        await this.createText(valueRow, value, openDoors.length > 0 ? styles.open : styles.closed);
+        if (position == 'center' || position == 'left') {
+            valueRow.addSpacer();
+        }
+        if (postSpace) {
+            srcStack.addSpacer();
+        }
+    }
+
+    async createWindowElement(srcStack, vData, position = 'center', postSpace = false) {
+        const styles = {
+            normTxt: { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor], lineLimit: 2 },
+            open: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 2 },
+            closed: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor, lineLimit: 2 },
+            offset: 5,
+        };
+
+        let titleRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+        if (position == 'center' || position == 'right') {
+            titleRow.addSpacer();
+        }
+        await this.createTitle(titleRow, 'windows', false);
+        if (position == 'center' || position == 'left') {
+            titleRow.addSpacer();
+        }
+        let valueRow = await this.createRow(srcStack, { '*setPadding': [3, 0, 0, 0], '*centerAlignContent': null });
+        const openWindows = await this.getOpenItems('createWindowElement2', vData.statusWindows); //['LF', 'RR', 'HD'];
+        let value = openWindows.length ? openWindows.join(', ') : 'All Closed';
+        if (position == 'center' || position == 'right') {
+            valueRow.addSpacer();
+        }
+        await this.createText(valueRow, value, openWindows.length > 0 ? styles.open : styles.closed);
+        if (position == 'center' || position == 'left') {
+            valueRow.addSpacer();
+        }
+        if (postSpace) {
+            srcStack.addSpacer();
+        }
+    }
+
+    async createTireElement(srcStack, vData, position = 'center') {
+        try {
+            const styles = {
+                normTxt: { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor] },
+            };
+            let titleRow = await this.createRow(srcStack);
+            let pressureUnits = await this.getSettingVal('fpPressureUnits');
+            let unitTxt = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, `tirePressure||${unitTxt}`, false);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+
+            let valueRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+            if (position == 'center' || position == 'right') {
+                valueRow.addSpacer();
+            }
+            // Row 1 - Tire Pressure Left Front amd Right Front
+            let col1 = await this.createColumn(valueRow, { '*setPadding': [0, 0, 0, 0] });
+            let col1row1 = await this.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col1row1, vData.tirePressure.leftFront, this.getTirePressureStyle(vData.tirePressure.leftFront, unitTxt));
+            let col2 = await this.createColumn(valueRow, { '*setPadding': [0, 3, 0, 3] });
+            let col2row1 = await this.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col2row1, '|', styles.normTxt);
+            let col3 = await this.createColumn(valueRow, { '*setPadding': [0, 0, 0, 0] });
+            let col3row1 = await this.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col3row1, vData.tirePressure.rightFront, this.getTirePressureStyle(vData.tirePressure.rightFront, unitTxt));
+
+            // Row 2 - Tire Pressure Left Rear amd Right Rear
+            let col1row2 = await this.createRow(col1, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col1row2, vData.tirePressure.leftRear, this.getTirePressureStyle(vData.tirePressure.leftRear, unitTxt));
+            let col2row2 = await this.createRow(col2, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col2row2, '|', styles.normTxt);
+            let col3row2 = await this.createRow(col3, { '*setPadding': [0, 0, 0, 0] });
+            await this.createText(col3row2, vData.tirePressure.rightRear, this.getTirePressureStyle(vData.tirePressure.rightRear, unitTxt));
+
+            if (position == 'center' || position == 'left') {
+                valueRow.addSpacer();
+            }
+        } catch (e) {
+            await this.logger(`createTireElement() Error: ${e}`, true);
+        }
+    }
+
+    /**
+     * @description
+     * @param  {any} pressure
+     * @param  {any} unit
+     * @return
+     * @memberof Widget
+     */
+    getTirePressureStyle(pressure, unit) {
+        const styles = {
+            normTxt: { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor] },
+            statLow: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.orangeColor },
+            statCrit: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.redColor },
+            offset: 10,
+        };
+        let p = parseFloat(pressure);
+        if (p) {
+            let low = this.widgetConfig.tirePressureThresholds.low;
+            let crit = this.widgetConfig.tirePressureThresholds.critical;
+            switch (unit) {
+                case 'kPa':
+                    low = this.widgetConfig.tirePressureThresholds.low / 0.145377;
+                    crit = this.widgetConfig.tirePressureThresholds.critical / 0.145377;
+                    break;
+                case 'bar':
+                    low = this.widgetConfig.tirePressureThresholds.low / 14.5377;
+                    crit = this.widgetConfig.tirePressureThresholds.critical / 14.5377;
+                    break;
+            }
+            if (p >= 0 && p > crit && p < low) {
+                // console.log(`Tire Pressure Low(${low}) | Pressure ${p} | Func: (${p >= 0 && p > crit && p < low})`);
+                return styles.statLow;
+            } else if (p >= 0 && p < crit) {
+                // console.log(`Tire Pressure Critical(${crit}) | Pressure ${p} | Func: (${p < crit && p >= 0})`);
+                return styles.statCrit;
+            } else {
+                // console.log(`Tire Pressure | Pressure ${p}`);
+                return styles.normTxt;
+            }
+        }
+        // console.log(`Tire Pressure | Pressure ${p}`);
+        return styles.normTxt;
+    }
+
+    async createTimeStampElement(srcRow, vData, position = 'center', fontSize = undefined) {
+        try {
+            let refreshTime = (await this.getLastRefreshElapsedString(vData)) || this.textMap.UIValues.unknown;
+            console.log(`createTimeStampElement() | refreshTime: ${JSON.stringify(refreshTime)}`);
+            if (position === 'center' || position === 'right') {
+                srcRow.addSpacer();
+            }
+            await this.createText(srcRow, 'Updated: ' + refreshTime, { font: Font.mediumSystemFont(fontSize || this.sizeMap[this.widgetSize].fontSizeSmall), textColor: this.colorMap.text[this.widgetColor], textOpacity: 0.6, lineLimit: 1 });
+            if (position === 'center' || position === 'left') {
+                srcRow.addSpacer();
+            }
+        } catch (e) {
+            await this.logger(`createTimeStampElement() Error: ${e}`, true);
+        }
+    }
+
+    async imgBtnRowBuilder(srcRow, elemWidth, widthPerc, elemHeight, icon) {
+        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 10, borderWidth: 2, borderColor: this.colorMap.text[this.widgetColor] });
+        btnCol.addSpacer(); // Pushes Button column down to help center in middle
+
+        const btnImgRow = await this.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
+        btnImgRow.addSpacer();
+        await this.createImage(btnImgRow, icon.image, icon.opts);
+        btnImgRow.addSpacer();
+        btnCol.addSpacer(); // Pushes Button column up to help center in middle
+    }
+
+    async createWidgetButtonRow(srcRow, vData, padding, rowWidth, rowHeight = 40, btnSize = 24) {
+        const darkMode = this.widgetColor === 'dark';
+        const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
+        const hasStatusMsg = await this.hasStatusMsg(vData);
+        const remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
+        const lockBtnIcon = vData.lockStatus === 'LOCKED' ? (darkMode ? 'lock_btn_dark.png' : 'lock_btn_light.png') : darkMode ? 'unlock_btn_dark.png' : 'unlock_btn_light.png';
+        const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red.png' : darkMode ? 'ignition_dark.png' : 'ignition_light.png';
+        const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png' : darkMode ? 'menu_btn_dark.png' : 'menu_btn_light.png';
+
+        const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, padding || 0, 0, padding || 0], spacing: 10 });
+
+        const buttons = [{
+                show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
+                icon: {
+                    image: await this.Files.getImage(lockBtnIcon),
+                    opts: { url: await this.buildCallbackUrl({ command: 'lock_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: caps && caps.includes('REMOTE_START'),
+                icon: {
+                    image: await this.Files.getImage(startBtnIcon),
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'start_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: caps && caps.includes('REMOTE_PANIC_ALARM'),
+                icon: {
+                    image: await this.Files.getImage(darkMode ? 'horn_lights_dark.png' : 'horn_lights_light.png'),
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: true,
+                icon: {
+                    image: await this.Files.getImage(darkMode ? 'refresh_btn_dark.png' : 'refresh_btn_light.png'),
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+            {
+                show: true,
+                icon: {
+                    image: await this.Files.getImage(menuBtnIcon),
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'show_menu' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+
+            {
+                show: false,
+                icon: {
+                    image: await this.Files.getImage('FP_Logo.png'),
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'open_fp_app' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                },
+            },
+        ];
+
+        let buttonsToShow = buttons.filter((btn) => btn.show === true);
+        buttonRow.size = new Size(Math.round(rowWidth * (0.17 * buttonsToShow.length)), rowHeight);
+        for (const [i, btn] of buttonsToShow.entries()) {
+            await this.imgBtnRowBuilder(buttonRow, Math.round(rowWidth * 0.2), Math.round(buttonsToShow.length / 100), rowHeight, btn.icon);
+        }
+    }
+
+    async hasStatusMsg(vData) {
+        return vData.error || (!vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') || vData.deepSleepMode || vData.firmwareUpdating || this.getStateVal('updateAvailable') === true; //|| (!vData.evVehicle && vData.oilLow)
+    }
+
+    async createStatusElement(stk, vData, maxMsgs = 2) {
+        try {
+            let cnt = 0;
+            const hasStatusMsg = await this.hasStatusMsg(vData);
+            // Creates Elements to display any errors in red at the bottom of the widget
+            if (vData.error) {
+                // stk.addSpacer(5);
+                await this.createText(stk, vData.error ? 'Error: ' + vData.error : '', { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: Color.red() });
+            } else {
+                if (cnt < maxMsgs && !vData.evVehicle && vData.batteryStatus === 'STATUS_LOW') {
+                    stk.addSpacer(cnt > 0 ? 5 : 0);
+                    await this.createText(stk, `\u2022 12V Battery Low`, { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: Color.red(), lineLimit: 1 });
+                    cnt++;
+                }
+                // if (cnt < maxMsgs && !vData.evVehicle && vData.oilLow) {
+                //     stk.addSpacer(cnt > 0 ? 5 : 0);
+                //     await createText(stk, `\u2022 Oil Reporting Low`, { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: Color.red(), lineLimit: 1 });
+                //     cnt++;
+                // }
+                if (cnt < maxMsgs && vData.deepSleepMode) {
+                    stk.addSpacer(cnt > 0 ? 5 : 0);
+                    await this.createText(stk, `\u2022 Deep Sleep Mode`, { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: Color.orange(), lineLimit: 1 });
+                    cnt++;
+                }
+                if (cnt < maxMsgs && vData.firmwareUpdating) {
+                    stk.addSpacer(cnt > 0 ? 5 : 0);
+                    await this.createText(stk, `\u2022 Firmware Updating`, { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: Color.green(), lineLimit: 1 });
+                    cnt++;
+                }
+                if (cnt < maxMsgs && this.getStateVal('updateAvailable') === true) {
+                    stk.addSpacer(cnt > 0 ? 5 : 0);
+                    await this.createText(stk, `\u2022 Script Update: v${this.getStateVal('LATEST_VERSION')}`, { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: Color.orange(), lineLimit: 1 });
+                    cnt++;
+                }
+            }
+            if (!hasStatusMsg) {
+                // await this.createText(stk, `     `, { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 });
+            }
+            return stk;
+        } catch (e) {
+            await this.logger(`createStatusElement() Error: ${e}`, true);
+        }
+    }
+
+    // Modified version of this https://talk.automators.fm/t/get-available-widget-height-and-width-depending-on-the-devices-screensize/9258/5
+    async getViewPortSizes(widgetFamily) {
+        // const vpSize = `${this.screenSize.width}x${this.screenSize.height}`;
+        const vpSize = (({ width: w, height: h }) => (w > h ? `${h}x${w}` : `${w}x${h}`))(this.screenSize);
+        await this.logInfo(`getViewPortSizes | ViewPort Size: ${vpSize}`);
+        const sizeMap = {
+            // IPAD_VIEWPORT_SIZES
+            '768x1024': {
+                devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
+                small: { width: 120, height: 120 },
+                medium: { width: 260, height: 120 },
+                large: { width: 260, height: 260 },
+                extraLarge: { width: 540, height: 260 },
+            },
+            '810x1080': {
+                devices: ['10.2" iPad'],
+                small: { width: 124, height: 124 },
+                medium: { width: 272, height: 124 },
+                large: { width: 272, height: 272 },
+                extraLarge: { width: 568, height: 272 },
+            },
+            '834x1112': {
+                devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
+                small: { width: 132, height: 132 },
+                medium: { width: 288, height: 132 },
+                large: { width: 288, height: 288 },
+                extraLarge: { width: 600, height: 288 },
+            },
+            '820x1180': {
+                devices: ['10.9" iPad Air 4th Gen'],
+                small: { width: 136, height: 136 },
+                medium: { width: 300, height: 136 },
+                large: { width: 300, height: 300 },
+                extraLarge: { width: 628, height: 300 },
+            },
+            '834x1194': {
+                devices: ['11" iPad Pro'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 345, height: 329 },
+                extraLarge: { width: 628, height: 300 },
+            },
+            '1024x1366': {
+                devices: ['12.9" iPad Pro'],
+                small: { width: 170, height: 170 },
+                medium: { width: 332, height: 170 },
+                large: { width: 382, height: 332 },
+                extraLarge: { width: 748, height: 356 },
+            },
+
+            // IPHONE_VIEWPORT_SIZES
+            '428x926': {
+                devices: ['12 Pro Max'],
+                small: { width: 170, height: 170 },
+                medium: { width: 364, height: 170 },
+                large: { width: 364, height: 382 },
+            },
+            '360x780': {
+                devices: ['12 Mini'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 329, height: 345 },
+            },
+            '414x896': {
+                devices: ['XR', 'XS Max', '11', '11 Pro Max'],
+                small: { width: 169, height: 169 },
+                medium: { width: 360, height: 169 },
+                large: { width: 360, height: 376 },
+            },
+            '390x844': {
+                devices: ['12', '12 Pro'],
+                small: { width: 158, height: 158 },
+                medium: { width: 338, height: 158 },
+                large: { width: 338, height: 354 },
+            },
+            '375x812': {
+                devices: ['X', 'XS', '11 Pro'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 329, height: 345 },
+            },
+            '414x736': {
+                devices: ['6S Plus', '7 Plus', '8 Plus'],
+                small: { width: 159, height: 159 },
+                medium: { width: 348, height: 159 },
+                large: { width: 348, height: 357 },
+            },
+            '375x667': {
+                devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
+                small: { width: 148, height: 148 },
+                medium: { width: 322, height: 148 },
+                large: { width: 322, height: 324 },
+            },
+            '320x568': {
+                devices: ['SE (1st Gen)'],
+                small: { width: 141, height: 141 },
+                medium: { width: 291, height: 141 },
+                large: { width: 291, height: 299 },
+            },
+        };
+
+        if (sizeMap[vpSize]) {
+            await this.logger(`getViewPortSizes | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`);
+            // console.log(`getViewPortSizes | Sizes: ${JSON.stringify(sizeMap[vpSize])}`);
+            return sizeMap[vpSize][widgetFamily];
+        } else {
+            let fallback = {
+                devices: ['Fallback'],
+                small: { width: 155, height: 155 },
+                medium: { width: 329, height: 155 },
+                large: { width: 329, height: 345 },
+                extraLarge: { width: 329, height: 345 },
+            };
+            // await this.logger(`getViewPortSizes(fallback) | Device Models: ${fallback.devices.join(', ') || 'Unknown'}`);
+            return fallback[widgetFamily];
+        }
+    }
 }
 
 //********************************************************************************************************************************
@@ -1621,28 +2835,9 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||347428935', 'FPW_Files.js||879879289', 'FPW_FordAPIs.js||1092222997', 'FPW_Keychain.js||865182748', 'FPW_Menus.js||-1902715391', 'FPW_Notifications.js||-168421043', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-1888476318'];
+
 async function validateModules() {
-    const moduleFiles = [
-        'FPW_Alerts.js||1575654697',
-        'FPW_Files.js||879879289',
-        'FPW_FordAPIs.js||-1514803303',
-        'FPW_Keychain.js||865182748',
-        'FPW_Menus.js||-81580035',
-        'FPW_Notifications.js||-168421043',
-        'FPW_ShortcutParser.js||2076658623',
-        'FPW_Tables.js||-1007128697',
-        'FPW_Tables_AlertPage.js||-1243229135',
-        'FPW_Tables_ChangesPage.js||2029682360',
-        'FPW_Tables_MainPage.js||-1032839635',
-        'FPW_Tables_MessagePage.js||136135527',
-        'FPW_Tables_RecallPage.js||1671208125',
-        'FPW_Tables_WidgetStylePage.js||1545966548',
-        'FPW_Timers.js||-1888476318',
-        'FPW_Widgets_ExtraLarge.js||1098647483',
-        'FPW_Widgets_Large.js||-1563517069',
-        'FPW_Widgets_Medium.js||-1810046530',
-        'FPW_Widgets_Small.js||-1295124757',
-    ];
     const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
     moduleRepo = widgetConfig.useBetaModules ? moduleRepo.replace('main', 'beta') : moduleRepo;
