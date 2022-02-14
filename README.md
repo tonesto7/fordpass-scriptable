@@ -2,7 +2,7 @@
 
 [![GitHub issues](https://img.shields.io/github/issues/tonesto7/fordpass-scriptable?style=for-the-badge)](https://github.com/tonesto7/fordpass-scriptable/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/tonesto7/fordpass-scriptable?style=for-the-badge)](https://github.com/tonesto7/fordpass-scriptable/pulls)
-[![Donate](https://img.shields.io/badge/donate-paypal-green.svg?style=for-the-badge)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url)
+[![Donate](https://img.shields.io/badge/donate-paypal-green.svg?style=for-the-badge)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5GMA6C3RTLXH6&source=url)
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tonesto7/fordpass-scriptable?label=Latest%20Script%20Version&sort=semver&style=for-the-badge)
 
