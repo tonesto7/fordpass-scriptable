@@ -66,7 +66,7 @@ Changelog:
     
 **************/
 const changelogs = {
-    '2022.02.14.0': {
+    '2022.02.14.1': {
         added: [
             'All new menu that functions like an app interface',
             'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
@@ -1459,7 +1459,7 @@ class Widget {
             //************************
 
             const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, paddingLeft] });
-            const topBox = await this.createRow(wContent, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+            const topBox = await this.createRow(wContent, { '*setPadding': [0, paddingLeft, 0, 0] });
 
             // ---Top left part---
             const topLeftContainer = await this.createRow(topBox, {});
@@ -1564,7 +1564,7 @@ class Widget {
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
             const { width, height } = widgetSizes;
             let paddingTop = Math.round(height * 0.08);
-            let paddingLeft = Math.round(width * 0.07);
+            let paddingLeft = Math.round(width * 0.04);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
             // vData.deepSleepMode = true;
             // vData.firmwareUpdating = true;
@@ -1586,14 +1586,14 @@ class Widget {
             await this.createFuelRangeElements(mainCol1, vData);
 
             // Creates Low-Voltage Battery Voltage Elements
-            await this.createBatteryElement(mainCol1, vData);
+            await this.createBatteryElement(mainCol1, vData, 'left');
 
             // Creates Oil Life Elements
             if (!vData.evVehicle) {
-                await this.createOilElement(mainCol1, vData);
+                await this.createOilElement(mainCol1, vData, 'left');
             } else {
                 // Creates EV Plug Elements
-                await this.createEvChargeElement(mainCol1, vData);
+                await this.createEvChargeElement(mainCol1, vData, 'left');
             }
             mainCol1.addSpacer();
             // bodyContainer.addSpacer();
@@ -1623,7 +1623,7 @@ class Widget {
             //* Refresh and error
             //*********************
             if (hasStatusMsg) {
-                let statusRow = await this.createRow(wContent, { '*layoutHorizontally': null, '*setPadding': [0, 0, 0, 0] });
+                let statusRow = await this.createRow(wContent, { '*layoutHorizontally': null, '*setPadding': [0, paddingLeft, 0, 0] });
                 await this.createStatusElement(statusRow, vData, 1);
             } else {
                 wContent.addSpacer();
@@ -1649,13 +1649,13 @@ class Widget {
             let paddingTop = Math.round(height * 0.04);
             let paddingLeft = Math.round(width * 0.03);
             // console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
-            widget.setPadding(paddingTop, paddingLeft, 0, 0);
-
+            // widget.setPadding(paddingTop, paddingLeft, 0, 0);
+            const wContent = await this.createColumn(widget, { '*setPadding': [0, 0, 0, 0] });
             //************************
             //* TOP ROW CONTAINER
             //************************
 
-            let bodyContainer = await this.createRow(widget, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
+            let bodyContainer = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
             // ****************************************
             // * LEFT BODY COLUMN CONTAINER
             // ****************************************
@@ -1663,13 +1663,14 @@ class Widget {
             leftContainer.addSpacer();
             // Vehicle Title
             const vehicleNameContainer = await this.createRow(leftContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
-            let vehicleNameStr = vData.info.vehicle.vehicleType || '';
+            let vehicleNameStr = vData.info.vehicle.vehicleType || ''; //'2021 Mustang Mach-E';
 
             let vehicleNameSize = 24;
             if (vehicleNameStr.length >= 10) {
                 vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
             }
-            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[this.colorMode], '*rightAlignText': null });
+            console.log(`vehicleNameSize: ${vehicleNameSize}`);
+            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[this.colorMode], '*leftAlignText': null, minimumScaleFactor: 0.4, lineLimit: 1 });
             vehicleNameContainer.addSpacer();
             // Range and Odometer
             let miContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
@@ -1728,24 +1729,24 @@ class Widget {
             //*****************************
             //* COMMAND BUTTONS CONTAINER
             //*****************************
-            const controlsContainer = await this.createRow(widget, { '*setPadding': [7, 0, 5, 0] });
+            const controlsContainer = await this.createRow(wContent, { '*setPadding': [7, 0, 5, 0] });
             controlsContainer.addSpacer();
             // vData.deepSleepMode = true;
             // vData.firmwareUpdating = true;
-            await this.createWidgetButtonRow(controlsContainer, vData, paddingLeft, width, 35, 24);
+            await this.createWidgetButtonRow(controlsContainer, vData, 0, width, 35, 24);
             controlsContainer.addSpacer();
 
             //**************************
             //* BOTTOM ROW CONTAINER
             //**************************
             // if (hasStatusMsg) {
-            //     let statusRow = await this.createRow(widget, { '*setPadding': [3, 0, 3, 0], '*centerAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.1)) });
+            //     let statusRow = await this.createRow(wContent, { '*setPadding': [3, 0, 3, 0], '*centerAlignContent': null, size: new Size(Math.round(width * 1), Math.round(height * 0.1)) });
             //     await this.createStatusElement(statusRow, vData, 2, this.widgetSize);
             //     statusRow.addSpacer();
             // }
 
             // Displays the Last Vehicle Checkin Time Elapsed...
-            let timestampRow = await this.createRow(widget, { '*setPadding': [3, 0, 5, paddingLeft], '*bottomAlignContent': null });
+            let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 5, 0], '*bottomAlignContent': null });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
 
             // ***************** RIGHT BODY CONTAINER END *****************
@@ -1783,7 +1784,7 @@ class Widget {
             //*****************
             //* First column
             //*****************
-            let mainCol1 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
+            let mainCol1 = await this.createColumn(bodyContainer, {});
 
             // Vehicle Image Container
             let imgWidth = Math.round(width * 0.33);
@@ -1794,22 +1795,22 @@ class Widget {
             await this.createFuelRangeElements(mainCol1, vData);
 
             // Creates Low-Voltage Battery Voltage Elements
-            await this.createBatteryElement(mainCol1, vData);
+            await this.createBatteryElement(mainCol1, vData, 'left');
 
             // Creates Oil Life Elements
             if (!vData.evVehicle) {
-                await this.createOilElement(mainCol1, vData);
+                await this.createOilElement(mainCol1, vData, 'left');
             } else {
                 // Creates EV Plug Elements
-                await this.createEvChargeElement(mainCol1, vData);
+                await this.createEvChargeElement(mainCol1, vData, 'left');
             }
             mainCol1.addSpacer();
 
             //************************
             //* Second column
             //************************
-            let mainCol2 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
-            mainCol2.addSpacer();
+            let mainCol2 = await this.createColumn(bodyContainer, {});
+            // mainCol2.addSpacer();
 
             // Creates the Lock Status Elements
             await this.createLockStatusElement(mainCol2, vData, 'center', true);
@@ -1819,13 +1820,13 @@ class Widget {
 
             // Create Tire Pressure Elements
             await this.createTireElement(mainCol2, vData, 'center');
-            // mainCol2.addSpacer();
+            mainCol2.addSpacer();
 
             //****************
             //* Third column
             //****************
-            let mainCol3 = await this.createColumn(bodyContainer, { '*setPadding': [0, 0, 0, 0] });
-            mainCol3.addSpacer();
+            let mainCol3 = await this.createColumn(bodyContainer, {});
+            // mainCol3.addSpacer();
 
             // Creates the Ignition Status Elements
             await this.createIgnitionStatusElement(mainCol3, vData, 'center', true);
@@ -1835,7 +1836,7 @@ class Widget {
 
             // Creates the Vehicle Location Element
             await this.createPositionElement(mainCol3, vData, 'center');
-            // mainCol3.addSpacer();
+            mainCol3.addSpacer();
 
             //**********************
             //* Refresh and error
@@ -1845,10 +1846,9 @@ class Widget {
                 let statusRow = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
                 await this.createStatusElement(statusRow, vData, 2);
                 statusRow.addSpacer(); // Pushes Status Message to the left
+            } else if (!this.isSmallDisplay) {
+                wContent.addSpacer();
             }
-            // else if (!this.isSmallDisplay) {
-            // wContent.addSpacer(this.isSmallDisplay ? 4 : null);
-            // }
 
             // Displays the Last Vehicle Checkin Time Elapsed...
             const timestampRow = await this.createRow(wContent, { '*setPadding': [5, 0, 0, 0] });
@@ -2116,7 +2116,7 @@ class Widget {
             if (position == 'center' || position == 'right') {
                 titleRow.addSpacer();
             }
-            await this.createTitle(titleRow, 'batteryStatus');
+            await this.createTitle(titleRow, 'batteryStatus', true, this.isSmallDisplay || this.widgetSize === 'small');
             titleRow.addSpacer(3);
             let txtStyle = styles.normal;
             let value = vData.batteryLevel ? `${vData.batteryLevel}V` : 'N/A';
@@ -2145,7 +2145,7 @@ class Widget {
             if (position == 'center' || position == 'right') {
                 titleRow.addSpacer();
             }
-            await this.createTitle(titleRow, 'oil');
+            await this.createTitle(titleRow, 'oil', true, this.isSmallDisplay || this.widgetSize === 'small');
             titleRow.addSpacer(3);
             let txtStyle = styles.normal;
             if (vData.oilLife && vData.oilLife >= 0 && vData.oilLife <= 25) {
@@ -2169,7 +2169,7 @@ class Widget {
             if (position == 'center' || position == 'right') {
                 titleRow.addSpacer();
             }
-            await this.createTitle(titleRow, 'evChargeStatus');
+            await this.createTitle(titleRow, 'evChargeStatus', true, this.isSmallDisplay || this.widgetSize === 'small');
             titleRow.addSpacer(2);
             let value = vData.evChargeStatus ? `${vData.evChargeStatus}` : this.textMap().errorMessages.noData;
             // console.log(`battery charge: ${value}`);
