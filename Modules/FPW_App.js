@@ -514,7 +514,7 @@ module.exports = class FPW_App {
                 ),
             );
 
-            updateAvailable = false;
+            // updateAvailable = false;
             // console.log(`showTestUIStuff: ${showTestUIStuff}`);
             if (showTestUIStuff) {
                 vData.alerts = {

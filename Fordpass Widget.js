@@ -2970,7 +2970,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-69505145', 'FPW_Files.js||61757870', 'FPW_FordAPIs.js||1998618948', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||-1732546823', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||97772729', 'FPW_Files.js||61757870', 'FPW_FordAPIs.js||1998618948', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||-1732546823', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
 
 async function validateModules() {
     const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();
