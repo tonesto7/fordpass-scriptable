@@ -47,12 +47,18 @@
     
 **************/
 const changelogs = {
+    '2022.02.15.0': {
+        added: ['Notification support for oil low, 12V battery low', 'Added the ability to turn on and off the individual notification types'],
+        fixed: [],
+        removed: [],
+        updated: ['Moved notification menu to main menu and out of settings.'],
+        clearImgCache: true,
+    },
     '2022.02.14.1': {
         added: ['Alarm status now shown in the dashboard menu.', 'Receive push notification for script updates (every 24H) as well as notifications for deep sleep mode, and firmware updates every 6H (Can turn the notifications off in Widget Menu > Settings > Notifications).'],
         fixed: ['Fixed widget layouts to be consistent', 'Fixed vehicle image not loading alternate angles for some vehicles.', 'Fixed SecuriAlert not representing the correct state'],
         removed: [],
         updated: ['Release notes now contain a list of releases.'],
-        clearImgCache: true,
     },
     '2022.02.14.0': {
         added: [
@@ -70,7 +76,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.14.1';
+const SCRIPT_VERSION = '2022.02.15.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -84,8 +90,28 @@ const widgetConfig = {
     screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
     refreshInterval: 5, // allow data to refresh every (xx) minutes
     alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
-    updateNotificationRate: 86400, // How often to allow available update notifications (in seconds - 86400 = 1 day)
-    alertNotificationRate: Math.round(86400 * 0.25), // How often to allow available alert notifications (in seconds - 86400 * 0.25 = every 6 hours)
+    notifications: {
+        scriptUpdate: {
+            rate: 86400, // How often to allow available update notifications (in seconds - 86400 = 1 day)
+            enabled: true, // Default value of notification
+        },
+        otaUpdate: {
+            rate: Math.round(86400 * 0.25), // How often to allow available alert notifications (in seconds - 86400 * 0.25 = every 6 hours)
+            enabled: true, // Default value of notification
+        },
+        deepSleep: {
+            rate: Math.round(86400 * 0.25), // How often to allow available alert notifications (in seconds - 86400 * 0.25 = every 6 hours)
+            enabled: true, // Default value of notification
+        },
+        oilLow: {
+            rate: 86400, // How often to show Oil Low Notifications (in seconds - 86400 = 1 day)
+            enabled: false, // Default value of notification
+        },
+        lvBatteryLow: {
+            rate: 86400, // How often to show 12v battery notifications (in seconds - 86400 = 1 day)
+            enabled: false, // Default value of notification
+        },
+    },
     tirePressureThresholds: {
         // Tire Pressure Thresholds in PSI
         low: 27,
@@ -510,19 +536,27 @@ class Widget {
         console.log(`Script Version: ${this.SCRIPT_VERSION}`);
         console.log(`Update Available: ${this.getStateVal('updateAvailable')}`);
         console.log(`Latest Version: ${this.getStateVal('LATEST_VERSION')}`);
-        if (!isNewerVersion) {
-            await this.Notifications.processNotification('update');
+        if (isNewerVersion) {
+            await this.Notifications.processNotification('scriptUpdate');
         }
     }
 
     async checkForVehicleAlerts(vData) {
         if (vData) {
             if (vData.deepSleepMode !== undefined && vData.deepSleepMode) {
-                await this.Notifications.processNotification('deepSleepMode');
+                await this.Notifications.processNotification('deepSleep');
                 return;
             }
             if (vData.firmwareUpdating !== undefined && vData.firmwareUpdating) {
-                await this.Notifications.processNotification('firmwareUpdating');
+                await this.Notifications.processNotification('otaUpdate');
+                return;
+            }
+            if (vData.batteryStatus !== undefined && vData.batteryLevel === 'STATUS_LOW') {
+                await this.Notifications.processNotification('lvBatteryLow');
+                return;
+            }
+            if (vData.oilLow) {
+                await this.Notifications.processNotification('oilLow');
                 return;
             }
         } else {
@@ -1288,45 +1322,81 @@ class Widget {
         return await this.setSettingVal('fpWidgetStyle', style);
     }
 
-    async getShowUpdNotifications() {
-        return (await this.getSettingVal('fpShowUpdateNotifications')) === 'true';
+    async getNotificationTypeKeys(type) {
+        let sKey;
+        let dtKey;
+        switch (type) {
+            case 'scriptUpdate':
+                sKey = 'fpShowUpdateNotifications';
+                dtKey = 'fpLastUpdateNotificationDt';
+                break;
+            case 'otaUpdate':
+                sKey = 'fpShowOtaNotifications';
+                dtKey = 'fpLastOtaUpdNotificationDt';
+                break;
+            case 'deepSleep':
+                sKey = 'fpShowSleepNotifications';
+                dtKey = 'fpLastDeepSleepNotificationDt';
+                break;
+            case 'lvBatteryLow':
+                sKey = 'fpShowLvbBattLowNotifications';
+                dtKey = 'fpLastLvbBattLowNotificationDt';
+                break;
+            case 'oilLow':
+                sKey = 'fpShowOilLowNotifications';
+                dtKey = 'fpLastOilLowNotificationDt';
+                break;
+        }
+        return { sKey, dtKey };
     }
 
-    async setShowUpdNotifications(show = true) {
-        return this.setSettingVal('fpShowUpdateNotifications', show.toString());
-    }
-
-    async storeLastNotificationDt(dtSetKey) {
-        if (dtSetKey !== undefined) {
-            this.setSettingVal(dtSetKey, Date.now().toString());
+    async getShowNotificationType(type) {
+        try {
+            const { sKey, dtKey } = await this.getNotificationTypeKeys(type);
+            const def = this.widgetConfig.notifications[type] ? this.widgetConfig.notifications[type].enabled : false;
+            const cur = await this.getSettingVal(sKey);
+            if (cur === null || cur === undefined) {
+                return def;
+            }
+            return cur === 'true';
+        } catch (e) {
+            this.logError(`getShowNotificationType(${type}) Error: ${e}`, true);
+            return false;
         }
     }
 
-    async getLastNotifElapsedOk(dtSetKey, requiredSeconds = 86400) {
-        const lastNotif = await this.getSettingVal(dtSetKey);
-        if (lastNotif === null || lastNotif === undefined) {
-            return true;
+    async setShowNotificationType(type, show) {
+        const { sKey, dtKey } = await this.getNotificationTypeKeys(type);
+        return this.setSettingVal(sKey, show.toString());
+    }
+
+    async toggleNotificationType(type) {
+        await this.setShowNotificationType(type, (await this.getShowNotificationType(type)) === false ? true : false);
+    }
+
+    async storeLastNotificationDtByType(type) {
+        const { sKey, dtKey } = await this.getNotificationTypeKeys(type);
+        if (dtKey !== undefined) {
+            this.setSettingVal(dtKey, Date.now().toString());
         }
-        const lastDt = parseInt(lastNotif);
-        const nowDt = Date.now();
-        const elap = Math.round((nowDt - lastDt) / 1000);
-        return elap > requiredSeconds;
     }
 
-    async toggleShowUpdNotifications(show) {
-        await this.setShowUpdNotifications((await this.getShowUpdNotifications()) === false ? true : false);
-    }
-
-    async getShowAlertNotifications() {
-        return (await this.getSettingVal('fpShowAlertNotifications')) === 'true';
-    }
-
-    async setShowAlertNotifications(show = true) {
-        await this.setSettingVal('fpShowAlertNotifications', show.toString());
-    }
-
-    async toggleShowAlertNotifications() {
-        await this.setShowAlertNotifications((await this.getShowAlertNotifications()) === false ? true : false);
+    async getLastNotifElapsedOkByType(type) {
+        try {
+            const { sKey, dtKey } = await this.getNotificationTypeKeys(type);
+            const rateSec = this.widgetConfig.notifications[type].rate || 86400;
+            const lastNotif = await this.getSettingVal(dtKey);
+            if (lastNotif === null || lastNotif === undefined) {
+                return true;
+            }
+            const lastDt = parseInt(lastNotif);
+            const nowDt = Date.now();
+            const elap = Math.round((nowDt - lastDt) / 1000);
+            return elap > rateSec;
+        } catch (e) {
+            this.logError(`getLastNotifElapsedOkByType(${type}) Error: ${e}`, true);
+            return false;
+        }
     }
 
     /**
@@ -1425,8 +1495,17 @@ class Widget {
             'fpWidgetStyle',
             'fpUIColorMode',
             'fpShowUpdateNotifications',
+            'fpShowOtaNotifications',
+            'fpShowSleepNotifications',
             'fpShowAlertNotifications',
+            'fpShowOilLowNotifications',
             'fpLastUpdateNotificationDt',
+            'fpShowLvbBattLowNotifications',
+            'fpLastDeepSleepNotificationDt',
+            'fpLastFirmUpdNotificationDt',
+            'fpLastOtaUpdNotificationDt',
+            'fpLastOilLowNotificationDt',
+            'fpLastLvbBattLowNotificationDt',
         ];
         for (const key in keys) {
             await this.removeSettingVal(keys[key]);
@@ -2659,7 +2738,7 @@ class Widget {
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         const hasStatusMsg = await this.hasStatusMsg(vData);
         const remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
-        const lockBtnIcon = vData.lockStatus === 'LOCKED' ? (darkMode ? 'lock_btn_dark.png' : 'lock_btn_light.png') : darkMode ? 'unlock_btn_dark.png' : 'unlock_btn_light.png';
+        const lockBtnIcon = vData.lockStatus === 'LOCKED' ? (darkMode ? 'lock_btn_dark.png' : 'lock_btn_light.png') : 'unlock_btn_red.png'; //darkMode ? 'unlock_btn_dark.png' : 'unlock_btn_light.png';
         const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red.png' : darkMode ? 'ignition_dark.png' : 'ignition_light.png';
         const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png' : darkMode ? 'menu_btn_dark.png' : 'menu_btn_light.png';
 
@@ -2891,7 +2970,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-69505145', 'FPW_Files.js||61757870', 'FPW_FordAPIs.js||1998618948', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||866150048', 'FPW_Notifications.js||1153434231', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-69505145', 'FPW_Files.js||61757870', 'FPW_FordAPIs.js||1998618948', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||-1732546823', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
 
 async function validateModules() {
     const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();

@@ -91,38 +91,60 @@ module.exports = class FPW_Notifications {
 
     async processNotification(nType) {
         switch (nType) {
-            case 'update':
-                if ((await this.FPW.getShowUpdNotifications()) && (await this.FPW.getLastNotifElapsedOk('fpLastUpdateNotificationDt', this.widgetConfig.updateNotificationRate))) {
-                    await this.FPW.storeLastNotificationDt('fpLastUpdateNotificationDt');
-                    await this.createNotification(`Newer Version Available: ${this.FPW.getStateVal('LATEST_VERSION')}`, 'subtitle', `You are running an older version of the Ford Pass Widget (${this.FPW.SCRIPT_VERSION}). Please update to the latest version.`, {
+            case 'scriptUpdate':
+                if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
+                    await this.FPW.storeLastNotificationDtByType(nType);
+                    await this.createNotification(`Newer Widget Release`, `V${this.FPW.getStateVal('LATEST_VERSION')} Available`, `You are running an older version of the Ford Pass Widget (${this.FPW.SCRIPT_VERSION}). Please update to the latest version.`, {
                         actions: [{
                             title: 'Update Widget',
                             url: await this.FPW.buildCallbackUrl({ command: 'open_updater' }),
                         }, ],
-                        identifier: `FPW_${this.FPW.SCRIPT_ID}_script_update`,
-                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_script_update`,
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
                         scriptName: Script.name(),
                     });
                 }
                 return;
 
-            case 'firmwareUpdating':
-                if ((await this.FPW.getShowAlertNotifications()) && (await this.FPW.getLastNotifElapsedOk('fpLastFirmUpdNotificationDt', this.widgetConfig.alertNotificationRate))) {
-                    await this.FPW.storeLastNotificationDt('fpLastFirmUpdNotificationDt');
-                    await this.createNotification(`Your Vehicles Firmware is Upgrading...`, 'subtitle', `Your vehicle has indicated that there is a firmware upgrade in progress.`, {
-                        identifier: `FPW_${this.FPW.SCRIPT_ID}_firmware_update`,
-                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_firmware_update`,
+            case 'otaUpdate':
+                if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
+                    await this.FPW.storeLastNotificationDtByType(nType);
+                    await this.createNotification('Vehicle Alert', `Over-Air-Update in Progress`, `Your vehicle has indicated that there is a OTA upgrade in progress.`, {
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
                         scriptName: Script.name(),
                     });
                 }
                 return;
 
-            case 'deepSleepMode':
-                if ((await this.FPW.getShowAlertNotifications()) && (await this.FPW.getLastNotifElapsedOk('fpLastDeepSleepNotificationDt', this.widgetConfig.alertNotificationRate))) {
-                    await this.FPW.storeLastNotificationDt('fpLastDeepSleepNotificationDt');
-                    await this.createNotification(`Vehicle in Deep Sleep Mode`, 'subtitle', `Your vehicle has indicated that it is in Deep Sleep Mode to conserve battery.`, {
-                        identifier: `FPW_${this.FPW.SCRIPT_ID}_deep_sleep`,
-                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_deep_sleep`,
+            case 'deepSleep':
+                if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
+                    await this.FPW.storeLastNotificationDtByType(nType);
+                    await this.createNotification('Vehicle Alert', `Vehicle in Deep Sleep Mode`, `Your vehicle has indicated that it is in Deep Sleep Mode to conserve battery.`, {
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        scriptName: Script.name(),
+                    });
+                }
+                return;
+
+            case 'oilLow':
+                if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
+                    await this.FPW.storeLastNotificationDtByType(nType);
+                    await this.createNotification('Vehicle Alert', `Oil Level Low`, `Your vehicle has indicated that your Oil is reporting low.`, {
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        scriptName: Script.name(),
+                    });
+                }
+                return;
+
+            case 'lvBatteryLow':
+                if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
+                    await this.FPW.storeLastNotificationDtByType(nType);
+                    await this.createNotification('Vehicle Alert', `12V Battery is Low`, `Your vehicle has indicated that your 12V battery is low.`, {
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
                         scriptName: Script.name(),
                     });
                 }

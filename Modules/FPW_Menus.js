@@ -137,6 +137,15 @@ module.exports = class FPW_Menus {
                             show: true,
                         },
                         {
+                            title: 'Notifications',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Notifications was pressed`);
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
                             title: 'Settings',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Settings was pressed`);
@@ -354,13 +363,23 @@ module.exports = class FPW_Menus {
                 case 'reset':
                     title = 'Reset Data Menu';
                     items = [{
+                            title: 'Clear Cached Images',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Clear Images was pressed`);
+                                await this.FPW.Files.clearImageCache();
+                                await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Images Cleared\n\nPlease run the script again to reload them all.');
+                                this.menuBuilderByType('main');
+                            },
+                            destructive: true,
+                            show: true,
+                        },
+                        {
                             title: 'Clear Cached Files/Images',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Clear Files/Images was pressed`);
                                 await this.FPW.Files.clearFileManager();
                                 await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
                                 this.menuBuilderByType('main');
-                                // this.quit();
                             },
                             destructive: true,
                             show: true,
@@ -501,22 +520,52 @@ module.exports = class FPW_Menus {
                     break;
                 case 'notifications':
                     title = 'Notification Settings';
-                    message = 'Update Notifications: Once per 24H.\n\nVehicle Alerts: Once every 6H';
+                    message = 'Update Notifications: Once every 24H.\nDeepSleep: Once every 6H\nOTA Updates: Once every 24H';
                     items = [{
-                            title: `Script Updates: ${(await this.FPW.getShowUpdNotifications()) === false ? 'Off' : 'On'}`,
+                            title: `Script Updates: ${(await this.FPW.getShowNotificationType('scriptUpdate')) === false ? 'Off' : 'On'}`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Update Notification Toggle pressed`);
-                                await this.FPW.toggleShowUpdNotifications();
+                                await this.FPW.toggleNotificationType('scriptUpdate');
                                 this.menuBuilderByType('notifications');
                             },
                             destructive: false,
                             show: true,
                         },
                         {
-                            title: `Vehicle Alerts: ${(await this.FPW.getShowAlertNotifications()) === false ? 'Off' : 'On'}`,
+                            title: `OTA Updates: ${(await this.FPW.getShowNotificationType('otaUpdate')) === false ? 'Off' : 'On'}`,
                             action: async() => {
-                                console.log(`(${typeDesc} Menu) Alert Notification Toggle pressed`);
-                                await this.FPW.toggleShowAlertNotifications();
+                                console.log(`(${typeDesc} Menu) OTA Update Toggle pressed`);
+                                await this.FPW.toggleNotificationType('otaUpdate');
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Deep Sleep: ${(await this.FPW.getShowNotificationType('deepSleep')) === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Deep Sleep Toggle pressed`);
+                                await this.FPW.toggleNotificationType('deepSleep');
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Oil Low: ${(await this.FPW.getShowNotificationType('oilLow')) === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Oil Low Toggle pressed`);
+                                await this.FPW.toggleNotificationType('oilLow');
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `12V Battery Low: ${(await this.FPW.getShowNotificationType('lvBatteryLow')) === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) 12V Battery Low Toggle pressed`);
+                                await this.FPW.toggleNotificationType('lvBatteryLow');
                                 this.menuBuilderByType('notifications');
                             },
                             destructive: false,
@@ -546,15 +595,7 @@ module.exports = class FPW_Menus {
                             destructive: false,
                             show: true,
                         },
-                        {
-                            title: 'Notifications',
-                            action: async() => {
-                                console.log(`(${typeDesc} Menu) Notifications was pressed`);
-                                this.menuBuilderByType('notifications');
-                            },
-                            destructive: false,
-                            show: true,
-                        },
+
                         {
                             title: 'Reset Login/File Options',
                             action: async() => {
