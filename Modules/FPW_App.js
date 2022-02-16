@@ -1445,7 +1445,7 @@ module.exports = class FPW_App {
                 for (const version in versions) {
                     let release = changes[versions[version]];
 
-                    if (release && (release.updated.length || release.added.length || release.removed.length || changes.fixed.length)) {
+                    if (release && (release.updated.length || release.added.length || release.removed.length || release.fixed.length)) {
                         // let verTs = new Date(Date.parse(this.SCRIPT_TS));
                         tableRows.push(
                             await this.createTableRow(
