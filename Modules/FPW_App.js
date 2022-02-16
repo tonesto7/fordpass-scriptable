@@ -370,7 +370,7 @@ module.exports = class FPW_App {
                 await this.createTableRow(
                     [
                         await this.createImageCell(await this.FPW.Files.getFPImage(`ic_message_center_notification_dark.png`), { align: 'left', widthWeight: 3 }),
-                        await this.createButtonCell(msgs.length ? `${msgs.length}` : '', {
+                        await this.createButtonCell(`${msgs.length || 0}`, {
                             align: 'left',
                             widthWeight: 27,
                             onTap: async() => {
@@ -514,9 +514,9 @@ module.exports = class FPW_App {
                 ),
             );
 
-            // updateAvailable = false;
             // console.log(`showTestUIStuff: ${showTestUIStuff}`);
             if (showTestUIStuff) {
+                updateAvailable = true;
                 vData.alerts = {
                     vha: [{
                         alertIdentifier: 'E19-374-43',
@@ -1214,7 +1214,7 @@ module.exports = class FPW_App {
                                                 let ok = await this.FPW.Alerts.showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?', `Delete (${msgIds.length}) Messages`, true);
                                                 if (ok) {
                                                     console.log(`(Messages Table) Deleting ${msgIds.length} Messages`);
-                                                    if (await this.FPW.FordAPI.deleteUserMessages([msg.messageId])) {
+                                                    if (await this.FPW.FordAPI.deleteUserMessages(msgIds)) {
                                                         console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
                                                         this.FPW.Alerts.showAlert('Deleted Messages Successfully', 'Message List will reload after data is refeshed');
                                                         await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);

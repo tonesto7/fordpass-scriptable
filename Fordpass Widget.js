@@ -1,3 +1,4 @@
+//test
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
@@ -47,6 +48,13 @@
     
 **************/
 const changelogs = {
+    '2022.02.16.0': {
+        added: [],
+        fixed: ['Fixes for loading of modules', 'minor tweaks to the widget layouts'],
+        removed: [],
+        updated: [],
+        clearImgCache: true,
+    },
     '2022.02.15.0': {
         added: ['Notification support for oil low, 12V battery low', 'Added the ability to turn on and off the individual notification types'],
         fixed: [],
@@ -76,7 +84,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.15.0';
+const SCRIPT_VERSION = '2022.02.16.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -121,14 +129,11 @@ const widgetConfig = {
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
-    testMode: false, // Use cached data for quick testing of widget and menu viewing
+    devLocalFiles: false,
+    loadCacheOnly: false, // Use cached data for quick testing of widget and menu viewing
     useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
-    useLocalModules: false, // Stores and loads modules from local storage instead of iCloud.  disable to access the module files under the scriptable folder in iCloud Drive.
     writeToLog: false, // Writes to the log file.
-    useLocalLogs: false, // Stores logs locally for debugging purposes. Enable to see the logs in the Scriptable Folder in iCloud Drive
-    useLocalFiles: true, // Use iCloud files for storing data
-    ignoreHashCheck: false, // Enable this when you are editing modules and don't want the script to validate the hash for the file and overwrite the file.
-    saveAllVehicleImagesToIcloud: false, // This will download all 5 vehicle angle images to the Sciptable iCloud Folder as PNG files for use elsewhere.
+    exportVehicleImagesToIcloud: false, // This will download all 5 vehicle angle images to the Sciptable iCloud Folder as PNG files for use elsewhere.
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
     showTestUIStuff: false,
@@ -277,6 +282,7 @@ class Widget {
             this.SCRIPT_NAME = 'Fordpass Widget';
             this.SCRIPT_ID = SCRIPT_ID;
             this.SCRIPT_VERSION = SCRIPT_VERSION;
+            this.isDevMode = isDevMode;
             this.stateStore = {};
             this.moduleMap = {};
             this.localFM = FileManager.local();
@@ -350,7 +356,7 @@ class Widget {
             // Starts the widget load process
             // console.log(`Device Models From ViewPort: ${await this.viewPortSizes.devices}`);
             // console.log(`widgetSize(run): ${JSON.stringify(await this.viewPortSizes)}`);
-            let fordData = widgetConfig.testMode ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget(config.runsInWidget);
+            let fordData = widgetConfig.loadCacheOnly ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget(config.runsInWidget);
             if (fordData === null) return;
             if (config.runsInWidget) {
                 if (args.widgetParameter) {
@@ -571,7 +577,7 @@ class Widget {
      */
     async readLogFile(logType) {
         try {
-            let fm = widgetConfig.useLocalLogs ? FileManager.local() : FileManager.iCloud();
+            let fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
@@ -596,7 +602,7 @@ class Widget {
      */
     async getLogFilePath(logType) {
         try {
-            const fm = widgetConfig.useLocalLogs ? FileManager.local() : FileManager.iCloud();
+            const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
@@ -2201,7 +2207,7 @@ class Widget {
                 await this.createText(wRow, ws, windowsOpen.length > 0 ? styles.open : styles.closed);
                 wRow.addSpacer();
             } else {
-                const os = 'All Doors and Windows Closed';
+                const os = 'Doors & Windows Closed';
                 const sRow = await this.createRow(statusCol, { '*setPadding': [0, 0, 0, 0] });
                 sRow.addSpacer();
                 await this.createText(sRow, os, styles.closed);
@@ -2383,10 +2389,6 @@ class Widget {
 
     async createIgnitionStatusElement(srcStack, vData, position = 'center', postSpace = false) {
         try {
-            const styles = {
-                on: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.7 },
-                off: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor },
-            };
             let remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
             let status = '';
             if (remStartOn) {
@@ -2409,6 +2411,11 @@ class Widget {
             if (position == 'center' || position == 'right') {
                 valueRow.addSpacer();
             }
+            let txtSize = status.length >= 10 ? Math.round(this.sizeMap[this.widgetSize].fontSizeMedium * 0.75) : this.sizeMap[this.widgetSize].fontSizeMedium;
+            const styles = {
+                on: { font: Font.heavySystemFont(txtSize), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.7 },
+                off: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor },
+            };
             await this.createText(valueRow, status, vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
             if (position == 'center' || position == 'left') {
                 valueRow.addSpacer();
@@ -2970,10 +2977,10 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||97772729', 'FPW_Files.js||61757870', 'FPW_FordAPIs.js||1998618948', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||-1732546823', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||860784085', 'FPW_Files.js||423511886', 'FPW_FordAPIs.js||-986131910', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||-1826658692', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
 
 async function validateModules() {
-    const fm = widgetConfig.useLocalModules ? FileManager.local() : FileManager.iCloud();
+    const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
     moduleRepo = widgetConfig.useBetaModules ? moduleRepo.replace('main', 'beta') : moduleRepo;
     async function downloadModule(fileName, filePath) {
@@ -3005,13 +3012,13 @@ async function validateModules() {
                     available.push(fileName);
                 }
             } else {
-                if (!widgetConfig.useLocalModules) {
+                if (isDevMode) {
                     await fm.downloadFileFromiCloud(filePath);
                 }
                 let fileCode = await fm.readString(filePath);
                 const hash = Array.from(fileCode).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
                 // console.log(`${fileName} hash: ${hash} | ${fileHash}`);
-                if (widgetConfig.ignoreHashCheck === false && hash.toString() !== fileHash.toString()) {
+                if (isDevMode === false && hash.toString() !== fileHash.toString()) {
                     logInfo(`Module Hash Missmatch... Downloading ${fileName}`);
                     if (await downloadModule(fileName, filePath)) {
                         available.push(fileName);
@@ -3041,7 +3048,7 @@ async function validateModules() {
 async function appendToLogFile(txt) {
     // console.log('appendToLogFile: Saving Data to Log...');
     try {
-        const fm = widgetConfig.useLocalLogs ? FileManager.local() : FileManager.iCloud();
+        const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
         const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
         const devName = Device.name()
             .replace(/[^a-zA-Z\s]/g, '')
@@ -3110,13 +3117,12 @@ async function logError(msg, saveToLog = true) {
 //********************************************************************************************************************************
 //*                                              THIS IS WHAT RUNS THE ACTUAL SCRIPT
 //********************************************************************************************************************************
-// try {
+const cloudFm = FileManager.iCloud();
+const isDevMode = cloudFm.fileExists(cloudFm.joinPath(cloudFm.documentsDirectory(), 'FPW_Devmode.txt')); // Disables Module File Hash checks, disables localModule loading, disables saving logs to iCloud Folder.
+if (isDevMode) {
+    console.log('Dev Mode Enabled!');
+}
 if (await validateModules()) {
     const wc = new Widget();
-
     await wc.run();
 }
-// } catch (error) {
-// logError(`Error: ${error}`);
-//     throw new Error(error);
-// }

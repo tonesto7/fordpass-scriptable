@@ -703,7 +703,7 @@ module.exports = class FPW_FordAPIs {
         // console.log(`lastRefreshed | raw: ${vehicleData.lastRefreshed} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
         console.log(`Last Vehicle Checkin: ${await this.FPW.getLastRefreshElapsedString(vehicleData)}`);
 
-        if (this.widgetConfig.saveAllVehicleImagesToIcloud) {
+        if (this.widgetConfig.exportVehicleImagesToIcloud) {
             await this.FPW.Files.downloadAllVehicleImagesToIcloud(vehicleData);
         }
 

@@ -346,7 +346,7 @@ module.exports = class FPW_Menus {
                                 this.menuBuilderByType('diagnostics');
                             },
                             destructive: false,
-                            show: true,
+                            show: false,
                         },
                         {
                             title: 'Back',
