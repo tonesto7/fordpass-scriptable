@@ -331,7 +331,7 @@ module.exports = class FPW_Menus {
                                 this.menuBuilderByType('diagnostics');
                             },
                             destructive: false,
-                            show: true,
+                            show: false,
                         },
                         {
                             title: 'View All Data',
@@ -342,7 +342,7 @@ module.exports = class FPW_Menus {
                                 this.menuBuilderByType('diagnostics');
                             },
                             destructive: false,
-                            show: true,
+                            show: false,
                         },
                         {
                             title: 'Copy All Data to Clipboard',

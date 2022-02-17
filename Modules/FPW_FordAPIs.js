@@ -210,15 +210,12 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.9',
-            // 'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
-            'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
-            'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
             Referer: 'https://ford.com',
             Origin: 'https://ford.com',
         });
         // console.log(`getSyncVersion: ${JSON.stringify(data)}`);
-        return data && data.sync && Object.keys(data.sync).length > 0 ? { syncVersion: data.sync.currentSyncVersion || undefined, lastUpdatedDate: data.sync.lastUpdatedDate } : undefined;
+        return data && data.sync && Object.keys(data.sync).length > 0 ? { syncVersion: data.sync.currentSyncVersion || undefined, lastUpdatedDate: data.sync.latestUpdateDate } : undefined;
     }
 
     async deleteUserMessages(msgIds = []) {
@@ -720,7 +717,7 @@ module.exports = class FPW_FordAPIs {
         // console.log(`Fordpass Rewards Info: ${JSON.stringify(vehicleData.fordpassRewardsInfo)}`);
 
         vehicleData.syncInfo = await this.getSyncVersion(vehicleData.info.vehicle.brandCode);
-        console.log(`Sync Info: ${JSON.stringify(vehicleData.syncInfo)}`);
+        // console.log(`Sync Info: ${JSON.stringify(vehicleData.syncInfo)}`);
 
         // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();
         vehicleData.lastRefreshed = vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh;

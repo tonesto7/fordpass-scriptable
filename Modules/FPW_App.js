@@ -311,6 +311,26 @@ module.exports = class FPW_App {
                 }
             }
 
+            if (type === 'vehicleData') {
+                try {
+                    // HTML = `<h3>Vehicle Data</h3>`;
+                    // HTML = `<p>${JSON.stringify(data)}</p>`;
+                    // for (const [i, key] of Object.keys(data).entries()) {
+                    //     const val = data[key];
+                    //     if (val !== null || val !== undefined || val !== '') {
+                    //         HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                    //     }
+                    // }
+                    // HTML += `</ul>`;
+                    // HTML += `</ul>`;
+                } catch (err) {
+                    // console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
+                    // HTML = `<h3>Vehicle Data</h3>`;
+                    // HTML += `<H5 style="Color: red;">Error Message</h5>`;
+                    // HTML += `<p style="Color: red;">${err}</p>`;
+                }
+            }
+
             // console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
             const bgColor = darkMode ? '#242424' : 'white';
             const fontColor = darkMode ? '#ffffff' : '#242425';
@@ -374,14 +394,11 @@ module.exports = class FPW_App {
             let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
 
             let ignStatus = '';
-            // if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
-            //     ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
-            //     // this.FPW.Timers.createRemoteStartStatusTimer();
-            //     await this.FPW.Timers.schedulePageRefresh('remoteStartStatus', 60000, true, true);
-            // } else {
-            //     await this.FPW.Timers.stopTimer('remoteStartStatus');
-            //     ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
-            // }
+            if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
+                ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
+            } else {
+                ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
+            }
             let refreshTime = (await this.FPW.getLastRefreshElapsedString(vData)) || this.textMap.UIValues.unknown;
             const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : this.FPW.textMap().errorMessages.noData;
             const msgs = vData.messages && vData.messages.length ? vData.messages : [];
@@ -454,7 +471,7 @@ module.exports = class FPW_App {
                 await this.createTableRow(
                     [
                         await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
-                        await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.semiboldSystemFont(fontSizes.subheadline) }),
+                        await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.semiboldSystemFont(fontSizes.body2) }),
                         await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
                     ], {
                         backgroundColor: new Color(headerColor),
@@ -1122,6 +1139,28 @@ module.exports = class FPW_App {
                         subtitleFont: Font.mediumSystemFont(fontSizes.body),
                     }),
                 ]),
+            );
+
+            tableRows.push(
+                await this.createTableRow(
+                    [
+                        await this.createTextCell(`Advanced Info`, 'Tap to view', {
+                            align: 'center',
+                            widthWeight: 100,
+                            titleColor: this.FPW.colorMap.normalText,
+                            titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                            subtitleColor: this.FPW.colorMap.normalText,
+                            subtitleFont: Font.regularSystemFont(11),
+                        }),
+                    ], {
+                        height: 40,
+                        dismissOnSelect: false,
+                        onSelect: async() => {
+                            console.log('(Main Menu) Advanced Info Page was pressed');
+                            this.advancedInfoPage();
+                        },
+                    },
+                ),
             );
 
             if (!update) {
@@ -1809,6 +1848,131 @@ module.exports = class FPW_App {
             await this.generateTableMenu('widgetStyles', tableRows, false, false);
         } catch (error) {
             console.error(`createWidgetStylePage() Error: ${error}`);
+        }
+    }
+
+    async advancedInfoPage() {
+        const fontSizes = {
+            medium: 10,
+            title1: 24,
+            title2: 22,
+            title3: 20,
+            body: 10,
+            body2: 11,
+            body3: 13,
+            footnote: 14,
+            headline: 15,
+            headline2: 17,
+            subheadline: 13,
+        };
+        const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
+        try {
+            let tableRows = [];
+            const vData = await this.FPW.FordAPI.fetchVehicleData(true);
+            const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
+            if (vData) {
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell('SYNC Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
+                if (vData.syncInfo && vData.syncInfo.syncVersion) {
+                    tableRows.push(
+                        await this.createTableRow(
+                            [
+                                await this.createTextCell(`Current Version: ${vData.syncInfo.syncVersion}`, `Last Updated: ${vData.syncInfo.lastUpdatedDate}`, {
+                                    align: 'left',
+                                    widthWeight: 100,
+                                    titleColor: this.FPW.colorMap.normalText,
+                                    titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                    subtitleColor: this.FPW.colorMap.normalText,
+                                    subtitleFont: Font.regularSystemFont(11),
+                                }),
+                            ], {
+                                height: 50,
+                                dismissOnSelect: false,
+                            },
+                        ),
+                    );
+                }
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell('Vehicle Data Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell(`View All Widget Data`, 'Tap to view', {
+                                align: 'left',
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(11),
+                            }),
+                        ], {
+                            height: 50,
+                            dismissOnSelect: false,
+                            onSelect: async() => {
+                                console.log('(Advanced Info) Vehicle Data was pressed');
+                                await this.showDataWebView('Vehicle Data Page', 'Raw Data', vData, 'vehicleData');
+                                // await this.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', vData);
+                            },
+                        },
+                    ),
+                );
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell('Over-The-Air Update Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell(`View OTA Update Info`, 'Tap to view', {
+                                align: 'left',
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(11),
+                            }),
+                        ], {
+                            height: 50,
+                            dismissOnSelect: false,
+                            onSelect: async() => {
+                                console.log('(Advanced Info) OTA Info was pressed');
+                                let data = await this.FPW.FordAPI.getVehicleOtaInfo();
+                                await this.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
+                            },
+                        },
+                    ),
+                );
+            } else {
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell(`Recent Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                        height: 50,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
+                tableRows.push(await this.createTableRow([await this.createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body3) })], { height: 44, dismissOnSelect: false }));
+            }
+
+            await this.generateTableMenu('advancedInfo', tableRows, true, false);
+        } catch (error) {
+            await this.FPW.logError(`(advancedInfoPage Table) ${error}`);
         }
     }
 };

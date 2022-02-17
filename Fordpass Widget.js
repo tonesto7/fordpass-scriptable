@@ -28,12 +28,8 @@
 /**************
 // Todo: This Release (v2.0.0)) 
     [-] use OTA info to show when an update is available or pending.
-    [-] move OTA info to table view.
     [-] add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
-    [-] figure out why fetchVehicleData is called multiple times with token expires error.
-    [-] fix main page not refreshing every 30 seconds.
     [x] allow solid color backgrounds for widgets
-    [-] allow transparent backgrounds
 
 // Todo: Next Release (Post 2.0.x)
 - setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
@@ -48,9 +44,14 @@
 **************/
 const changelogs = {
     '2022.02.17.0': {
-        added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open.', 'Dashboard page now has a timestamp at the bottom showing when the page was last refreshed.'],
+        added: [
+            'Dashboard page now refreshes the data every 30 seconds if you leave it open.',
+            'Dashboard page now has a timestamp at the bottom showing when the page was last refreshed.',
+            'New link added to the bottom of the Dashboard page to quickly access the vehicle and OTA info.',
+            'The advanced info page now shows the current sync version and last updated date reported by Ford.',
+        ],
         fixed: ['Fixed issues with the widget parameters not working.  you no longer need to add the prefix of the widget size.  you can just detailed, detailedDark, detailedLight, simple, simpleDark, and simpleLight.'],
-        removed: ['Disabled Oil Low Notifications'],
+        removed: ['Disabled Oil Low Notifications', 'The OTA and vehicle data page is no longer in the menu, its been moved to the advanced info page that located at the botton of the dashboard.'],
         updated: ['OTA Page now has vehicle status and schedule info in the formatted section.  Also rearranged the layout slightly.'],
         clearImgCache: true,
     },
@@ -74,7 +75,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.16.0';
+const SCRIPT_VERSION = '2022.02.17.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -944,7 +945,7 @@ class Widget {
                     await fm.remove(path); //removes existing file if it exists
                 }
                 await fm.writeString(path, JSON.stringify(data));
-                await email.addFileAttachment(path);
+                email.addFileAttachment(path);
             }
             await email.send();
             await fm.remove(path);
@@ -3041,7 +3042,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-651293415', 'FPW_Files.js||423511886', 'FPW_FordAPIs.js||-986131910', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||-1826658692', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||-463754868'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-328787217', 'FPW_Files.js||-1216810754', 'FPW_FordAPIs.js||-1823624759', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||205010531', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
