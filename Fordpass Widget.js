@@ -82,8 +82,6 @@ const widgetConfig = {
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
     screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
-    refreshInterval: 5, // allow data to refresh every (xx) minutes
-    alwaysFetch: true, // always fetch data from FordPass, even if it is not needed
     notifications: {
         scriptUpdate: {
             rate: 86400, // How often to allow available update notifications (in seconds - 86400 = 1 day)
@@ -135,7 +133,6 @@ const screenSize = Device.screenSize();
 const screenScale = Device.screenScale();
 const isSmallDisplay = screenResolution.width < 1200 === true;
 const darkMode = Device.isUsingDarkAppearance();
-if (typeof require === 'undefined') require = importModule;
 const runningWidgetSize = config.widgetFamily;
 
 // console.log('---------------DEVICE INFO ----------------');
@@ -308,7 +305,7 @@ class Widget {
      */
     moduleLoader(moduleName) {
         try {
-            const module = require(this.iCloudModuleDir + `/FPW_${moduleName}.js`);
+            const module = importModule(this.iCloudModuleDir + `/FPW_${moduleName}.js`);
             return new module(this);
         } catch (error) {
             this.logError(`Module Loader | (${moduleName}) | Error: ${error}`);
@@ -3037,7 +3034,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||516193968', 'FPW_Files.js||-1216810754', 'FPW_FordAPIs.js||-1945747196', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||205010531', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||516193968', 'FPW_Files.js||-1216810754', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||205010531', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();

@@ -530,7 +530,8 @@ module.exports = class FPW_FordAPIs {
     //from local store if last fetch is < x minutes, otherwise fetch from server
     async fetchVehicleData(loadLocal = false, leanData = false) {
         //Fetch data from local store
-        if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
+        // if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
+        if (loadLocal) {
             return await this.FPW.Files.readLocalData();
         }
 

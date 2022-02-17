@@ -6,12 +6,14 @@
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tonesto7/fordpass-scriptable?label=Latest%20Script%20Version&sort=semver&style=for-the-badge)
 
-  <img src="images/widget_light_example.png" alt="Widget light example" width="300" /> <img src="images/widget_dark_example.png" alt="Widget dark example" width="300" />
-
+  <img src="images/dark_widgets_example_v2_1.png" alt="Widget example1" width="300" /> <img src="images/dark_widgets_example_v2_2.png" alt="Widget  example" width="300" />
+  <img src="images/light_widgets_example_v2_1.png" alt="Widget example1" width="300" /> <img src="images/light_widgets_example_v2_2.png" alt="Widget  example" width="300" />
+ 
+  
 ## Intro
 
-This widget is based off the work of [](https://github.com/dschablowsky/FordPassWidget) by David Schablowsky.
-It has been rewritten to add a new design, support infinitly more features, and will be much easier to maintain and improve over time.
+This widget was based off the work of [](https://github.com/dschablowsky/FordPassWidget) by David Schablowsky.
+It has been completely rewritten to add a whole new design, support infinitly more features, and will be much easier to maintain and improve over time.
 This version no longer requires you to edit the script file to configure login information and preferences.
 The widget now fetches all information required about your ford vehicle and displays them in a simple interactive widget.
 The widget has been tested on many many ford models, and should work on any vehicle that's supported in the FordPass mobile app.
@@ -26,17 +28,20 @@ The widget has been tested on many many ford models, and should work on any vehi
 
 - Will automatically fetch data from server (default is every 3-5 minutes)
 - Tapping on the Vehicle location in the widget will open Apple Maps (or Google Maps) pin the position of your vehicle.
-- Tapping anywhere in the widget will open the scriptable app and provide a menu of quick actions support by your vehicles capabilities.
+- Tapping anywhere in the widget will open the scriptable app and provide you with a dashboard of quick controls and info supported by your vehicles capabilities.
 - Automatically pulls in the following info about you and your vehicle:
   - Vehicles actual image
   - Distance and Pressure units defined in the FordPass app.
+
+- New widgets create quick buttons to perform quick actions on your vehicle (This will open the scriptable app because executing code is not allowed on iOS widgets).
 
 - Debug Menu to view advanced information about your vehicle data:
   - View the Hidden OTA data embedded in Ford.com vehicle dashboard.
   - View all data pulled into the widget using various ford endpoints.
   
 ## Screenshots
-
+ <img src="images/menu_example_v2.png" alt="Widget example" width="300" />
+  <img src="images/dashboard_menu_example_2.png" alt="Widget example" width="300" />
   <img src="images/main_menu_example.png" alt="Menu example" width="300" /> <img src="images/advanced_control_menu.png" alt="Advanced Control example" width="300" /> <img src="images/setting_menu.png" alt="Menu example" width="300" /> <img src="images/debug_menu.png" alt="Debug Menu example" width="300" />
 
 ## Known Issues & Limitations
