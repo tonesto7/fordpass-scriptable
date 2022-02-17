@@ -110,8 +110,6 @@ module.exports = class FPW_Menus {
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) View Widget was pressed`);
                                 this.menuBuilderByType('widgetView');
-                                // const w = await generateWidget('medium', fordData);
-                                // await w.presentMedium();
                             },
                             destructive: false,
                             show: true,
@@ -240,30 +238,61 @@ module.exports = class FPW_Menus {
                 case 'widgetView':
                     title = 'View Widget';
                     items = [{
-                            title: 'Small',
+                            title: 'Small (Light)',
                             action: async() => {
-                                console.log(`(${typeDesc} Menu) Small Widget was pressed`);
-                                const w = await this.FPW.generateWidget('small', vehicleData);
+                                console.log(`(${typeDesc} Menu) Small Light Widget was pressed`);
+                                const w = await this.FPW.generateWidget('smallLight', vehicleData);
                                 await w.presentSmall();
                             },
                             destructive: false,
                             show: true,
                         },
                         {
-                            title: 'Medium',
+                            title: 'Small (Dark)',
                             action: async() => {
-                                console.log(`(${typeDesc} Menu) Medium Widget was pressed`);
-                                const w = await this.FPW.generateWidget('medium', vehicleData);
+                                console.log(`(${typeDesc} Menu) Small Dark Widget was pressed`);
+                                const w = await this.FPW.generateWidget('smallDark', vehicleData);
+                                await w.presentSmall();
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+
+                        {
+                            title: 'Medium (Light)',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Medium Light Widget was pressed`);
+                                const w = await this.FPW.generateWidget('mediumLight', vehicleData);
                                 await w.presentMedium();
                             },
                             destructive: false,
                             show: true,
                         },
                         {
-                            title: 'Large',
+                            title: 'Medium (Dark)',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Medium Dark Widget was pressed`);
+                                const w = await this.FPW.generateWidget('mediumDark', vehicleData);
+                                await w.presentMedium();
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Large (Light)',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Large Widget was pressed`);
-                                const w = await this.FPW.generateWidget('large', vehicleData);
+                                const w = await this.FPW.generateWidget('largeLight', vehicleData);
+                                await w.presentLarge();
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Large (Dark)',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Large Dark Widget was pressed`);
+                                const w = await this.FPW.generateWidget('largeDark', vehicleData);
                                 await w.presentLarge();
                             },
                             destructive: false,

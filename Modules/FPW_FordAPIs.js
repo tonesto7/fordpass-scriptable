@@ -77,7 +77,7 @@ module.exports = class FPW_FordAPIs {
             req1.headers = headers;
             req1.method = 'POST';
             req1.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=password&username=${username}&password=${encodeURIComponent(password)}`;
-            req1.timeoutInterval = 10;
+            req1.timeoutInterval = 15;
 
             let token1 = await req1.loadJSON();
             let resp1 = req1.response;
@@ -98,7 +98,7 @@ module.exports = class FPW_FordAPIs {
                 req2.headers = headers;
                 req2.method = 'PUT';
                 req2.body = JSON.stringify({ code: token1.access_token });
-                req2.timeoutInterval = 10;
+                req2.timeoutInterval = 15;
 
                 let token2 = await req2.loadJSON();
                 let resp2 = req2.response;
@@ -144,7 +144,7 @@ module.exports = class FPW_FordAPIs {
                 'Content-Type': 'application/json',
                 'Application-Id': this.appIDs().NA,
             };
-            req.timeoutInterval = 10;
+            req.timeoutInterval = 15;
             req.method = 'PUT';
             req.body = JSON.stringify({ refresh_token: refreshToken });
 
@@ -197,6 +197,28 @@ module.exports = class FPW_FordAPIs {
     async getUserMessages() {
         let data = await this.makeFordRequest('getUserMessages', `https://api.mps.ford.com/api/messagecenter/v3/messages`, 'GET', false);
         return data && data.result && data.result.messages && data.result.messages.length ? data.result.messages : [];
+    }
+
+    async getSyncVersion(brand) {
+        let vin = await this.FPW.getSettingVal('fpVin');
+        if (!vin) {
+            return this.FPW.textMap().errorMessages.noVin;
+        }
+        let token = await this.FPW.getSettingVal('fpToken2');
+        let lang = await this.FPW.getSettingVal('fpLanguage');
+        let data = await this.makeFordRequest('getSyncVersion', `https://www.digitalservices.ford.com/owner/api/v2/sync/firmware-update?vin=${vin}&locale=${lang}&brand=${brand}`, 'POST', false, {
+            'Content-Type': 'application/json',
+            Accept: 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            // 'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'Application-Id': this.appIDs().NA,
+            'auth-token': `${token}`,
+            'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
+            Referer: 'https://ford.com',
+            Origin: 'https://ford.com',
+        });
+        // console.log(`getSyncVersion: ${JSON.stringify(data)}`);
+        return data && data.sync && Object.keys(data.sync).length > 0 ? { syncVersion: data.sync.currentSyncVersion || undefined, lastUpdatedDate: data.sync.lastUpdatedDate } : undefined;
     }
 
     async deleteUserMessages(msgIds = []) {
@@ -697,6 +719,9 @@ module.exports = class FPW_FordAPIs {
         vehicleData.fordpassRewardsInfo = await this.getFordpassRewardsInfo();
         // console.log(`Fordpass Rewards Info: ${JSON.stringify(vehicleData.fordpassRewardsInfo)}`);
 
+        vehicleData.syncInfo = await this.getSyncVersion(vehicleData.info.vehicle.brandCode);
+        console.log(`Sync Info: ${JSON.stringify(vehicleData.syncInfo)}`);
+
         // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();
         vehicleData.lastRefreshed = vehicleStatus.lastRefresh.includes('01-01-2018') ? vehicleStatus.lastModifiedDate : vehicleStatus.lastRefresh;
         // console.log(`lastRefreshed | raw: ${vehicleData.lastRefreshed} | conv: ${vehicleData.lastRefresh.toLocaleString()}`);
@@ -852,7 +877,7 @@ module.exports = class FPW_FordAPIs {
                 'auth-token': `${token}`,
             };
             req.method = cmds[cmd].method;
-            req.timeoutInterval = 10;
+            req.timeoutInterval = 15;
 
             try {
                 let data = await req.loadString();

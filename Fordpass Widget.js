@@ -49,7 +49,7 @@
 const changelogs = {
     '2022.02.17.0': {
         added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open.', 'Dashboard page now has a timestamp at the bottom showing when the page was last refreshed.'],
-        fixed: [],
+        fixed: ['Fixed issues with the widget parameters not working.  you no longer need to add the prefix of the widget size.  you can just detailed, detailedDark, detailedLight, simple, simpleDark, and simpleLight.'],
         removed: ['Disabled Oil Low Notifications'],
         updated: ['OTA Page now has vehicle status and schedule info in the formatted section.  Also rearranged the layout slightly.'],
         clearImgCache: true,
@@ -167,27 +167,10 @@ class Widget {
         redColor: new Color('#DE1738'),
         textBlack: '#000000',
         textWhite: '#EDEDED',
-        backColor: darkMode ? '#111111' : '#FFFFFF', // Background Color'
-        backColorGrad: darkMode ? ['#141414', '#13233F'] : ['#BCBBBB', '#DDDDDD'], // Background Color Gradient}
+        backColor: this.widgetColor === 'dark' ? '#111111' : '#FFFFFF', // Background Color'
+        backColorGrad: this.widgetColor === 'dark' ? ['#141414', '#13233F'] : ['#BCBBBB', '#DDDDDD'], // Background Color Gradient}
         backColorGradDark: ['#141414', '#13233F'],
         backColorGradLight: ['#BCBBBB', '#DDDDDD'],
-    };
-
-    iconMap = {
-        fuelIcon: darkMode ? 'gas-station_dark.png' : 'gas-station_light.png', // Image for gas station
-        lockStatus: darkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
-        lockIcon: darkMode ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
-        tirePressure: darkMode ? 'tire_dark.png' : 'tire_light.png', // Image for tire pressure
-        unlockIcon: darkMode ? 'unlock_dark.png' : 'unlock_light.png', // Image Used for UnLock Icon
-        batteryStatus: darkMode ? 'battery_dark.png' : 'battery_light.png', // Image Used for Battery Icon
-        doors: darkMode ? 'door_dark.png' : 'door_light.png', // Image Used for Door Lock Icon
-        windows: darkMode ? 'window_dark.png' : 'window_light.png', // Image Used for Window Icon
-        oil: darkMode ? 'oil_dark.png' : 'oil_light.png', // Image Used for Oil Icon
-        ignitionStatus: darkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Ignition Icon
-        keyIcon: darkMode ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
-        position: darkMode ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
-        evBatteryStatus: darkMode ? 'ev_battery_dark.png' : 'ev_battery_light.png', // Image Used for EV Battery Icon
-        evChargeStatus: darkMode ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
     };
 
     sizeMap = {
@@ -467,51 +450,48 @@ class Widget {
      * @return
      * @memberof Widget
      */
-    async generateWidget(size, data) {
-        this.logInfo(`generateWidget() | Size: ${size}`);
+    async generateWidget(params, data) {
+        this.logInfo(`generateWidget() | Params: ${params}`);
         let widget = null;
-        let wStyle = await this.getWidgetStyle();
-        let widgetColor = await this.getUIColorMode();
-        if (size.includes('Dark') || size.includes('dark')) {
-            bgType = 'dark';
-            widgetColor = 'dark';
-        } else if (size.includes('Light') || size.includes('light')) {
-            bgType = 'light';
-            widgetColor = 'light';
-        }
-        if (size.includes('Simple')) {
-            wStyle = 'simple';
-        } else if (size.includes('Detailed')) {
-            wStyle = 'detailed';
-        }
-        this.widgetColor = widgetColor;
 
-        // await this.logInfo(`Style: ${wStyle} | Color: ${widgetColor}`, true);
+        // return await this.generateTestWidget(params, data);
+
         try {
-            if (size.includes('small')) {
-                this.widgetSize = 'small';
-                if (wStyle === 'simple') {
-                    widget = await this.smallSimpleWidget(data, widgetColor);
-                } else {
-                    widget = await this.smallDetailedWidget(data, widgetColor);
-                }
-            } else if (size.includes('medium')) {
-                this.widgetSize = 'medium';
-                if (wStyle === 'simple') {
-                    widget = await this.mediumSimpleWidget(data, widgetColor);
-                } else {
-                    widget = await this.mediumDetailedWidget(data, widgetColor);
-                }
-            } else if (size.includes('large')) {
-                this.widgetSize = 'large';
-                widget = await this.largeDetailedWidget(data, widgetColor);
-            } else if (size.includes('extraLarge')) {
-                this.widgetSize = 'extraLarge';
-                widget = await this.largeDetailedWidget(data, widgetColor);
-            }
-            if (widget === null) {
-                await this.logError(`generateWidget() | Widget is null!`, true);
-                return;
+            const { family, style, color, output } = await this.processWidgetParams(params);
+            this.logInfo(`family: ${family} | Style: ${style} | Color: ${color}`, false);
+            this.widgetColor = color;
+            switch (family) {
+                case 'small':
+                    this.widgetSize = 'small';
+                    if (style === 'simple') {
+                        widget = await this.smallSimpleWidget(data, color);
+                    } else {
+                        widget = await this.smallDetailedWidget(data, color);
+                    }
+                    break;
+                case 'medium':
+                    this.widgetSize = 'medium';
+                    if (style === 'simple') {
+                        widget = await this.mediumSimpleWidget(data, color);
+                    } else {
+                        widget = await this.mediumDetailedWidget(data, color);
+                    }
+                    break;
+                case 'large':
+                    this.widgetSize = 'large';
+                    if (style === 'simple') {
+                        widget = await this.largeDetailedWidget(data, color);
+                    } else {
+                        widget = await this.largeDetailedWidget(data, color);
+                    }
+                    break;
+                case 'extraLarge':
+                    this.widgetSize = 'extraLarge';
+                    widget = await this.largeDetailedWidget(data, color);
+                    break;
+                default:
+                    await this.logError(`generateWidget() | Widget is null!`, true);
+                    return;
             }
         } catch (e) {
             this.logError(`generateWidget() Error: ${e}`);
@@ -519,8 +499,68 @@ class Widget {
         widget.setPadding(0, 5, 0, 1);
         widget.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         Script.setWidget(widget);
-        await this.logInfo(`Created Widget(${size})...`);
+        // await this.logInfo(`Created Widget(${size})...`);
         return widget;
+    }
+
+    async generateTestWidget(params, data) {
+        const { size, style, color, output } = await this.processWidgetParams(params);
+        let widget = new ListWidget();
+        let stk = widget.addStack();
+        stk.layoutVertically();
+
+        let txt1 = stk.addText(`Params: ${params}`);
+        txt1.font = Font.systemFont(9);
+
+        let txt2 = stk.addText(`Size: ${size}`);
+        txt2.font = Font.systemFont(9);
+
+        let txt3 = stk.addText(`Style: ${style}`);
+        let txt4 = stk.addText(`Color: ${color}`);
+        txt3.font = Font.systemFont(9);
+        txt4.font = Font.systemFont(9);
+
+        let txt6 = stk.addText(`Output: ${output}`);
+        txt6.font = Font.systemFont(9);
+
+        widget.addSpacer();
+        let txt5 = stk.addText(`Updated: ${new Date().toLocaleString()}`);
+        txt5.font = Font.systemFont(9);
+
+        Script.setWidget(widget);
+        return widget;
+    }
+
+    async processWidgetParams(params) {
+        params = params.toLowerCase();
+        let style = await this.getWidgetStyle();
+        let color = await this.getUIColorMode();
+        let family = runningWidgetSize;
+
+        let output = `Detected | style = ${style} | color = ${color}`;
+        if (params.includes('dark')) {
+            color = 'dark';
+            output += ` | parsed color = ${color}`;
+        } else if (params.includes('light')) {
+            color = 'light';
+            output += ` | parsed color = ${color}`;
+        }
+
+        if (params.includes('simple')) {
+            style = 'simple';
+        } else if (params.includes('detailed')) {
+            style = 'detailed';
+        }
+        if (params.includes('small')) {
+            family = 'small';
+        } else if (params.includes('medium')) {
+            family = 'medium';
+        } else if (params.includes('large')) {
+            family = 'large';
+        } else if (params.includes('extralarge')) {
+            family = 'extraLarge';
+        }
+        return { family: family, style: style, color: color, output: output };
     }
 
     /**
@@ -610,6 +650,25 @@ class Widget {
         } catch (e) {
             await this.logError(`getLogFilePath Error: ${e}`);
         }
+    }
+
+    iconMap(colorMode) {
+        return {
+            fuelIcon: colorMode === 'dark' ? 'gas-station_dark.png' : 'gas-station_light.png', // Image for gas station
+            lockStatus: colorMode === 'dark' ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
+            lockIcon: colorMode === 'dark' ? 'lock_dark.png' : 'lock_light.png', // Image Used for Lock Icon
+            tirePressure: colorMode === 'dark' ? 'tire_dark.png' : 'tire_light.png', // Image for tire pressure
+            unlockIcon: colorMode === 'dark' ? 'unlock_dark.png' : 'unlock_light.png', // Image Used for UnLock Icon
+            batteryStatus: colorMode === 'dark' ? 'battery_dark.png' : 'battery_light.png', // Image Used for Battery Icon
+            doors: colorMode === 'dark' ? 'door_dark.png' : 'door_light.png', // Image Used for Door Lock Icon
+            windows: colorMode === 'dark' ? 'window_dark.png' : 'window_light.png', // Image Used for Window Icon
+            oil: colorMode === 'dark' ? 'oil_dark.png' : 'oil_light.png', // Image Used for Oil Icon
+            ignitionStatus: colorMode === 'dark' ? 'key_dark.png' : 'key_light.png', // Image Used for Ignition Icon
+            keyIcon: colorMode === 'dark' ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
+            position: colorMode === 'dark' ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
+            evBatteryStatus: colorMode === 'dark' ? 'ev_battery_dark.png' : 'ev_battery_light.png', // Image Used for EV Battery Icon
+            evChargeStatus: colorMode === 'dark' ? 'ev_plug_dark.png' : 'ev_plug_light.png', // Image Used for EV Plug Icon
+        };
     }
 
     /**
@@ -819,7 +878,7 @@ class Widget {
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
         };
-        req.timeoutInterval = 10;
+        req.timeoutInterval = 15;
         let data = await req.loadString();
         let cmdResp = req.response;
         try {
@@ -1295,6 +1354,7 @@ class Widget {
             }
         } catch (e) {
             await this.logError(`getUIColorMode() Error: ${e}`, true);
+            return this.darkMode ? 'dark' : 'light';
         }
     }
 
@@ -1593,11 +1653,10 @@ class Widget {
         return false;
     }
 
-    async smallSimpleWidget(vData, bgType = undefined) {
+    async smallSimpleWidget(vData, colorMode = undefined) {
         // Defines the Widget Object
         const widget = new ListWidget();
-        // widget.setPadding(0, 0, 0, 0);
-        this.setWidgetBackground(widget, bgType);
+        this.setWidgetBackground(widget, colorMode);
         try {
             const widgetSizes = await this.getViewPortSizes(this.widgetSize);
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
@@ -1625,7 +1684,7 @@ class Widget {
             if (vehicleNameStr.length >= 10) {
                 vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
             }
-            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[this.colorMode], '*leftAlignText': null });
+            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[colorMode], '*leftAlignText': null });
             // ---The top left part is finished---
             topBox.addSpacer();
 
@@ -1646,17 +1705,17 @@ class Widget {
                 const fs = this.isSmallDisplay ? 14 : 16;
 
                 // DTE Text
-                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.7 });
 
                 let levelContainer = await this.createRow(miContainer, {});
                 // DTE + Level Separator
-                await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
 
                 // Odometer Text
                 let mileageContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });
-                await this.createText(mileageContainer, `Odometer: ${odometerVal}`, { font: Font.systemFont(9), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+                await this.createText(mileageContainer, `Odometer: ${odometerVal}`, { font: Font.systemFont(9), textColor: this.colorMap.text[colorMode], textOpacity: 0.7 });
             } catch (e) {
                 console.error(e.message);
                 miContainer.addText('Error Getting Range Data');
@@ -1672,7 +1731,7 @@ class Widget {
                 await this.createText(carStatusRow, `${doorsLocked ? 'Locked' : 'Unlocked'}`, {
                     '*centerAlignText': null,
                     font: doorsLocked ? Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium) : Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium),
-                    textColor: doorsLocked ? this.colorMap.text[this.colorMode] : this.colorMap.openColor,
+                    textColor: doorsLocked ? this.colorMap.text[colorMode] : this.colorMap.openColor,
                     textOpacity: 0.7,
                     '*centerAlignText': null,
                 });
@@ -1707,10 +1766,10 @@ class Widget {
         return widget;
     }
 
-    async smallDetailedWidget(vData, bgType = undefined) {
+    async smallDetailedWidget(vData, colorMode = undefined) {
         // Defines the Widget Object
         const widget = new ListWidget();
-        this.setWidgetBackground(widget, bgType);
+        this.setWidgetBackground(widget, colorMode);
         try {
             const widgetSizes = await this.getViewPortSizes(this.widgetSize);
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
@@ -1789,11 +1848,11 @@ class Widget {
         return widget;
     }
 
-    async mediumSimpleWidget(vData, bgType = undefined) {
+    async mediumSimpleWidget(vData, colorMode = undefined) {
         // console.log(`mediumSimpleWidget called...`);
         // Defines the Widget Object
         const widget = new ListWidget();
-        this.setWidgetBackground(widget, bgType);
+        this.setWidgetBackground(widget, colorMode);
         try {
             const widgetSizes = await this.getViewPortSizes(this.widgetSize);
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
@@ -1822,7 +1881,7 @@ class Widget {
                 vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
             }
             console.log(`vehicleNameSize: ${vehicleNameSize}`);
-            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[this.colorMode], '*leftAlignText': null, minimumScaleFactor: 0.4, lineLimit: 1 });
+            await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[colorMode], '*leftAlignText': null, minimumScaleFactor: 0.4, lineLimit: 1 });
             vehicleNameContainer.addSpacer();
             // Range and Odometer
             let miContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
@@ -1831,19 +1890,19 @@ class Widget {
                 const { isEV, lvlValue, dteValue, odometerVal, dtePostfix, distanceMultiplier, distanceUnit, dteInfo } = await this.getRangeData(vData);
                 const fs = this.isSmallDisplay ? 14 : 16;
                 // DTE Text
-                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+                await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.7 });
 
                 let levelContainer = await this.createRow(miContainer, {});
                 // DTE + Level Separator
-                await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
 
                 // leftContainer.addSpacer();
                 let mileageContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0] });
 
                 // Odometer Text
-                await this.createText(mileageContainer, `Odometer: ${odometerVal}`, { font: Font.systemFont(10), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7 });
+                await this.createText(mileageContainer, `Odometer: ${odometerVal}`, { font: Font.systemFont(10), textColor: this.colorMap.text[colorMode], textOpacity: 0.7 });
             } catch (e) {
                 console.error(e.message);
                 miContainer.addText('Error Getting Range Data');
@@ -1853,7 +1912,7 @@ class Widget {
             const locationContainer = await this.createRow(leftContainer, { '*setPadding': [5, paddingLeft, 0, 0], '*topAlignContent': null });
             let url = (await this.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
             let locationStr = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.textMap().errorMessages.noData;
-            await this.createText(locationContainer, locationStr, { url: url, font: Font.body(), textColor: this.colorMap.text[this.colorMode], lineLimit: 2, minimumScaleFactor: 0.6, textOpacity: 0.7 });
+            await this.createText(locationContainer, locationStr, { url: url, font: Font.body(), textColor: this.colorMap.text[colorMode], lineLimit: 2, minimumScaleFactor: 0.6, textOpacity: 0.7 });
 
             leftContainer.addSpacer();
 
@@ -1908,10 +1967,10 @@ class Widget {
         return widget;
     }
 
-    async mediumDetailedWidget(vData, bgType = undefined) {
+    async mediumDetailedWidget(vData, colorMode = undefined) {
         // Defines the Widget Object
         const widget = new ListWidget();
-        this.setWidgetBackground(widget, bgType);
+        this.setWidgetBackground(widget, colorMode);
         try {
             const widgetSizes = await this.getViewPortSizes(this.widgetSize);
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
@@ -2012,10 +2071,10 @@ class Widget {
         return widget;
     }
 
-    async largeDetailedWidget(vData, bgType = undefined) {
+    async largeDetailedWidget(vData, colorMode = undefined) {
         // Defines the Widget Object
         const widget = new ListWidget();
-        this.setWidgetBackground(widget, bgType);
+        this.setWidgetBackground(widget, colorMode);
         try {
             const widgetSizes = await this.getViewPortSizes(this.widgetSize);
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
@@ -2190,7 +2249,7 @@ class Widget {
         try {
             const styles = {
                 open: { font: Font.semiboldSystemFont(10), textColor: this.colorMap.openColor, lineLimit: 2, minimumScaleFactor: 0.9 },
-                closed: { font: Font.systemFont(10), textColor: this.colorMap.text[this.colorMode], textOpacity: 0.7, lineLimit: 2, minimumScaleFactor: 0.9 },
+                closed: { font: Font.systemFont(10), textColor: this.colorMap.text[this.widgetColor], textOpacity: 0.7, lineLimit: 2, minimumScaleFactor: 0.9 },
             };
             const statusCol = await this.createColumn(srcElem, { '*setPadding': [0, 0, 0, 0] });
             let doorsOpen = await this.getOpenItems('createDoorWindowText', vData.statusDoors); //['LF', 'RR', 'HD'];
@@ -2250,7 +2309,7 @@ class Widget {
             // Distance to Empty
             let dteRow = await this.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
             let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap().errorMessages.noData;
-            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.sizeMap[this.widgetSize].fontSizeSmall), textColor: this.colorMap.text[this.colorMode], lineLimit: 1 });
+            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.sizeMap[this.widgetSize].fontSizeSmall), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 });
             srcElem.addSpacer(3);
         } catch (e) {
             await this.logError(`createFuelRangeElements() Error: ${e}`, true);
@@ -2482,7 +2541,7 @@ class Widget {
 
     async createTitle(srcElem, titleText, colon = true, hideTitleForSmall = false) {
         let titleParams = titleText.split('||');
-        let icon = this.iconMap[titleParams[0]];
+        let icon = this.iconMap(this.widgetColor)[titleParams[0]];
         let titleStack = await this.createRow(srcElem, { '*centerAlignContent': null });
         if (icon !== undefined) {
             let imgFile = await this.Files.getImage(icon.toString());
@@ -2746,13 +2805,13 @@ class Widget {
     }
 
     async createWidgetButtonRow(srcRow, vData, padding, rowWidth, rowHeight = 40, btnSize = 24) {
-        const darkMode = this.widgetColor === 'dark';
+        const useDarkMode = this.widgetColor === 'dark';
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         const hasStatusMsg = await this.hasStatusMsg(vData);
         const remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
-        const lockBtnIcon = vData.lockStatus === 'LOCKED' ? (darkMode ? 'lock_btn_dark.png' : 'lock_btn_light.png') : 'unlock_btn_red.png'; //darkMode ? 'unlock_btn_dark.png' : 'unlock_btn_light.png';
-        const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red.png' : darkMode ? 'ignition_dark.png' : 'ignition_light.png';
-        const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png' : darkMode ? 'menu_btn_dark.png' : 'menu_btn_light.png';
+        const lockBtnIcon = vData.lockStatus === 'LOCKED' ? (useDarkMode ? 'lock_btn_dark.png' : 'lock_btn_light.png') : 'unlock_btn_red.png'; //useDarkMode ? 'unlock_btn_dark.png' : 'unlock_btn_light.png';
+        const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red.png' : useDarkMode ? 'ignition_dark.png' : 'ignition_light.png';
+        const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png' : useDarkMode ? 'menu_btn_dark.png' : 'menu_btn_light.png';
 
         const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, padding || 0, 0, padding || 0], spacing: 10 });
 
@@ -2773,14 +2832,14 @@ class Widget {
             {
                 show: caps && caps.includes('REMOTE_PANIC_ALARM'),
                 icon: {
-                    image: await this.Files.getImage(darkMode ? 'horn_lights_dark.png' : 'horn_lights_light.png'),
+                    image: await this.Files.getImage(useDarkMode ? 'horn_lights_dark.png' : 'horn_lights_light.png'),
                     opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
             {
                 show: true,
                 icon: {
-                    image: await this.Files.getImage(darkMode ? 'refresh_btn_dark.png' : 'refresh_btn_light.png'),
+                    image: await this.Files.getImage(useDarkMode ? 'refresh_btn_dark.png' : 'refresh_btn_light.png'),
                     opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
                 },
             },
