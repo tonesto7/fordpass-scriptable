@@ -24,7 +24,7 @@ module.exports = class FPW_App {
     }
 
     async tableExists(tableName) {
-        return this.tableMap[tableName] !== undefined && this.tableMap[tableName] instanceof Object;
+        return this.tableMap[tableName] !== undefined && this.tableMap[tableName] instanceof UITable;
     }
 
     async generateTableMenu(tableName, rows, showSeparators = false, fullscreen = false, update = false) {
@@ -219,8 +219,50 @@ module.exports = class FPW_App {
             data = this.FPW.scrubPersonalData(data);
             if (type === 'OTA') {
                 try {
+                    if (data.tappsResponse) {
+                        HTML += `<h3>OTA Status & Schedule</h3>`;
+                        HTML += `<ul>`;
+                        HTML += `<li>Vehicle Inhibit Status: ${data.tappsResponse.vehicleInhibitStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                        if (data.tappsResponse.lifeCycleModeStatus) {
+                            HTML += '<li>Life Cycle Mode Status:</li>';
+                            HTML += '<ul>';
+                            for (const [i, key] of Object.keys(data.tappsResponse.lifeCycleModeStatus).entries()) {
+                                const val = data.tappsResponse.lifeCycleModeStatus[key];
+                                if (val !== null || val !== undefined || val !== '') {
+                                    HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val}</li>`;
+                                }
+                            }
+                            HTML += '</ul>';
+                        }
+                        if (data.tappsResponse.asuActivationSchedule) {
+                            HTML += '<li>OTA Activation Schedule:</li>';
+                            HTML += '<ul>';
+                            for (const [i, key] of Object.keys(data.tappsResponse.asuActivationSchedule).entries()) {
+                                const val = data.tappsResponse.asuActivationSchedule[key];
+                                if (val !== null || val !== undefined || val !== '') {
+                                    HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                                }
+                            }
+                            HTML += '</ul>';
+                        }
+                        if (data.tappsResponse.asuSettingsStatus) {
+                            HTML += '<li>OTA Setting Status:</li>';
+                            HTML += '<ul>';
+                            for (const [i, key] of Object.keys(data.tappsResponse.asuActivationSchedule).entries()) {
+                                const val = data.tappsResponse.asuActivationSchedule[key];
+                                if (val !== null || val !== undefined || val !== '') {
+                                    HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                                }
+                            }
+                            HTML += '</ul>';
+                        }
+                        HTML += `<li>UpdatePendingState: ${data.tappsResponse.updatePendingState || this.FPW.textMap().errorMessages.noData}</li>`;
+                        HTML += `<li>OtaAlertStatus: ${data.tappsResponse.otaAlertStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                        HTML += `</ul>`;
+                    }
+
                     if (data.fuseResponse && data.fuseResponse.fuseResponseList && data.fuseResponse.fuseResponseList.length) {
-                        HTML += `<h3>OTA Details</h3>`;
+                        HTML += `<h3>OTA Deployments</h3>`;
                         let that = this;
                         for (const [i, fuse] of data.fuseResponse.fuseResponseList.entries()) {
                             if (fuse && Object.keys(fuse).length) {
@@ -234,36 +276,33 @@ module.exports = class FPW_App {
                                 HTML += `<li>Inhibit Required: ${fuse.inhibitRequired || this.FPW.textMap().errorMessages.noData}</li>`;
                                 HTML += `<li>Environment: ${fuse.tmcEnvironment || this.FPW.textMap().errorMessages.noData}</li>`;
                                 if (fuse.latestStatus) {
-                                    HTML += `<li>Latest Status:`;
-                                    HTML += `    <ul>`;
-                                    HTML += `        <li>Status: ${fuse.latestStatus.aggregateStatus || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `        <li>Details: ${fuse.latestStatus.detailedStatus || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `        <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `    </ul>`;
-                                    HTML += `</li>`;
+                                    HTML += `<li>Latest Status:</li>`;
+                                    HTML += `<ul>`;
+                                    HTML += `    <li>Status: ${fuse.latestStatus.aggregateStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `    <li>Details: ${fuse.latestStatus.detailedStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `    <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `</ul>`;
                                 }
                                 if (fuse.packageUpdateDetails) {
-                                    HTML += `<li>Package Details:`;
-                                    HTML += `    <ul>`;
-                                    HTML += `        <li>WiFi Required: ${fuse.packageUpdateDetails.wifiRequired || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `        <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `        <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `        <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `        <li>ReleaseNotes:`;
-                                    HTML += `            <ul>`;
-                                    HTML += `                 <li>${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `            </ul>`;
-                                    HTML += `        </li>`;
-                                    HTML += `    </ul>`;
-                                    HTML += `</li>`;
+                                    HTML += `<li>Package Details:</li>`;
+                                    HTML += `<ul>`;
+                                    HTML += `    <li>WiFiRequired: ${fuse.packageUpdateDetails.wifiRequired || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `    <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `    <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `    <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `    <li>ReleaseNotes:`;
+                                    HTML += `    <br>`;
+                                    HTML += `    ${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `</ul>`;
                                 }
                                 HTML += `</ul>`;
-                                HTML += `<hr>`;
                             } else {
                                 HTML += `<p>${'No Data'}</p>`;
                             }
                         }
                     }
+
+                    HTML += `<hr>`;
                 } catch (err) {
                     // console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
                     HTML = `<h3>OTA Details</h3>`;
@@ -289,6 +328,7 @@ module.exports = class FPW_App {
                     <title>${title}</title>
                     <style>
                         body { font-family: -apple-system; background-color: ${bgColor}; color: ${fontColor}; font-size: 0.8rem;}
+                        li { padding: 0; margin: 0;}
                     </style>
                     
                 </head>
@@ -334,13 +374,14 @@ module.exports = class FPW_App {
             let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
 
             let ignStatus = '';
-            if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
-                ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
-                this.FPW.Timers.createRemoteStartStatusTimer();
-            } else {
-                this.FPW.Timers.stopTimer('remoteStartStatus');
-                ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
-            }
+            // if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
+            //     ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
+            //     // this.FPW.Timers.createRemoteStartStatusTimer();
+            //     await this.FPW.Timers.schedulePageRefresh('remoteStartStatus', 60000, true, true);
+            // } else {
+            //     await this.FPW.Timers.stopTimer('remoteStartStatus');
+            //     ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
+            // }
             let refreshTime = (await this.FPW.getLastRefreshElapsedString(vData)) || this.textMap.UIValues.unknown;
             const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : this.FPW.textMap().errorMessages.noData;
             const msgs = vData.messages && vData.messages.length ? vData.messages : [];
@@ -360,6 +401,8 @@ module.exports = class FPW_App {
                 title2: 22,
                 title3: 20,
                 body: 10,
+                body2: 11,
+                body3: 12,
                 footnote: 14,
                 headline: 15,
                 subheadline: 13,
@@ -1062,6 +1105,25 @@ module.exports = class FPW_App {
                 }
             }
 
+            tableRows.push(
+                await this.createTableRow([
+                    await this.createTextCell('', undefined, {
+                        align: 'center',
+                        widthWeight: 100,
+                    }),
+                ]),
+                await this.createTableRow([
+                    await this.createTextCell('Last Refreshed:', new Date().toLocaleString(), {
+                        align: 'center',
+                        widthWeight: 100,
+                        titleColor: this.FPW.colorMap.normalText,
+                        subtitleColor: this.FPW.colorMap.normalText,
+                        titleFont: Font.mediumSystemFont(fontSizes.body2),
+                        subtitleFont: Font.mediumSystemFont(fontSizes.body),
+                    }),
+                ]),
+            );
+
             if (!update) {
                 let lastVersion = await this.FPW.getSettingVal('fpScriptVersion');
                 let reqOk = await this.FPW.requiredPrefsOk(this.FPW.prefKeys().core);
@@ -1079,7 +1141,11 @@ module.exports = class FPW_App {
                 // await this.FPW.Alerts.showAlert('Widget Command', `Widget Command: ${widgetCmd}`);
                 await this.processWidgetCommands(widgetCmd);
             }
+            // Refreshes the page every 30 seconds
+            await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 30000, false, true);
+
             await this.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
+            // await this.FPW.Timers.stopTimer('mainTableRefresh');
         } catch (err) {
             await this.FPW.logError(`createMainPage() Error: ${err}`);
         }
@@ -1330,7 +1396,7 @@ module.exports = class FPW_App {
                     ),
                 );
                 tableRows.push(await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: Color.darkGray(), height: 10, dismissOnSelect: false }));
-                tableRows.push(await this.createTableRow([await this.createTextCell(this.FPW.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.mediumSystemFont(fontSizes.headline) })], { height: 44, dismissOnSelect: false }));
+                tableRows.push(await this.createTableRow([await this.createTextCell(this.FPW.textMap().appMessages[unreadOnly ? 'noUnreadMessages' : 'noMessages'], undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.mediumSystemFont(fontSizes.headline) })], { height: 44, dismissOnSelect: false }));
             }
             await this.generateTableMenu('messages', tableRows, false, false, update);
         } catch (e) {
@@ -1643,7 +1709,7 @@ module.exports = class FPW_App {
                     ),
                 );
 
-                tableRows.push(await this.createTableRow([await this.createTextCell(this.FPW.textMap().errorMessages.noMessages, undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body2) })], { height: 44, dismissOnSelect: false }));
+                tableRows.push(await this.createTableRow([await this.createTextCell(this.FPW.textMap().appMessages.noRecalls, undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body2) })], { height: 44, dismissOnSelect: false }));
             }
 
             await this.generateTableMenu('recalls', tableRows, false, false);

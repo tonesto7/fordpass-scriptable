@@ -18,7 +18,7 @@ module.exports = class FPW_Files {
     async saveDataToLocal(data, removeFirst = false) {
         console.log('FileManager: Saving Vehicle Data to Local Storage...');
         try {
-            let fm = this.FPW.isDevMode && this.widgetConfig.devLocalFiles !== true ? FileManager.iCloud() : FileManager.local();
+            let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
             let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
             let path = fm.joinPath(dir, fileName);
@@ -35,7 +35,7 @@ module.exports = class FPW_Files {
         // console.log('FileManager: Retrieving Vehicle Data from Local Cache...');
         try {
             let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
-            let fm = this.FPW.isDevMode && this.widgetConfig.devLocalFiles !== true ? FileManager.iCloud() : FileManager.local();
+            let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
             let path = fm.joinPath(dir, fileName);
             if (await fm.fileExists(path)) {
@@ -50,7 +50,7 @@ module.exports = class FPW_Files {
 
     async removeLocalData(filename) {
         try {
-            let fm = this.FPW.isDevMode && this.widgetConfig.devLocalFiles !== true ? FileManager.iCloud() : FileManager.local();
+            let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
             let path = fm.joinPath(dir, filename);
             if (await fm.fileExists(path)) {
@@ -73,7 +73,7 @@ module.exports = class FPW_Files {
     async clearImageCache() {
         console.log('FileManager: Clearing All Image Files from Local Cache...');
         try {
-            let fm = this.FPW.isDevMode && this.widgetConfig.devLocalFiles !== true ? FileManager.iCloud() : FileManager.local();
+            let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
             fm.listContents(dir).forEach(async(file) => {
                 const fp = fm.joinPath(dir, file);
@@ -90,7 +90,7 @@ module.exports = class FPW_Files {
     async clearFileManager() {
         console.log('FileManager: Clearing All Files from Local Cache...');
         try {
-            let fm = this.FPW.isDevMode && this.widgetConfig.devLocalFiles !== true ? FileManager.iCloud() : FileManager.local();
+            let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
             fm.listContents(dir).forEach(async(file) => {
                 await this.removeLocalData(file);
@@ -114,10 +114,10 @@ module.exports = class FPW_Files {
     // get images from local filestore or download them once
     async getImage(image, subPath = '', asData = false, save = true) {
         try {
-            let fm = this.FPW.isDevMode && this.widgetConfig.devLocalFiles !== true ? FileManager.iCloud() : FileManager.local();
-            let dir = fm.documentsDirectory();
-            let path = fm.joinPath(dir, image);
-            let imageUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/${subPath.length ? subPath + '/' : ''}${image}`;
+            const fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
+            const dir = fm.documentsDirectory();
+            const path = fm.joinPath(dir, image);
+            const imageUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/icons/${subPath.length ? subPath + '/' : ''}${image}`;
             if (await fm.fileExists(path)) {
                 if (asData) {
                     return await fm.read(path);
@@ -158,8 +158,8 @@ module.exports = class FPW_Files {
     }
 
     async getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false, secondAttempt = false) {
-        let fm = cloudStore || this.FPW.isDevMode ? FileManager.iCloud() : FileManager.local();
-        let dir = fm.documentsDirectory();
+        const fm = cloudStore || this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
+        const dir = fm.documentsDirectory();
         let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `vehicle_${angle}_${this.SCRIPT_ID}.png` : `vehicle_${angle}.png`;
         let path = fm.joinPath(dir, fileName);
         if (await fm.fileExists(path)) {
@@ -169,9 +169,9 @@ module.exports = class FPW_Files {
                 return await fm.readImage(path);
             }
         } else {
-            let vin = await this.FPW.getSettingVal('fpVin');
-            let token = await this.FPW.getSettingVal('fpToken2');
-            let country = await this.FPW.getSettingVal('fpCountry');
+            const vin = await this.FPW.getSettingVal('fpVin');
+            const token = await this.FPW.getSettingVal('fpToken2');
+            const country = await this.FPW.getSettingVal('fpCountry');
             console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
             let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`);
             req.headers = {

@@ -1,4 +1,3 @@
-//test
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
@@ -48,30 +47,21 @@
     
 **************/
 const changelogs = {
-    '2022.02.16.0': {
-        added: [],
-        fixed: ['Fixes for loading of modules', 'minor tweaks to the widget layouts'],
-        removed: [],
-        updated: [],
-        clearImgCache: true,
-    },
-    '2022.02.15.0': {
-        added: ['Notification support for oil low, 12V battery low', 'Added the ability to turn on and off the individual notification types'],
+    '2022.02.17.0': {
+        added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open.', 'Dashboard page now has a timestamp at the bottom showing when the page was last refreshed.'],
         fixed: [],
-        removed: [],
-        updated: ['Moved notification menu to main menu and out of settings.'],
+        removed: ['Disabled Oil Low Notifications'],
+        updated: ['OTA Page now has vehicle status and schedule info in the formatted section.  Also rearranged the layout slightly.'],
         clearImgCache: true,
-    },
-    '2022.02.14.1': {
-        added: ['Alarm status now shown in the dashboard menu.', 'Receive push notification for script updates (every 24H) as well as notifications for deep sleep mode, and firmware updates every 6H (Can turn the notifications off in Widget Menu > Settings > Notifications).'],
-        fixed: ['Fixed widget layouts to be consistent', 'Fixed vehicle image not loading alternate angles for some vehicles.', 'Fixed SecuriAlert not representing the correct state'],
-        removed: [],
-        updated: ['Release notes now contain a list of releases.'],
     },
     '2022.02.14.0': {
         added: [
             'All new menu that functions like an app interface',
             'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
+            'Alarm status now shown in the dashboard menu.',
+            'Receive push notification for script updates (every 24H) as well as notifications for deep sleep mode, and firmware updates every 6H (Can turn the notifications off in Widget Menu > Settings > Notifications).',
+            'Notification support for oil low, 12V battery low',
+            'Added the ability to turn on and off the individual notification types',
             'For users who use multiple widgets for the same device you can define the widget type and color using the Edit Widget on the homescreen and use one of the following params: smallSimple, smallDetailed, and an optional definition of color (no color = use system color mode) Dark, Light, the same applies to the medium and large widgets.  The large Widget only has a detailed version of the layout',
             'Setup menu now includes widget style and color mode settings, links to setup videos and documentation.',
             'Added new option to advanced info menu to allow emailing your anonymous vehicle data to me (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything).',
@@ -129,8 +119,10 @@ const widgetConfig = {
      * Only use the options below if you are experiencing problems. Set them back to false once everything is working.
      * Otherwise the token and the pictures are newly fetched everytime the script is executed.
      */
-    devLocalFiles: false,
+
     loadCacheOnly: false, // Use cached data for quick testing of widget and menu viewing
+    saveFilesToIcloud: false, // Save files to icloud
+    saveLogsToIcloud: false, // Save logs to icloud
     useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     writeToLog: false, // Writes to the log file.
     exportVehicleImagesToIcloud: false, // This will download all 5 vehicle angle images to the Sciptable iCloud Folder as PNG files for use elsewhere.
@@ -385,6 +377,7 @@ class Widget {
                     // await w5.presentLarge();
 
                     await this.App.createMainPage();
+                    await this.Timers.stopTimer('mainTableRefresh');
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -561,10 +554,10 @@ class Widget {
                 await this.Notifications.processNotification('lvBatteryLow');
                 return;
             }
-            if (vData.oilLow) {
-                await this.Notifications.processNotification('oilLow');
-                return;
-            }
+            // if (vData.oilLow) {
+            //     await this.Notifications.processNotification('oilLow');
+            //     return;
+            // }
         } else {
             return;
         }
@@ -577,7 +570,7 @@ class Widget {
      */
     async readLogFile(logType) {
         try {
-            let fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
+            let fm = !widgetConfig.saveLogsToIcloud ? FileManager.local() : FileManager.iCloud();
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
@@ -602,7 +595,7 @@ class Widget {
      */
     async getLogFilePath(logType) {
         try {
-            const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
+            const fm = !widgetConfig.saveLogsToIcloud ? FileManager.local() : FileManager.iCloud();
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
@@ -727,6 +720,11 @@ class Widget {
                 plural: 's', // 's' in english
                 precedingAdverb: '', // used in german language, for english let it empty
                 subsequentAdverb: 'ago', // used in english language ('ago'), for german let it empty
+            },
+            appMessages: {
+                noMessages: 'No Messages',
+                noRecalls: 'No Recalls Reported',
+                noUnreadMessages: 'No Unread Messages',
             },
             errorMessages: {
                 invalidGrant: 'Incorrect Login Data',
@@ -1169,6 +1167,13 @@ class Widget {
      */
     capitalizeStr(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    decamelize(str, separator) {
+        separator = typeof separator === 'undefined' ? '_' : separator;
+
+        return str.replace(/([a-z\d])([A-Z])/g, '$1' + separator + '$2').replace(/([A-Z]+)([A-Z][a-z\d]+)/g, '$1' + separator + '$2');
+        // .toLowerCase();
     }
 
     //********************************************************************************************************************************
@@ -2411,9 +2416,9 @@ class Widget {
             if (position == 'center' || position == 'right') {
                 valueRow.addSpacer();
             }
-            let txtSize = status.length >= 10 ? Math.round(this.sizeMap[this.widgetSize].fontSizeMedium * 0.75) : this.sizeMap[this.widgetSize].fontSizeMedium;
+            // let txtSize = status.length >= 10 ? Math.round(this.sizeMap[this.widgetSize].fontSizeMedium * 0.75) : this.sizeMap[this.widgetSize].fontSizeMedium;
             const styles = {
-                on: { font: Font.heavySystemFont(txtSize), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.7 },
+                on: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.7 },
                 off: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor },
             };
             await this.createText(valueRow, status, vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
@@ -3048,7 +3053,7 @@ async function validateModules() {
 async function appendToLogFile(txt) {
     // console.log('appendToLogFile: Saving Data to Log...');
     try {
-        const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
+        const fm = !widgetConfig.saveLogsToIcloud ? FileManager.local() : FileManager.iCloud();
         const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
         const devName = Device.name()
             .replace(/[^a-zA-Z\s]/g, '')
@@ -3118,7 +3123,7 @@ async function logError(msg, saveToLog = true) {
 //*                                              THIS IS WHAT RUNS THE ACTUAL SCRIPT
 //********************************************************************************************************************************
 const cloudFm = FileManager.iCloud();
-const isDevMode = cloudFm.fileExists(cloudFm.joinPath(cloudFm.documentsDirectory(), 'FPW_Devmode.txt')); // Disables Module File Hash checks, disables localModule loading, disables saving logs to iCloud Folder.
+const isDevMode = cloudFm.fileExists(cloudFm.joinPath(cloudFm.documentsDirectory(), 'FPW_Devmode')); // Disables Module File Hash checks, disables localModule loading, disables saving logs to iCloud Folder.
 if (isDevMode) {
     console.log('Dev Mode Enabled!');
 }

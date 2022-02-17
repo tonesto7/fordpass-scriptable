@@ -551,16 +551,16 @@ module.exports = class FPW_Menus {
                             destructive: false,
                             show: true,
                         },
-                        {
-                            title: `Oil Low: ${(await this.FPW.getShowNotificationType('oilLow')) === false ? 'Off' : 'On'}`,
-                            action: async() => {
-                                console.log(`(${typeDesc} Menu) Oil Low Toggle pressed`);
-                                await this.FPW.toggleNotificationType('oilLow');
-                                this.menuBuilderByType('notifications');
-                            },
-                            destructive: false,
-                            show: true,
-                        },
+                        // {
+                        //     title: `Oil Low: ${(await this.FPW.getShowNotificationType('oilLow')) === false ? 'Off' : 'On'}`,
+                        //     action: async() => {
+                        //         console.log(`(${typeDesc} Menu) Oil Low Toggle pressed`);
+                        //         await this.FPW.toggleNotificationType('oilLow');
+                        //         this.menuBuilderByType('notifications');
+                        //     },
+                        //     destructive: false,
+                        //     show: true,
+                        // },
                         {
                             title: `12V Battery Low: ${(await this.FPW.getShowNotificationType('lvBatteryLow')) === false ? 'Off' : 'On'}`,
                             action: async() => {

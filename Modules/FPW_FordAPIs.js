@@ -3,7 +3,6 @@ module.exports = class FPW_FordAPIs {
         this.FPW = FPW;
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.SCRIPT_VERSION = FPW.SCRIPT_VERSION;
-        // this.SCRIPT_TS = FPW.SCRIPT_TS;
         this.widgetConfig = FPW.widgetConfig;
     }
 
@@ -905,20 +904,7 @@ module.exports = class FPW_FordAPIs {
                     if (isLastCmd) {
                         console.log(`sendVehicleCmd(${cmd_type}) | Sent Successfully`);
                         await this.FPW.Alerts.showAlert(outMsg.title, outMsg.message);
-                        await this.FPW.Timers.createTimer(
-                            'vehicleDataRefresh',
-                            15000,
-                            false,
-                            async() => {
-                                console.log('sendVehicleCmd: Refreshing Vehicle Data after 10 seconds');
-                                await this.fetchVehicleData(false);
-                                if (mainMenuRefresh) {
-                                    console.log('sendVehicleCmd: Reloading Main Menu Content');
-                                    await generateMainInfoTable(true);
-                                }
-                            },
-                            true,
-                        );
+                        await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 15000, false, true);
                     }
                 }
             } catch (e) {

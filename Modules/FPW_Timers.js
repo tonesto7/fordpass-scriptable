@@ -7,12 +7,16 @@ module.exports = class FPW_Timers {
     }
 
     async getTimer(timerName) {
-        if (this.timerMap[timerName]) {
+        if (await this.timerValid(timerName)) {
             return this.timerMap[timerName];
         }
         let timer = new Timer();
         this.timerMap[timerName] = timer;
         return this.timerMap[timerName];
+    }
+
+    async timerValid(timerName) {
+        return this.timerMap[timerName] && this.timerMap[timerName] instanceof Timer ? true : false;
     }
 
     async stopTimer(timerName) {
@@ -22,16 +26,19 @@ module.exports = class FPW_Timers {
             // console.log(`stopTimer Error: Could Not Stop Timer | ${e}`);
         }
         delete this.timerMap[timerName];
+        return;
     }
 
     async createTimer(name, interval, repeat = false, actions, clearExisting = false) {
         try {
-            if (clearExisting && this.timerMap[name]) {
+            if (clearExisting && (await this.timerValid(name))) {
                 await this.stopTimer(name);
             }
-            let timer = await this.getTimer(name);
-            if (timer && interval && actions) {
-                timer.schedule(10000, repeat, actions);
+            const timer = await this.getTimer(name);
+            if (timer && timer instanceof Timer && interval && actions) {
+                timer.timeInterval = interval;
+                timer.repeat = repeat;
+                timer.schedule(actions());
             } else {
                 console.log(`createTimer Error: Could Not Create Timer | Name: ${name} | Interval: ${interval} | Repeat: ${repeat} | Actions: ${actions}`);
             }
@@ -40,32 +47,21 @@ module.exports = class FPW_Timers {
         }
     }
 
-    async scheduleMainTableRefresh(interval) {
-        await this.createTimer(
-            'mainTableRefresh',
-            interval,
-            false,
-            async() => {
-                console.log('(Main Table) Refresh Timer Fired');
+    async scheduleMainPageRefresh(timerName, interval, repeat = false, clearExisting = false) {
+        // console.log(`scheduleMainPageRefresh(${timerName}, ${interval / 1000} seconds)`);
+        if (clearExisting && (await this.timerValid(timerName))) {
+            await this.stopTimer(timerName);
+        }
+        const timer = await this.getTimer(timerName);
+        if (timer && timer instanceof Timer && interval) {
+            timer.timeInterval = interval;
+            timer.repeat = repeat;
+            return timer.schedule(async() => {
+                console.log(`(${timerName}) Refresh Timer Fired`);
                 await this.FPW.FordAPI.fetchVehicleData(false);
-                await this.FPW.Tables.MainPage.createMainPage(true);
-            },
-            false,
-        );
-    }
-
-    async createRemoteStartStatusTimer() {
-        console.log('createRemoteStartStatusTimer');
-        await this.createTimer(
-            'remoteStartStatus',
-            60000,
-            false,
-            async() => {
-                console.log('(Remote Start Status) Timer fired');
-                await this.FPW.FordAPI.fetchVehicleData(false);
-                await this.FPW.Tables.MainPage.createMainPage(true);
-            },
-            true,
-        );
+                await this.FPW.App.createMainPage(true);
+            });
+        }
+        return;
     }
 };
