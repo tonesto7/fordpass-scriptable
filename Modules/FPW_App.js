@@ -891,7 +891,7 @@ module.exports = class FPW_App {
                                     widthWeight: 17,
                                     onTap: async() => {
                                         console.log('(Dashboard) Horn/Lights was pressed');
-                                        if (await this.FPW.Alerts.showYesNoPrompt('Horn/Lights', 'Are you sure you want to sound horn and light ?')) {
+                                        if (await this.FPW.Alerts.showYesNoPrompt('Horn/Lights', 'Your Horn and Lights will activate for a few seconds.  Are you sure you want to proceed?')) {
                                             await this.FPW.FordAPI.sendVehicleCmd('horn_and_lights');
                                         }
                                     },
