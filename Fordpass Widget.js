@@ -44,12 +44,7 @@
 **************/
 const changelogs = {
     '2022.02.17.0': {
-        added: [
-            'Dashboard page now refreshes the data every 30 seconds if you leave it open.',
-            'Dashboard page now has a timestamp at the bottom showing when the page was last refreshed.',
-            'New link added to the bottom of the Dashboard page to quickly access the vehicle and OTA info.',
-            'The advanced info page now shows the current sync version and last updated date reported by Ford.',
-        ],
+        added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open. It also includes a timestamp at the bottom of the page showing when it was last refreshed.', 'New Advanced Info link added to the bottom of the Dashboard page to quickly access the Sync Version info, all Widget data, and OTA info.'],
         fixed: ['Fixed issues with the widget parameters not working.  you no longer need to add the prefix of the widget size.  you can just detailed, detailedDark, detailedLight, simple, simpleDark, and simpleLight.'],
         removed: ['Disabled Oil Low Notifications', 'The OTA and vehicle data page is no longer in the menu, its been moved to the advanced info page that located at the botton of the dashboard.'],
         updated: ['OTA Page now has vehicle status and schedule info in the formatted section.  Also rearranged the layout slightly.'],
