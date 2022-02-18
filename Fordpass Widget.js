@@ -41,6 +41,13 @@
     
 **************/
 const changelogs = {
+    '2022.02.18.1': {
+        added: [],
+        fixed: ['Fixed issue with color mode menu.'],
+        removed: [],
+        updated: [],
+        clearImgCache: true,
+    },
     '2022.02.18.0': {
         added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open. It also includes a timestamp at the bottom of the page showing when it was last refreshed.', 'New Advanced Info link added to the bottom of the Dashboard page to quickly access the Sync Version info, all Widget data, and OTA info.'],
         fixed: ['Fixed issues with the widget parameters not working.  you no longer need to add the prefix of the widget size.  you can just detailed, detailedDark, detailedLight, simple, simpleDark, and simpleLight.'],
@@ -68,7 +75,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.18.0';
+const SCRIPT_VERSION = '2022.02.18.1';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -3032,7 +3039,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||516193968', 'FPW_Files.js||-2027474375', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||-569477883', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||1194927468', 'FPW_App.js||-1399316017', 'FPW_Files.js||-2063727340', 'FPW_FordAPIs.js||-1143581971', 'FPW_Keychain.js||-163364549', 'FPW_Menus.js||1677226170', 'FPW_Notifications.js||-310768506', 'FPW_ShortcutParser.js||540917456', 'FPW_Timers.js||-1303356317'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();

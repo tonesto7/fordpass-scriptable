@@ -468,7 +468,7 @@ module.exports = class FPW_Menus {
                                 console.log(`(${typeDesc} Menu) Dark Mode pressed`);
                                 await this.FPW.setUIColorMode('system');
                                 if (!prefsMenu) {
-                                    this.menuBuilderByType('widget_settings');
+                                    this.menuBuilderByType('color_mode');
                                 }
                             },
                             destructive: false,
@@ -480,7 +480,7 @@ module.exports = class FPW_Menus {
                                 console.log(`(${typeDesc} Menu) Dark Mode pressed`);
                                 await this.FPW.setUIColorMode('light');
                                 if (!prefsMenu) {
-                                    this.menuBuilderByType('widget_settings');
+                                    this.menuBuilderByType('color_mode');
                                 }
                             },
                             destructive: false,
@@ -492,7 +492,7 @@ module.exports = class FPW_Menus {
                                 console.log(`(${typeDesc} Menu) Dark Mode pressed`);
                                 await this.FPW.setUIColorMode('dark');
                                 if (!prefsMenu) {
-                                    this.menuBuilderByType('widget_settings');
+                                    this.menuBuilderByType('color_mode');
                                 }
                             },
                             destructive: false,
