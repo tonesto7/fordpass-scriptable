@@ -61,6 +61,23 @@ module.exports = class FPW_Files {
         }
     }
 
+    async loadLocalDevCredentials() {
+        // This is used when i need to make a video it preloads my credentials so you don't see me enter them in the video.
+        try {
+            let fm = FileManager.iCloud();
+            let dir = fm.documentsDirectory();
+            let path = fm.joinPath(dir, 'fp_credentials.json');
+            if (await fm.fileExists(path)) {
+                let data = await fm.readString(path);
+                return JSON.parse(data);
+            } else {
+                return undefined;
+            }
+        } catch (e) {
+            this.FPW.logError(`loadLocalDevCredentials Error: ${e}`);
+        }
+    }
+
     async isLocalDataFreshEnough() {
         let localData = await this.readLocalData();
         if (localData && Date.now() - localData.fetchTime < 60000 * this.widgetConfig.refreshInterval) {

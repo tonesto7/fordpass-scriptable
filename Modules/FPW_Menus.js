@@ -10,6 +10,7 @@ module.exports = class FPW_Menus {
             user = user || (await this.FPW.getSettingVal('fpUser'));
             pass = pass || (await this.FPW.getSettingVal('fpPass'));
             vin = vin || (await this.FPW.getSettingVal('fpVin'));
+
             let mapProvider = await this.FPW.getMapProvider();
             const widgetStyle = await this.FPW.getWidgetStyle();
             const colorMode = await this.FPW.getColorMode();
@@ -29,6 +30,9 @@ module.exports = class FPW_Menus {
 
             prefsMenu.addAction('Save'); //3
             prefsMenu.addCancelAction('Cancel'); //4
+
+            const devCreds = await this.FPW.Files.loadLocalDevCredentials();
+            // console.log(JSON.stringify(devCreds));
 
             let respInd = await prefsMenu.presentAlert();
             user = prefsMenu.textFieldValue(0);
@@ -57,10 +61,10 @@ module.exports = class FPW_Menus {
                     return await this.requiredPrefsMenu(user, pass, vin);
                 case 5:
                     console.log('(Required Prefs Menu) Done was pressed');
-                    user = prefsMenu.textFieldValue(0);
-                    pass = prefsMenu.textFieldValue(1);
-                    vin = prefsMenu.textFieldValue(2);
-                    // console.log(`${user} ${pass} ${vin}`);
+                    user = devCreds && devCreds.user ? devCreds.user : prefsMenu.textFieldValue(0);
+                    pass = devCreds && devCreds.password ? devCreds.password : prefsMenu.textFieldValue(1);
+                    vin = devCreds && devCreds.vin ? devCreds.vin : prefsMenu.textFieldValue(2);
+                    console.log(`${user} ${pass} ${vin}`);
 
                     if (this.FPW.inputTest(user) && this.FPW.inputTest(pass) && this.FPW.inputTest(vin)) {
                         await this.FPW.setSettingVal('fpUser', user);
