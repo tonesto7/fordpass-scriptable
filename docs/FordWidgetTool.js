@@ -4,7 +4,7 @@
 
 // This is based on the scriptdude installer https://github.com/kevinkub/scriptdu.de script and modified to manage the Ford Widget script
 
-const SCRIPT_VERSION = '2.0.0';
+const SCRIPT_VERSION = '2.0.1';
 const maxSupportedInstance = 10;
 const configUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/docs/config.json`;
 
@@ -136,6 +136,16 @@ class WidgetInstaller {
 
     async getReleaseMode() {
         return (await wTool.getKeychainValue('fpWtReleaseMode')) || 'public';
+    }
+
+    async isDevMode() {
+        const cloudFm = FileManager.iCloud();
+        const isDevMode = cloudFm.fileExists(cloudFm.joinPath(cloudFm.documentsDirectory(), 'FPW_Devmode')); // Disables Module File Hash checks, disables localModule loading, disables saving logs to iCloud Folder.
+        if (isDevMode) {
+            console.log('Dev Mode Enabled!');
+            return true;
+        }
+        return false;
     }
 
     async showAlert(title, message) {
@@ -313,9 +323,10 @@ class WidgetInstaller {
             let code = await req.loadString();
             let moduleName = url.substring(url.lastIndexOf('/') + 1);
             let codeToStore = Data.fromString(`${code}`);
-            await this.icloudFileManager.createDirectory(this.icloudFileManager.joinPath(this.icloudDocDirectory, 'FPWModules'), true);
-            let filePath = this.icloudFileManager.joinPath(this.icloudDocDirectory, 'FPWModules') + `/${moduleName}`;
-            this.icloudFileManager.write(filePath, codeToStore);
+            const fm = this.isDevMode() ? this.icloudFileManager : this.localFileManager;
+            await fm.createDirectory(fm.joinPath(this.icloudDocDirectory, 'FPWModules'), true);
+            let filePath = fm.joinPath(this.icloudDocDirectory, 'FPWModules') + `/${moduleName}`;
+            await fm.write(filePath, codeToStore);
             return true;
         } catch (e) {
             console.error('saveModule error: ' + e);
