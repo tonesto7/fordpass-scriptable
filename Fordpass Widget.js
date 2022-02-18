@@ -347,11 +347,11 @@ class Widget {
                     // await m1.presentMedium();
                     // let m2 = await this.generateWidget('mediumSimple', fordData);
                     // await m2.presentMedium();
-                    let w5 = await this.generateWidget('large', fordData);
-                    await w5.presentLarge();
+                    // let w5 = await this.generateWidget('large', fordData);
+                    // await w5.presentLarge();
 
-                    // await this.App.createMainPage();
-                    // await this.Timers.stopTimer('mainTableRefresh');
+                    await this.App.createMainPage();
+                    await this.Timers.stopTimer('mainTableRefresh');
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
