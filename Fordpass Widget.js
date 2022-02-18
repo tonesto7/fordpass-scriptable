@@ -26,24 +26,22 @@
  */
 
 /**************
-// Todo: This Release (v2.0.0)) 
-    [-] use OTA info to show when an update is available or pending.
+// Todo: Next Release (Post 2.0.x)
+[-] use OTA info to show when an update is available or pending.
     [-] add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
     [x] allow solid color backgrounds for widgets
-
-// Todo: Next Release (Post 2.0.x)
-- setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
-    - add support for other languages
-    - add charge scheduling to dashboard menu
-    - add support for right hand drive (driver side windows, and doors etc.)
-    - add voice interface using siri shortcut
-        * generate list of actionable commands based on capability
-        * generate list of request command info available (are the doors locked, is the vehicle on, current fuel level, etc)
-        * handle context and tense of command
+[-] setup up daily schedule that makes sure the doors are locked at certain time of day (maybe).
+    [-] add support for other languages
+    [-] add charge scheduling to dashboard menu
+    [-] add support for right hand drive (driver side windows, and doors etc.)
+    [-] add voice interface using siri shortcut
+        [*] generate list of actionable commands based on capability
+        [*] generate list of request command info available (are the doors locked, is the vehicle on, current fuel level, etc)
+        [*] handle context and tense of command
     
 **************/
 const changelogs = {
-    '2022.02.17.0': {
+    '2022.02.18.0': {
         added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open. It also includes a timestamp at the bottom of the page showing when it was last refreshed.', 'New Advanced Info link added to the bottom of the Dashboard page to quickly access the Sync Version info, all Widget data, and OTA info.'],
         fixed: ['Fixed issues with the widget parameters not working.  you no longer need to add the prefix of the widget size.  you can just detailed, detailedDark, detailedLight, simple, simpleDark, and simpleLight.'],
         removed: ['Disabled Oil Low Notifications', 'The OTA and vehicle data page is no longer in the menu, its been moved to the advanced info page that located at the botton of the dashboard.'],
@@ -70,7 +68,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.17.0';
+const SCRIPT_VERSION = '2022.02.18.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -117,7 +115,7 @@ const widgetConfig = {
     loadCacheOnly: false, // Use cached data for quick testing of widget and menu viewing
     saveFilesToIcloud: false, // Save files to icloud
     saveLogsToIcloud: false, // Save logs to icloud
-    useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
+    useBetaModules: false, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     writeToLog: false, // Writes to the log file.
     exportVehicleImagesToIcloud: false, // This will download all 5 vehicle angle images to the Sciptable iCloud Folder as PNG files for use elsewhere.
     clearKeychainOnNextRun: false, // false or true
@@ -349,11 +347,11 @@ class Widget {
                     // await m1.presentMedium();
                     // let m2 = await this.generateWidget('mediumSimple', fordData);
                     // await m2.presentMedium();
-                    // let w5 = await this.generateWidget('large', fordData);
-                    // await w5.presentLarge();
+                    let w5 = await this.generateWidget('large', fordData);
+                    await w5.presentLarge();
 
-                    await this.App.createMainPage();
-                    await this.Timers.stopTimer('mainTableRefresh');
+                    // await this.App.createMainPage();
+                    // await this.Timers.stopTimer('mainTableRefresh');
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
                 // console.log('runsWithSiri: ' + config.runsWithSiri);
@@ -402,7 +400,8 @@ class Widget {
             }
             // Tries to fix the format of the VIN field (Makes sure they are capitalized)
             await this.vinFix(await this.getSettingVal('fpVin'));
-
+            // const devCreds = await this.Files.loadLocalDevCredentials();
+            // console.log(JSON.stringify(devCreds));
             let frcPrefs = false;
             let reqOk = await this.requiredPrefsOk(this.prefKeys().core);
             // console.log(`reqOk: ${reqOk}`);
@@ -453,9 +452,9 @@ class Widget {
             const { family, style, color, output } = await this.processWidgetParams(params);
             this.logInfo(`family: ${family} | Style: ${style} | Color: ${color}`, false);
             this.widgetColor = color;
+            this.widgetSize = family;
             switch (family) {
                 case 'small':
-                    this.widgetSize = 'small';
                     if (style === 'simple') {
                         widget = await this.smallSimpleWidget(data, color);
                     } else {
@@ -463,7 +462,6 @@ class Widget {
                     }
                     break;
                 case 'medium':
-                    this.widgetSize = 'medium';
                     if (style === 'simple') {
                         widget = await this.mediumSimpleWidget(data, color);
                     } else {
@@ -471,15 +469,13 @@ class Widget {
                     }
                     break;
                 case 'large':
-                    this.widgetSize = 'large';
-                    if (style === 'simple') {
-                        widget = await this.largeDetailedWidget(data, color);
-                    } else {
-                        widget = await this.largeDetailedWidget(data, color);
-                    }
+                    // if (style === 'simple') {
+                    //     widget = await this.largeDetailedWidget(data, color);
+                    // } else {
+                    widget = await this.largeDetailedWidget(data, color);
+                    // }
                     break;
                 case 'extraLarge':
-                    this.widgetSize = 'extraLarge';
                     widget = await this.largeDetailedWidget(data, color);
                     break;
                 default:
@@ -497,7 +493,7 @@ class Widget {
     }
 
     async generateTestWidget(params, data) {
-        const { size, style, color, output } = await this.processWidgetParams(params);
+        const { family, style, color, output } = await this.processWidgetParams(params);
         let widget = new ListWidget();
         let stk = widget.addStack();
         stk.layoutVertically();
@@ -505,7 +501,7 @@ class Widget {
         let txt1 = stk.addText(`Params: ${params}`);
         txt1.font = Font.systemFont(9);
 
-        let txt2 = stk.addText(`Size: ${size}`);
+        let txt2 = stk.addText(`Family: ${family}`);
         txt2.font = Font.systemFont(9);
 
         let txt3 = stk.addText(`Style: ${style}`);
@@ -2073,10 +2069,10 @@ class Widget {
             console.log(`widgetSizes: ${JSON.stringify(widgetSizes)}`);
             const { width, height } = widgetSizes;
 
-            let paddingY = 10; //Math.round(height * 0.08);
-            let paddingX = 7; //Math.round(width * 0.06);
-            console.log(`padding | Top: ${paddingY} | Left: ${paddingX}`);
-            const wContent = await this.createColumn(widget, { '*setPadding': [paddingY, paddingX, paddingY, paddingX] });
+            let paddingTop = 10; //Math.round(height * 0.08);
+            let paddingLeft = 7; //Math.round(width * 0.06);
+            console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
+            const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, paddingLeft] });
 
             const isEV = vData.evVehicle === true;
             let dtePostfix = isEV ? 'Range' : 'to E';
@@ -2098,7 +2094,7 @@ class Widget {
             let topRowLeftCol = await this.createColumn(topRowContainer, { '*bottomAlignContent': null });
             // topRowLeftCol.addSpacer();
             // Vehicle Title
-            let nameContainer = await this.createRow(topRowLeftCol, { '*setPadding': [paddingY, paddingX, 0, 0] });
+            let nameContainer = await this.createRow(topRowLeftCol, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
             // nameContainer.addSpacer(); // Pushes the vehicle name to the left
             let nameStr = vData.info.vehicle.vehicleType || '';
 
@@ -2106,12 +2102,12 @@ class Widget {
             if (nameStr.length >= 10) {
                 nameSize = nameSize - Math.round(nameStr.length / 4);
             }
-            await this.createText(nameContainer, nameStr, { font: Font.semiboldSystemFont(nameSize), textColor: this.colorMap.text[this.widgetColor], minimumScaleFactor: 0.9, lineLimit: 1 });
+            await this.createText(nameContainer, nameStr, { font: Font.semiboldSystemFont(nameSize), textColor: this.colorMap.text[colorMode], minimumScaleFactor: 0.9, lineLimit: 1 });
             nameContainer.addSpacer(); // Pushes the vehicle name to the left
 
             topRowLeftCol.addSpacer();
             const extraPadding = this.isSmallDisplay ? 0 : 15;
-            const topLeftInfoCol = await this.createColumn(topRowLeftCol, { '*setPadding': [0, paddingX + extraPadding, 0, 0] });
+            const topLeftInfoCol = await this.createColumn(topRowLeftCol, { '*setPadding': [0, paddingLeft + extraPadding, 0, 0] });
             // Creates Battery Level Elements
             topLeftInfoCol.addSpacer();
             await this.createBatteryElement(topLeftInfoCol, vData, 'left');
@@ -2162,7 +2158,7 @@ class Widget {
             const dteRow = await this.createRow(fuelBattCol, { '*setPadding': [0, 0, 0, 0] });
             let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap().errorMessages.noData;
             dteRow.addSpacer();
-            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.systemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 });
+            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.systemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[colorMode], lineLimit: 1 });
             dteRow.addSpacer();
             fuelBattRow.addSpacer();
             fuelBattCol.addSpacer();
@@ -2170,34 +2166,37 @@ class Widget {
             //*****************
             //* Row 3 Container
             //*****************
-            const row3Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
+            const row3Col = await this.createColumn(wContent, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
+            const row3Row = await this.createRow(row3Col, { '*setPadding': [0, 0, 0, 0], '*topAlignContent': null });
 
-            row3Container.addSpacer();
-            const row3LeftCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
+            row3Row.addSpacer();
+            const row3LeftCol = await this.createColumn(row3Row, { '*setPadding': [0, 0, 0, 0] });
             // Creates the Lock Status Elements
             await this.createLockStatusElement(row3LeftCol, vData);
-            row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
+            // row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
             // Creates the Door Status Elements
             await this.createDoorElement(row3LeftCol, vData);
 
             row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
 
-            const row3CenterCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
+            const row3CenterCol = await this.createColumn(row3Row, { '*setPadding': [0, 0, 0, 0] });
             row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
             // Create Tire Pressure Elements
             await this.createTireElement(row3CenterCol, vData);
             row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
             // row3CenterCol.addSpacer(); // Pushes Row 3 Left content to top
 
-            const row3RightCol = await this.createColumn(row3Container, { '*setPadding': [0, 0, 0, 0] });
+            const row3RightCol = await this.createColumn(row3Row, { '*setPadding': [0, 0, 0, 0] });
+            // row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
             // Creates the Ignition Status Elements
             await this.createIgnitionStatusElement(row3RightCol, vData);
-            row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
+
             // Creates the Window Status Elements
             await this.createWindowElement(row3RightCol, vData);
             row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
 
-            row3Container.addSpacer();
+            // row3Row.addSpacer();
+            row3Col.addSpacer(); // Pushes Row 3 content to top
             wContent.addSpacer();
 
             const row5Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
@@ -2206,32 +2205,31 @@ class Widget {
             await this.createPositionElement(row5CenterCol, vData, 'center');
 
             wContent.addSpacer(); // Pushes all content to the top
-
+            // widget.addSpacer(); // Pushes all content to the top
             // //**********************
             // //* Status Row
             // //*********************
 
-            // if (hasStatusMsg) {
-            //     let statusRow = await this.createRow(wContent, { '*setPadding': [0, paddingX, 0, 0], '*bottomAlignContent': null });
-            //     // statusRow.addSpacer();
-            //     await this.createStatusElement(statusRow, vData, 3);
-            //     statusRow.addSpacer();
-            // } else if (!this.isSmallDisplay) {
-            //     wContent.addSpacer();
-            // }
+            if (hasStatusMsg) {
+                let statusRow = await this.createRow(wContent, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
+                // statusRow.addSpacer();
+                await this.createStatusElement(statusRow, vData, 3);
+                statusRow.addSpacer();
+            } else if (!this.isSmallDisplay) {
+                wContent.addSpacer();
+            }
             // //*****************************
             // //* COMMAND BUTTONS CONTAINER
             // //*****************************
             const controlsContainer = await this.createRow(wContent, { '*setPadding': [7, 0, 5, 0] });
             controlsContainer.addSpacer();
 
-            await this.createWidgetButtonRow(controlsContainer, vData, paddingX, width, 35, 24);
+            await this.createWidgetButtonRow(controlsContainer, vData, 0, width, 35, 24);
             controlsContainer.addSpacer();
 
             // Displays the Last Vehicle Checkin Time Elapsed...
             let timestampRow = await this.createRow(wContent, { '*setPadding': [3, 0, 3, 0] });
             await this.createTimeStampElement(timestampRow, vData, 'center', 8);
-            // widget.addSpacer();
         } catch (e) {
             await this.logError(`largeDetailedWidget Error: ${e}`, true);
         }
