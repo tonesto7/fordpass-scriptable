@@ -220,7 +220,7 @@ module.exports = class FPW_App {
             if (type === 'OTA') {
                 try {
                     if (data.tappsResponse) {
-                        HTML += `<h3>OTA Status & Schedule</h3>`;
+                        HTML += `<h3>OTA Status & Vehicle Schedule Settings</h3>`;
                         HTML += `<ul>`;
                         HTML += `<li>Vehicle Inhibit Status: ${data.tappsResponse.vehicleInhibitStatus || this.FPW.textMap().errorMessages.noData}</li>`;
                         if (data.tappsResponse.lifeCycleModeStatus) {
@@ -248,8 +248,8 @@ module.exports = class FPW_App {
                         if (data.tappsResponse.asuSettingsStatus) {
                             HTML += '<li>OTA Setting Status:</li>';
                             HTML += '<ul>';
-                            for (const [i, key] of Object.keys(data.tappsResponse.asuActivationSchedule).entries()) {
-                                const val = data.tappsResponse.asuActivationSchedule[key];
+                            for (const [i, key] of Object.keys(data.tappsResponse.asuSettingsStatus).entries()) {
+                                const val = data.tappsResponse.asuSettingsStatus[key];
                                 if (val !== null || val !== undefined || val !== '') {
                                     HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
                                 }
@@ -393,6 +393,7 @@ module.exports = class FPW_App {
             let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
             let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
 
+            const lvbBatteryLow = vData.evVehicle !== true && vData.batteryStatus === 'STATUS_LOW';
             let ignStatus = '';
             if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
                 ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
@@ -688,11 +689,14 @@ module.exports = class FPW_App {
             }
 
             // Vehicle Alerts Section - Creates rows for each summary alert
-            if ((vData.alerts && vData.alerts.summary && vData.alerts.summary.length) || vData.firmwareUpdating || vData.deepSleepMode) {
+            if ((vData.alerts && vData.alerts.summary && vData.alerts.summary.length) || vData.firmwareUpdating || vData.deepSleepMode || lvbBatteryLow) {
                 let alertsSummary = vData.alerts && vData.alerts.summary && vData.alerts.summary.length ? vData.alerts.summary : [];
 
                 if (vData.deepSleepMode) {
                     alertsSummary.push({ alertType: 'VHA', alertDescription: 'Deep Sleep Active - Low Battery', urgency: 'L', colorCode: 'R', iconName: 'battery_12v', alertPriority: 1, noButton: true });
+                }
+                if (lvbBatteryLow) {
+                    alertsSummary.push({ alertType: 'VHA', alertDescription: '12V Battery Low', urgency: 'L', colorCode: 'R', iconName: 'battery_12v', alertPriority: 1, noButton: true });
                 }
                 if (vData.firmwareUpdating) {
                     alertsSummary.push({ alertType: 'MMOTA', alertDescription: 'Firmware Update in Progress', urgency: 'L', colorCode: 'G', iconName: 'ic_software_updates', alertPriority: 1, noButton: true });
