@@ -1,6 +1,9 @@
 {
     "name": "fordpass-scriptable",
     "version": "1.0.0",
+    "scripts": {
+        "hash": "node ./tools/hash_generator.js"
+    },
     "eslintConfig": {
         "extends": "@scriptable-ios"
     },

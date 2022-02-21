@@ -41,12 +41,23 @@
     
 **************/
 const changelogs = {
+    '2022.02.21.0': {
+        added: ['The dashboard now shows the vehicle health alert for a low 12V battery.'],
+        fixed: [
+            'First attempt at fixing the issues with the large widget loading by reducing the source image size for the widget buttons.',
+            'Fixed the fuel/battery level to show -- if value is above 100%',
+            'Fixed issue with the color mode menu going back to the settings menu.',
+            'Fixed issue with the OTA page not showing the correct output in the status section.',
+        ],
+        removed: [],
+        updated: ['The large widget buttons are now slightly smaller.'],
+        clearImgCache: true,
+    },
     '2022.02.18.0': {
         added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open. It also includes a timestamp at the bottom of the page showing when it was last refreshed.', 'New Advanced Info link added to the bottom of the Dashboard page to quickly access the Sync Version info, all Widget data, and OTA info.'],
         fixed: ['Fixed issues with the widget parameters not working.  you no longer need to add the prefix of the widget size.  you can just detailed, detailedDark, detailedLight, simple, simpleDark, and simpleLight.'],
         removed: ['Disabled Oil Low Notifications', 'The OTA and vehicle data page is no longer in the menu, its been moved to the advanced info page that located at the botton of the dashboard.'],
         updated: ['OTA Page now has vehicle status and schedule info in the formatted section.  Also rearranged the layout slightly.'],
-        clearImgCache: true,
     },
     '2022.02.14.0': {
         added: [
@@ -1700,7 +1711,7 @@ class Widget {
                 // DTE + Level Separator
                 await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, lvlValue < 0 || lvlValue > 100 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
 
                 // Odometer Text
                 let mileageContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });
@@ -1885,7 +1896,7 @@ class Widget {
                 // DTE + Level Separator
                 await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, lvlValue < 0 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, lvlValue < 0 || lvlValue > 100 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
 
                 // leftContainer.addSpacer();
                 let mileageContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0] });
@@ -2224,7 +2235,7 @@ class Widget {
             const controlsContainer = await this.createRow(wContent, { '*setPadding': [7, 0, 5, 0] });
             controlsContainer.addSpacer();
 
-            await this.createWidgetButtonRow(controlsContainer, vData, 0, width, 35, 24);
+            await this.createWidgetButtonRow(controlsContainer, vData, 0, width, 35, 28);
             controlsContainer.addSpacer();
 
             // Displays the Last Vehicle Checkin Time Elapsed...
@@ -2584,7 +2595,7 @@ class Widget {
         //     context.setTextColor(Color.white());
         // }
         const icon = isEV ? String.fromCodePoint('0x1F50B') : '\u26FD';
-        const lvlStr = fillLevel < 0 || fillLevel > 100 ? '--' : `${fillLevel}%`;
+        const lvlStr = percent < 0 || percent > 100 ? '--' : `${percent}%`;
         context.drawTextInRect(`${icon} ${lvlStr}`, new Rect(xPos, this.sizeMap[this.widgetSize].barGauge.h / this.sizeMap[this.widgetSize].barGauge.fs, this.sizeMap[this.widgetSize].barGauge.w, this.sizeMap[this.widgetSize].barGauge.h));
         context.setTextAlignedCenter();
         return await context.getImage();
@@ -2785,7 +2796,7 @@ class Widget {
     }
 
     async imgBtnRowBuilder(srcRow, elemWidth, widthPerc, elemHeight, icon) {
-        const btnCol = await this.createColumn(srcRow, { '*setPadding': [5, 0, 5, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 10, borderWidth: 2, borderColor: this.colorMap.text[this.widgetColor] });
+        const btnCol = await this.createColumn(srcRow, { '*setPadding': [0, 0, 0, 0], size: new Size(Math.round(elemWidth * widthPerc), elemHeight), cornerRadius: 10, borderWidth: 2, borderColor: this.colorMap.text[this.widgetColor] });
         btnCol.addSpacer(); // Pushes Button column down to help center in middle
 
         const btnImgRow = await this.createRow(btnCol, { '*setPadding': [0, 0, 0, 0] });
@@ -2795,14 +2806,14 @@ class Widget {
         btnCol.addSpacer(); // Pushes Button column up to help center in middle
     }
 
-    async createWidgetButtonRow(srcRow, vData, padding, rowWidth, rowHeight = 40, btnSize = 24) {
+    async createWidgetButtonRow(srcRow, vData, padding, rowWidth, rowHeight = 40, btnImgSize = 24) {
         const useDarkMode = this.widgetColor === 'dark';
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         const hasStatusMsg = await this.hasStatusMsg(vData);
         const remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
-        const lockBtnIcon = vData.lockStatus === 'LOCKED' ? (useDarkMode ? 'lock_btn_dark.png' : 'lock_btn_light.png') : 'unlock_btn_red.png'; //useDarkMode ? 'unlock_btn_dark.png' : 'unlock_btn_light.png';
-        const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red.png' : useDarkMode ? 'ignition_dark.png' : 'ignition_light.png';
-        const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png' : useDarkMode ? 'menu_btn_dark.png' : 'menu_btn_light.png';
+        const lockBtnIcon = vData.lockStatus === 'LOCKED' ? (useDarkMode ? 'lock_btn_dark_64.png' : 'lock_btn_light_64.png') : 'unlock_btn_red_64.png'; //useDarkMode ? 'unlock_btn_dark.png' : 'unlock_btn_light.png';
+        const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red_64.png' : useDarkMode ? 'ignition_dark_64.png' : 'ignition_light_64.png';
+        const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png_64' : useDarkMode ? 'menu_btn_dark_64.png' : 'menu_btn_light_64.png';
 
         const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, padding || 0, 0, padding || 0], spacing: 10 });
 
@@ -2810,35 +2821,35 @@ class Widget {
                 show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
                 icon: {
                     image: await this.Files.getImage(lockBtnIcon),
-                    opts: { url: await this.buildCallbackUrl({ command: 'lock_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    opts: { url: await this.buildCallbackUrl({ command: 'lock_command' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
             {
                 show: caps && caps.includes('REMOTE_START'),
                 icon: {
                     image: await this.Files.getImage(startBtnIcon),
-                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'start_command' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'start_command' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
             {
                 show: caps && caps.includes('REMOTE_PANIC_ALARM'),
                 icon: {
-                    image: await this.Files.getImage(useDarkMode ? 'horn_lights_dark.png' : 'horn_lights_light.png'),
-                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    image: await this.Files.getImage(useDarkMode ? 'horn_lights_dark_64.png' : 'horn_lights_light_64.png'),
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
             {
                 show: true,
                 icon: {
-                    image: await this.Files.getImage(useDarkMode ? 'refresh_btn_dark.png' : 'refresh_btn_light.png'),
-                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    image: await this.Files.getImage(useDarkMode ? 'refresh_btn_dark_64.png' : 'refresh_btn_light_64.png'),
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
             {
                 show: true,
                 icon: {
                     image: await this.Files.getImage(menuBtnIcon),
-                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'show_menu' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'show_menu' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
 
@@ -2846,7 +2857,7 @@ class Widget {
                 show: false,
                 icon: {
                     image: await this.Files.getImage('FP_Logo.png'),
-                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'open_fp_app' }), '*centerAlignImage': null, imageSize: new Size(btnSize, btnSize) },
+                    opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'open_fp_app' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
         ];
@@ -3032,7 +3043,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||516193968', 'FPW_Files.js||-2027474375', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||-569477883', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||1194927468', 'FPW_App.js||1949718012', 'FPW_Files.js||-2063727340', 'FPW_FordAPIs.js||-1143581971', 'FPW_Keychain.js||-163364549', 'FPW_Menus.js||-569477883', 'FPW_Notifications.js||-310768506', 'FPW_ShortcutParser.js||540917456', 'FPW_Timers.js||-1303356317'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
