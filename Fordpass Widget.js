@@ -342,8 +342,6 @@ class Widget {
             let fordData = await this.prepWidget(config.runsInWidget, widgetConfig.loadCacheOnly || config.runsInApp || config.runsFromHomeScreen);
             if (fordData === null) return;
             if (config.runsInWidget) {
-                let fordData = await this.prepWidget(config.runsInWidget);
-                if (fordData === null) return;
                 if (args.widgetParameter) {
                     await this.generateWidget(args.widgetParameter, fordData);
                 } else {
