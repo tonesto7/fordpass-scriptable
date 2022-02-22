@@ -42,10 +42,10 @@
 **************/
 const changelogs = {
     '2022.02.22.0': {
-        added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.'],
+        added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.', 'Added FordPass rewards points to the dashboard menu.'],
         fixed: [],
         removed: [],
-        updated: ['Moved the diagnostics menu item in the advanced info page as a menu there.'],
+        updated: ['Modified the layout of the dashboard header to make the image larger.', 'Moved the diagnostics menu item in the advanced info page as a menu there.'],
         clearImgCache: true,
     },
     '2022.02.21.0': {
@@ -85,7 +85,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.21.0';
+const SCRIPT_VERSION = '2022.02.22.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -3049,7 +3049,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-1544647484', 'FPW_Files.js||1736163301', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||1950190551', 'FPW_Files.js||1736163301', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
