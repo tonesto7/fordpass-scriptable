@@ -2823,7 +2823,7 @@ class Widget {
         const remStartOn = vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false;
         const lockBtnIcon = vData.lockStatus === 'LOCKED' ? (useDarkMode ? 'lock_btn_dark_64.png' : 'lock_btn_light_64.png') : 'unlock_btn_red_64.png'; //useDarkMode ? 'unlock_btn_dark.png' : 'unlock_btn_light.png';
         const startBtnIcon = vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? 'ignition_red_64.png' : useDarkMode ? 'ignition_dark_64.png' : 'ignition_light_64.png';
-        const menuBtnIcon = hasStatusMsg ? 'menu_btn_red.png_64' : useDarkMode ? 'menu_btn_dark_64.png' : 'menu_btn_light_64.png';
+        const menuBtnIcon = hasStatusMsg ? 'menu_btn_red_64.png' : useDarkMode ? 'menu_btn_dark_64.png' : 'menu_btn_light_64.png';
 
         const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, padding || 0, 0, padding || 0], spacing: 10 });
 
