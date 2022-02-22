@@ -43,7 +43,7 @@
 const changelogs = {
     '2022.02.22.0': {
         added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.', 'Added FordPass rewards points to the dashboard menu.'],
-        fixed: [],
+        fixed: ['Fixed menu_btn_red.png_64 error when there was an alert in the widget.'],
         removed: [],
         updated: ['Dashboard should load immediately now from cached data and then update with current data in the next few seconds', 'Modified the layout of the dashboard header to make the image larger.', 'Moved the diagnostics menu item in the advanced info page as a menu there.'],
         clearImgCache: true,
