@@ -45,7 +45,7 @@ const changelogs = {
         added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.', 'Added FordPass rewards points to the dashboard menu.'],
         fixed: [],
         removed: [],
-        updated: ['Modified the layout of the dashboard header to make the image larger.', 'Moved the diagnostics menu item in the advanced info page as a menu there.'],
+        updated: ['Dashboard should load immediately now from cached data and then update with current data in the next few seconds', 'Modified the layout of the dashboard header to make the image larger.', 'Moved the diagnostics menu item in the advanced info page as a menu there.'],
         clearImgCache: true,
     },
     '2022.02.21.0': {
@@ -335,13 +335,15 @@ class Widget {
     async run() {
         try {
             this.logInfo('---------------------------');
-            this.logInfo('Widget RUN...');
+            this.logInfo('Widget RUN()');
             // Starts the widget load process
             // console.log(`Device Models From ViewPort: ${await this.viewPortSizes.devices}`);
             // console.log(`widgetSize(run): ${JSON.stringify(await this.viewPortSizes)}`);
-            let fordData = widgetConfig.loadCacheOnly ? await this.FordAPI.fetchVehicleData(true) : await this.prepWidget(config.runsInWidget);
+            let fordData = await this.prepWidget(config.runsInWidget, widgetConfig.loadCacheOnly || config.runsInApp || config.runsFromHomeScreen);
             if (fordData === null) return;
             if (config.runsInWidget) {
+                let fordData = await this.prepWidget(config.runsInWidget);
+                if (fordData === null) return;
                 if (args.widgetParameter) {
                     await this.generateWidget(args.widgetParameter, fordData);
                 } else {
@@ -350,7 +352,7 @@ class Widget {
             } else if (config.runsInApp || config.runsFromHomeScreen) {
                 if (args.shortcutParameter) {
                     // Create a parser function...
-                    await Speech.speak(await this.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
+                    Speech.speak(await this.ShortcutParser.parseIncomingSiriCommand(args.shortcutParameter));
                 } else if (args.queryParameters && Object.keys(args.queryParameters).length > 0) {
                     console.log(JSON.stringify(args.queryParameters));
                     // this.Alerts.showAlert('Query Params', JSON.stringify(args.queryParameters));
@@ -407,7 +409,7 @@ class Widget {
      * @return
      * @memberof Widget
      */
-    async prepWidget(isWidget = false) {
+    async prepWidget(isWidget = false, loadLocal = false) {
         try {
             if (widgetConfig.clearKeychainOnNextRun) {
                 await this.clearSettings();
@@ -427,13 +429,14 @@ class Widget {
 
                 // console.log(`(prepWidget) Prefs Menu Prompt Result: ${prompt}`);
                 if (prompt === undefined) {
-                    await this.prepWidget();
+                    await this.prepWidget(isWidget);
                 } else if (prompt === false) {
                     console.log('(prepWidget) Login, VIN, or Prefs not set... | User cancelled!!!');
                     return null;
                 } else {
                     frcPrefs = true;
                 }
+                loadLocal = false;
             }
             // console.log('(prepWidget) Checking for token...');
             const cAuth = await this.FordAPI.checkAuth('prepWidget');
@@ -444,7 +447,8 @@ class Widget {
             // console.log(`(prepWidget) User Prefs Result: ${fPrefs}`);
 
             // console.log('(prepWidget) Fetching Vehicle Data...');
-            const vData = await this.FordAPI.fetchVehicleData(false, isWidget);
+            console.log(`(prepWidget) Fetching Vehicle Data | Local: (${loadLocal})`);
+            const vData = await this.FordAPI.fetchVehicleData(loadLocal, isWidget);
             return vData;
         } catch (err) {
             this.logError(`prepWidget() Error: ${err}`, true);
@@ -3049,7 +3053,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||1950190551', 'FPW_Files.js||1736163301', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||79100848', 'FPW_Files.js||1736163301', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();

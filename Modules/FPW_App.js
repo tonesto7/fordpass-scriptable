@@ -6,6 +6,7 @@ module.exports = class FPW_App {
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
         this.tableMap = {};
+        this.mainPageFirstLoad = true;
     }
 
     async getTable(tableName) {
@@ -444,7 +445,7 @@ module.exports = class FPW_App {
                             align: 'center',
                             widthWeight: 40,
                             dismissOnTap: false,
-                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            titleColor: this.FPW.colorMap.text.dark,
                             subtitleColor: Color.lightGray(),
                             titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
@@ -472,7 +473,7 @@ module.exports = class FPW_App {
                 await this.createTableRow(
                     [
                         await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
-                        await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 50, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.semiboldSystemFont(fontSizes.body2) }),
+                        await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 50, subtitleColor: this.FPW.colorMap.text.dark, subtitleFont: Font.semiboldSystemFont(fontSizes.body2) }),
                         await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
                     ], {
                         backgroundColor: new Color(headerColor),
@@ -496,20 +497,20 @@ module.exports = class FPW_App {
                             align: 'left',
                             widthWeight: 20,
                             dismissOnTap: false,
-                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            titleColor: this.FPW.colorMap.text.dark,
                             titleFont: Font.semiboldSystemFont(fontSizes.headline),
                             subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                         }),
-                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
-                        await this.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                        await this.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         // Window Status Cells
                         await this.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                             align: 'right',
                             widthWeight: 20,
                             dismissOnTap: false,
-                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            titleColor: this.FPW.colorMap.text.dark,
                             titleFont: Font.semiboldSystemFont(fontSizes.headline),
                             subtitleColor: new Color(openWindows.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
@@ -530,7 +531,7 @@ module.exports = class FPW_App {
                 await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, {
                     align: 'left',
                     widthWeight: 30,
-                    titleColor: new Color(this.FPW.colorMap.textWhite),
+                    titleColor: this.FPW.colorMap.text.dark,
                     titleFont: Font.semiboldSystemFont(fontSizes.headline),
                     subtitleColor: Color.lightGray(),
                     subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
@@ -542,9 +543,9 @@ module.exports = class FPW_App {
                         align: 'center',
                         widthWeight: 40,
                         dismissOnTap: false,
-                        titleColor: new Color(this.FPW.colorMap.textWhite),
+                        titleColor: this.FPW.colorMap.text.dark,
                         titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                        subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
+                        subtitleColor: this.FPW.colorMap.closedColor,
                         subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                     }),
                 );
@@ -558,7 +559,7 @@ module.exports = class FPW_App {
                         align: 'right',
                         widthWeight: 30,
                         dismissOnTap: false,
-                        titleColor: new Color(this.FPW.colorMap.textWhite),
+                        titleColor: this.FPW.colorMap.text.dark,
                         titleFont: Font.semiboldSystemFont(fontSizes.headline),
                         subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
                         subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
@@ -589,7 +590,7 @@ module.exports = class FPW_App {
                 await this.createTableRow(
                     [
                         // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
-                        await this.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.regularSystemFont(9) }),
+                        await this.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularSystemFont(9) }),
                         // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
                     ], {
                         backgroundColor: new Color(headerColor),
@@ -1208,11 +1209,16 @@ module.exports = class FPW_App {
                 // await this.FPW.Alerts.showAlert('Widget Command', `Widget Command: ${widgetCmd}`);
                 await this.processWidgetCommands(widgetCmd);
             }
-            // Refreshes the page every 30 seconds
-            await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 30000, false, true);
+
+            if (this.mainPageFirstLoad) {
+                this.mainPageFirstLoad = false;
+                await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 1000, false, true);
+            } else {
+                // Refreshes the page every 30 seconds
+                await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 30000, false, true);
+            }
 
             await this.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
-            // await this.FPW.Timers.stopTimer('mainTableRefresh');
         } catch (err) {
             await this.FPW.logError(`createMainPage() Error: ${err}`);
         }
@@ -1970,7 +1976,7 @@ module.exports = class FPW_App {
                             align: 'center',
                             widthWeight: 40,
                             dismissOnTap: false,
-                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            titleColor: this.FPW.colorMap.text.dark,
                             subtitleColor: Color.lightGray(),
                             titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
