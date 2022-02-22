@@ -225,7 +225,7 @@ module.exports = class FPW_Menus {
                                 await this.menuBuilderByType('diagnostics');
                             },
                             destructive: false,
-                            show: true,
+                            show: false,
                         },
                         {
                             title: 'Back',
@@ -327,35 +327,13 @@ module.exports = class FPW_Menus {
                 case 'diagnostics':
                     title = 'Diagnostics Menu';
                     items = [{
-                            title: 'View OTA API Info',
-                            action: async() => {
-                                console.log(`(${typeDesc} Menu) View OTA Info was pressed`);
-                                let data = await this.FPW.FordAPI.getVehicleOtaInfo();
-                                await this.FPW.App.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
-                                this.menuBuilderByType('diagnostics');
-                            },
-                            destructive: false,
-                            show: false,
-                        },
-                        {
-                            title: 'View All Data',
-                            action: async() => {
-                                console.log(`(${typeDesc} Menu) View All Data was pressed`);
-                                let data = await this.FPW.FordAPI.collectAllData(false);
-                                await this.FPW.App.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', data);
-                                this.menuBuilderByType('diagnostics');
-                            },
-                            destructive: false,
-                            show: false,
-                        },
-                        {
                             title: 'Copy All Data to Clipboard',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Copy Data was pressed`);
                                 let data = await this.FPW.FordAPI.collectAllData(true);
                                 await Pasteboard.copyString(JSON.stringify(data, null, 4));
                                 await this.FPW.Alerts.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
-                                this.menuBuilderByType('diagnostics');
+                                // this.menuBuilderByType('diagnostics');
                             },
                             destructive: false,
                             show: true,
@@ -366,7 +344,7 @@ module.exports = class FPW_Menus {
                                 console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
                                 let data = await this.FPW.FordAPI.collectAllData(true);
                                 await this.FPW.createVehicleDataEmail(data, true);
-                                this.menuBuilderByType('diagnostics');
+                                // this.menuBuilderByType('diagnostics');
                             },
                             destructive: true,
                             show: true,
@@ -385,7 +363,7 @@ module.exports = class FPW_Menus {
                             title: 'Back',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
-                                this.menuBuilderByType('main');
+                                // this.menuBuilderByType('main');
                             },
                             destructive: false,
                             show: true,
@@ -510,6 +488,22 @@ module.exports = class FPW_Menus {
                             show: true,
                         },
                     ];
+                    break;
+
+                case 'export_images':
+                    title = 'Widget Settings';
+                    items = [{
+                        title: `Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
+                        action: async() => {
+                            console.log(`(${typeDesc} Menu) Style pressed`);
+                            await this.FPW.App.createWidgetStylePage();
+                            if (!prefsMenu) {
+                                this.menuBuilderByType('widget_settings');
+                            }
+                        },
+                        destructive: false,
+                        show: true,
+                    }, ];
                     break;
 
                 case 'widget_settings':
@@ -682,6 +676,29 @@ module.exports = class FPW_Menus {
             }
         } catch (err) {
             this.FPW.logError(`(${typeDesc} Menu) Error: ${err}`);
+        }
+    }
+    async imageExportMenu(img, fileName = '') {
+        const subMenu = new Alert();
+        subMenu.title = 'Image Exporter';
+        subMenu.message = '';
+        subMenu.addAction('Save to Photos');
+        subMenu.addAction('Export to File');
+        subMenu.addAction('Cancel');
+        const respInd = await subMenu.presentSheet();
+        if (respInd !== null) {
+            switch (respInd) {
+                case 0:
+                    Photos.save(img);
+                    await this.FPW.Alerts.showAlert('Photo Saved to Libray', 'Your Image should now appear in Photo Library.');
+                    break;
+                case 1:
+                    await DocumentPicker.exportImage(img, fileName);
+                    break;
+                case 2:
+                    // returnFunction();
+                    break;
+            }
         }
     }
 };

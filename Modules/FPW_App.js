@@ -6,6 +6,7 @@ module.exports = class FPW_App {
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.widgetConfig = FPW.widgetConfig;
         this.tableMap = {};
+        this.mainPageFirstLoad = true;
     }
 
     async getTable(tableName) {
@@ -444,7 +445,7 @@ module.exports = class FPW_App {
                             align: 'center',
                             widthWeight: 40,
                             dismissOnTap: false,
-                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            titleColor: this.FPW.colorMap.text.dark,
                             subtitleColor: Color.lightGray(),
                             titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
@@ -471,20 +472,20 @@ module.exports = class FPW_App {
             tableRows.push(
                 await this.createTableRow(
                     [
-                        await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
-                        await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 40, subtitleColor: new Color(this.FPW.colorMap.textWhite), subtitleFont: Font.semiboldSystemFont(fontSizes.body2) }),
-                        await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                        await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
+                        await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 50, subtitleColor: this.FPW.colorMap.text.dark, subtitleFont: Font.semiboldSystemFont(fontSizes.body2) }),
+                        await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
                     ], {
                         backgroundColor: new Color(headerColor),
-                        height: 20,
+                        height: 15,
                         dismissOnSelect: false,
                     },
                 ),
             );
 
             // Header Section - Row 3: Displays the Vehicle Image in center and doors on the left and windows on the right
-            const openDoors = await this.FPW.getOpenItems('doors', vData.statusDoors); //['LF', 'RR', 'HD'];
-            const openWindows = await this.FPW.getOpenItems('windows', vData.statusWindows); //['LF', 'RR', 'HD'];
+            const openDoors = await this.FPW.getOpenItems('doors', vData.statusDoors); //['LF', 'RF', 'LR', 'RR', 'HD'];
+            const openWindows = await this.FPW.getOpenItems('windows', vData.statusWindows); //['LF', 'RF', 'LR', 'RR', 'HD'];
             // console.log(`openDoors: ${JSON.stringify(openDoors)}`);
             // console.log(`openWindows: ${JSON.stringify(openWindows)}`);
             tableRows.push(
@@ -494,22 +495,22 @@ module.exports = class FPW_App {
                         await this.createImageCell(await this.FPW.Files.getImage(`door_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                         await this.createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', {
                             align: 'left',
-                            widthWeight: 25,
+                            widthWeight: 20,
                             dismissOnTap: false,
-                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            titleColor: this.FPW.colorMap.text.dark,
                             titleFont: Font.semiboldSystemFont(fontSizes.headline),
                             subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                         }),
-                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(fontSizes.medium) }),
-                        await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 20 }),
-                        await this.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                        await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
+                        await this.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         // Window Status Cells
                         await this.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                             align: 'right',
-                            widthWeight: 25,
+                            widthWeight: 20,
                             dismissOnTap: false,
-                            titleColor: new Color(this.FPW.colorMap.textWhite),
+                            titleColor: this.FPW.colorMap.text.dark,
                             titleFont: Font.semiboldSystemFont(fontSizes.headline),
                             subtitleColor: new Color(openWindows.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
@@ -517,7 +518,7 @@ module.exports = class FPW_App {
                         await this.createImageCell(await this.FPW.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                     ], {
                         backgroundColor: new Color(headerColor),
-                        height: 100,
+                        height: 110,
                         cellSpacing: 0,
                         dismissOnSelect: false,
                     },
@@ -529,20 +530,36 @@ module.exports = class FPW_App {
                 await this.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
                 await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, {
                     align: 'left',
-                    widthWeight: 45,
-                    titleColor: new Color(this.FPW.colorMap.textWhite),
+                    widthWeight: 30,
+                    titleColor: this.FPW.colorMap.text.dark,
                     titleFont: Font.semiboldSystemFont(fontSizes.headline),
                     subtitleColor: Color.lightGray(),
                     subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                 }),
             ];
+            if (vData.fordpassRewardsInfo && vData.fordpassRewardsInfo.points) {
+                row4Items.push(
+                    await this.createTextCell('FordPass Rewards', `${vData.fordpassRewardsInfo.points}`, {
+                        align: 'center',
+                        widthWeight: 40,
+                        dismissOnTap: false,
+                        titleColor: this.FPW.colorMap.text.dark,
+                        titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                        subtitleColor: this.FPW.colorMap.closedColor,
+                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                    }),
+                );
+            } else {
+                row4Items.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 40 }));
+            }
+
             if (vData.alarmStatus && vData.alarmStatus.length) {
                 row4Items.push(
                     await this.createTextCell('Alarm', vData.alarmStatus && vData.alarmStatus === 'On' ? 'Active' : 'Inactive', {
                         align: 'right',
-                        widthWeight: 45,
+                        widthWeight: 30,
                         dismissOnTap: false,
-                        titleColor: new Color(this.FPW.colorMap.textWhite),
+                        titleColor: this.FPW.colorMap.text.dark,
                         titleFont: Font.semiboldSystemFont(fontSizes.headline),
                         subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
                         subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
@@ -550,7 +567,7 @@ module.exports = class FPW_App {
                     await this.createImageCell(await this.FPW.Files.getImage(`alarm_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                 );
             } else {
-                row4Items.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 50 }));
+                row4Items.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 35 }));
             }
             tableRows.push(
                 await this.createTableRow(row4Items, {
@@ -560,12 +577,20 @@ module.exports = class FPW_App {
                 }),
             );
 
-            // Header Section - Row 5: Shows vehicle checkin timestamp
+            // Header Section - Row 5: Padding Row
+            tableRows.push(
+                await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], {
+                    backgroundColor: new Color(headerColor),
+                    height: 20,
+                    dismissOnSelect: false,
+                }),
+            );
+            // Header Section - Row 6: Shows vehicle checkin timestamp
             tableRows.push(
                 await this.createTableRow(
                     [
                         // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
-                        await this.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: new Color(this.FPW.colorMap.textWhite), titleFont: Font.regularSystemFont(9) }),
+                        await this.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularSystemFont(9) }),
                         // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
                     ], {
                         backgroundColor: new Color(headerColor),
@@ -1184,11 +1209,16 @@ module.exports = class FPW_App {
                 // await this.FPW.Alerts.showAlert('Widget Command', `Widget Command: ${widgetCmd}`);
                 await this.processWidgetCommands(widgetCmd);
             }
-            // Refreshes the page every 30 seconds
-            await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 30000, false, true);
+
+            if (this.mainPageFirstLoad) {
+                this.mainPageFirstLoad = false;
+                await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 1000, false, true);
+            } else {
+                // Refreshes the page every 30 seconds
+                await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 30000, false, true);
+            }
 
             await this.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
-            // await this.FPW.Timers.stopTimer('mainTableRefresh');
         } catch (err) {
             await this.FPW.logError(`createMainPage() Error: ${err}`);
         }
@@ -1855,6 +1885,68 @@ module.exports = class FPW_App {
         }
     }
 
+    async createVehicleImagesPage() {
+        const fontSizes = {
+            medium: 10,
+            title1: 24,
+            title2: 22,
+            title3: 20,
+            body: 10,
+            body2: 11,
+            body3: 13,
+            footnote: 14,
+            headline: 15,
+            headline2: 17,
+            subheadline: 13,
+        };
+        try {
+            const vData = await this.FPW.FordAPI.fetchVehicleData(true);
+            // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
+            let tableRows = [];
+            tableRows.push(
+                await this.createTableRow(
+                    [
+                        await this.createTextCell(`Available Vehicle Images`, `This page shows any of the images available for your VIN number.\n\nTapping on an image will present the Files app to save the image.`, {
+                            align: 'center',
+                            widthWeight: 1,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.normalText,
+                            titleFont: Font.regularRoundedSystemFont(fontSizes.title1),
+                            subtitleColor: Color.lightGray(),
+                            subtitleFont: Font.mediumSystemFont(fontSizes.body2),
+                        }),
+                    ], {
+                        height: 50,
+                        dismissOnSelect: false,
+                    },
+                ),
+            );
+            for (const [i, angle] of[1, 2, 3, 4, 5].entries()) {
+                const vehicleImg = await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, angle, false, true);
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell(`Angle ${angle}`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.mediumSystemFont(fontSizes.headline2) }),
+                            await this.createImageCell(vehicleImg, { align: 'center', widthWeight: 60 }),
+                            await this.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
+                        ], {
+                            height: 150,
+                            dismissOnSelect: false,
+                            onSelect: async() => {
+                                console.log('(Advanced Info) Vehicle Data was pressed');
+                                this.FPW.Menus.imageExportMenu(vehicleImg, `vehicle_image_angle_${angle}.png`);
+                            },
+                        },
+                    ),
+                );
+            }
+
+            await this.generateTableMenu('vehicleImages', tableRows, false, false);
+        } catch (error) {
+            console.error(`createVehicleImagesPage() Error: ${error}`);
+        }
+    }
+
     async advancedInfoPage() {
         const fontSizes = {
             medium: 10,
@@ -1870,10 +1962,42 @@ module.exports = class FPW_App {
             subheadline: 13,
         };
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
+        const headerColor = '#13233F';
         try {
             let tableRows = [];
             const vData = await this.FPW.FordAPI.fetchVehicleData(true);
             const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
+            tableRows.push(
+                await this.createTableRow(
+                    [
+                        await this.createTextCell('', undefined, { align: 'left', widthWeight: 30 }),
+
+                        await this.createTextCell('', undefined, {
+                            align: 'center',
+                            widthWeight: 40,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            subtitleColor: Color.lightGray(),
+                            titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
+                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
+                        }),
+                        await this.createButtonCell('Diagnostics', {
+                            align: 'right',
+                            widthWeight: 30,
+                            dismissOnTap: false,
+                            onTap: async() => {
+                                console.log(`(Dashboard) Menu Button was pressed`);
+                                this.FPW.Menus.menuBuilderByType('diagnostics');
+                            },
+                        }),
+                    ], {
+                        backgroundColor: new Color(headerColor),
+                        height: 40,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                    },
+                ),
+            );
             if (vData) {
                 tableRows.push(
                     await this.createTableRow([await this.createTextCell('SYNC Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
@@ -1962,16 +2086,36 @@ module.exports = class FPW_App {
                         },
                     ),
                 );
-            } else {
+
                 tableRows.push(
-                    await this.createTableRow([await this.createTextCell(`Recent Changes`, undefined, { align: 'center', widthWeight: 100, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
-                        height: 50,
+                    await this.createTableRow([await this.createTextCell('Vehicle Image Viewer', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                        height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
                         backgroundColor: new Color(titleBgColor),
                     }),
                 );
-                tableRows.push(await this.createTableRow([await this.createTextCell('No Change info found for the current version...', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body3) })], { height: 44, dismissOnSelect: false }));
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell(`View Available Vehicle Images`, 'Tap to view', {
+                                align: 'left',
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(11),
+                            }),
+                        ], {
+                            height: 50,
+                            dismissOnSelect: false,
+                            onSelect: async() => {
+                                console.log('(Advanced Info) View Vehicle Images was pressed');
+                                await this.FPW.App.createVehicleImagesPage();
+                            },
+                        },
+                    ),
+                );
             }
 
             await this.generateTableMenu('advancedInfo', tableRows, true, false);
