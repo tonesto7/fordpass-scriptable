@@ -41,6 +41,13 @@
     
 **************/
 const changelogs = {
+    '2022.02.22.0': {
+        added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.'],
+        fixed: [],
+        removed: [],
+        updated: ['Moved the diagnostics menu item in the advanced info page as a menu there.'],
+        clearImgCache: true,
+    },
     '2022.02.21.0': {
         added: ['The dashboard now shows the vehicle health alert for a low 12V battery.'],
         fixed: [
@@ -51,7 +58,6 @@ const changelogs = {
         ],
         removed: [],
         updated: ['The large widget buttons are now slightly smaller.'],
-        clearImgCache: true,
     },
     '2022.02.18.0': {
         added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open. It also includes a timestamp at the bottom of the page showing when it was last refreshed.', 'New Advanced Info link added to the bottom of the Dashboard page to quickly access the Sync Version info, all Widget data, and OTA info.'],
@@ -3043,7 +3049,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1194927468', 'FPW_App.js||1949718012', 'FPW_Files.js||-2063727340', 'FPW_FordAPIs.js||-1143581971', 'FPW_Keychain.js||-163364549', 'FPW_Menus.js||-569477883', 'FPW_Notifications.js||-310768506', 'FPW_ShortcutParser.js||540917456', 'FPW_Timers.js||-1303356317'];
+const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||-1544647484', 'FPW_Files.js||1736163301', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();

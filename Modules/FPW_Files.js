@@ -174,7 +174,7 @@ module.exports = class FPW_Files {
         return;
     }
 
-    async getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false, secondAttempt = false) {
+    async getVehicleImage(modelYear, cloudStore = false, angle = 4, asData = false, secondAttempt = false, ignError = false) {
         const fm = cloudStore || this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
         const dir = fm.documentsDirectory();
         let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `vehicle_${angle}_${this.SCRIPT_ID}.png` : `vehicle_${angle}.png`;
@@ -202,7 +202,7 @@ module.exports = class FPW_Files {
                 Referer: 'https://www.ford.com',
             };
             req.method = 'GET';
-            req.timeoutInterval = 10;
+            req.timeoutInterval = 15;
             try {
                 let img = await req.loadImage();
                 let resp = req.response;
@@ -215,7 +215,7 @@ module.exports = class FPW_Files {
                 }
             } catch (e) {
                 console.log(e.message);
-                if (e.message === 'Cannot parse response to an image.' && !secondAttempt) {
+                if (!ignError && e.message === 'Cannot parse response to an image.' && !secondAttempt) {
                     secondAttempt = true;
                     return await this.getVehicleImage(modelYear, cloudStore, 4, asData, secondAttempt);
                 } else {
