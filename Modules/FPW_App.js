@@ -1152,12 +1152,12 @@ module.exports = class FPW_App {
             }
 
             tableRows.push(
-                await this.createTableRow([
-                    await this.createTextCell('', undefined, {
-                        align: 'center',
-                        widthWeight: 100,
-                    }),
-                ]),
+                // await this.createTableRow([
+                //     await this.createTextCell('', undefined, {
+                //         align: 'center',
+                //         widthWeight: 100,
+                //     }),
+                // ]),
                 await this.createTableRow([
                     await this.createTextCell('Last Refreshed:', new Date().toLocaleString(), {
                         align: 'center',
@@ -1970,20 +1970,20 @@ module.exports = class FPW_App {
             tableRows.push(
                 await this.createTableRow(
                     [
-                        await this.createTextCell('', undefined, { align: 'left', widthWeight: 30 }),
+                        await this.createTextCell('', undefined, { align: 'left', widthWeight: 25 }),
 
-                        await this.createTextCell('', undefined, {
+                        await this.createTextCell('Advanced Info', undefined, {
                             align: 'center',
-                            widthWeight: 40,
+                            widthWeight: 50,
                             dismissOnTap: false,
-                            titleColor: this.FPW.colorMap.text.dark,
-                            subtitleColor: Color.lightGray(),
+                            titleColor: this.FPW.colorMap.normalText,
+                            // subtitleColor: Color.lightGray(),
                             titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
-                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
+                            // subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                         }),
                         await this.createButtonCell('Diagnostics', {
                             align: 'right',
-                            widthWeight: 30,
+                            widthWeight: 25,
                             dismissOnTap: false,
                             onTap: async() => {
                                 console.log(`(Dashboard) Menu Button was pressed`);
@@ -1991,8 +1991,7 @@ module.exports = class FPW_App {
                             },
                         }),
                     ], {
-                        backgroundColor: new Color(headerColor),
-                        height: 40,
+                        height: 50,
                         isHeader: true,
                         dismissOnSelect: false,
                     },
@@ -2000,7 +1999,7 @@ module.exports = class FPW_App {
             );
             if (vData) {
                 tableRows.push(
-                    await this.createTableRow([await this.createTextCell('SYNC Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                    await this.createTableRow([await this.createTextCell('SYNC Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -2020,14 +2019,14 @@ module.exports = class FPW_App {
                                     subtitleFont: Font.regularSystemFont(11),
                                 }),
                             ], {
-                                height: 50,
+                                height: 60,
                                 dismissOnSelect: false,
                             },
                         ),
                     );
                 }
                 tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Vehicle Data Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                    await this.createTableRow([await this.createTextCell('Vehicle Data Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -2046,7 +2045,7 @@ module.exports = class FPW_App {
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
                         ], {
-                            height: 50,
+                            height: 60,
                             dismissOnSelect: false,
                             onSelect: async() => {
                                 console.log('(Advanced Info) Vehicle Data was pressed');
@@ -2057,7 +2056,7 @@ module.exports = class FPW_App {
                     ),
                 );
                 tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Over-The-Air Update Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                    await this.createTableRow([await this.createTextCell('Over-The-Air Update Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -2076,7 +2075,7 @@ module.exports = class FPW_App {
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
                         ], {
-                            height: 50,
+                            height: 60,
                             dismissOnSelect: false,
                             onSelect: async() => {
                                 console.log('(Advanced Info) OTA Info was pressed');
@@ -2087,8 +2086,63 @@ module.exports = class FPW_App {
                     ),
                 );
 
+                //         "displayOTAStatusReport": "UserAllowed",
+                // "ccsStatus": { "ccsConnectivity": "On", "ccsVehicleData": "On" },
+                // "error": null,
+                // "fuseResponse": {
+                //     "fuseResponseList": [{
+                //         "vin": "1FTFW1E80MFA2XXXX",
+                //         "oemCorrelationId": "FLARE-PRD-SOFTWARE-FNV2-441247-475630",
+                //         "deploymentId": "719846a8-e702-4ad3-87c3-ee8de804779c",
+                //         "deploymentCreationDate": "2022-01-03T18:18:55.241+0000",
+                //         "deploymentExpirationTime": "2022-01-10T18:18:55.241+0000",
+                //         "otaTriggerExpirationTime": "2021-11-20T17:33:32.726+0000",
+                //         "communicationPriority": "LOW",
+                //         "type": "NEW_FEATURE",
+                //         "triggerType": "SOFTWARE",
+                //         "inhibitRequired": false,
+                //         "additionalConsentLevel": 1,
+                //         "tmcEnvironment": "PRD",
+                //         "latestStatus": { "aggregateStatus": "success", "detailedStatus": "OTAM_S1010", "dateTimestamp": "2022-01-05T23:44:56.850+0000" },
+                //         "packageUpdateDetails": {
+                //             "releaseNotesUrl": "https://mmota.autonomic.ai/1/bytestream/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185",
+                //             "updateDisplayTime": 0,
+                //             "wifiRequired": false,
+                //             "packagePriority": 1,
+                //             "failedOnResponse": "none",
+                //             "cdnreleaseNotesUrl": "http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185"
+                //         },
+                //         "deploymentFinalConsumerAction": "Not Set"
+                //     }],
+                //     "languageText": {
+                //         "Language": "English (US/NA)",
+                //         "LanguageCode": "ENU",
+                //         "LanguageCodeMobileApp": "en-US",
+                //         "Text": "Ford Power-Up 2.1.0\n\nMinor updates here and there. Just small stuff to keep everything running smoothly. Ongoing updates like this help ensure that you’ll always be driving the best possible version of your F-150. Enjoy."
+                //     }
+                // },
+                // "tappsResponse": {
+                //     "vin": "1FTFW1E80MFA2XXXX",
+                //     "status": 200,
+                //     "vehicleInhibitStatus": null,
+                //     "lifeCycleModeStatus": { "lifeCycleMode": "NORMAL", "oemCorrelationId": "", "vehicleDateTime": "2022-02-02T04:05:52.000Z", "tappsDateTime": "2022-02-02T04:14:52.739424Z" },
+                //     "asuActivationSchedule": {
+                //         "scheduleType": "RECURRING",
+                //         "dayOfWeekAndTime": null,
+                //         "activationScheduleDaysOfWeek": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"],
+                //         "activationScheduleTimeOfDay": "00:30",
+                //         "oemCorrelationId": "21",
+                //         "vehicleDateTime": "2022-02-16T12:48:05.000Z",
+                //         "tappsDateTime": "2022-02-16T17:48:15.011199Z"
+                //     },
+                //     "asuSettingsStatus": { "asuSettingsState": "ON", "notificationSettingsState": "ON", "oemCorrelationId": "5784", "vehicleDateTime": "2021-10-25T16:31:01Z", "tappsDateTime": "2021-10-25T20:31:05.569Z" },
+                //     "version": "2.0.0"
+                // },
+                // "updatePendingState": null,
+                // "otaAlertStatus": "YOU ARE ALL SET"
+
                 tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Vehicle Image Viewer', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                    await this.createTableRow([await this.createTextCell('Vehicle Image Viewer', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -2107,7 +2161,7 @@ module.exports = class FPW_App {
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
                         ], {
-                            height: 50,
+                            height: 60,
                             dismissOnSelect: false,
                             onSelect: async() => {
                                 console.log('(Advanced Info) View Vehicle Images was pressed');

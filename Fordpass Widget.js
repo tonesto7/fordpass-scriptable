@@ -43,7 +43,7 @@
 const changelogs = {
     '2022.02.22.0': {
         added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.', 'Added FordPass rewards points to the dashboard menu.'],
-        fixed: ['Fixed menu_btn_red.png_64 error when there was an alert in the widget.'],
+        fixed: [],
         removed: [],
         updated: ['Dashboard should load immediately now from cached data and then update with current data in the next few seconds', 'Modified the layout of the dashboard header to make the image larger.', 'Moved the diagnostics menu item in the advanced info page as a menu there.'],
         clearImgCache: true,
@@ -446,12 +446,21 @@ class Widget {
 
             // console.log('(prepWidget) Fetching Vehicle Data...');
             console.log(`(prepWidget) Fetching Vehicle Data | Local: (${loadLocal})`);
-            const vData = await this.FordAPI.fetchVehicleData(loadLocal, isWidget);
-            return vData;
+            const vData = await this.FordAPI.fetchVehicleData(loadLocal);
+            return isWidget ? await this.leanOutDataForWidget(vData) : vData;
         } catch (err) {
             this.logError(`prepWidget() Error: ${err}`, true);
             return null;
         }
+    }
+
+    async leanOutDataForWidget(vData) {
+        delete vData.rawStatus;
+        delete vData.messages;
+        delete vData.syncInfo;
+        delete vData.recallInfo;
+        // delete vData.otaInfo
+        return vData;
     }
 
     /**
@@ -2192,7 +2201,7 @@ class Widget {
             const row3LeftCol = await this.createColumn(row3Row, { '*setPadding': [0, 0, 0, 0] });
             // Creates the Lock Status Elements
             await this.createLockStatusElement(row3LeftCol, vData);
-            // row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
+            row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
             // Creates the Door Status Elements
             await this.createDoorElement(row3LeftCol, vData);
 
@@ -2209,6 +2218,7 @@ class Widget {
             // row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
             // Creates the Ignition Status Elements
             await this.createIgnitionStatusElement(row3RightCol, vData);
+            row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
 
             // Creates the Window Status Elements
             await this.createWindowElement(row3RightCol, vData);
@@ -2218,10 +2228,10 @@ class Widget {
             row3Col.addSpacer(); // Pushes Row 3 content to top
             wContent.addSpacer();
 
-            const row5Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
-            const row5CenterCol = await this.createColumn(row5Container, { '*setPadding': [0, 0, 0, 0] });
+            const row4Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
+            const row4CenterCol = await this.createColumn(row4Container, { '*setPadding': [0, 0, 0, 0] });
             // Creates the Vehicle Location Element
-            await this.createPositionElement(row5CenterCol, vData, 'center');
+            await this.createPositionElement(row4CenterCol, vData, 'center');
 
             wContent.addSpacer(); // Pushes all content to the top
             // widget.addSpacer(); // Pushes all content to the top
@@ -2487,7 +2497,7 @@ class Widget {
             }
             // let txtSize = status.length >= 10 ? Math.round(this.sizeMap[this.widgetSize].fontSizeMedium * 0.75) : this.sizeMap[this.widgetSize].fontSizeMedium;
             const styles = {
-                on: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.7 },
+                on: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: status.length >= 10 ? 0.7 : 1 },
                 off: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor },
             };
             await this.createText(valueRow, status, vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
