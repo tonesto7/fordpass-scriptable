@@ -532,7 +532,7 @@ module.exports = class FPW_FordAPIs {
         //Fetch data from local store
         // if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
         if (loadLocal) {
-            let ld = await this.FPW.Files.readLocalData();
+            let ld = await this.FPW.Files.readJsonFile('Vehicle Data');
             if (ld !== undefined || ld.info !== undefined || Object.keys(ld.info).length > 0) {
                 return ld;
             }
@@ -548,7 +548,7 @@ module.exports = class FPW_FordAPIs {
         // vehicleData.SCRIPT_TS = this.SCRIPT_TS;
         if (statusData == this.FPW.textMap().errorMessages.invalidGrant || statusData == this.FPW.textMap().errorMessages.connectionErrorOrVin || statusData == this.FPW.textMap().errorMessages.unknownError || statusData == this.FPW.textMap().errorMessages.noVin || statusData == this.FPW.textMap().errorMessages.noCredentials) {
             // console.log('fetchVehicleData | Error: ' + statusData);
-            let localData = this.FPW.Files.readLocalData();
+            let localData = this.FPW.Files.readJsonFile('Vehicle Data');
             if (localData) {
                 vehicleData = localData;
             }
@@ -732,7 +732,7 @@ module.exports = class FPW_FordAPIs {
         }
 
         //save data to local store
-        this.FPW.Files.saveDataToLocal(vehicleData);
+        this.FPW.Files.saveJsonFile('Vehicle Data', vehicleData);
         // console.log(JSON.stringify(vehicleData));
         return vehicleData;
     }

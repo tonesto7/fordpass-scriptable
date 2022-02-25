@@ -25,6 +25,8 @@
  * IMPORTANT NOTE: This widget will only work with vehicles that show up in the FordPassFordPass app!
  */
 
+// TODO: Add static image support for the vehicle image.
+
 /**************
 // Todo: Next Release (Post 2.0.x)
 [-] use OTA info to show when an update is available or pending.
@@ -41,12 +43,18 @@
     
 **************/
 const changelogs = {
+    '2022.02.25.0': {
+        added: ["New Feature that I can't mention..."],
+        fixed: [],
+        removed: [],
+        updated: [],
+        clearImgCache: true,
+    },
     '2022.02.22.0': {
         added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.', 'Added FordPass rewards points to the dashboard menu.'],
         fixed: [],
         removed: [],
         updated: ['Dashboard should load immediately now from cached data and then update with current data in the next few seconds', 'Modified the layout of the dashboard header to make the image larger.', 'Moved the diagnostics menu item in the advanced info page as a menu there.'],
-        clearImgCache: true,
     },
     '2022.02.21.0': {
         added: ['The dashboard now shows the vehicle health alert for a low 12V battery.'],
@@ -85,7 +93,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.22.0';
+const SCRIPT_VERSION = '2022.02.25.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -305,6 +313,7 @@ class Widget {
                 this.changelogs = changelogs;
                 this.App = this.moduleLoader('App');
                 this.Menus = this.moduleLoader('Menus');
+                this.AsBuilt = this.moduleLoader('AsBuilt');
             }
             this.checkForUpdates();
         } catch (e) {
@@ -368,6 +377,7 @@ class Widget {
                     // await w5.presentLarge();
 
                     await this.App.createMainPage();
+                    // await this.App.createAdvancedInfoPage();
                     await this.Timers.stopTimer('mainTableRefresh');
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
@@ -3061,7 +3071,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||79100848', 'FPW_Files.js||1736163301', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||-1440891113', 'FPW_App.js||1442156626', 'FPW_AsBuilt.js||874941626', 'FPW_Files.js||1199869730', 'FPW_FordAPIs.js||-89536509', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();

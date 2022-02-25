@@ -1186,7 +1186,7 @@ module.exports = class FPW_App {
                         dismissOnSelect: false,
                         onSelect: async() => {
                             console.log('(Main Menu) Advanced Info Page was pressed');
-                            this.advancedInfoPage();
+                            this.createAdvancedInfoPage();
                         },
                     },
                 ),
@@ -1947,7 +1947,7 @@ module.exports = class FPW_App {
         }
     }
 
-    async advancedInfoPage() {
+    async createAdvancedInfoPage() {
         const fontSizes = {
             medium: 10,
             title1: 24,
@@ -2086,6 +2086,35 @@ module.exports = class FPW_App {
                     ),
                 );
 
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell('AsBuilt Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell(`View AsBuilt Info`, 'Tap to view', {
+                                align: 'left',
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(11),
+                            }),
+                        ], {
+                            height: 60,
+                            dismissOnSelect: false,
+                            onSelect: async() => {
+                                console.log('(Advanced Info) AsBuilt was pressed');
+                                await this.createAsBuiltPage();
+                            },
+                        },
+                    ),
+                );
                 //         "displayOTAStatusReport": "UserAllowed",
                 // "ccsStatus": { "ccsConnectivity": "On", "ccsVehicleData": "On" },
                 // "error": null,
@@ -2165,7 +2194,7 @@ module.exports = class FPW_App {
                             dismissOnSelect: false,
                             onSelect: async() => {
                                 console.log('(Advanced Info) View Vehicle Images was pressed');
-                                await this.FPW.App.createVehicleImagesPage();
+                                await this.createVehicleImagesPage();
                             },
                         },
                     ),
@@ -2174,7 +2203,352 @@ module.exports = class FPW_App {
 
             await this.generateTableMenu('advancedInfo', tableRows, true, false);
         } catch (error) {
-            await this.FPW.logError(`(advancedInfoPage Table) ${error}`);
+            await this.FPW.logError(`(createAdvancedInfoPage Table) ${error}`);
+        }
+    }
+
+    async createCaptchaPage(img) {
+        const fontSizes = {
+            medium: 10,
+            title1: 24,
+            title2: 22,
+            title3: 20,
+            body: 10,
+            body2: 11,
+            body3: 13,
+            footnote: 14,
+            headline: 15,
+            headline2: 17,
+            subheadline: 13,
+        };
+        try {
+            let tableRows = [];
+            tableRows.push(
+                await this.createTableRow(
+                    [
+                        await this.createTextCell(`AsBuilt Captcha Image`, `Remember this code and close this page and enter it into the menu input.`, {
+                            align: 'center',
+                            widthWeight: 1,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.normalText,
+                            titleFont: Font.regularRoundedSystemFont(fontSizes.title1),
+                            subtitleColor: Color.lightGray(),
+                            subtitleFont: Font.mediumSystemFont(fontSizes.body2),
+                        }),
+                    ], {
+                        height: 50,
+                        dismissOnSelect: false,
+                    },
+                ),
+            );
+
+            tableRows.push(
+                await this.createTableRow([await this.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }), await this.createImageCell(img, { align: 'center', widthWeight: 60 }), await this.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false })], {
+                    height: 150,
+                    dismissOnSelect: false,
+                }),
+            );
+
+            await this.generateTableMenu('captchaPage', tableRows, false, false);
+        } catch (error) {
+            console.error(`createCaptchaPage() Error: ${error}`);
+        }
+    }
+
+    async createAsBuiltPage(update = false) {
+        const fontSizes = {
+            medium: 10,
+            title1: 24,
+            title2: 22,
+            title3: 20,
+            body: 10,
+            body2: 11,
+            body3: 13,
+            footnote: 14,
+            headline: 15,
+            headline2: 17,
+            subheadline: 13,
+        };
+        const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
+        const headerColor = Color.darkGray(); //new Color('#13233F');
+        try {
+            const vin = await this.FPW.getSettingVal('fpVin');
+            let tableRows = [];
+
+            const asbInfo = await this.FPW.Files.getFileInfo(`${vin}.json`, true);
+            const lastModDt = asbInfo.modified ? new Date(asbInfo.modified).toLocaleString() : undefined;
+
+            // console.log(`(createAsBuiltPage) asbInfo: ${JSON.stringify(asbInfo)}`);
+            console.log(`AsBuilt File Modified: ${lastModDt}`);
+            tableRows.push(
+                await this.createTableRow(
+                    [
+                        await this.createTextCell('', undefined, { align: 'left', widthWeight: 25 }),
+                        await this.createTextCell('AsBuilt Data', undefined, {
+                            align: 'center',
+                            widthWeight: 50,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            subtitleColor: Color.lightGray(),
+                            titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
+                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
+                        }),
+                        await this.createButtonCell(asbInfo && asbInfo.modifed ? 'Reload AsBuilt' : 'Get AsBuilt', {
+                            align: 'right',
+                            widthWeight: 25,
+                            dismissOnTap: false,
+                            onTap: async() => {
+                                console.log(`(Dashboard) Menu Button was pressed`);
+
+                                await this.FPW.AsBuilt.getAsBuiltFile(vin);
+                                this.createAsBuiltPage();
+                            },
+                        }),
+                    ], {
+                        backgroundColor: headerColor,
+                        height: 50,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                    },
+                ),
+            );
+
+            tableRows.push(
+                await this.createTableRow(
+                    [
+                        await this.createTextCell('', undefined, { align: 'left', widthWeight: 25 }),
+                        await this.createTextCell(lastModDt ? 'Last Downloaded' : '', lastModDt ? lastModDt : undefined, {
+                            align: 'center',
+                            widthWeight: 50,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            subtitleColor: this.FPW.colorMap.text.dark,
+                            titleFont: Font.boldRoundedSystemFont(fontSizes.subheadline),
+                            subtitleFont: Font.thinSystemFont(fontSizes.body),
+                        }),
+                        await this.createTextCell('', undefined, { align: 'left', widthWeight: 25 }),
+                    ], {
+                        backgroundColor: headerColor,
+                        height: 50,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                    },
+                ),
+            );
+
+            let asbData = await this.FPW.Files.readJsonFile('AsBuilt Data', `${vin}`, true);
+            if (asbData) {
+                const modCount = asbData && asbData.AS_BUILT_DATA && asbData.AS_BUILT_DATA.VEHICLE && asbData.AS_BUILT_DATA.VEHICLE.NODEID ? asbData.AS_BUILT_DATA.VEHICLE.NODEID.length : 0;
+                // console.log(JSON.stringify(asbData.AS_BUILT_DATA.VEHICLE.NODEID));
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell(`Vehicle Modules (${modCount})`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
+                if (modCount > 0) {
+                    async function groupAsbuiltDataByModule(data) {
+                        const grpData = {};
+                        for (const i in data) {
+                            const addr = data[i]['@LABEL'].slice(0, 3);
+                            if (!grpData[addr]) {
+                                grpData[addr] = [];
+                            }
+                            grpData[addr].push(data[i]);
+                        }
+                        return grpData;
+                    }
+                    const asBuiltByModule = await groupAsbuiltDataByModule(asbData.AS_BUILT_DATA.VEHICLE.BCE_MODULE.DATA);
+                    console.log(`asBuiltByModule: ${Object.keys(asBuiltByModule).length}`);
+                    for (const [i, module] of asbData.AS_BUILT_DATA.VEHICLE.NODEID.entries()) {
+                        // console.log(module);
+                        const modAddr = module['#text'];
+                        const mData = {
+                            addr: modAddr,
+                            updatable: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).updatable : false,
+                            label: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).desc : 'Unknown Module',
+                            nodeData: module,
+                            asbuiltData: asBuiltByModule[modAddr] || undefined,
+                        };
+                        // console.log(`Module (${mData.addr}) | ${mData.info.desc}`);
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createTextCell(`${mData.label}`, `Tap to view`, {
+                                        align: 'left',
+                                        widthWeight: 100,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                        subtitleColor: this.FPW.colorMap.normalText,
+                                        subtitleFont: Font.regularSystemFont(11),
+                                    }),
+                                ], {
+                                    height: 50,
+                                    dismissOnSelect: false,
+                                    onSelect: async() => {
+                                        console.log(`(AsBuilt Info) View Module (${mData.label}) was pressed`);
+                                        await this.createModuleInfoPage(mData);
+                                    },
+                                },
+                            ),
+                        );
+                    }
+                }
+            } else {
+                tableRows.push(await this.createTableRow([await this.createTextCell('No AsBuilt Data Found... Press the Get AsBuilt Button to Get Started', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body2) })], { height: 44, dismissOnSelect: false }));
+            }
+
+            await this.generateTableMenu('asBuiltPage', tableRows, true, false, update);
+        } catch (error) {
+            console.error(`createAsBuiltPage() Error: ${error}`);
+        }
+    }
+
+    async createModuleInfoPage(moduleData = undefined) {
+        const fontSizes = {
+            medium: 10,
+            title1: 24,
+            title2: 22,
+            title3: 20,
+            body: 10,
+            body2: 11,
+            body3: 13,
+            footnote: 14,
+            headline: 15,
+            headline2: 17,
+            subheadline: 13,
+        };
+        const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
+        const headerColor = Color.darkGray(); //new Color('#13233F');
+        try {
+            let tableRows = [];
+            tableRows.push(
+                await this.createTableRow(
+                    [
+                        await this.createTextCell(`${moduleData.label}`, `Network Address: ${moduleData.addr}`, {
+                            align: 'center',
+                            widthWeight: 100,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            subtitleColor: this.FPW.colorMap.text.dark,
+                            titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
+                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
+                        }),
+                    ], {
+                        backgroundColor: headerColor,
+                        height: 60,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                    },
+                ),
+            );
+
+            if (moduleData && moduleData.nodeData) {
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell(`Module Info`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
+                // console.log(`NodeData: ${Object.keys(moduleData.nodeData).length}`);
+                if (Object.keys(moduleData.nodeData).length > 0) {
+                    for (const i in moduleData.nodeData) {
+                        if (!['#text', 'F106'].includes(i)) {
+                            // console.log(`Node: ${i}`);
+                            const nodeDesc = this.FPW.AsBuilt.nodeDesc[i] || 'Unknown Node';
+
+                            tableRows.push(
+                                await this.createTableRow(
+                                    [
+                                        await this.createTextCell(`(${i}): ${nodeDesc}`, `${moduleData.nodeData[i]}`, {
+                                            align: 'left',
+                                            widthWeight: 100,
+                                            titleColor: this.FPW.colorMap.normalText,
+                                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                                            subtitleColor: this.FPW.colorMap.normalText,
+                                            subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
+                                        }),
+                                    ], {
+                                        height: 60,
+                                        dismissOnSelect: false,
+                                    },
+                                ),
+                            );
+                        }
+                    }
+                }
+            } else {
+                tableRows.push(await this.createTableRow([await this.createTextCell('No Module Node Data Found... Press the Get AsBuilt Button to refresh the data', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body2) })], { height: 44, dismissOnSelect: false }));
+            }
+
+            if (moduleData && moduleData.asbuiltData) {
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell(`AsBuilt Data`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
+                // console.log(`AbData: ${Object.keys(moduleData.asbuiltData).length}`);
+                if (Object.keys(moduleData.asbuiltData).length > 0) {
+                    for (const i in moduleData.asbuiltData) {
+                        // console.log(`${i}: ${JSON.stringify(moduleData.asbuiltData[i])}`);
+                        let blks = moduleData.asbuiltData[i].CODE.filter((c) => c !== null);
+                        // console.log(`blks: ${JSON.stringify(blks)}`);
+                        const blkCnt = blks.length;
+                        // console.log(`BlkCnt: ${blkCnt}`);
+                        const firstColWidth = 20;
+                        let columns = [
+                            await this.createTextCell(`${moduleData.asbuiltData[i]['@LABEL']}`, undefined, {
+                                align: 'left',
+                                widthWeight: firstColWidth,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.semiboldSystemFont(fontSizes.headline2),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
+                            }),
+                        ];
+
+                        if (blkCnt > 0) {
+                            let rowWidth = firstColWidth;
+                            for (const [i, blk] of blks.entries()) {
+                                rowWidth = rowWidth + 15;
+                                columns.push(
+                                    await this.createTextCell(`Block ${i + 1}`, blk, {
+                                        align: 'center',
+                                        widthWeight: 15,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        titleFont: Font.systemFont(fontSizes.body2),
+                                        subtitleColor: this.FPW.colorMap.normalText,
+                                        subtitleFont: Font.regularSystemFont(fontSizes.headline),
+                                    }),
+                                );
+                            }
+                            if (rowWidth < 100) {
+                                columns.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 100 - rowWidth }));
+                            }
+                        }
+
+                        tableRows.push(
+                            await this.createTableRow(columns, {
+                                height: 60,
+                                dismissOnSelect: false,
+                            }),
+                        );
+                    }
+                }
+            } else {
+                console.log(`No AsBuilt Data for Module: ${moduleData.label} | ${moduleData.addr}`);
+            }
+
+            await this.generateTableMenu('moduleInfoPage', tableRows, true, false);
+        } catch (error) {
+            console.error(`createModuleInfoPage() Error: ${error}`);
         }
     }
 };

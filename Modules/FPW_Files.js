@@ -15,37 +15,53 @@ module.exports = class FPW_Files {
         }
     }
 
-    async saveDataToLocal(data, removeFirst = false) {
-        console.log('FileManager: Saving Vehicle Data to Local Storage...');
+    async saveJsonFile(type, data, filename = 'fp_vehicleData', frcCld = false) {
+        console.log(`FileManager: Saving (${type}) Data to Local Storage...`);
         try {
-            let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
+            let fm = frcCld || this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `${filename}_${this.SCRIPT_ID}.json` : `${filename}.json`;
             let path = fm.joinPath(dir, fileName);
             if (await fm.fileExists(path)) {
                 await fm.remove(path);
             } //clean old data
             await fm.writeString(path, JSON.stringify(data));
         } catch (e) {
-            this.FPW.logError(`saveDataToLocal Error: ${e}`);
+            this.FPW.logError(`saveJsonFile Error: ${e}`);
         }
     }
 
-    async readLocalData() {
-        // console.log('FileManager: Retrieving Vehicle Data from Local Cache...');
+    async readJsonFile(type, filename = 'fp_vehicleData', frcCld = false) {
+        // console.log(`FileManager: Retrieving (${type}) from Local Cache...`);
         try {
-            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `$fp_vehicleData_${this.SCRIPT_ID}.json` : 'fp_vehicleData.json';
-            let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
+            let fm = frcCld || this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
+            let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `${filename}_${this.SCRIPT_ID}.json` : `${filename}.json`;
             let path = fm.joinPath(dir, fileName);
             if (await fm.fileExists(path)) {
                 let localData = await fm.readString(path);
                 return JSON.parse(localData);
             }
         } catch (e) {
-            this.FPW.logError(`readLocalData Error: ${e}`);
+            this.FPW.logError(`readJsonFile Error: ${e}`);
         }
         return null;
+    }
+
+    async getFileInfo(file, frcCld = false) {
+        let fm = frcCld || this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
+        let dir = fm.documentsDirectory();
+        let path = fm.joinPath(dir, file);
+        if (await fm.fileExists(path)) {
+            return {
+                name: file,
+                size: await fm.fileSize(path),
+                created: await fm.creationDate(path),
+                modified: await fm.modificationDate(path),
+            };
+        } else {
+            return undefined;
+        }
     }
 
     async removeLocalData(filename) {
