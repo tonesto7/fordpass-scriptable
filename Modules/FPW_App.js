@@ -1,5 +1,19 @@
 const darkMode = Device.isUsingDarkAppearance();
 
+const fontSizes = {
+    medium: 10,
+    title1: 24,
+    title2: 22,
+    title3: 20,
+    body: 10,
+    body2: 11,
+    body3: 13,
+    footnote: 14,
+    headline: 15,
+    headline2: 17,
+    subheadline: 13,
+};
+
 module.exports = class FPW_App {
     constructor(FPW) {
         this.FPW = FPW;
@@ -214,122 +228,126 @@ module.exports = class FPW_App {
     }
 
     async showDataWebView(title, heading, data, type = undefined) {
-        // console.log(`showDataWebView(${title}, ${heading})`); //, ${JSON.stringify(data)})`);
+        console.log(`showDataWebView(${title}, ${heading}, ${type})`); //, ${JSON.stringify(data)})`);
         let HTML = '';
         try {
             data = this.FPW.scrubPersonalData(data);
-            if (type === 'OTA') {
-                try {
-                    if (data.tappsResponse) {
-                        HTML += `<h3>OTA Status & Vehicle Schedule Settings</h3>`;
-                        HTML += `<ul>`;
-                        HTML += `<li>Vehicle Inhibit Status: ${data.tappsResponse.vehicleInhibitStatus || this.FPW.textMap().errorMessages.noData}</li>`;
-                        if (data.tappsResponse.lifeCycleModeStatus) {
-                            HTML += '<li>Life Cycle Mode Status:</li>';
-                            HTML += '<ul>';
-                            for (const [i, key] of Object.keys(data.tappsResponse.lifeCycleModeStatus).entries()) {
-                                const val = data.tappsResponse.lifeCycleModeStatus[key];
-                                if (val !== null || val !== undefined || val !== '') {
-                                    HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val}</li>`;
+            switch (type) {
+                case 'OTA':
+                    try {
+                        if (data.tappsResponse) {
+                            HTML += `<h3>OTA Status & Vehicle Schedule Settings</h3>`;
+                            HTML += `<ul>`;
+                            HTML += `<li>Vehicle Inhibit Status: ${data.tappsResponse.vehicleInhibitStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                            if (data.tappsResponse.lifeCycleModeStatus) {
+                                HTML += '<li>Life Cycle Mode Status:</li>';
+                                HTML += '<ul>';
+                                for (const [i, key] of Object.keys(data.tappsResponse.lifeCycleModeStatus).entries()) {
+                                    const val = data.tappsResponse.lifeCycleModeStatus[key];
+                                    if (val !== null || val !== undefined || val !== '') {
+                                        HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val}</li>`;
+                                    }
                                 }
+                                HTML += '</ul>';
                             }
-                            HTML += '</ul>';
-                        }
-                        if (data.tappsResponse.asuActivationSchedule) {
-                            HTML += '<li>OTA Activation Schedule:</li>';
-                            HTML += '<ul>';
-                            for (const [i, key] of Object.keys(data.tappsResponse.asuActivationSchedule).entries()) {
-                                const val = data.tappsResponse.asuActivationSchedule[key];
-                                if (val !== null || val !== undefined || val !== '') {
-                                    HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                            if (data.tappsResponse.asuActivationSchedule) {
+                                HTML += '<li>OTA Activation Schedule:</li>';
+                                HTML += '<ul>';
+                                for (const [i, key] of Object.keys(data.tappsResponse.asuActivationSchedule).entries()) {
+                                    const val = data.tappsResponse.asuActivationSchedule[key];
+                                    if (val !== null || val !== undefined || val !== '') {
+                                        HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                                    }
                                 }
+                                HTML += '</ul>';
                             }
-                            HTML += '</ul>';
-                        }
-                        if (data.tappsResponse.asuSettingsStatus) {
-                            HTML += '<li>OTA Setting Status:</li>';
-                            HTML += '<ul>';
-                            for (const [i, key] of Object.keys(data.tappsResponse.asuSettingsStatus).entries()) {
-                                const val = data.tappsResponse.asuSettingsStatus[key];
-                                if (val !== null || val !== undefined || val !== '') {
-                                    HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                            if (data.tappsResponse.asuSettingsStatus) {
+                                HTML += '<li>OTA Setting Status:</li>';
+                                HTML += '<ul>';
+                                for (const [i, key] of Object.keys(data.tappsResponse.asuSettingsStatus).entries()) {
+                                    const val = data.tappsResponse.asuSettingsStatus[key];
+                                    if (val !== null || val !== undefined || val !== '') {
+                                        HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                                    }
                                 }
+                                HTML += '</ul>';
                             }
-                            HTML += '</ul>';
+                            HTML += `<li>UpdatePendingState: ${data.tappsResponse.updatePendingState || this.FPW.textMap().errorMessages.noData}</li>`;
+                            HTML += `<li>OtaAlertStatus: ${data.tappsResponse.otaAlertStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                            HTML += `</ul>`;
                         }
-                        HTML += `<li>UpdatePendingState: ${data.tappsResponse.updatePendingState || this.FPW.textMap().errorMessages.noData}</li>`;
-                        HTML += `<li>OtaAlertStatus: ${data.tappsResponse.otaAlertStatus || this.FPW.textMap().errorMessages.noData}</li>`;
-                        HTML += `</ul>`;
-                    }
 
-                    if (data.fuseResponse && data.fuseResponse.fuseResponseList && data.fuseResponse.fuseResponseList.length) {
-                        HTML += `<h3>OTA Deployments</h3>`;
-                        let that = this;
-                        for (const [i, fuse] of data.fuseResponse.fuseResponseList.entries()) {
-                            if (fuse && Object.keys(fuse).length) {
-                                HTML += `<ul>`;
-                                HTML += `<li>CorrelationID: ${fuse.oemCorrelationId || this.FPW.textMap().errorMessages.noData}</li>`;
-                                HTML += `<li>Created: ${fuse.deploymentCreationDate || this.FPW.textMap().errorMessages.noData}</li>`;
-                                HTML += `<li>Expiration: ${fuse.deploymentExpirationTime || this.FPW.textMap().errorMessages.noData}</li>`;
-                                HTML += `<li>Priority: ${fuse.communicationPriority || this.FPW.textMap().errorMessages.noData}</li>`;
-                                HTML += `<li>Type: ${fuse.type || this.FPW.textMap().errorMessages.noData}</li>`;
-                                HTML += `<li>Trigger: ${fuse.triggerType || this.FPW.textMap().errorMessages.noData}</li>`;
-                                HTML += `<li>Inhibit Required: ${fuse.inhibitRequired || this.FPW.textMap().errorMessages.noData}</li>`;
-                                HTML += `<li>Environment: ${fuse.tmcEnvironment || this.FPW.textMap().errorMessages.noData}</li>`;
-                                if (fuse.latestStatus) {
-                                    HTML += `<li>Latest Status:</li>`;
+                        if (data.fuseResponse && data.fuseResponse.fuseResponseList && data.fuseResponse.fuseResponseList.length) {
+                            HTML += `<h3>OTA Deployments</h3>`;
+                            let that = this;
+                            for (const [i, fuse] of data.fuseResponse.fuseResponseList.entries()) {
+                                if (fuse && Object.keys(fuse).length) {
                                     HTML += `<ul>`;
-                                    HTML += `    <li>Status: ${fuse.latestStatus.aggregateStatus || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `    <li>Details: ${fuse.latestStatus.detailedStatus || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `    <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `<li>CorrelationID: ${fuse.oemCorrelationId || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `<li>Created: ${fuse.deploymentCreationDate || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `<li>Expiration: ${fuse.deploymentExpirationTime || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `<li>Priority: ${fuse.communicationPriority || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `<li>Type: ${fuse.type || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `<li>Trigger: ${fuse.triggerType || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `<li>Inhibit Required: ${fuse.inhibitRequired || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    HTML += `<li>Environment: ${fuse.tmcEnvironment || this.FPW.textMap().errorMessages.noData}</li>`;
+                                    if (fuse.latestStatus) {
+                                        HTML += `<li>Latest Status:</li>`;
+                                        HTML += `<ul>`;
+                                        HTML += `    <li>Status: ${fuse.latestStatus.aggregateStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `    <li>Details: ${fuse.latestStatus.detailedStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `    <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `</ul>`;
+                                    }
+                                    if (fuse.packageUpdateDetails) {
+                                        HTML += `<li>Package Details:</li>`;
+                                        HTML += `<ul>`;
+                                        HTML += `    <li>WiFiRequired: ${fuse.packageUpdateDetails.wifiRequired || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `    <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `    <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `    <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `    <li>ReleaseNotes:`;
+                                        HTML += `    <br>`;
+                                        HTML += `    ${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `</ul>`;
+                                    }
                                     HTML += `</ul>`;
+                                } else {
+                                    HTML += `<p>${'No Data'}</p>`;
                                 }
-                                if (fuse.packageUpdateDetails) {
-                                    HTML += `<li>Package Details:</li>`;
-                                    HTML += `<ul>`;
-                                    HTML += `    <li>WiFiRequired: ${fuse.packageUpdateDetails.wifiRequired || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `    <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `    <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `    <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `    <li>ReleaseNotes:`;
-                                    HTML += `    <br>`;
-                                    HTML += `    ${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `</ul>`;
-                                }
-                                HTML += `</ul>`;
-                            } else {
-                                HTML += `<p>${'No Data'}</p>`;
                             }
                         }
+
+                        HTML += `<hr>`;
+                    } catch (err) {
+                        // console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
+                        HTML = `<h3>OTA Details</h3>`;
+                        HTML += `<H5 style="Color: red;">Error Message</h5>`;
+                        HTML += `<p style="Color: red;">${err}</p>`;
                     }
+                    break;
 
-                    HTML += `<hr>`;
-                } catch (err) {
-                    // console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
-                    HTML = `<h3>OTA Details</h3>`;
-                    HTML += `<H5 style="Color: red;">Error Message</h5>`;
-                    HTML += `<p style="Color: red;">${err}</p>`;
-                }
-            }
-
-            if (type === 'vehicleData') {
-                try {
-                    // HTML = `<h3>Vehicle Data</h3>`;
-                    // HTML = `<p>${JSON.stringify(data)}</p>`;
-                    // for (const [i, key] of Object.keys(data).entries()) {
-                    //     const val = data[key];
-                    //     if (val !== null || val !== undefined || val !== '') {
-                    //         HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
-                    //     }
-                    // }
-                    // HTML += `</ul>`;
-                    // HTML += `</ul>`;
-                } catch (err) {
-                    // console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
-                    // HTML = `<h3>Vehicle Data</h3>`;
-                    // HTML += `<H5 style="Color: red;">Error Message</h5>`;
-                    // HTML += `<p style="Color: red;">${err}</p>`;
-                }
+                case 'vehicleData':
+                    try {
+                        HTML = this.outputObjToHtml(data, 'Vehicle Data');
+                        // console.log(HTML);
+                        // HTML = `<h3>Vehicle Data</h3>`;
+                        // HTML = `<p>${JSON.stringify(data)}</p>`;
+                        // for (const [i, key] of Object.keys(data).entries()) {
+                        //     const val = data[key];
+                        //     if (val !== null || val !== undefined || val !== '') {
+                        //         HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                        //     }
+                        // }
+                        // HTML += `</ul>`;
+                        // HTML += `</ul>`;
+                    } catch (err) {
+                        // console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
+                        // HTML = `<h3>Vehicle Data</h3>`;
+                        // HTML += `<H5 style="Color: red;">Error Message</h5>`;
+                        // HTML += `<p style="Color: red;">${err}</p>`;
+                    }
+                    break;
             }
 
             // console.log('showDataWebView() | DarkMode: ' + Device.isUsingDarkAppearance());
@@ -379,6 +397,102 @@ module.exports = class FPW_App {
         }
     }
 
+    outputObjToStr(obj, str = '', curTabSpc = '') {
+        const tabSpc = '    ';
+        const isObject = (value) => {
+            return !!(value && typeof value === 'object' && !Array.isArray(value));
+        };
+        const isArray = (value) => {
+            return !!(value && typeof value === 'object' && Array.isArray(value));
+        };
+        const isStrNumBoolNull = (value) => {
+            return !!(value === null || (value && (typeof value === 'string' || isNaN(value) === false || typeof value === 'boolean')));
+        };
+
+        if (isObject(obj)) {
+            const objKeys = Object.keys(obj).sort();
+
+            if (objKeys.length) {
+                for (const i in objKeys) {
+                    const key = objKeys[i];
+                    const value = obj[key];
+                    // console.log(`${key}: ${typeof value}`)
+                    if (isStrNumBoolNull(value)) {
+                        str += `${curTabSpc}${key}: ${value}\n`;
+                    } else if (typeof value === 'object') {
+                        str += `${curTabSpc}${key}:\n`;
+                        if (isArray(value)) {
+                            for (let i = 0; i < value.length; i++) {
+                                if (isObject(value[i]) || isArray(value[i])) {
+                                    str = this.outputObjToStr(value[i], str, curTabSpc + tabSpc);
+                                } else {
+                                    str += `${curTabSpc + tabSpc}${value[i]}\n`;
+                                }
+                            }
+                        } else {
+                            str = this.outputObjToStr(value, str, curTabSpc + tabSpc);
+                        }
+                    }
+                }
+            }
+        } else {
+            console.log(`outputObjToStr | Input is NOT an Object | ${obj}`);
+        }
+        return str;
+    }
+
+    outputObjToHtml(obj, title = undefined, html = '', curTabSpc = '') {
+        const tabSpc = '    ';
+        const isObject = (value) => {
+            return !!(value && typeof value === 'object' && !Array.isArray(value));
+        };
+        const isArray = (value) => {
+            return !!(value && typeof value === 'object' && Array.isArray(value));
+        };
+        const isStrNumBoolNull = (value) => {
+            return !!(value === null || (value && (typeof value === 'string' || isNaN(value) === false || typeof value === 'boolean')));
+        };
+
+        if (title !== undefined && title !== '') {
+            html += `<h3>${title}</h3>`;
+        }
+        if (isObject(obj)) {
+            const objKeys = Object.keys(obj).sort();
+            // console.log(`keys: ${objKeys}`);
+            if (objKeys.length) {
+                html += `<ul>`;
+                for (const i in objKeys) {
+                    const key = objKeys[i];
+                    const value = obj[key];
+                    // console.log(`${key}: ${typeof value}`)
+
+                    if (isStrNumBoolNull(value)) {
+                        html += `<li>${key}: ${value}</li>`;
+                    } else if (typeof value === 'object') {
+                        html += `<li>${key}:</li>`;
+                        if (isArray(value)) {
+                            html += `<ul>`;
+                            for (let i = 0; i < value.length; i++) {
+                                if (isObject(value[i]) || isArray(value[i])) {
+                                    html = this.outputObjToHtml(value[i], undefined, html, curTabSpc + tabSpc);
+                                } else {
+                                    html += `<li>${value[i]}</li>`;
+                                }
+                            }
+                            html += `</ul>`;
+                        } else {
+                            html = this.outputObjToHtml(value, undefined, html, curTabSpc + tabSpc);
+                        }
+                    }
+                }
+                html += `</ul>`;
+            }
+        } else {
+            console.log(`outputObjToHtml | Input is NOT an Object | ${obj}`);
+        }
+        return html;
+    }
+
     async createMainPage(update = false, widgetCmd = undefined) {
         try {
             const vData = await this.FPW.FordAPI.fetchVehicleData(true);
@@ -414,18 +528,18 @@ module.exports = class FPW_App {
 
             let tableRows = [];
 
-            const fontSizes = {
-                medium: 10,
-                title1: 24,
-                title2: 22,
-                title3: 20,
-                body: 10,
-                body2: 11,
-                body3: 12,
-                footnote: 14,
-                headline: 15,
-                subheadline: 13,
-            };
+            // const fontSizes = {
+            //     medium: 10,
+            //     title1: 24,
+            //     title2: 22,
+            //     title3: 20,
+            //     body: 10,
+            //     body2: 11,
+            //     body3: 12,
+            //     footnote: 14,
+            //     headline: 15,
+            //     subheadline: 13,
+            // };
 
             // Header Section - Row 1: vehicle messages, vehicle type, vehicle alerts
             tableRows.push(
@@ -1295,18 +1409,18 @@ module.exports = class FPW_App {
     }
 
     async createMessagesPage(vData, unreadOnly = false, update = false) {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         try {
             let msgs = vData.messages && vData.messages && vData.messages && vData.messages.length ? vData.messages : [];
             msgs = unreadOnly ? msgs.filter((msg) => msg.isRead === false) : msgs;
@@ -1478,19 +1592,19 @@ module.exports = class FPW_App {
     }
 
     async createAlertsPage(vData) {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            body3: 13,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     body3: 13,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         try {
             let vhaAlerts = vData.alerts && vData.alerts.vha && vData.alerts.vha.length ? vData.alerts.vha : [];
             let otaAlerts = vData.alerts && vData.alerts.mmota && vData.alerts.mmota.length ? vData.alerts.mmota : [];
@@ -1562,19 +1676,19 @@ module.exports = class FPW_App {
     }
 
     async createRecentChangesPage() {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            body3: 13,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     body3: 13,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
         try {
             let tableRows = [];
@@ -1671,18 +1785,18 @@ module.exports = class FPW_App {
     }
 
     async createRecallPage(vData) {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         try {
             let recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
             let tableRows = [];
@@ -1792,19 +1906,19 @@ module.exports = class FPW_App {
     }
 
     async createWidgetStylePage() {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            body3: 13,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     body3: 13,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         try {
             let widgetStyle = await this.FPW.getWidgetStyle();
             // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
@@ -1886,19 +2000,19 @@ module.exports = class FPW_App {
     }
 
     async createVehicleImagesPage() {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            body3: 13,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     body3: 13,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         try {
             const vData = await this.FPW.FordAPI.fetchVehicleData(true);
             // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
@@ -1948,19 +2062,19 @@ module.exports = class FPW_App {
     }
 
     async createAdvancedInfoPage() {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            body3: 13,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     body3: 13,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
         const headerColor = '#13233F';
         try {
@@ -1999,9 +2113,10 @@ module.exports = class FPW_App {
             );
 
             if (vData !== undefined) {
+                // console.log(JSON.stringify(vData, null, 2));
                 // console.log(`Sync: ${Object.keys(vData.syncInfo).length}`);
 
-                if (Object.keys(vData.syncInfo).length && vData.syncInfo.syncVersion) {
+                if (vData['syncInfo'] && Object.keys(vData['syncInfo']).length && vData['syncInfo'].syncVersion) {
                     tableRows.push(
                         await this.createTableRow([await this.createTextCell('SYNC Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
                             height: 25,
@@ -2015,7 +2130,7 @@ module.exports = class FPW_App {
                         await this.createTableRow(
                             [
                                 await this.createImageCell(await this.FPW.Files.getImage(`info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell(`Current Version: ${vData.syncInfo.syncVersion}`, `Last Updated: ${vData.syncInfo.lastUpdatedDate}`, {
+                                await this.createTextCell(`Version: ${vData.syncInfo.syncVersion}`, `Last Updated: ${vData.syncInfo.lastUpdatedDate}`, {
                                     align: 'left',
                                     widthWeight: 93,
                                     titleColor: this.FPW.colorMap.normalText,
@@ -2101,6 +2216,7 @@ module.exports = class FPW_App {
                         backgroundColor: new Color(titleBgColor),
                     }),
                 );
+
                 tableRows.push(
                     await this.createTableRow(
                         [
@@ -2123,60 +2239,6 @@ module.exports = class FPW_App {
                         },
                     ),
                 );
-                //         "displayOTAStatusReport": "UserAllowed",
-                // "ccsStatus": { "ccsConnectivity": "On", "ccsVehicleData": "On" },
-                // "error": null,
-                // "fuseResponse": {
-                //     "fuseResponseList": [{
-                //         "vin": "1FTFW1E80MFA2XXXX",
-                //         "oemCorrelationId": "FLARE-PRD-SOFTWARE-FNV2-441247-475630",
-                //         "deploymentId": "719846a8-e702-4ad3-87c3-ee8de804779c",
-                //         "deploymentCreationDate": "2022-01-03T18:18:55.241+0000",
-                //         "deploymentExpirationTime": "2022-01-10T18:18:55.241+0000",
-                //         "otaTriggerExpirationTime": "2021-11-20T17:33:32.726+0000",
-                //         "communicationPriority": "LOW",
-                //         "type": "NEW_FEATURE",
-                //         "triggerType": "SOFTWARE",
-                //         "inhibitRequired": false,
-                //         "additionalConsentLevel": 1,
-                //         "tmcEnvironment": "PRD",
-                //         "latestStatus": { "aggregateStatus": "success", "detailedStatus": "OTAM_S1010", "dateTimestamp": "2022-01-05T23:44:56.850+0000" },
-                //         "packageUpdateDetails": {
-                //             "releaseNotesUrl": "https://mmota.autonomic.ai/1/bytestream/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185",
-                //             "updateDisplayTime": 0,
-                //             "wifiRequired": false,
-                //             "packagePriority": 1,
-                //             "failedOnResponse": "none",
-                //             "cdnreleaseNotesUrl": "http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185"
-                //         },
-                //         "deploymentFinalConsumerAction": "Not Set"
-                //     }],
-                //     "languageText": {
-                //         "Language": "English (US/NA)",
-                //         "LanguageCode": "ENU",
-                //         "LanguageCodeMobileApp": "en-US",
-                //         "Text": "Ford Power-Up 2.1.0\n\nMinor updates here and there. Just small stuff to keep everything running smoothly. Ongoing updates like this help ensure that you’ll always be driving the best possible version of your F-150. Enjoy."
-                //     }
-                // },
-                // "tappsResponse": {
-                //     "vin": "1FTFW1E80MFA2XXXX",
-                //     "status": 200,
-                //     "vehicleInhibitStatus": null,
-                //     "lifeCycleModeStatus": { "lifeCycleMode": "NORMAL", "oemCorrelationId": "", "vehicleDateTime": "2022-02-02T04:05:52.000Z", "tappsDateTime": "2022-02-02T04:14:52.739424Z" },
-                //     "asuActivationSchedule": {
-                //         "scheduleType": "RECURRING",
-                //         "dayOfWeekAndTime": null,
-                //         "activationScheduleDaysOfWeek": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"],
-                //         "activationScheduleTimeOfDay": "00:30",
-                //         "oemCorrelationId": "21",
-                //         "vehicleDateTime": "2022-02-16T12:48:05.000Z",
-                //         "tappsDateTime": "2022-02-16T17:48:15.011199Z"
-                //     },
-                //     "asuSettingsStatus": { "asuSettingsState": "ON", "notificationSettingsState": "ON", "oemCorrelationId": "5784", "vehicleDateTime": "2021-10-25T16:31:01Z", "tappsDateTime": "2021-10-25T20:31:05.569Z" },
-                //     "version": "2.0.0"
-                // },
-                // "updatePendingState": null,
-                // "otaAlertStatus": "YOU ARE ALL SET"
 
                 tableRows.push(
                     await this.createTableRow([await this.createTextCell('Vehicle Image Viewer', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
@@ -2217,19 +2279,19 @@ module.exports = class FPW_App {
     }
 
     async createCaptchaPage(img) {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            body3: 13,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     body3: 13,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         try {
             let tableRows = [];
             tableRows.push(
@@ -2242,7 +2304,7 @@ module.exports = class FPW_App {
                             titleColor: this.FPW.colorMap.normalText,
                             titleFont: Font.regularRoundedSystemFont(fontSizes.title1),
                             subtitleColor: Color.lightGray(),
-                            subtitleFont: Font.mediumSystemFont(fontSizes.body2),
+                            subtitleFont: Font.mediumSystemFont(fontSizes.headline2),
                         }),
                     ], {
                         height: 50,
@@ -2265,19 +2327,6 @@ module.exports = class FPW_App {
     }
 
     async createAsBuiltPage(update = false) {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            body3: 13,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
         const headerColor = Color.darkGray(); //new Color('#13233F');
         try {
@@ -2285,14 +2334,24 @@ module.exports = class FPW_App {
             let tableRows = [];
 
             const asbInfo = await this.FPW.Files.getFileInfo(`${vin}.json`, true);
-            const lastModDt = asbInfo.modified ? new Date(asbInfo.modified).toLocaleString() : undefined;
+            const lastModDt = asbInfo && asbInfo.modified ? new Date(asbInfo.modified).toLocaleString() : undefined;
 
             // console.log(`(createAsBuiltPage) asbInfo: ${JSON.stringify(asbInfo)}`);
             console.log(`AsBuilt File Modified: ${lastModDt}`);
             tableRows.push(
                 await this.createTableRow(
                     [
-                        await this.createTextCell('', undefined, { align: 'left', widthWeight: 25 }),
+                        await this.createButtonCell(lastModDt ? 'Delete Data' : '', {
+                            align: 'left',
+                            widthWeight: 25,
+                            dismissOnTap: false,
+                            onTap: async() => {
+                                console.log(`(Dashboard) Remove AsBuilt Button was pressed`);
+                                await this.FPW.Files.removeLocalData(`${vin}.json`, true);
+                                // await this.FPW.Alerts.showAlert('Removed Successfully', 'Local AsBuilt File Removed');
+                                this.createAsBuiltPage(true);
+                            },
+                        }),
                         await this.createTextCell('AsBuilt Data', undefined, {
                             align: 'center',
                             widthWeight: 50,
@@ -2302,15 +2361,14 @@ module.exports = class FPW_App {
                             titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                         }),
-                        await this.createButtonCell(asbInfo && asbInfo.modifed ? 'Reload AsBuilt' : 'Get AsBuilt', {
+                        await this.createButtonCell(lastModDt ? 'Reload Data' : 'Get Data', {
                             align: 'right',
                             widthWeight: 25,
                             dismissOnTap: false,
                             onTap: async() => {
-                                console.log(`(Dashboard) Menu Button was pressed`);
-
+                                console.log(`(Dashboard) Get AsBuilt Button was pressed`);
                                 await this.FPW.AsBuilt.getAsBuiltFile(vin);
-                                this.createAsBuiltPage();
+                                this.createAsBuiltPage(true);
                             },
                         }),
                     ], {
@@ -2406,7 +2464,7 @@ module.exports = class FPW_App {
                     }
                 }
             } else {
-                tableRows.push(await this.createTableRow([await this.createTextCell('No AsBuilt Data Found... Press the Get AsBuilt Button to Get Started', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body2) })], { height: 44, dismissOnSelect: false }));
+                tableRows.push(await this.createTableRow([await this.createTextCell('No Data Found...\nPress the Get Data Button to Get Started', undefined, { align: 'center', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.systemFont(fontSizes.subheadline) })], { height: 60, dismissOnSelect: false }));
             }
 
             await this.generateTableMenu('asBuiltPage', tableRows, true, false, update);
@@ -2416,19 +2474,19 @@ module.exports = class FPW_App {
     }
 
     async createModuleInfoPage(moduleData = undefined) {
-        const fontSizes = {
-            medium: 10,
-            title1: 24,
-            title2: 22,
-            title3: 20,
-            body: 10,
-            body2: 11,
-            body3: 13,
-            footnote: 14,
-            headline: 15,
-            headline2: 17,
-            subheadline: 13,
-        };
+        // const fontSizes = {
+        //     medium: 10,
+        //     title1: 24,
+        //     title2: 22,
+        //     title3: 20,
+        //     body: 10,
+        //     body2: 11,
+        //     body3: 13,
+        //     footnote: 14,
+        //     headline: 15,
+        //     headline2: 17,
+        //     subheadline: 13,
+        // };
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
         const headerColor = Color.darkGray(); //new Color('#13233F');
         try {
@@ -2517,9 +2575,7 @@ module.exports = class FPW_App {
                                 align: 'left',
                                 widthWeight: firstColWidth,
                                 titleColor: this.FPW.colorMap.normalText,
-                                titleFont: Font.semiboldSystemFont(fontSizes.headline2),
-                                subtitleColor: this.FPW.colorMap.normalText,
-                                subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
+                                titleFont: Font.semiboldSystemFont(fontSizes.headline),
                             }),
                         ];
 

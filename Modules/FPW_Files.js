@@ -64,9 +64,9 @@ module.exports = class FPW_Files {
         }
     }
 
-    async removeLocalData(filename) {
+    async removeLocalData(filename, frcCld=false) {
         try {
-            let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
+            let fm = frcCld || this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
             let path = fm.joinPath(dir, filename);
             if (await fm.fileExists(path)) {
