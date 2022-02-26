@@ -524,7 +524,7 @@ class Widget {
             this.logError(`generateWidget() Error: ${e}`);
         }
         widget.setPadding(0, 5, 0, 1);
-        widget.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+        // widget.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         Script.setWidget(widget);
         // await this.logInfo(`Created Widget(${size})...`);
         return widget;
@@ -3071,7 +3071,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-1440891113', 'FPW_App.js||1442156626', 'FPW_AsBuilt.js||874941626', 'FPW_Files.js||1199869730', 'FPW_FordAPIs.js||-89536509', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['.DS_Store||-595014134', 'FPW_Alerts.js||-1440891113', 'FPW_App.js||-1400781012', 'FPW_AsBuilt.js||874941626', 'FPW_Files.js||1199869730', 'FPW_FordAPIs.js||-89536509', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();

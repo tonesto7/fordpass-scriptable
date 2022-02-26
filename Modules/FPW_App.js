@@ -1997,22 +1997,27 @@ module.exports = class FPW_App {
                     },
                 ),
             );
-            if (vData) {
-                tableRows.push(
-                    await this.createTableRow([await this.createTextCell('SYNC Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
-                );
-                if (vData.syncInfo && vData.syncInfo.syncVersion) {
+
+            if (vData !== undefined) {
+                // console.log(`Sync: ${Object.keys(vData.syncInfo).length}`);
+
+                if (Object.keys(vData.syncInfo).length && vData.syncInfo.syncVersion) {
+                    tableRows.push(
+                        await this.createTableRow([await this.createTextCell('SYNC Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
+                            height: 25,
+                            isHeader: true,
+                            dismissOnSelect: false,
+                            backgroundColor: new Color(titleBgColor),
+                        }),
+                    );
+
                     tableRows.push(
                         await this.createTableRow(
                             [
+                                await this.createImageCell(await this.FPW.Files.getImage(`info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                                 await this.createTextCell(`Current Version: ${vData.syncInfo.syncVersion}`, `Last Updated: ${vData.syncInfo.lastUpdatedDate}`, {
                                     align: 'left',
-                                    widthWeight: 100,
+                                    widthWeight: 93,
                                     titleColor: this.FPW.colorMap.normalText,
                                     titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
                                     subtitleColor: this.FPW.colorMap.normalText,
@@ -2036,9 +2041,10 @@ module.exports = class FPW_App {
                 tableRows.push(
                     await this.createTableRow(
                         [
+                            await this.createImageCell(await this.FPW.Files.getImage(`notepad_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                             await this.createTextCell(`View All Widget Data`, 'Tap to view', {
                                 align: 'left',
-                                widthWeight: 100,
+                                widthWeight: 93,
                                 titleColor: this.FPW.colorMap.normalText,
                                 titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
                                 subtitleColor: this.FPW.colorMap.normalText,
@@ -2066,9 +2072,10 @@ module.exports = class FPW_App {
                 tableRows.push(
                     await this.createTableRow(
                         [
+                            await this.createImageCell(await this.FPW.Files.getImage(`ota_info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                             await this.createTextCell(`View OTA Update Info`, 'Tap to view', {
                                 align: 'left',
-                                widthWeight: 100,
+                                widthWeight: 93,
                                 titleColor: this.FPW.colorMap.normalText,
                                 titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
                                 subtitleColor: this.FPW.colorMap.normalText,
@@ -2097,9 +2104,10 @@ module.exports = class FPW_App {
                 tableRows.push(
                     await this.createTableRow(
                         [
+                            await this.createImageCell(await this.FPW.Files.getImage(`module_info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                             await this.createTextCell(`View AsBuilt Info`, 'Tap to view', {
                                 align: 'left',
-                                widthWeight: 100,
+                                widthWeight: 93,
                                 titleColor: this.FPW.colorMap.normalText,
                                 titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
                                 subtitleColor: this.FPW.colorMap.normalText,
@@ -2181,9 +2189,10 @@ module.exports = class FPW_App {
                 tableRows.push(
                     await this.createTableRow(
                         [
-                            await this.createTextCell(`View Available Vehicle Images`, 'Tap to view', {
+                            await this.createImageCell(await this.FPW.Files.getImage(`view_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await this.createTextCell(`View Vehicle Images`, 'Tap to view', {
                                 align: 'left',
-                                widthWeight: 100,
+                                widthWeight: 93,
                                 titleColor: this.FPW.colorMap.normalText,
                                 titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
                                 subtitleColor: this.FPW.colorMap.normalText,
@@ -2502,7 +2511,7 @@ module.exports = class FPW_App {
                         // console.log(`blks: ${JSON.stringify(blks)}`);
                         const blkCnt = blks.length;
                         // console.log(`BlkCnt: ${blkCnt}`);
-                        const firstColWidth = 20;
+                        const firstColWidth = 25;
                         let columns = [
                             await this.createTextCell(`${moduleData.asbuiltData[i]['@LABEL']}`, undefined, {
                                 align: 'left',
