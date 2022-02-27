@@ -29,6 +29,7 @@ class WidgetInstaller {
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_App.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Timers.js',
+                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_AsBuilt.js',
             ],
             docsUrl: 'https://github.com/tonesto7/fordpass-scriptable#readme',
             cleanup: {

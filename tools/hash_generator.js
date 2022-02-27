@@ -10,7 +10,7 @@ class WidgetInstaller {
     async processModulesFolder() {
         try {
             const modulesFolder = path.join(__dirname, '../Modules');
-            const modules = fs.readdirSync(modulesFolder);
+            const modules = fs.readdirSync(modulesFolder).filter((file) => file.endsWith('.js'));
             console.log(JSON.stringify(modules));
             let modulesOut = [];
             if (modules.length) {
