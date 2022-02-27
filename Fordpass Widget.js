@@ -1,8 +1,5 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: light-gray; icon-glyph: magic;
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -1910,7 +1907,7 @@ class Widget {
             if (vehicleNameStr.length >= 10) {
                 vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
             }
-            console.log(`vehicleNameSize: ${vehicleNameSize}`);
+            // console.log(`vehicleNameSize: ${vehicleNameSize}`);
             await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[colorMode], '*leftAlignText': null, minimumScaleFactor: 0.4, lineLimit: 1 });
             vehicleNameContainer.addSpacer();
             // Range and Odometer
@@ -2951,116 +2948,128 @@ class Widget {
     // Modified version of this https://talk.automators.fm/t/get-available-widget-height-and-width-depending-on-the-devices-screensize/9258/5
     async getViewPortSizes(widgetFamily) {
         // const vpSize = `${this.screenSize.width}x${this.screenSize.height}`;
+        // console.log(`screenSize: ${JSON.stringify(this.screenSize)}`);
         const vpSize = (({ width: w, height: h }) => (w > h ? `${h}x${w}` : `${w}x${h}`))(this.screenSize);
-
-        const sizeMap = {
-            // IPAD_VIEWPORT_SIZES
-            '768x1024': {
-                devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
-                small: { width: 120, height: 120 },
-                medium: { width: 260, height: 120 },
-                large: { width: 260, height: 260 },
-                extraLarge: { width: 540, height: 260 },
-            },
-            '810x1080': {
-                devices: ['10.2" iPad'],
-                small: { width: 124, height: 124 },
-                medium: { width: 272, height: 124 },
-                large: { width: 272, height: 272 },
-                extraLarge: { width: 568, height: 272 },
-            },
-            '834x1112': {
-                devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
-                small: { width: 132, height: 132 },
-                medium: { width: 288, height: 132 },
-                large: { width: 288, height: 288 },
-                extraLarge: { width: 600, height: 288 },
-            },
-            '820x1180': {
-                devices: ['10.9" iPad Air 4th Gen'],
-                small: { width: 136, height: 136 },
-                medium: { width: 300, height: 136 },
-                large: { width: 300, height: 300 },
-                extraLarge: { width: 628, height: 300 },
-            },
-            '834x1194': {
-                devices: ['11" iPad Pro'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 345, height: 329 },
-                extraLarge: { width: 628, height: 300 },
-            },
-            '1024x1366': {
-                devices: ['12.9" iPad Pro'],
-                small: { width: 170, height: 170 },
-                medium: { width: 332, height: 170 },
-                large: { width: 382, height: 332 },
-                extraLarge: { width: 748, height: 356 },
-            },
-
-            // IPHONE_VIEWPORT_SIZES
-            '428x926': {
-                devices: ['12 Pro Max'],
-                small: { width: 170, height: 170 },
-                medium: { width: 364, height: 170 },
-                large: { width: 364, height: 382 },
-            },
-            '360x780': {
-                devices: ['12 Mini'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-            },
-            '414x896': {
-                devices: ['XR', 'XS Max', '11', '11 Pro Max'],
-                small: { width: 169, height: 169 },
-                medium: { width: 360, height: 169 },
-                large: { width: 360, height: 376 },
-            },
-            '390x844': {
-                devices: ['12', '12 Pro'],
-                small: { width: 158, height: 158 },
-                medium: { width: 338, height: 158 },
-                large: { width: 338, height: 354 },
-            },
-            '375x812': {
-                devices: ['X', 'XS', '11 Pro'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-            },
-            '414x736': {
-                devices: ['6S Plus', '7 Plus', '8 Plus'],
-                small: { width: 159, height: 159 },
-                medium: { width: 348, height: 159 },
-                large: { width: 348, height: 357 },
-            },
-            '375x667': {
-                devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
-                small: { width: 148, height: 148 },
-                medium: { width: 322, height: 148 },
-                large: { width: 322, height: 324 },
-            },
-            '320x568': {
-                devices: ['SE (1st Gen)'],
-                small: { width: 141, height: 141 },
-                medium: { width: 291, height: 141 },
-                large: { width: 291, height: 299 },
-            },
+        const fallback = {
+            devices: ['Fallback'],
+            small: { width: 155, height: 155 },
+            medium: { width: 329, height: 155 },
+            large: { width: 329, height: 345 },
+            extraLarge: { width: 329, height: 345 },
         };
+        try {
+            const sizeMap = {
+                // IPAD_VIEWPORT_SIZES
+                '768x1024': {
+                    devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
+                    small: { width: 120, height: 120 },
+                    medium: { width: 260, height: 120 },
+                    large: { width: 260, height: 260 },
+                    extraLarge: { width: 540, height: 260 },
+                },
+                '810x1080': {
+                    devices: ['10.2" iPad'],
+                    small: { width: 124, height: 124 },
+                    medium: { width: 272, height: 124 },
+                    large: { width: 272, height: 272 },
+                    extraLarge: { width: 568, height: 272 },
+                },
+                '834x1112': {
+                    devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
+                    small: { width: 132, height: 132 },
+                    medium: { width: 288, height: 132 },
+                    large: { width: 288, height: 288 },
+                    extraLarge: { width: 600, height: 288 },
+                },
+                '820x1180': {
+                    devices: ['10.9" iPad Air 4th Gen'],
+                    small: { width: 136, height: 136 },
+                    medium: { width: 300, height: 136 },
+                    large: { width: 300, height: 300 },
+                    extraLarge: { width: 628, height: 300 },
+                },
+                '834x1194': {
+                    devices: ['11" iPad Pro'],
+                    small: { width: 155, height: 155 },
+                    medium: { width: 329, height: 155 },
+                    large: { width: 345, height: 329 },
+                    extraLarge: { width: 628, height: 300 },
+                },
+                '1024x1366': {
+                    devices: ['12.9" iPad Pro'],
+                    small: { width: 170, height: 170 },
+                    medium: { width: 332, height: 170 },
+                    large: { width: 382, height: 332 },
+                    extraLarge: { width: 748, height: 356 },
+                },
+                '2048x1280': {
+                    devices: ['MacBook Pro'],
+                    small: { width: 170, height: 170 },
+                    medium: { width: 332, height: 170 },
+                    large: { width: 382, height: 332 },
+                    extraLarge: { width: 748, height: 356 },
+                },
 
-        if (sizeMap[vpSize]) {
-            await this.logInfo(`ViewPort Size: ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
-            return sizeMap[vpSize][widgetFamily];
-        } else {
-            let fallback = {
-                devices: ['Fallback'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-                extraLarge: { width: 329, height: 345 },
+                // IPHONE_VIEWPORT_SIZES
+                '428x926': {
+                    devices: ['12 Pro Max'],
+                    small: { width: 170, height: 170 },
+                    medium: { width: 364, height: 170 },
+                    large: { width: 364, height: 382 },
+                },
+                '360x780': {
+                    devices: ['12 Mini'],
+                    small: { width: 155, height: 155 },
+                    medium: { width: 329, height: 155 },
+                    large: { width: 329, height: 345 },
+                },
+                '414x896': {
+                    devices: ['XR', 'XS Max', '11', '11 Pro Max'],
+                    small: { width: 169, height: 169 },
+                    medium: { width: 360, height: 169 },
+                    large: { width: 360, height: 376 },
+                },
+                '390x844': {
+                    devices: ['12', '12 Pro'],
+                    small: { width: 158, height: 158 },
+                    medium: { width: 338, height: 158 },
+                    large: { width: 338, height: 354 },
+                },
+                '375x812': {
+                    devices: ['X', 'XS', '11 Pro'],
+                    small: { width: 155, height: 155 },
+                    medium: { width: 329, height: 155 },
+                    large: { width: 329, height: 345 },
+                },
+                '414x736': {
+                    devices: ['6S Plus', '7 Plus', '8 Plus'],
+                    small: { width: 159, height: 159 },
+                    medium: { width: 348, height: 159 },
+                    large: { width: 348, height: 357 },
+                },
+                '375x667': {
+                    devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
+                    small: { width: 148, height: 148 },
+                    medium: { width: 322, height: 148 },
+                    large: { width: 322, height: 324 },
+                },
+                '320x568': {
+                    devices: ['SE (1st Gen)'],
+                    small: { width: 141, height: 141 },
+                    medium: { width: 291, height: 141 },
+                    large: { width: 291, height: 299 },
+                },
             };
-            await this.logInfo(`ViewPort Size (FALLBACK): ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
+
+            if (sizeMap[vpSize]) {
+                await this.logInfo(`ViewPort Size: ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
+                return sizeMap[vpSize][widgetFamily];
+            } else {
+                await this.logInfo(`ViewPort Size (FALLBACK): ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
+                return fallback[widgetFamily];
+            }
+        } catch (e) {
+            await this.logInfo(`ViewPort Size (FALLBACK): ${vpSize}`, true);
             return fallback[widgetFamily];
         }
     }
@@ -3074,7 +3083,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-1440891113', 'FPW_App.js||-1400781012', 'FPW_AsBuilt.js||874941626', 'FPW_Files.js||1199869730', 'FPW_FordAPIs.js||-89536509', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||-1440891113', 'FPW_App.js||-1559198190', 'FPW_AsBuilt.js||874941626', 'FPW_Files.js||1279434271', 'FPW_FordAPIs.js||-89536509', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();

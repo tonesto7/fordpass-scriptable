@@ -330,22 +330,11 @@ module.exports = class FPW_App {
                 case 'vehicleData':
                     try {
                         HTML = this.outputObjToHtml(data, 'Vehicle Data');
-                        // console.log(HTML);
-                        // HTML = `<h3>Vehicle Data</h3>`;
-                        // HTML = `<p>${JSON.stringify(data)}</p>`;
-                        // for (const [i, key] of Object.keys(data).entries()) {
-                        //     const val = data[key];
-                        //     if (val !== null || val !== undefined || val !== '') {
-                        //         HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
-                        //     }
-                        // }
-                        // HTML += `</ul>`;
-                        // HTML += `</ul>`;
                     } catch (err) {
-                        // console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
-                        // HTML = `<h3>Vehicle Data</h3>`;
-                        // HTML += `<H5 style="Color: red;">Error Message</h5>`;
-                        // HTML += `<p style="Color: red;">${err}</p>`;
+                        console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
+                        HTML = `<h3>${title}</h3>`;
+                        HTML += `<H5 style="Color: red;">Error Message</h5>`;
+                        HTML += `<p style="Color: red;">${err}</p>`;
                     }
                     break;
             }
@@ -527,19 +516,6 @@ module.exports = class FPW_App {
             let updateAvailable = this.FPW.getStateVal('updateAvailable') === true;
 
             let tableRows = [];
-
-            // const fontSizes = {
-            //     medium: 10,
-            //     title1: 24,
-            //     title2: 22,
-            //     title3: 20,
-            //     body: 10,
-            //     body2: 11,
-            //     body3: 12,
-            //     footnote: 14,
-            //     headline: 15,
-            //     subheadline: 13,
-            // };
 
             // Header Section - Row 1: vehicle messages, vehicle type, vehicle alerts
             tableRows.push(
@@ -1409,18 +1385,6 @@ module.exports = class FPW_App {
     }
 
     async createMessagesPage(vData, unreadOnly = false, update = false) {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         try {
             let msgs = vData.messages && vData.messages && vData.messages && vData.messages.length ? vData.messages : [];
             msgs = unreadOnly ? msgs.filter((msg) => msg.isRead === false) : msgs;
@@ -1592,19 +1556,6 @@ module.exports = class FPW_App {
     }
 
     async createAlertsPage(vData) {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     body3: 13,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         try {
             let vhaAlerts = vData.alerts && vData.alerts.vha && vData.alerts.vha.length ? vData.alerts.vha : [];
             let otaAlerts = vData.alerts && vData.alerts.mmota && vData.alerts.mmota.length ? vData.alerts.mmota : [];
@@ -1676,19 +1627,6 @@ module.exports = class FPW_App {
     }
 
     async createRecentChangesPage() {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     body3: 13,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
         try {
             let tableRows = [];
@@ -1785,18 +1723,6 @@ module.exports = class FPW_App {
     }
 
     async createRecallPage(vData) {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         try {
             let recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
             let tableRows = [];
@@ -1906,19 +1832,6 @@ module.exports = class FPW_App {
     }
 
     async createWidgetStylePage() {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     body3: 13,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         try {
             let widgetStyle = await this.FPW.getWidgetStyle();
             // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
@@ -2000,19 +1913,6 @@ module.exports = class FPW_App {
     }
 
     async createVehicleImagesPage() {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     body3: 13,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         try {
             const vData = await this.FPW.FordAPI.fetchVehicleData(true);
             // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
@@ -2062,19 +1962,6 @@ module.exports = class FPW_App {
     }
 
     async createAdvancedInfoPage() {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     body3: 13,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
         const headerColor = '#13233F';
         try {
@@ -2209,7 +2096,7 @@ module.exports = class FPW_App {
                 );
 
                 tableRows.push(
-                    await this.createTableRow([await this.createTextCell('AsBuilt Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
+                    await this.createTableRow([await this.createTextCell('Vehicle Module Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
                         height: 25,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -2221,7 +2108,7 @@ module.exports = class FPW_App {
                     await this.createTableRow(
                         [
                             await this.createImageCell(await this.FPW.Files.getImage(`module_info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await this.createTextCell(`View AsBuilt Info`, 'Tap to view', {
+                            await this.createTextCell(`View Module Info`, 'Tap to view', {
                                 align: 'left',
                                 widthWeight: 93,
                                 titleColor: this.FPW.colorMap.normalText,
@@ -2279,25 +2166,12 @@ module.exports = class FPW_App {
     }
 
     async createCaptchaPage(img) {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     body3: 13,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         try {
             let tableRows = [];
             tableRows.push(
                 await this.createTableRow(
                     [
-                        await this.createTextCell(`AsBuilt Captcha Image`, `Remember this code and close this page and enter it into the menu input.`, {
+                        await this.createTextCell(`AsBuilt Captcha Image`, `Remember this code\nOnce you close this page you will see a prompt to enter the code to download the data`, {
                             align: 'center',
                             widthWeight: 1,
                             dismissOnTap: false,
@@ -2307,7 +2181,7 @@ module.exports = class FPW_App {
                             subtitleFont: Font.mediumSystemFont(fontSizes.headline2),
                         }),
                     ], {
-                        height: 50,
+                        height: 70,
                         dismissOnSelect: false,
                     },
                 ),
@@ -2346,19 +2220,19 @@ module.exports = class FPW_App {
                             widthWeight: 25,
                             dismissOnTap: false,
                             onTap: async() => {
-                                console.log(`(Dashboard) Remove AsBuilt Button was pressed`);
+                                console.log(`(Dashboard) Remove Module Data Button was pressed`);
                                 await this.FPW.Files.removeLocalData(`${vin}.json`, true);
                                 // await this.FPW.Alerts.showAlert('Removed Successfully', 'Local AsBuilt File Removed');
                                 this.createAsBuiltPage(true);
                             },
                         }),
-                        await this.createTextCell('AsBuilt Data', undefined, {
+                        await this.createTextCell('Vehicle Module Info', undefined, {
                             align: 'center',
                             widthWeight: 50,
                             dismissOnTap: false,
                             titleColor: this.FPW.colorMap.text.dark,
                             subtitleColor: Color.lightGray(),
-                            titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
+                            titleFont: Font.boldRoundedSystemFont(18),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                         }),
                         await this.createButtonCell(lastModDt ? 'Reload Data' : 'Get Data', {
@@ -2366,7 +2240,7 @@ module.exports = class FPW_App {
                             widthWeight: 25,
                             dismissOnTap: false,
                             onTap: async() => {
-                                console.log(`(Dashboard) Get AsBuilt Button was pressed`);
+                                console.log(`(Dashboard) Get Module Data Button was pressed`);
                                 await this.FPW.AsBuilt.getAsBuiltFile(vin);
                                 this.createAsBuiltPage(true);
                             },
@@ -2403,7 +2277,7 @@ module.exports = class FPW_App {
                 ),
             );
 
-            let asbData = await this.FPW.Files.readJsonFile('AsBuilt Data', `${vin}`, true);
+            let asbData = await this.FPW.Files.readJsonFile('Vehicle Modules Info', `${vin}`, true);
             if (asbData) {
                 const modCount = asbData && asbData.AS_BUILT_DATA && asbData.AS_BUILT_DATA.VEHICLE && asbData.AS_BUILT_DATA.VEHICLE.NODEID ? asbData.AS_BUILT_DATA.VEHICLE.NODEID.length : 0;
                 // console.log(JSON.stringify(asbData.AS_BUILT_DATA.VEHICLE.NODEID));
@@ -2464,7 +2338,32 @@ module.exports = class FPW_App {
                     }
                 }
             } else {
-                tableRows.push(await this.createTableRow([await this.createTextCell('No Data Found...\nPress the Get Data Button to Get Started', undefined, { align: 'center', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.systemFont(fontSizes.subheadline) })], { height: 60, dismissOnSelect: false }));
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('No Module Data Found', 'This info needs to be downloaded from Ford before it can be displayed\nPress the Get Data Button to start the download process.', {
+                                align: 'left',
+                                widthWeight: 1,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.systemFont(fontSizes.headline2),
+                                subtitleColor: this.FPW.colorMap.lightText,
+                                subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
+                            }),
+                        ], { height: 80, dismissOnSelect: false },
+                    ),
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('Important Notice', "Please don't abuse this tool by reloading your AsBuilt data from Ford dozens of times a day.", {
+                                align: 'left',
+                                widthWeight: 1,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.systemFont(fontSizes.headline2),
+                                subtitleColor: this.FPW.colorMap.lightText,
+                                subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
+                            }),
+                        ], { height: 80, dismissOnSelect: false },
+                    ),
+                );
             }
 
             await this.generateTableMenu('asBuiltPage', tableRows, true, false, update);
@@ -2474,19 +2373,6 @@ module.exports = class FPW_App {
     }
 
     async createModuleInfoPage(moduleData = undefined) {
-        // const fontSizes = {
-        //     medium: 10,
-        //     title1: 24,
-        //     title2: 22,
-        //     title3: 20,
-        //     body: 10,
-        //     body2: 11,
-        //     body3: 13,
-        //     footnote: 14,
-        //     headline: 15,
-        //     headline2: 17,
-        //     subheadline: 13,
-        // };
         const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
         const headerColor = Color.darkGray(); //new Color('#13233F');
         try {
