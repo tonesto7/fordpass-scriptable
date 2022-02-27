@@ -54,6 +54,22 @@ module.exports = class FPW_Alerts {
         }
     }
 
+    async showCaptchaPrompt() {
+        let prompt = new Alert();
+        prompt.title = 'AsBuilt Captcha Code';
+        prompt.message = 'Please enter the captcha code below';
+        prompt.addTextField('Captcha Code', '');
+        prompt.addAction('Submit');
+        prompt.addCancelAction('Cancel');
+        const respInd = await prompt.presentAlert();
+        switch (respInd) {
+            case 0:
+                return prompt.textFieldValue(0);
+            case 1:
+                return undefined;
+        }
+    }
+
     async showActionPrompt(title = undefined, msg = undefined, menuItems, showCancel = false, cancelFunc = undefined) {
         let prompt = new Alert();
         prompt.title = title;

@@ -41,12 +41,18 @@
     
 **************/
 const changelogs = {
+    '2022.02.27.0': {
+        added: ['New vehicle module section under advanced info page.', 'Use a custom background color for the widget by storing a file in the Scriptable iCloud folder.  It must be a .png and be named with your VIN number.  You can also define the image for the different widget sizes by naming it like "${VIN Here}_small.png"'],
+        fixed: ["Lot's of minor tweaks."],
+        removed: [],
+        updated: ['Updated the view all widget data page to use formatted text like the OTA page.'],
+        clearImgCache: true,
+    },
     '2022.02.22.0': {
         added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.', 'Added FordPass rewards points to the dashboard menu.'],
-        fixed: ['Fixed menu_btn_red.png_64 error when there was an alert in the widget.'],
+        fixed: [],
         removed: [],
         updated: ['Dashboard should load immediately now from cached data and then update with current data in the next few seconds', 'Modified the layout of the dashboard header to make the image larger.', 'Moved the diagnostics menu item in the advanced info page as a menu there.'],
-        clearImgCache: true,
     },
     '2022.02.21.0': {
         added: ['The dashboard now shows the vehicle health alert for a low 12V battery.'],
@@ -85,7 +91,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.22.0';
+const SCRIPT_VERSION = '2022.02.27.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -305,6 +311,7 @@ class Widget {
                 this.changelogs = changelogs;
                 this.App = this.moduleLoader('App');
                 this.Menus = this.moduleLoader('Menus');
+                this.AsBuilt = this.moduleLoader('AsBuilt');
             }
             this.checkForUpdates();
         } catch (e) {
@@ -368,6 +375,7 @@ class Widget {
                     // await w5.presentLarge();
 
                     await this.App.createMainPage();
+                    // await this.App.createAdvancedInfoPage();
                     await this.Timers.stopTimer('mainTableRefresh');
                 }
             } else if (config.runsWithSiri || config.runsInActionExtension) {
@@ -446,12 +454,21 @@ class Widget {
 
             // console.log('(prepWidget) Fetching Vehicle Data...');
             console.log(`(prepWidget) Fetching Vehicle Data | Local: (${loadLocal})`);
-            const vData = await this.FordAPI.fetchVehicleData(loadLocal, isWidget);
-            return vData;
+            const vData = await this.FordAPI.fetchVehicleData(loadLocal);
+            return isWidget ? await this.leanOutDataForWidget(vData) : vData;
         } catch (err) {
             this.logError(`prepWidget() Error: ${err}`, true);
             return null;
         }
+    }
+
+    async leanOutDataForWidget(vData) {
+        delete vData.rawStatus;
+        delete vData.messages;
+        delete vData.syncInfo;
+        delete vData.recallInfo;
+        // delete vData.otaInfo
+        return vData;
     }
 
     /**
@@ -505,7 +522,7 @@ class Widget {
             this.logError(`generateWidget() Error: ${e}`);
         }
         widget.setPadding(0, 5, 0, 1);
-        widget.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
+        // widget.refreshAfterDate = new Date(Date.now() + 1000 * 300); // Update the widget every 5 minutes from last run (this is not always accurate and there can be a swing of 1-5 minutes)
         Script.setWidget(widget);
         // await this.logInfo(`Created Widget(${size})...`);
         return widget;
@@ -1888,7 +1905,7 @@ class Widget {
             if (vehicleNameStr.length >= 10) {
                 vehicleNameSize = vehicleNameSize - Math.round(vehicleNameStr.length / 4);
             }
-            console.log(`vehicleNameSize: ${vehicleNameSize}`);
+            // console.log(`vehicleNameSize: ${vehicleNameSize}`);
             await this.createText(vehicleNameContainer, vehicleNameStr, { font: Font.semiboldSystemFont(vehicleNameSize), textColor: this.colorMap.text[colorMode], '*leftAlignText': null, minimumScaleFactor: 0.4, lineLimit: 1 });
             vehicleNameContainer.addSpacer();
             // Range and Odometer
@@ -2192,7 +2209,7 @@ class Widget {
             const row3LeftCol = await this.createColumn(row3Row, { '*setPadding': [0, 0, 0, 0] });
             // Creates the Lock Status Elements
             await this.createLockStatusElement(row3LeftCol, vData);
-            // row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
+            row3LeftCol.addSpacer(); // Pushes Row 3 Left content to top
             // Creates the Door Status Elements
             await this.createDoorElement(row3LeftCol, vData);
 
@@ -2209,6 +2226,7 @@ class Widget {
             // row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
             // Creates the Ignition Status Elements
             await this.createIgnitionStatusElement(row3RightCol, vData);
+            row3RightCol.addSpacer(); // Pushes Row 3 Right content to top
 
             // Creates the Window Status Elements
             await this.createWindowElement(row3RightCol, vData);
@@ -2218,10 +2236,10 @@ class Widget {
             row3Col.addSpacer(); // Pushes Row 3 content to top
             wContent.addSpacer();
 
-            const row5Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
-            const row5CenterCol = await this.createColumn(row5Container, { '*setPadding': [0, 0, 0, 0] });
+            const row4Container = await this.createRow(wContent, { '*setPadding': [0, 0, 0, 0] });
+            const row4CenterCol = await this.createColumn(row4Container, { '*setPadding': [0, 0, 0, 0] });
             // Creates the Vehicle Location Element
-            await this.createPositionElement(row5CenterCol, vData, 'center');
+            await this.createPositionElement(row4CenterCol, vData, 'center');
 
             wContent.addSpacer(); // Pushes all content to the top
             // widget.addSpacer(); // Pushes all content to the top
@@ -2487,7 +2505,7 @@ class Widget {
             }
             // let txtSize = status.length >= 10 ? Math.round(this.sizeMap[this.widgetSize].fontSizeMedium * 0.75) : this.sizeMap[this.widgetSize].fontSizeMedium;
             const styles = {
-                on: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: 0.7 },
+                on: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.openColor, lineLimit: 1, minimumScaleFactor: status.length >= 10 ? 0.7 : 1 },
                 off: { font: Font.heavySystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.closedColor },
             };
             await this.createText(valueRow, status, vData.ignitionStatus !== undefined && (vData.ignitionStatus === 'On' || vData.ignitionStatus === 'Run' || remStartOn) ? styles.on : styles.off);
@@ -2928,116 +2946,128 @@ class Widget {
     // Modified version of this https://talk.automators.fm/t/get-available-widget-height-and-width-depending-on-the-devices-screensize/9258/5
     async getViewPortSizes(widgetFamily) {
         // const vpSize = `${this.screenSize.width}x${this.screenSize.height}`;
+        // console.log(`screenSize: ${JSON.stringify(this.screenSize)}`);
         const vpSize = (({ width: w, height: h }) => (w > h ? `${h}x${w}` : `${w}x${h}`))(this.screenSize);
-
-        const sizeMap = {
-            // IPAD_VIEWPORT_SIZES
-            '768x1024': {
-                devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
-                small: { width: 120, height: 120 },
-                medium: { width: 260, height: 120 },
-                large: { width: 260, height: 260 },
-                extraLarge: { width: 540, height: 260 },
-            },
-            '810x1080': {
-                devices: ['10.2" iPad'],
-                small: { width: 124, height: 124 },
-                medium: { width: 272, height: 124 },
-                large: { width: 272, height: 272 },
-                extraLarge: { width: 568, height: 272 },
-            },
-            '834x1112': {
-                devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
-                small: { width: 132, height: 132 },
-                medium: { width: 288, height: 132 },
-                large: { width: 288, height: 288 },
-                extraLarge: { width: 600, height: 288 },
-            },
-            '820x1180': {
-                devices: ['10.9" iPad Air 4th Gen'],
-                small: { width: 136, height: 136 },
-                medium: { width: 300, height: 136 },
-                large: { width: 300, height: 300 },
-                extraLarge: { width: 628, height: 300 },
-            },
-            '834x1194': {
-                devices: ['11" iPad Pro'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 345, height: 329 },
-                extraLarge: { width: 628, height: 300 },
-            },
-            '1024x1366': {
-                devices: ['12.9" iPad Pro'],
-                small: { width: 170, height: 170 },
-                medium: { width: 332, height: 170 },
-                large: { width: 382, height: 332 },
-                extraLarge: { width: 748, height: 356 },
-            },
-
-            // IPHONE_VIEWPORT_SIZES
-            '428x926': {
-                devices: ['12 Pro Max'],
-                small: { width: 170, height: 170 },
-                medium: { width: 364, height: 170 },
-                large: { width: 364, height: 382 },
-            },
-            '360x780': {
-                devices: ['12 Mini'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-            },
-            '414x896': {
-                devices: ['XR', 'XS Max', '11', '11 Pro Max'],
-                small: { width: 169, height: 169 },
-                medium: { width: 360, height: 169 },
-                large: { width: 360, height: 376 },
-            },
-            '390x844': {
-                devices: ['12', '12 Pro'],
-                small: { width: 158, height: 158 },
-                medium: { width: 338, height: 158 },
-                large: { width: 338, height: 354 },
-            },
-            '375x812': {
-                devices: ['X', 'XS', '11 Pro'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-            },
-            '414x736': {
-                devices: ['6S Plus', '7 Plus', '8 Plus'],
-                small: { width: 159, height: 159 },
-                medium: { width: 348, height: 159 },
-                large: { width: 348, height: 357 },
-            },
-            '375x667': {
-                devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
-                small: { width: 148, height: 148 },
-                medium: { width: 322, height: 148 },
-                large: { width: 322, height: 324 },
-            },
-            '320x568': {
-                devices: ['SE (1st Gen)'],
-                small: { width: 141, height: 141 },
-                medium: { width: 291, height: 141 },
-                large: { width: 291, height: 299 },
-            },
+        const fallback = {
+            devices: ['Fallback'],
+            small: { width: 155, height: 155 },
+            medium: { width: 329, height: 155 },
+            large: { width: 329, height: 345 },
+            extraLarge: { width: 329, height: 345 },
         };
+        try {
+            const sizeMap = {
+                // IPAD_VIEWPORT_SIZES
+                '768x1024': {
+                    devices: ['iPad Mini 2/3/4', 'iPad 3/4', 'iPad Air 1/2', '9.7" iPad Pro'],
+                    small: { width: 120, height: 120 },
+                    medium: { width: 260, height: 120 },
+                    large: { width: 260, height: 260 },
+                    extraLarge: { width: 540, height: 260 },
+                },
+                '810x1080': {
+                    devices: ['10.2" iPad'],
+                    small: { width: 124, height: 124 },
+                    medium: { width: 272, height: 124 },
+                    large: { width: 272, height: 272 },
+                    extraLarge: { width: 568, height: 272 },
+                },
+                '834x1112': {
+                    devices: ['10.5" iPad Pro', '10.5" iPad Air 3rd Gen'],
+                    small: { width: 132, height: 132 },
+                    medium: { width: 288, height: 132 },
+                    large: { width: 288, height: 288 },
+                    extraLarge: { width: 600, height: 288 },
+                },
+                '820x1180': {
+                    devices: ['10.9" iPad Air 4th Gen'],
+                    small: { width: 136, height: 136 },
+                    medium: { width: 300, height: 136 },
+                    large: { width: 300, height: 300 },
+                    extraLarge: { width: 628, height: 300 },
+                },
+                '834x1194': {
+                    devices: ['11" iPad Pro'],
+                    small: { width: 155, height: 155 },
+                    medium: { width: 329, height: 155 },
+                    large: { width: 345, height: 329 },
+                    extraLarge: { width: 628, height: 300 },
+                },
+                '1024x1366': {
+                    devices: ['12.9" iPad Pro'],
+                    small: { width: 170, height: 170 },
+                    medium: { width: 332, height: 170 },
+                    large: { width: 382, height: 332 },
+                    extraLarge: { width: 748, height: 356 },
+                },
+                '2048x1280': {
+                    devices: ['MacBook Pro'],
+                    small: { width: 170, height: 170 },
+                    medium: { width: 332, height: 170 },
+                    large: { width: 382, height: 332 },
+                    extraLarge: { width: 748, height: 356 },
+                },
 
-        if (sizeMap[vpSize]) {
-            await this.logInfo(`ViewPort Size: ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
-            return sizeMap[vpSize][widgetFamily];
-        } else {
-            let fallback = {
-                devices: ['Fallback'],
-                small: { width: 155, height: 155 },
-                medium: { width: 329, height: 155 },
-                large: { width: 329, height: 345 },
-                extraLarge: { width: 329, height: 345 },
+                // IPHONE_VIEWPORT_SIZES
+                '428x926': {
+                    devices: ['12 Pro Max'],
+                    small: { width: 170, height: 170 },
+                    medium: { width: 364, height: 170 },
+                    large: { width: 364, height: 382 },
+                },
+                '360x780': {
+                    devices: ['12 Mini'],
+                    small: { width: 155, height: 155 },
+                    medium: { width: 329, height: 155 },
+                    large: { width: 329, height: 345 },
+                },
+                '414x896': {
+                    devices: ['XR', 'XS Max', '11', '11 Pro Max'],
+                    small: { width: 169, height: 169 },
+                    medium: { width: 360, height: 169 },
+                    large: { width: 360, height: 376 },
+                },
+                '390x844': {
+                    devices: ['12', '12 Pro'],
+                    small: { width: 158, height: 158 },
+                    medium: { width: 338, height: 158 },
+                    large: { width: 338, height: 354 },
+                },
+                '375x812': {
+                    devices: ['X', 'XS', '11 Pro'],
+                    small: { width: 155, height: 155 },
+                    medium: { width: 329, height: 155 },
+                    large: { width: 329, height: 345 },
+                },
+                '414x736': {
+                    devices: ['6S Plus', '7 Plus', '8 Plus'],
+                    small: { width: 159, height: 159 },
+                    medium: { width: 348, height: 159 },
+                    large: { width: 348, height: 357 },
+                },
+                '375x667': {
+                    devices: ['6', '6S', '7', '8', 'SE (2nd Gen)'],
+                    small: { width: 148, height: 148 },
+                    medium: { width: 322, height: 148 },
+                    large: { width: 322, height: 324 },
+                },
+                '320x568': {
+                    devices: ['SE (1st Gen)'],
+                    small: { width: 141, height: 141 },
+                    medium: { width: 291, height: 141 },
+                    large: { width: 291, height: 299 },
+                },
             };
-            await this.logInfo(`ViewPort Size (FALLBACK): ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
+
+            if (sizeMap[vpSize]) {
+                await this.logInfo(`ViewPort Size: ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
+                return sizeMap[vpSize][widgetFamily];
+            } else {
+                await this.logInfo(`ViewPort Size (FALLBACK): ${vpSize} | Device Models: ${sizeMap[vpSize].devices.join(', ') || 'Unknown'}`, true);
+                return fallback[widgetFamily];
+            }
+        } catch (e) {
+            await this.logInfo(`ViewPort Size (FALLBACK): ${vpSize}`, true);
             return fallback[widgetFamily];
         }
     }
@@ -3051,7 +3081,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||1575654697', 'FPW_App.js||79100848', 'FPW_Files.js||1736163301', 'FPW_FordAPIs.js||391717046', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||-1440891113', 'FPW_App.js||-1559198190', 'FPW_AsBuilt.js||874941626', 'FPW_Files.js||1279434271', 'FPW_FordAPIs.js||-89536509', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();

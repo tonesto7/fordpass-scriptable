@@ -528,15 +528,18 @@ module.exports = class FPW_FordAPIs {
     }
 
     //from local store if last fetch is < x minutes, otherwise fetch from server
-    async fetchVehicleData(loadLocal = false, leanData = false) {
+    async fetchVehicleData(loadLocal = false) {
         //Fetch data from local store
         // if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
         if (loadLocal) {
-            return await this.FPW.Files.readLocalData();
+            let ld = await this.FPW.Files.readJsonFile('Vehicle Data');
+            if (ld !== undefined || ld.info !== undefined || Object.keys(ld.info).length > 0) {
+                return ld;
+            }
         }
 
         //fetch data from server
-        console.log(`Fetching Vehicle Data from Ford Servers...${leanData ? '(Lean)' : ''}`);
+        console.log(`Fetching Vehicle Data from Ford Servers...`);
         let statusData = await this.getVehicleStatus();
 
         // console.log(`statusData: ${JSON.stringify(statusData)}`);
@@ -545,7 +548,7 @@ module.exports = class FPW_FordAPIs {
         // vehicleData.SCRIPT_TS = this.SCRIPT_TS;
         if (statusData == this.FPW.textMap().errorMessages.invalidGrant || statusData == this.FPW.textMap().errorMessages.connectionErrorOrVin || statusData == this.FPW.textMap().errorMessages.unknownError || statusData == this.FPW.textMap().errorMessages.noVin || statusData == this.FPW.textMap().errorMessages.noCredentials) {
             // console.log('fetchVehicleData | Error: ' + statusData);
-            let localData = this.FPW.Files.readLocalData();
+            let localData = this.FPW.Files.readJsonFile('Vehicle Data');
             if (localData) {
                 vehicleData = localData;
             }
@@ -716,7 +719,6 @@ module.exports = class FPW_FordAPIs {
 
         vehicleData.fordpassRewardsInfo = await this.getFordpassRewardsInfo();
         // console.log(`Fordpass Rewards Info: ${JSON.stringify(vehicleData.fordpassRewardsInfo)}`);
-
         vehicleData.syncInfo = await this.getSyncVersion(vehicleData.info.vehicle.brandCode);
         // console.log(`Sync Info: ${JSON.stringify(vehicleData.syncInfo)}`);
 
@@ -730,11 +732,8 @@ module.exports = class FPW_FordAPIs {
         }
 
         //save data to local store
-        this.FPW.Files.saveDataToLocal(vehicleData);
+        this.FPW.Files.saveJsonFile('Vehicle Data', vehicleData);
         // console.log(JSON.stringify(vehicleData));
-        if (leanData) {
-            delete vehicleData.messages;
-        }
         return vehicleData;
     }
 
