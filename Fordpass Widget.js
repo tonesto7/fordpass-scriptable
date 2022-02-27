@@ -25,8 +25,6 @@
  * IMPORTANT NOTE: This widget will only work with vehicles that show up in the FordPassFordPass app!
  */
 
-// TODO: Add static image support for the vehicle image.
-
 /**************
 // Todo: Next Release (Post 2.0.x)
 [-] use OTA info to show when an update is available or pending.
@@ -43,11 +41,11 @@
     
 **************/
 const changelogs = {
-    '2022.02.25.0': {
-        added: ["New Feature that I can't mention..."],
-        fixed: [],
+    '2022.02.27.0': {
+        added: ['New vehicle module section under advanced info page.', 'Use a custom background color for the widget by storing a file in the Scriptable iCloud folder.  It must be a .png and be named with your VIN number.  You can also define the image for the different widget sizes by naming it like "${VIN Here}_small.png"'],
+        fixed: ["Lot's of minor tweaks."],
         removed: [],
-        updated: [],
+        updated: ['Updated the view all widget data page to use formatted text like the OTA page.'],
         clearImgCache: true,
     },
     '2022.02.22.0': {
@@ -93,7 +91,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.25.0';
+const SCRIPT_VERSION = '2022.02.27.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
