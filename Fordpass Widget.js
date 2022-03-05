@@ -327,7 +327,8 @@ class Widget {
      */
     moduleLoader(moduleName) {
         try {
-            const module = importModule(this.iCloudModuleDir + `/FPW_${moduleName}.js`);
+            const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
+            const module = importModule(fm.joinPath(fm.joinPath(fm.documentsDirectory(), 'FPWModules'), `FPW_${moduleName}.js`));
             return new module(this);
         } catch (error) {
             this.logError(`Module Loader | (${moduleName}) | Error: ${error}`);
