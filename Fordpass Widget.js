@@ -1,6 +1,12 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
+// This script was downloaded using FordWidgetTool.
+hash: 861526570;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: car;
 
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
@@ -42,6 +48,13 @@
     
 **************/
 const changelogs = {
+    '2022.03.10.0': {
+        added: [],
+        fixed: ['fixed possible bug with viewing modules after latest update.'],
+        removed: [],
+        updated: [],
+        clearImgCache: false,
+    },
     '2022.03.09.0': {
         added: [],
         fixed: ['fixed a bug with module loading from cloud vs local directory.'],
@@ -99,7 +112,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.03.09.0';
+const SCRIPT_VERSION = '2022.03.10.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -3090,7 +3103,7 @@ class Widget {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-1440891113', 'FPW_App.js||-1543324681', 'FPW_AsBuilt.js||-403622277', 'FPW_Files.js||1279434271', 'FPW_FordAPIs.js||-89536509', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||-248160924', 'FPW_App.js||236439036', 'FPW_AsBuilt.js||-403622277', 'FPW_Files.js||1895738678', 'FPW_FordAPIs.js||1145393787', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
 
 async function validateModules() {
     const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
