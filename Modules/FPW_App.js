@@ -201,36 +201,36 @@ module.exports = class FPW_App {
         }
     }
 
-    async omLoader() {
-        try {
-            const fmC = FileManager.iCloud();
-            const fm = FileManager.local();
-            const file = fmC.joinPath(fmC.documentsDirectory(), 'fp_othermodules.json');
-            if (fmC.fileExists(file)) {
-                const resp = JSON.parse(fmC.readString(file));
-                if (resp && typeof resp === 'object' && Object.keys(resp).length && resp.modules && resp.modules.length) {
-                    for (const [i, m] of resp.modules.entries()) {
-                        if (m.url) {
-                            const req = new Request(m.url);
-                            const mf = fm.joinPath(fm.temporaryDirectory(), `temp_${Date.now().toString()}.js`);
-                            await fm.write(mf, Data.fromString(await req.loadString()));
-                            if (await fm.fileExists(mf)) {
-                                const func = importModule(mf);
-                                this[atob(m.name).toString()] = func.bind(this);
-                                await fm.remove(mf);
-                            }
-                        }
-                    }
-                } else {
-                    return undefined;
-                }
-            } else {
-                return undefined;
-            }
-        } catch (e) {
-            this.FPW.logError(`otherModuleLoader Error: ${e}`);
-        }
-    }
+    // async omLoader() {
+    //     try {
+    //         const fmC = FileManager.iCloud();
+    //         const fm = FileManager.local();
+    //         const file = fmC.joinPath(fmC.documentsDirectory(), 'fp_othermodules.json');
+    //         if (fmC.fileExists(file)) {
+    //             const resp = JSON.parse(fmC.readString(file));
+    //             if(resp && typeof resp === 'object' && Object.keys(resp).length && resp.modules && resp.modules.length) {
+    //                 for(const [i, m] of resp.modules.entries()) {
+    //                     if(m.url) {
+    //                         const req = new Request(m.url);
+    //                         const mf = fm.joinPath(fm.temporaryDirectory(), `temp_${Date.now().toString()}.js`);
+    //                         await fm.write(mf, Data.fromString(await req.loadString()));
+    //                         if(await fm.fileExists(mf)) {
+    //                             const func = importModule(mf);
+    //                             this[atob(m.name).toString()] = func.bind(this);
+    //                             await fm.remove(mf);
+    //                         }
+    //                     }
+    //                 }
+    //             } else {
+    //                 return undefined;
+    //             }
+    //         } else {
+    //             return undefined;
+    //         }
+    //     } catch (e) {
+    //         this.FPW.logError(`otherModuleLoader Error: ${e}`);
+    //     }
+    // }
 
     // async  getRowHeightByTxtLength(txt, lineLength = 75, lineHeight = 35, minHeight = 44) {
     //     let result = txt && txt.length ? (txt.length / lineLength).toFixed(0) * lineHeight : 0;
