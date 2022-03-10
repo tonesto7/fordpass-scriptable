@@ -344,7 +344,7 @@ class Widget {
                 this.AsBuilt = this.moduleLoader('AsBuilt');
             }
             this.checkForUpdates();
-            if (showModuleVersions) {
+            if (widgetConfig.showModuleVersions) {
                 let that = this;
                 ['Timers', 'Alerts', 'Notifications', 'Files', 'FordAPI', 'App', 'Menus', 'AsBuilt'].map((module) => {
                     try {
