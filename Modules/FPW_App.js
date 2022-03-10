@@ -2368,7 +2368,7 @@ module.exports = class FPW_App {
                                         subtitleFont: Font.regularSystemFont(11),
                                     }),
                                 ], {
-                                    height: mData.group.length ? 70 : 50,
+                                    height: mData.group && mData.group.length ? 70 : 50,
                                     dismissOnSelect: false,
                                     onSelect: async() => {
                                         console.log(`(AsBuilt Info) View Module (${mData.label}) was pressed`);
