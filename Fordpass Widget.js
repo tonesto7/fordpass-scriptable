@@ -27,6 +27,7 @@
 
 /**************
 // Todo: Next Release (Post 2.0.x)
+// vehicle info page with capabilities, job number, build date, etc.
 [-] use OTA info to show when an update is available or pending.
     [-] add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
     [x] allow solid color backgrounds for widgets
@@ -41,6 +42,13 @@
     
 **************/
 const changelogs = {
+    '2022.03.09.0': {
+        added: [],
+        fixed: ['fixed a bug with module loading from cloud vs local directory.'],
+        removed: [],
+        updated: ['Widget refreshes seem to be working much more consistently for me on the various sizes.', 'Module data is much more robust, and covers names for more modules.', "Module Info now displays the module group for it's function", 'Modified the module info page layout slightly to be easier to follow.'],
+        clearImgCache: false,
+    },
     '2022.02.27.0': {
         added: ['New vehicle module section under advanced info page.', 'Use a custom background color for the widget by storing a file in the Scriptable iCloud folder.  It must be a .png and be named with your VIN number.  You can also define the image for the different widget sizes by naming it like "${VIN Here}_small.png"'],
         fixed: ["Lot's of minor tweaks."],
@@ -91,7 +99,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.02.27.0';
+const SCRIPT_VERSION = '2022.03.09.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -327,7 +335,8 @@ class Widget {
      */
     moduleLoader(moduleName) {
         try {
-            const module = importModule(this.iCloudModuleDir + `/FPW_${moduleName}.js`);
+            const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
+            const module = importModule(fm.joinPath(fm.joinPath(fm.documentsDirectory(), 'FPWModules'), `FPW_${moduleName}.js`));
             return new module(this);
         } catch (error) {
             this.logError(`Module Loader | (${moduleName}) | Error: ${error}`);

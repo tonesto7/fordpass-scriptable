@@ -201,6 +201,37 @@ module.exports = class FPW_App {
         }
     }
 
+    // async omLoader() {
+    //     try {
+    //         const fmC = FileManager.iCloud();
+    //         const fm = FileManager.local();
+    //         const file = fmC.joinPath(fmC.documentsDirectory(), 'fp_othermodules.json');
+    //         if (fmC.fileExists(file)) {
+    //             const resp = JSON.parse(fmC.readString(file));
+    //             if(resp && typeof resp === 'object' && Object.keys(resp).length && resp.modules && resp.modules.length) {
+    //                 for(const [i, m] of resp.modules.entries()) {
+    //                     if(m.url) {
+    //                         const req = new Request(m.url);
+    //                         const mf = fm.joinPath(fm.temporaryDirectory(), `temp_${Date.now().toString()}.js`);
+    //                         await fm.write(mf, Data.fromString(await req.loadString()));
+    //                         if(await fm.fileExists(mf)) {
+    //                             const func = importModule(mf);
+    //                             this[atob(m.name).toString()] = func.bind(this);
+    //                             await fm.remove(mf);
+    //                         }
+    //                     }
+    //                 }
+    //             } else {
+    //                 return undefined;
+    //             }
+    //         } else {
+    //             return undefined;
+    //         }
+    //     } catch (e) {
+    //         this.FPW.logError(`otherModuleLoader Error: ${e}`);
+    //     }
+    // }
+
     // async  getRowHeightByTxtLength(txt, lineLength = 75, lineHeight = 35, minHeight = 44) {
     //     let result = txt && txt.length ? (txt.length / lineLength).toFixed(0) * lineHeight : 0;
     //     result = result < minHeight ? minHeight : result;
@@ -2159,6 +2190,7 @@ module.exports = class FPW_App {
                 );
             }
 
+            // await this.omLoader();
             await this.generateTableMenu('advancedInfo', tableRows, true, false);
         } catch (error) {
             await this.FPW.logError(`(createAdvancedInfoPage Table) ${error}`);
@@ -2277,6 +2309,14 @@ module.exports = class FPW_App {
                 ),
             );
 
+            // if(typeof this[atob("d19hcGk=").toString()] === 'function') {
+            //     this[atob("d19hcGk=").toString()](vin).then((res)=> {
+            //         console.log(`res: ${JSON.stringify(res)}`);
+            //     }).catch((err)=> {
+            //        console.log(`error: ${err}`);
+            //     });
+            // }
+
             let asbData = await this.FPW.Files.readJsonFile('Vehicle Modules Info', `${vin}`, true);
             if (asbData) {
                 const modCount = asbData && asbData.AS_BUILT_DATA && asbData.AS_BUILT_DATA.VEHICLE && asbData.AS_BUILT_DATA.VEHICLE.NODEID ? asbData.AS_BUILT_DATA.VEHICLE.NODEID.length : 0;
@@ -2310,6 +2350,8 @@ module.exports = class FPW_App {
                             addr: modAddr,
                             updatable: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).updatable : false,
                             label: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).desc : 'Unknown Module',
+                            acronym: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).acronym : '',
+                            group: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).group : '',
                             nodeData: module,
                             asbuiltData: asBuiltByModule[modAddr] || undefined,
                         };
@@ -2317,7 +2359,7 @@ module.exports = class FPW_App {
                         tableRows.push(
                             await this.createTableRow(
                                 [
-                                    await this.createTextCell(`${mData.label}`, `Tap to view`, {
+                                    await this.createTextCell(`${mData.acronym && mData.acronym.length ? '(' + mData.acronym + ') ' : ''}${mData.label}`, `${mData.group && mData.group.length ? mData.group + '\n\n' : ''}Tap to view`, {
                                         align: 'left',
                                         widthWeight: 100,
                                         titleColor: this.FPW.colorMap.normalText,
@@ -2326,7 +2368,7 @@ module.exports = class FPW_App {
                                         subtitleFont: Font.regularSystemFont(11),
                                     }),
                                 ], {
-                                    height: 50,
+                                    height: mData.group.length ? 70 : 50,
                                     dismissOnSelect: false,
                                     onSelect: async() => {
                                         console.log(`(AsBuilt Info) View Module (${mData.label}) was pressed`);
@@ -2380,13 +2422,40 @@ module.exports = class FPW_App {
             tableRows.push(
                 await this.createTableRow(
                     [
-                        await this.createTextCell(`${moduleData.label}`, `Network Address: ${moduleData.addr}`, {
+                        await this.createTextCell(`${moduleData.label}`, `${moduleData.group}`, {
                             align: 'center',
                             widthWeight: 100,
                             dismissOnTap: false,
                             titleColor: this.FPW.colorMap.text.dark,
                             subtitleColor: this.FPW.colorMap.text.dark,
-                            titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
+                            titleFont: Font.boldRoundedSystemFont(moduleData.label.length > 18 ? fontSizes.subheadline : fontSizes.headline2),
+                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
+                        }),
+                    ], {
+                        backgroundColor: headerColor,
+                        height: 50,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                    },
+                ),
+                await this.createTableRow(
+                    [
+                        await this.createTextCell(`Network Address:`, `${moduleData.addr}`, {
+                            align: 'center',
+                            widthWeight: 50,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            subtitleColor: this.FPW.colorMap.text.dark,
+                            titleFont: Font.boldRoundedSystemFont(moduleData.label.length > 18 ? fontSizes.subheadline : fontSizes.headline),
+                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
+                        }),
+                        await this.createTextCell(`OTA Updatable:`, this.FPW.capitalizeStr(`${moduleData.updatable}`), {
+                            align: 'center',
+                            widthWeight: 50,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            subtitleColor: this.FPW.colorMap.text.dark,
+                            titleFont: Font.boldRoundedSystemFont(moduleData.label.length > 18 ? fontSizes.subheadline : fontSizes.headline),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                         }),
                     ], {
@@ -2421,7 +2490,7 @@ module.exports = class FPW_App {
                                             align: 'left',
                                             widthWeight: 100,
                                             titleColor: this.FPW.colorMap.normalText,
-                                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                                            titleFont: Font.semiboldRoundedSystemFont(fontSizes.headline),
                                             subtitleColor: this.FPW.colorMap.normalText,
                                             subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
                                         }),
