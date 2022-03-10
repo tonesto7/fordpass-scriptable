@@ -623,9 +623,9 @@ module.exports = class FPW_App {
                             subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                         }),
-                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.rightFront}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
-                        await this.createTextCell(`LR: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                        await this.createTextCell(`LR: ${vData.tirePressure.leftRear}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         // Window Status Cells
                         await this.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                             align: 'right',
