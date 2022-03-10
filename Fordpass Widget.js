@@ -167,9 +167,9 @@ const widgetConfig = {
     loadCacheOnly: false, // Use cached data for quick testing of widget and menu viewing
     saveFilesToIcloud: false, // Save files to icloud
     saveLogsToIcloud: false, // Save logs to icloud
-    useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
+    useBetaModules: false, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     writeToLog: false, // Writes to the log file.
-    showModuleVersions: true, // Will display the module versions loaded in the console.
+    showModuleVersions: false, // Will display the module versions loaded in the console.
     exportVehicleImagesToIcloud: false, // This will download all 5 vehicle angle images to the Sciptable iCloud Folder as PNG files for use elsewhere.
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
