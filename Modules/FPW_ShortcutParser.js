@@ -9,6 +9,10 @@ module.exports = class FPW_ShortcutParser {
         };
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     // [
     //     'CEN_LAST_MILE',
     //     'CEN_OFFBOARD_SEARCH',

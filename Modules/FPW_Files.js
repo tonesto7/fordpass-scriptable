@@ -5,6 +5,10 @@ module.exports = class FPW_Files {
         this.widgetConfig = FPW.widgetConfig;
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     async loadImage(imgUrl) {
         try {
             const req = new Request(imgUrl);
@@ -130,6 +134,23 @@ module.exports = class FPW_Files {
             });
         } catch (e) {
             this.FPW.logError(`clearFileManager Error: ${e}`);
+        }
+    }
+
+    async clearModuleCache() {
+        console.log('FileManager: Clearing All Module Files from Local Cache...');
+        try {
+            const fm = FileManager.local();
+            const dir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
+            fm.listContents(dir).forEach(async(file) => {
+                const fp = fm.joinPath(dir, file);
+                if ((await fm.fileExtension(fp)) === 'js') {
+                    console.log(`FileManager: Removing Module File: ${file}`);
+                    await fm.remove(fp);
+                }
+            });
+        } catch (e) {
+            this.FPW.logError(`clearModuleCache Error: ${e}`);
         }
     }
 

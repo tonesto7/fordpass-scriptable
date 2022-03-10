@@ -1,12 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
-// This script was downloaded using FordWidgetTool.
-hash: 861526570;
-
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: car;
 
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
@@ -48,33 +42,40 @@ hash: 861526570;
     
 **************/
 const changelogs = {
+    '2022.03.10.2': {
+        added: ['added new flag system to changes so I can force the widget to clear image and modules and refresh the files when newer versions are available'],
+        fixed: ['Fixes for script module loading issues'],
+        removed: [],
+        updated: [],
+        clearFlags: ['img', 'mod'],
+    },
     '2022.03.10.1': {
         added: [],
         fixed: ['fixed issue with right front and left rear tire info being switched in the dashboard UI.'],
         removed: [],
         updated: [],
-        clearImgCache: false,
+        clearFlags: ['img', 'mod'],
     },
     '2022.03.10.0': {
         added: [],
         fixed: ['fixed possible bug with viewing modules after latest update.'],
         removed: [],
         updated: [],
-        clearImgCache: false,
+        clearFlags: [],
     },
     '2022.03.09.0': {
         added: [],
         fixed: ['fixed a bug with module loading from cloud vs local directory.'],
         removed: [],
         updated: ['Widget refreshes seem to be working much more consistently for me on the various sizes.', 'Module data is much more robust, and covers names for more modules.', "Module Info now displays the module group for it's function", 'Modified the module info page layout slightly to be easier to follow.'],
-        clearImgCache: false,
+        clearFlags: [],
     },
     '2022.02.27.0': {
         added: ['New vehicle module section under advanced info page.', 'Use a custom background color for the widget by storing a file in the Scriptable iCloud folder.  It must be a .png and be named with your VIN number.  You can also define the image for the different widget sizes by naming it like "${VIN Here}_small.png"'],
         fixed: ["Lot's of minor tweaks."],
         removed: [],
         updated: ['Updated the view all widget data page to use formatted text like the OTA page.'],
-        clearImgCache: true,
+        clearFlags: [],
     },
     '2022.02.22.0': {
         added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.', 'Added FordPass rewards points to the dashboard menu.'],
@@ -119,7 +120,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.03.10.1';
+const SCRIPT_VERSION = '2022.03.10.2';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -168,6 +169,7 @@ const widgetConfig = {
     saveLogsToIcloud: false, // Save logs to icloud
     useBetaModules: false, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     writeToLog: false, // Writes to the log file.
+    showModuleVersions: false, // Will display the module versions loaded in the console.
     exportVehicleImagesToIcloud: false, // This will download all 5 vehicle angle images to the Sciptable iCloud Folder as PNG files for use elsewhere.
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
@@ -342,6 +344,16 @@ class Widget {
                 this.AsBuilt = this.moduleLoader('AsBuilt');
             }
             this.checkForUpdates();
+            if (widgetConfig.showModuleVersions) {
+                let that = this;
+                ['Timers', 'Alerts', 'Notifications', 'Files', 'FordAPI', 'App', 'Menus', 'AsBuilt'].map((module) => {
+                    try {
+                        console.log(`${module}: ${that[module].getModuleVer() || 'Unknown)'}`);
+                    } catch (e) {
+                        console.log(`${module}: Missing Version Method`);
+                    }
+                });
+            }
         } catch (e) {
             this.logError(e);
         }
@@ -355,7 +367,7 @@ class Widget {
      */
     moduleLoader(moduleName) {
         try {
-            const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
+            const fm = !this.isDevMode ? FileManager.local() : FileManager.iCloud();
             const module = importModule(fm.joinPath(fm.joinPath(fm.documentsDirectory(), 'FPWModules'), `FPW_${moduleName}.js`));
             return new module(this);
         } catch (error) {
@@ -682,6 +694,11 @@ class Widget {
         }
     }
 
+    async getChangeFlags() {
+        let changes = this.FPW.changelogs[this.SCRIPT_VERSION];
+        return changes && changes.clearFlags && changes.clearFlags.length ? changes.clearFlags : [];
+    }
+
     /**
      * @description
      * @return
@@ -971,6 +988,23 @@ class Widget {
             return ver && ver.version ? ver.version.replace('v', '') : undefined;
         } catch (e) {
             await this.logError(`getLatestScriptVersion Error: Could Not Load Version File | ${e}`, true);
+        }
+    }
+
+    async getLatestModuleHashes() {
+        let req = new Request(`https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/module_hashes.json`);
+        req.headers = {
+            'Content-Type': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+        };
+        req.method = 'GET';
+        req.timeoutInterval = 10;
+        try {
+            const h = await req.loadJSON();
+            return h && h.hashes ? h.hashes : undefined;
+        } catch (e) {
+            await this.logError(`getLatestModuleHashes Error: Could Not Load Hash File | ${e}`, true);
         }
     }
 
@@ -3106,14 +3140,34 @@ class Widget {
 //*                                                    MODULE AND LOG FUNCTIONS
 //********************************************************************************************************************************
 
+async function clearModuleCache() {
+    console.log('FileManager: Clearing All Module Files from Local Cache...');
+    try {
+        const fm = FileManager.local();
+        const dir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
+        fm.listContents(dir).forEach(async(file) => {
+            const fp = fm.joinPath(dir, file);
+            if ((await fm.fileExtension(fp)) === 'js') {
+                console.log(`FileManager: Removing Module File: ${file}`);
+                await fm.remove(fp);
+            }
+        });
+    } catch (e) {
+        this.FPW.logError(`clearModuleCache Error: ${e}`);
+    }
+}
+
 /**
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-248160924', 'FPW_App.js||75029692', 'FPW_AsBuilt.js||-403622277', 'FPW_Files.js||1895738678', 'FPW_FordAPIs.js||1145393787', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||61436303', 'FPW_App.js||-966004338', 'FPW_AsBuilt.js||-182928036', 'FPW_Files.js||-87739026', 'FPW_FordAPIs.js||-2136182086', 'FPW_Keychain.js||633581351', 'FPW_Menus.js||2048133167', 'FPW_Notifications.js||-2119263706', 'FPW_ShortcutParser.js||191341300', 'FPW_Timers.js||882304932'];
 
 async function validateModules() {
-    const fm = !isDevMode ? FileManager.local() : FileManager.iCloud();
+    const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
+    if (isDevMode) {
+        await clearModuleCache();
+    }
     let moduleRepo = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/`;
     moduleRepo = widgetConfig.useBetaModules ? moduleRepo.replace('main', 'beta') : moduleRepo;
     async function downloadModule(fileName, filePath) {
@@ -3121,7 +3175,11 @@ async function validateModules() {
             let req = new Request(`${moduleRepo}${fileName}`);
             let code = await req.loadString();
             let codeData = Data.fromString(`${code}`);
-            await fm.write(filePath, codeData);
+            if (fm.fileExists(filePath)) {
+                console.log(`Removing Old Module: ${fileName}`);
+                fm.remove(filePath);
+            }
+            fm.write(filePath, codeData);
             return true;
         } catch (error) {
             logError(`(downloadModule) ${error}`, true);
@@ -3150,10 +3208,15 @@ async function validateModules() {
                 }
                 let fileCode = await fm.readString(filePath);
                 const hash = Array.from(fileCode).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
-                // console.log(`${fileName} hash: ${hash} | ${fileHash}`);
-                if (isDevMode === false && hash.toString() !== fileHash.toString()) {
-                    logInfo(`Module Hash Missmatch... Downloading ${fileName}`);
-                    if (await downloadModule(fileName, filePath)) {
+                // console.log(`${fileName} | File Hash: ${hash} | Desired Hash: ${fileHash}`);
+                if (hash.toString() !== fileHash.toString()) {
+                    if (isDevMode === false) {
+                        logInfo(`Module Hash Missmatch... Downloading ${fileName}`);
+                        if (await downloadModule(fileName, filePath)) {
+                            available.push(fileName);
+                        }
+                    } else {
+                        logInfo(`Module ${fileName} Hash Missmatch | File: ${hash} | Desired: ${fileHash}`);
                         available.push(fileName);
                     }
                 } else {

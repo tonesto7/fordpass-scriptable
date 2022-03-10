@@ -6,6 +6,10 @@ module.exports = class FPW_Timers {
         this.timerMap = {};
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     async getTimer(timerName) {
         if (await this.timerValid(timerName)) {
             return this.timerMap[timerName];

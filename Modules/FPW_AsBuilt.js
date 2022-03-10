@@ -100,6 +100,10 @@ module.exports = class FPW_AsBuilt {
         this.tableMap = {};
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     moduleInfo(addr) {
         const info = {
             760: { acronym: 'ABS', desc: 'Anti-Lock Brake System', group: 'Parking Brake and Actuation', moidref: 'G1425100', updatable: true },

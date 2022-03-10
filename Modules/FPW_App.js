@@ -23,6 +23,10 @@ module.exports = class FPW_App {
         this.mainPageFirstLoad = true;
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     async getTable(tableName) {
         if (await this.tableExists(tableName)) {
             return this.tableMap[tableName];
@@ -623,9 +627,9 @@ module.exports = class FPW_App {
                             subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                         }),
-                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nRF: ${vData.tirePressure.rightFront}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nLR: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
-                        await this.createTextCell(`LR: ${vData.tirePressure.leftRear}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                        await this.createTextCell(`RF: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         // Window Status Cells
                         await this.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                             align: 'right',
@@ -1318,9 +1322,9 @@ module.exports = class FPW_App {
                 let reqOk = await this.FPW.requiredPrefsOk(this.FPW.prefKeys().core);
                 // console.log(`(Dashboard) Last Version: ${lastVersion}`);
                 if (reqOk && lastVersion !== this.FPW.SCRIPT_VERSION) {
-                    let changes = this.FPW.changelogs[this.SCRIPT_VERSION];
-                    if (changes && changes.clearImgCache) {
-                        await this.FPW.Files.clearImageCache();
+                    let chgFlags = this.FPW.getChangeFlags();
+                    if (chgFlags && chgFlags.length) {
+                        await this.processClearFlags(chgFlags);
                     }
                     this.createRecentChangesPage();
                     await this.FPW.setSettingVal('fpScriptVersion', this.FPW.SCRIPT_VERSION);
@@ -1342,6 +1346,21 @@ module.exports = class FPW_App {
             await this.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
         } catch (err) {
             await this.FPW.logError(`createMainPage() Error: ${err}`);
+        }
+    }
+
+    async processClearFlags(flags) {
+        if (flags.length) {
+            for (let i = 0; i < flags.length; i++) {
+                switch (flags[i]) {
+                    case 'img':
+                        await this.FPW.Files.clearImageCache();
+                        break;
+                    case 'mod':
+                        await this.FPW.Files.clearModuleCache();
+                        break;
+                }
+            }
         }
     }
 

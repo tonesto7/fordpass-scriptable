@@ -5,6 +5,10 @@ module.exports = class FPW_Notifications {
         this.widgetConfig = FPW.widgetConfig;
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     async createNotification(title, subtitle, body, options = {}) {
         let notif = new Notification();
         notif.title = title;

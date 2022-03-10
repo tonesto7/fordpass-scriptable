@@ -5,6 +5,10 @@ module.exports = class FPW_Menus {
         this.widgetConfig = FPW.widgetConfig;
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
         try {
             user = user || (await this.FPW.getSettingVal('fpUser'));
