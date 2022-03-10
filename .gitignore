@@ -10,6 +10,6 @@ ota.json
 userdata.json
 .DS_Store
 node_modules/
-module_hashes.json
+# module_hashes.json
 test.der
 test.js

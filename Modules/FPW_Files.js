@@ -133,6 +133,23 @@ module.exports = class FPW_Files {
         }
     }
 
+    async clearModuleCache() {
+        console.log('FileManager: Clearing All Module Files from Local Cache...');
+        try {
+            const fm = FileManager.local();
+            const dir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
+            fm.listContents(dir).forEach(async(file) => {
+                const fp = fm.joinPath(dir, file);
+                if ((await fm.fileExtension(fp)) === 'js') {
+                    console.log(`FileManager: Removing Module File: ${file}`);
+                    await fm.remove(fp);
+                }
+            });
+        } catch (e) {
+            this.FPW.logError(`clearModuleCache Error: ${e}`);
+        }
+    }
+
     //************************************************** END FILE MANAGEMENT FUNCTIONS************************************************
     //********************************************************************************************************************************
 

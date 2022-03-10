@@ -32,8 +32,9 @@ class WidgetInstaller {
 
     async saveModuleConfig(output) {
         try {
-            let filePath = path.join(__dirname, 'module_hashes.json');
-            fs.writeFileSync(filePath, `${JSON.stringify(output)}`);
+            let filePath = path.join(__dirname, '../', 'module_hashes.json');
+            fs.writeFileSync(filePath, `${JSON.stringify({ hashes: output })}`);
+            console.log(JSON.stringify(output));
             return true;
         } catch (e) {
             console.error(`saveModuleConfig() Error: ${e}`);
