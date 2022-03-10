@@ -167,8 +167,9 @@ const widgetConfig = {
     loadCacheOnly: false, // Use cached data for quick testing of widget and menu viewing
     saveFilesToIcloud: false, // Save files to icloud
     saveLogsToIcloud: false, // Save logs to icloud
-    useBetaModules: false, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
+    useBetaModules: true, // Forces the use of the modules under the beta branch of the FordPass-scriptable GitHub repo.
     writeToLog: false, // Writes to the log file.
+    showModuleVersions: true, // Will display the module versions loaded in the console.
     exportVehicleImagesToIcloud: false, // This will download all 5 vehicle angle images to the Sciptable iCloud Folder as PNG files for use elsewhere.
     clearKeychainOnNextRun: false, // false or true
     clearFileManagerOnNextRun: false, // false or true
@@ -343,6 +344,16 @@ class Widget {
                 this.AsBuilt = this.moduleLoader('AsBuilt');
             }
             this.checkForUpdates();
+            if (showModuleVersions) {
+                let that = this;
+                ['Timers', 'Alerts', 'Notifications', 'Files', 'FordAPI', 'App', 'Menus', 'AsBuilt'].map((module) => {
+                    try {
+                        console.log(`${module}: ${that[module].getModuleVer() || 'Unknown)'}`);
+                    } catch (e) {
+                        console.log(`${module}: Missing Version Method`);
+                    }
+                });
+            }
         } catch (e) {
             this.logError(e);
         }
@@ -3150,7 +3161,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-248160924', 'FPW_App.js||1264247647', 'FPW_AsBuilt.js||-403622277', 'FPW_Files.js||-1282294333', 'FPW_FordAPIs.js||1145393787', 'FPW_Keychain.js||727729482', 'FPW_Menus.js||1662732342', 'FPW_Notifications.js||856357013', 'FPW_ShortcutParser.js||2076658623', 'FPW_Timers.js||1762577231'];
+const moduleFiles = ['FPW_Alerts.js||61436303', 'FPW_App.js||-966004338', 'FPW_AsBuilt.js||-182928036', 'FPW_Files.js||-87739026', 'FPW_FordAPIs.js||-2136182086', 'FPW_Keychain.js||633581351', 'FPW_Menus.js||2048133167', 'FPW_Notifications.js||-2119263706', 'FPW_ShortcutParser.js||191341300', 'FPW_Timers.js||882304932'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

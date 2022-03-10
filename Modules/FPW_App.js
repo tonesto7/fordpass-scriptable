@@ -23,6 +23,10 @@ module.exports = class FPW_App {
         this.mainPageFirstLoad = true;
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     async getTable(tableName) {
         if (await this.tableExists(tableName)) {
             return this.tableMap[tableName];

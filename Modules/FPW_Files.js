@@ -5,6 +5,10 @@ module.exports = class FPW_Files {
         this.widgetConfig = FPW.widgetConfig;
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     async loadImage(imgUrl) {
         try {
             const req = new Request(imgUrl);

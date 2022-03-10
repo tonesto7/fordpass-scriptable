@@ -6,6 +6,10 @@ module.exports = class FPW_FordAPIs {
         this.widgetConfig = FPW.widgetConfig;
     }
 
+    getModuleVer() {
+        return '2022.03.10.2';
+    }
+
     appIDs() {
         return {
             UK_Europe: '1E8C7794-FF5F-49BC-9596-A1E0C86C5B19',
