@@ -42,6 +42,13 @@
     
 **************/
 const changelogs = {
+    '2022.03.11.0': {
+        added: [],
+        fixed: ['more fixes for script module loading issues', 'fix for asbuilt file loading after last update'],
+        removed: [],
+        updated: [],
+        clearFlags: ['mod'],
+    },
     '2022.03.10.2': {
         added: ['added new flag system to changes so I can force the widget to clear image and modules and refresh the files when newer versions are available'],
         fixed: ['Fixes for script module loading issues'],
@@ -120,7 +127,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.03.10.2';
+const SCRIPT_VERSION = '2022.03.11.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -3161,7 +3168,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||61436303', 'FPW_App.js||-966004338', 'FPW_AsBuilt.js||-182928036', 'FPW_Files.js||-87739026', 'FPW_FordAPIs.js||-2136182086', 'FPW_Keychain.js||633581351', 'FPW_Menus.js||2048133167', 'FPW_Notifications.js||-2119263706', 'FPW_ShortcutParser.js||191341300', 'FPW_Timers.js||882304932'];
+const moduleFiles = ['FPW_Alerts.js||-60052438716', 'FPW_App.js||-169749407848', 'FPW_AsBuilt.js||-6995568437', 'FPW_Files.js||35842488472', 'FPW_FordAPIs.js||-269270619052', 'FPW_Keychain.js||54549739995', 'FPW_Menus.js||-410261658015', 'FPW_Notifications.js||134219952818', 'FPW_ShortcutParser.js||56211098606', 'FPW_Timers.js||-108840458333'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
@@ -3175,7 +3182,13 @@ async function validateModules() {
             let req = new Request(`${moduleRepo}${fileName}`);
             let code = await req.loadString();
             let codeData = Data.fromString(`${code}`);
+            if (isDevMode) {
+                await fm.downloadFileFromiCloud(filePath);
+            }
             if (fm.fileExists(filePath)) {
+                if (isDevMode && !fm.isFileDownloaded(filePath)) {
+                    await fm.downloadFileFromiCloud(filePath);
+                }
                 console.log(`Removing Old Module: ${fileName}`);
                 fm.remove(filePath);
             }
@@ -3207,16 +3220,18 @@ async function validateModules() {
                     await fm.downloadFileFromiCloud(filePath);
                 }
                 let fileCode = await fm.readString(filePath);
-                const hash = Array.from(fileCode).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
+                // const hash = Array.from(fileCode).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
+                const hash = Array.from(fileCode).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
                 // console.log(`${fileName} | File Hash: ${hash} | Desired Hash: ${fileHash}`);
                 if (hash.toString() !== fileHash.toString()) {
+                    // logInfo(`${isDevMode ? '(Cloud)' : ''} Module ${fileName} (${fileCode.length}) Hash Missmatch | File: ${hash} | Desired: ${fileHash}`);
                     if (isDevMode === false) {
-                        logInfo(`Module Hash Missmatch... Downloading ${fileName}`);
+                        logInfo(`Module Hash Missmatch${isDevMode ? '(Cloud)' : ''}... Downloading ${fileName}`);
                         if (await downloadModule(fileName, filePath)) {
                             available.push(fileName);
                         }
                     } else {
-                        logInfo(`Module ${fileName} Hash Missmatch | File: ${hash} | Desired: ${fileHash}`);
+                        logInfo(`${isDevMode ? '(Cloud)' : ''} Module ${fileName} Hash Missmatch | File: ${hash} | Desired: ${fileHash}`);
                         available.push(fileName);
                     }
                 } else {

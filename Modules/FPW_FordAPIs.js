@@ -7,7 +7,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     getModuleVer() {
-        return '2022.03.10.2';
+        return '2022.03.11.0';
     }
 
     appIDs() {
@@ -313,6 +313,28 @@ module.exports = class FPW_FordAPIs {
             Referer: 'https://ford.com',
             Origin: 'https://ford.com',
         });
+    }
+
+    async getVehiclesForUser() {
+        let vin = await this.FPW.getSettingVal('fpVin');
+        if (!vin) {
+            return this.FPW.textMap().errorMessages.noVin;
+        }
+        let token = await this.FPW.getSettingVal('fpToken2');
+        let lang = await this.FPW.getSettingVal('fpLanguage');
+        let data = await this.makeFordRequest('getVehiclesForUser', `https://www.digitalservices.ford.com/fs/api/v2/profile`, 'GET', false, {
+            'Content-Type': 'application/json',
+            Accept: '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'Application-Id': this.appIDs().NA,
+            'auth-token': `${token}`,
+            Referer: 'https://ford.com',
+            Origin: 'https://ford.com',
+        });
+        console.log(`getVehiclesForUser: ${JSON.stringify(data)}`);
+
+        return data && data.value && data.value.vehicles && data.value.vehicles.length ? data.value.vehicles : undefined;
     }
 
     async getVehicleManual() {
@@ -735,6 +757,7 @@ module.exports = class FPW_FordAPIs {
             await this.FPW.Files.downloadAllVehicleImagesToIcloud(vehicleData);
         }
 
+        // await this.getVehiclesForUser();
         //save data to local store
         this.FPW.Files.saveJsonFile('Vehicle Data', vehicleData);
         // console.log(JSON.stringify(vehicleData));

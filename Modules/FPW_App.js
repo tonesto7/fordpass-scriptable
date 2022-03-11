@@ -24,7 +24,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.03.10.2';
+        return '2022.03.11.0';
     }
 
     async getTable(tableName) {
@@ -2272,7 +2272,7 @@ module.exports = class FPW_App {
                             dismissOnTap: false,
                             onTap: async() => {
                                 console.log(`(Dashboard) Remove Module Data Button was pressed`);
-                                await this.FPW.Files.removeLocalData(`${vin}.json`, true);
+                                await this.FPW.Files.removeFile(`${vin}.json`, true);
                                 // await this.FPW.Alerts.showAlert('Removed Successfully', 'Local AsBuilt File Removed');
                                 this.createAsBuiltPage(true);
                             },

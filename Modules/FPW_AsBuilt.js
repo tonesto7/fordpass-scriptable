@@ -101,7 +101,7 @@ module.exports = class FPW_AsBuilt {
     }
 
     getModuleVer() {
-        return '2022.03.10.2';
+        return '2022.03.11.0';
     }
 
     moduleInfo(addr) {
@@ -233,9 +233,6 @@ module.exports = class FPW_AsBuilt {
                     this.FPW.Alerts.showAlert('Please wait...', 'This process can take many seconds to complete.  You will receive another prompt when the data is downloaded and saved.');
                     let js3 = await wv.evaluateJavaScript(`
                         function setVinAndCaptcha() {
-                            let tokenElem = document.querySelector("input[name='__RequestVerificationToken']")
-                            const token = tokenElem.value.toString();
-                            console.log('token: ' + token);
                             document.querySelector('#VIN').value = '${vin}';
                             console.log(document.querySelector('#VIN').value);
                             document.querySelector('#CaptchaInputText').value = '${code}';
@@ -251,13 +248,9 @@ module.exports = class FPW_AsBuilt {
                         console.log('found download page');
                         let js4 = await wv.evaluateJavaScript(`
                             function getAsbuilt() {
-                                // let tokenElem = document.querySelector("input[name='__RequestVerificationToken']")
-                                // const token = tokenElem.value.toString();
-                                // console.log('token_download: ' + token);
-
                                 let asbJsonElem = document.querySelector("input[name='asbuiltJson']")
                                 const asbJson = asbJsonElem.value.toString();
-                                console.log('asbJson: ' + asbJson.length);
+                                // console.log('asbJson: ' + asbJson.length);
                                 // document.forms[0].submit();
                                 return asbJson.toString();
                                 
