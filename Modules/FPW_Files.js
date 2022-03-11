@@ -160,6 +160,58 @@ module.exports = class FPW_Files {
         }
     }
 
+    async hashCode(input) {
+        return Array.from(input).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
+        // return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
+    }
+
+    async exportModuleHashes() {
+        try {
+            const localFm = FileManager.local();
+            const localDocs = localFm.documentsDirectory();
+            const icloudFm = FileManager.iCloud();
+            const icloudDocs = icloudFm.documentsDirectory();
+            const localModsFolder = localFm.joinPath(localDocs, 'FPWModules');
+            const localMods = localFm
+                .listContents(localModsFolder)
+                .filter((item) => item.endsWith('.js'))
+                .sort();
+            const icloudModsFolder = icloudFm.joinPath(icloudDocs, 'FPWModules');
+            const icloudMods = icloudFm
+                .listContents(icloudModsFolder)
+                .filter((item) => item.endsWith('.js'))
+                .sort();
+
+            let modulesOut = { iCloud: [], Local: [] };
+            // console.log(JSON.stringify(modules));
+            if (localMods.length > 0) {
+                console.log(`Info: Processing Local Modules: ${localMods.length}`);
+                for (const [i, module] of localMods.entries()) {
+                    let code = localFm.readString(localFm.joinPath(localModsFolder, module));
+                    let hash = await this.hashCode(code);
+                    // console.log(`Info: Module ${module} hash: ${hash}`);
+                    modulesOut.Local.push(`${module}||${hash}`);
+                }
+            }
+
+            if (icloudMods.length > 0) {
+                console.log(`Info: Processing iCloud Modules: ${icloudMods.length}`);
+                for (const [i, module] of icloudMods.entries()) {
+                    let code = icloudFm.readString(icloudFm.joinPath(icloudModsFolder, module));
+                    let hash = await this.hashCode(code);
+                    // console.log(`Info: Module ${module} hash: ${hash}`);
+                    modulesOut.iCloud.push(`${module}||${hash}`);
+                }
+            }
+            let filePath = icloudFm.joinPath(icloudDocs, 'modules_config.json');
+            let data = Data.fromString(`${JSON.stringify(modulesOut)}`);
+            icloudFm.write(filePath, data);
+            console.log(JSON.stringify(modulesOut));
+        } catch (e) {
+            console.error(`proceModulesFolder | Error: ${e}`);
+        }
+    }
+
     //************************************************** END FILE MANAGEMENT FUNCTIONS************************************************
     //********************************************************************************************************************************
 

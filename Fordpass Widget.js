@@ -42,6 +42,13 @@
     
 **************/
 const changelogs = {
+    '2022.03.11.1': {
+        added: [],
+        fixed: ['more fixes for script module loading issues'],
+        removed: [],
+        updated: [],
+        clearFlags: [],
+    },
     '2022.03.11.0': {
         added: [],
         fixed: ['more fixes for script module loading issues', 'fix for asbuilt file loading after last update'],
@@ -351,16 +358,9 @@ class Widget {
                 this.AsBuilt = this.moduleLoader('AsBuilt');
             }
             this.checkForUpdates();
-            if (widgetConfig.showModuleVersions) {
-                let that = this;
-                ['Timers', 'Alerts', 'Notifications', 'Files', 'FordAPI', 'App', 'Menus', 'AsBuilt'].map((module) => {
-                    try {
-                        console.log(`${module}: ${that[module].getModuleVer() || 'Unknown)'}`);
-                    } catch (e) {
-                        console.log(`${module}: Missing Version Method`);
-                    }
-                });
-            }
+            // if (this.isDevMode) {
+            //     this.Files.exportModuleHashes();
+            // }
         } catch (e) {
             this.logError(e);
         }
@@ -3168,7 +3168,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-60052438716', 'FPW_App.js||-169749407848', 'FPW_AsBuilt.js||-6995568437', 'FPW_Files.js||35842488472', 'FPW_FordAPIs.js||-269270619052', 'FPW_Keychain.js||54549739995', 'FPW_Menus.js||-410261658015', 'FPW_Notifications.js||134219952818', 'FPW_ShortcutParser.js||56211098606', 'FPW_Timers.js||-108840458333'];
+const moduleFiles = ['FPW_Alerts.js||-6207818603', 'FPW_App.js||-50653567626', 'FPW_AsBuilt.js||-6995568437', 'FPW_Files.js||-194530353982', 'FPW_FordAPIs.js||91498291627', 'FPW_Keychain.js||-116797043960', 'FPW_Menus.js||-99293359920', 'FPW_Notifications.js||-80726724921', 'FPW_ShortcutParser.js||-77337235981', 'FPW_Timers.js||81364949539'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
@@ -3185,21 +3185,24 @@ async function validateModules() {
             if (isDevMode) {
                 await fm.downloadFileFromiCloud(filePath);
             }
-            if (fm.fileExists(filePath)) {
+            if (await fm.fileExists(filePath)) {
                 if (isDevMode && !fm.isFileDownloaded(filePath)) {
                     await fm.downloadFileFromiCloud(filePath);
                 }
                 console.log(`Removing Old Module: ${fileName}`);
-                fm.remove(filePath);
+                await fm.remove(filePath);
             }
-            fm.write(filePath, codeData);
+            await fm.write(filePath, codeData);
             return true;
         } catch (error) {
             logError(`(downloadModule) ${error}`, true);
             return false;
         }
     }
-
+    async function hashCode(input) {
+        return Array.from(input).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
+        // return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
+    }
     let available = [];
     try {
         const moduleDir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
@@ -3209,7 +3212,7 @@ async function validateModules() {
         }
         for (const [i, file] of moduleFiles.entries()) {
             const [fileName, fileHash] = file.split('||');
-            const filePath = fm.joinPath(moduleDir, fileName);
+            const filePath = await fm.joinPath(moduleDir, fileName);
             if (!(await fm.fileExists(filePath))) {
                 logInfo(`Required Module Missing... Downloading ${fileName}`);
                 if (await downloadModule(fileName, filePath)) {
@@ -3220,8 +3223,8 @@ async function validateModules() {
                     await fm.downloadFileFromiCloud(filePath);
                 }
                 let fileCode = await fm.readString(filePath);
+                const hash = await hashCode(fileCode);
                 // const hash = Array.from(fileCode).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
-                const hash = Array.from(fileCode).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
                 // console.log(`${fileName} | File Hash: ${hash} | Desired Hash: ${fileHash}`);
                 if (hash.toString() !== fileHash.toString()) {
                     // logInfo(`${isDevMode ? '(Cloud)' : ''} Module ${fileName} (${fileCode.length}) Hash Missmatch | File: ${hash} | Desired: ${fileHash}`);
