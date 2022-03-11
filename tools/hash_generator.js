@@ -20,7 +20,7 @@ class WidgetInstaller {
                     let buffer = fs.readFileSync(path.join(modulesFolder, module));
                     const code = buffer.toString();
                     let hash = await this.hashCode(code);
-                    console.log(`Info: Module ${module} hash: ${hash}`);
+                    // console.log(`Info: Module ${module} hash: ${hash}`);
                     modulesOut.push(`${module}||${hash}`);
                 }
                 await this.saveModuleConfig(modulesOut.sort());

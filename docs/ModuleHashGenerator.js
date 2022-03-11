@@ -8,14 +8,15 @@ const SCRIPT_VERSION = '1.0.0';
 
 class WidgetInstaller {
     constructor() {
-        this.localFileManager = FileManager.local();
-        this.localDocDirectory = this.localFileManager.documentsDirectory();
-        this.icloudFileManager = FileManager.iCloud();
-        this.icloudDocDirectory = this.icloudFileManager.documentsDirectory();
+        this.localFm = FileManager.local();
+        this.localDocs = this.localFm.documentsDirectory();
+        this.icloudFm = FileManager.iCloud();
+        this.icloudDocs = this.icloudFm.documentsDirectory();
     }
 
     async hashCode(input) {
-        return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
+        return Array.from(input).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
+        // return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
     }
 
     async showAlert(title, message) {
@@ -32,37 +33,46 @@ class WidgetInstaller {
         }
     }
 
-    async proceModulesFolder() {
+    async processModulesFolder() {
         try {
-            const modulesFolder = this.icloudFileManager.joinPath(this.icloudDocDirectory, 'FPWModules');
-            const modules = await this.icloudFileManager.listContents(modulesFolder);
+            const localModsFolder = this.localFm.joinPath(this.localDocs, 'FPWModules');
+            const localMods = this.localFm
+                .listContents(localModsFolder)
+                .filter((item) => item.endsWith('.js'))
+                .sort();
+            const icloudModsFolder = this.icloudFm.joinPath(this.icloudDocs, 'FPWModules');
+            const icloudMods = this.icloudFm
+                .listContents(icloudModsFolder)
+                .filter((item) => item.endsWith('.js'))
+                .sort();
+
+            let modulesOut = { iCloud: [], Local: [] };
             // console.log(JSON.stringify(modules));
-            let modulesOut = [];
-            if (modules.length) {
-                console.log(`Info: Processing Modules: ${modules.length}`);
-                for (const [i, module] of modules.entries()) {
-                    let code = await this.icloudFileManager.readString(this.icloudFileManager.joinPath(modulesFolder, module));
+            if (localMods.length > 0) {
+                console.log(`Info: Processing Local Modules: ${localMods.length}`);
+                for (const [i, module] of localMods.entries()) {
+                    let code = this.localFm.readString(this.localFm.joinPath(localModsFolder, module));
                     let hash = await this.hashCode(code);
-                    console.log(`Info: Module ${module} hash: ${hash}`);
-                    modulesOut.push(`${module}||${hash}`);
+                    // console.log(`Info: Module ${module} hash: ${hash}`);
+                    modulesOut.Local.push(`${module}||${hash}`);
                 }
-                await this.saveModuleConfig(modulesOut.sort());
             }
-            return;
+
+            if (icloudMods.length > 0) {
+                console.log(`Info: Processing iCloud Modules: ${icloudMods.length}`);
+                for (const [i, module] of icloudMods.entries()) {
+                    let code = this.icloudFm.readString(this.icloudFm.joinPath(icloudModsFolder, module));
+                    let hash = await this.hashCode(code);
+                    // console.log(`Info: Module ${module} hash: ${hash}`);
+                    modulesOut.iCloud.push(`${module}||${hash}`);
+                }
+            }
+            let filePath = this.icloudFm.joinPath(this.icloudDocs, 'modules_config.json');
+            let data = Data.fromString(`${JSON.stringify(modulesOut)}`);
+            this.icloudFm.write(filePath, data);
+            console.log(JSON.stringify(modulesOut));
         } catch (e) {
             console.error(`proceModulesFolder | Error: ${e}`);
-        }
-    }
-
-    async saveModuleConfig(output) {
-        try {
-            let filePath = this.icloudFileManager.joinPath(this.icloudDocDirectory, 'modules_config.json');
-            let data = Data.fromString(`${JSON.stringify(output)}`);
-            this.icloudFileManager.write(filePath, data);
-            return true;
-        } catch (e) {
-            console.error(`saveModuleConfig() Error: ${e}`);
-            return false;
         }
     }
 }
@@ -125,5 +135,6 @@ async function menuBuilderByType(type) {
 
 if (config.runsInApp || config.runsFromHomeScreen) {
     console.log('start | showing Main Menu');
-    menuBuilderByType('main');
+    // menuBuilderByType('main');
+    await wI.processModulesFolder();
 }
