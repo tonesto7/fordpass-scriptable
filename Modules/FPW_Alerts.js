@@ -6,7 +6,7 @@ module.exports = class FPW_Alerts {
     }
 
     getModuleVer() {
-        return '2022.03.10.2';
+        return '2022.03.11.0';
     }
 
     async showAlert(title, message) {
@@ -68,7 +68,7 @@ module.exports = class FPW_Alerts {
         const respInd = await prompt.presentAlert();
         switch (respInd) {
             case 0:
-                return prompt.textFieldValue(0);
+                return prompt.textFieldValue(0).toUpperCase();
             case 1:
                 return undefined;
         }

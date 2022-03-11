@@ -6,7 +6,7 @@ module.exports = class FPW_Files {
     }
 
     getModuleVer() {
-        return '2022.03.10.2';
+        return '2022.03.11.0';
     }
 
     async loadImage(imgUrl) {
@@ -43,6 +43,9 @@ module.exports = class FPW_Files {
             let fileName = this.SCRIPT_ID !== null && this.SCRIPT_ID !== undefined && this.SCRIPT_ID > 0 ? `${filename}_${this.SCRIPT_ID}.json` : `${filename}.json`;
             let path = fm.joinPath(dir, fileName);
             if (await fm.fileExists(path)) {
+                if (frcCld || (this.widgetConfig.saveFilesToIcloud && fm.isFileStoredIniCloud(path))) {
+                    fm.downloadFileFromiCloud(path);
+                }
                 let localData = await fm.readString(path);
                 return JSON.parse(localData);
             }
@@ -57,6 +60,9 @@ module.exports = class FPW_Files {
         let dir = fm.documentsDirectory();
         let path = fm.joinPath(dir, file);
         if (await fm.fileExists(path)) {
+            if (frcCld || (this.widgetConfig.saveFilesToIcloud && fm.isFileStoredIniCloud(path))) {
+                fm.downloadFileFromiCloud(path);
+            }
             return {
                 name: file,
                 size: await fm.fileSize(path),
@@ -68,7 +74,7 @@ module.exports = class FPW_Files {
         }
     }
 
-    async removeLocalData(filename, frcCld = false) {
+    async removeFile(filename, frcCld = false) {
         try {
             let fm = frcCld || this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
@@ -77,7 +83,7 @@ module.exports = class FPW_Files {
                 await fm.remove(path);
             }
         } catch (e) {
-            this.FPW.logError(`removeLocalData Error: ${e}`);
+            this.FPW.logError(`removeFile Error: ${e}`);
         }
     }
 
@@ -130,7 +136,7 @@ module.exports = class FPW_Files {
             let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
             fm.listContents(dir).forEach(async(file) => {
-                await this.removeLocalData(file);
+                await this.removeFile(file);
             });
         } catch (e) {
             this.FPW.logError(`clearFileManager Error: ${e}`);

@@ -7,7 +7,7 @@ module.exports = class FPW_Timers {
     }
 
     getModuleVer() {
-        return '2022.03.10.2';
+        return '2022.03.11.0';
     }
 
     async getTimer(timerName) {
