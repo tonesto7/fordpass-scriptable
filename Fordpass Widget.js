@@ -42,6 +42,13 @@
     
 **************/
 const changelogs = {
+    '2022.03.11.1': {
+        added: [],
+        fixed: ['more fixes for script module loading issues'],
+        removed: [],
+        updated: [],
+        clearFlags: [],
+    },
     '2022.03.11.0': {
         added: [],
         fixed: ['more fixes for script module loading issues', 'fix for asbuilt file loading after last update'],
