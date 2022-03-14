@@ -2298,7 +2298,7 @@ module.exports = class FPW_App {
                         }),
                     ], {
                         backgroundColor: headerColor,
-                        height: 50,
+                        height: 40,
                         isHeader: true,
                         dismissOnSelect: false,
                     },
@@ -2321,20 +2321,12 @@ module.exports = class FPW_App {
                         await this.createTextCell('', undefined, { align: 'left', widthWeight: 25 }),
                     ], {
                         backgroundColor: headerColor,
-                        height: 50,
+                        height: 40,
                         isHeader: true,
                         dismissOnSelect: false,
                     },
                 ),
             );
-
-            // if(typeof this[atob("d19hcGk=").toString()] === 'function') {
-            //     this[atob("d19hcGk=").toString()](vin).then((res)=> {
-            //         console.log(`res: ${JSON.stringify(res)}`);
-            //     }).catch((err)=> {
-            //        console.log(`error: ${err}`);
-            //     });
-            // }
 
             let asbData = await this.FPW.Files.readJsonFile('Vehicle Modules Info', `${vin}`, true);
             if (asbData) {
@@ -2362,10 +2354,11 @@ module.exports = class FPW_App {
                     }
                     const asBuiltByModule = await groupAsbuiltDataByModule(asbData.AS_BUILT_DATA.VEHICLE.BCE_MODULE.DATA);
                     console.log(`asBuiltByModule: ${Object.keys(asBuiltByModule).length}`);
+                    let mData = [];
                     for (const [i, module] of asbData.AS_BUILT_DATA.VEHICLE.NODEID.entries()) {
                         // console.log(module);
                         const modAddr = module['#text'];
-                        const mData = {
+                        const mod = {
                             addr: modAddr,
                             updatable: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).updatable : false,
                             label: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).desc : 'Unknown Module',
@@ -2374,11 +2367,15 @@ module.exports = class FPW_App {
                             nodeData: module,
                             asbuiltData: asBuiltByModule[modAddr] || undefined,
                         };
-                        // console.log(`Module (${mData.addr}) | ${mData.info.desc}`);
+                        // console.log(`Module (${mod.addr}) | ${mod}`);
+                        mData.push(mod);
+                    }
+
+                    for (const [i, module] of mData.sort((a, b) => (a.acronym > b.acronym ? 1 : -1)).entries()) {
                         tableRows.push(
                             await this.createTableRow(
                                 [
-                                    await this.createTextCell(`${mData.acronym && mData.acronym.length ? '(' + mData.acronym + ') ' : ''}${mData.label}`, `${mData.group && mData.group.length ? mData.group + '\n\n' : ''}Tap to view`, {
+                                    await this.createTextCell(`${module.acronym && module.acronym.length ? '(' + module.acronym + ') ' : ''}${module.label}`, `${module.group && module.group.length ? module.group + '\n\n' : ''}Tap to view`, {
                                         align: 'left',
                                         widthWeight: 100,
                                         titleColor: this.FPW.colorMap.normalText,
@@ -2387,11 +2384,11 @@ module.exports = class FPW_App {
                                         subtitleFont: Font.regularSystemFont(11),
                                     }),
                                 ], {
-                                    height: mData.group && mData.group.length ? 70 : 50,
+                                    height: module.group && module.group.length ? 70 : 50,
                                     dismissOnSelect: false,
                                     onSelect: async() => {
-                                        console.log(`(AsBuilt Info) View Module (${mData.label}) was pressed`);
-                                        await this.createModuleInfoPage(mData);
+                                        console.log(`(AsBuilt Info) View Module (${module.label}) was pressed`);
+                                        await this.createModuleInfoPage(module);
                                     },
                                 },
                             ),
