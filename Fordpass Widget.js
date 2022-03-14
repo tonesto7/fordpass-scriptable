@@ -1,6 +1,12 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
+// This script was downloaded using FordWidgetTool.
+hash: 1055790018;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: car;
 
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
@@ -3175,7 +3181,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-6207818603', 'FPW_App.js||-209833493192', 'FPW_AsBuilt.js||-6995568437', 'FPW_Files.js||11649030240', 'FPW_FordAPIs.js||91498291627', 'FPW_Keychain.js||-116797043960', 'FPW_Menus.js||-99293359920', 'FPW_Notifications.js||-80726724921', 'FPW_ShortcutParser.js||-77337235981', 'FPW_Timers.js||81364949539'];
+const moduleFiles = ['FPW_Alerts.js||-6207818603', 'FPW_App.js||-209833493192', 'FPW_AsBuilt.js||-6995568437', 'FPW_Files.js||-194530353982', 'FPW_FordAPIs.js||91498291627', 'FPW_Keychain.js||-116797043960', 'FPW_Menus.js||-99293359920', 'FPW_Notifications.js||-80726724921', 'FPW_ShortcutParser.js||-77337235981', 'FPW_Timers.js||81364949539'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
