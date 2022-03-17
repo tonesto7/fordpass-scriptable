@@ -418,6 +418,46 @@ module.exports = class FPW_FordAPIs {
         return data && data.usageBalanceList ? data.usageBalanceList : [];
     }
 
+    async getVehicleSubscriptions() {
+        console.log('getVehicleSubscriptions');
+        const lang = await this.FPW.getSettingVal('fpLanguage');
+        const country = await this.FPW.getSettingVal('fpCountry');
+        console.log(`lang: ${lang}`);
+        const city = await this.FPW.getSettingVal('fpCity');
+        const state = await this.FPW.getSettingVal('fpState');
+        const zipCode = await this.FPW.getSettingVal('fpZipCode');
+        let token = await this.FPW.getSettingVal('fpToken2');
+        const vin = await this.FPW.getSettingVal('fpVin');
+        if (!vin) {
+            return this.FPW.textMap().errorMessages.noVin;
+        }
+        const data = await this.makeFordRequest(
+            'getVehicleSubscriptions',
+            'https://api.mps.ford.com/api/subscription-orchestration/v2/getSubscriptionSummaryByVin',
+            'POST',
+            false, {
+                accept: 'application/json',
+                'Content-Type': 'application/json',
+                'Application-Id': this.appIDs().NA,
+                'auth-token': `${token}`,
+            }, {
+                classification: 'FordPass',
+                geoFilter: {
+                    countryCode: country,
+                    state: state,
+                    city: city,
+                    zipCode: zipCode,
+                },
+                language: lang,
+                vin: vin,
+            },
+        );
+
+        console.log(data);
+        return data;
+        // return data && data.usageBalanceList ? data.usageBalanceList : [];
+    }
+
     async getSecuriAlertStatus() {
         const vin = await this.FPW.getSettingVal('fpVin');
         if (!vin) {
@@ -443,11 +483,19 @@ module.exports = class FPW_FordAPIs {
                 if (data && data.status === 200 && data.profile) {
                     try {
                         await this.FPW.setSettingVal('fpCountry', data.profile.country ? data.profile.country : 'USA');
+                        await this.FPW.setSettingVal('fpZipCode', data.profile.zip);
+                        await this.FPW.setSettingVal('fpCity', data.profile.city);
+                        await this.FPW.setSettingVal('fpState', data.profile.state);
                         await this.FPW.setSettingVal('fpLanguage', data.profile.preferredLanguage || Device.locale());
                         await this.FPW.setSettingVal('fpTz', data.profile.timeZone || CalendarEvent.timeZone);
                         await this.FPW.setSettingVal('fpDistanceUnits', data.profile.uomDistance === 2 ? 'km' : 'mi');
                         await this.FPW.setSettingVal('fpPressureUnits', data.profile.uomPressure ? data.profile.uomPressure : 'MPH');
+
                         console.log(`Saving User Preferences from Ford Account:`);
+                        console.log(` - Country: ${data.profile.country ? data.profile.country : 'USA (Fallback)'}`);
+                        console.log(` - City: ${data.profile.city}`);
+                        console.log(` - State: ${data.profile.state}`);
+                        console.log(` - ZipCode: ${data.profile.zip}`);
                         console.log(` - Country: ${data.profile.country ? data.profile.country : 'USA (Fallback)'}`);
                         console.log(` - Language: ${data.profile.preferredLanguage ? data.profile.preferredLanguage : Device.locale() + ' (Fallback)'}`);
                         console.log(` - DistanceUnit: ${data.profile.uomDistance === 2 ? 'km' : 'mi'}`);
@@ -758,6 +806,9 @@ module.exports = class FPW_FordAPIs {
         }
 
         // await this.getVehiclesForUser();
+
+        // const subscriptions = await this.getVehicleSubscriptions();
+        // console.log(`Subscriptions: ${JSON.stringify(subscriptions)}`);
         //save data to local store
         this.FPW.Files.saveJsonFile('Vehicle Data', vehicleData);
         // console.log(JSON.stringify(vehicleData));
