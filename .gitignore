@@ -13,3 +13,5 @@ node_modules/
 # module_hashes.json
 test.der
 test.js
+icons/.DS_Store
+.DS_Store
