@@ -2358,12 +2358,13 @@ module.exports = class FPW_App {
                     for (const [i, module] of asbData.AS_BUILT_DATA.VEHICLE.NODEID.entries()) {
                         // console.log(module);
                         const modAddr = module['#text'];
+                        const modInfo = this.FPW.AsBuilt.moduleInfo(modAddr);
                         const mod = {
                             addr: modAddr,
-                            updatable: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).updatable : false,
-                            label: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).desc : 'Unknown Module',
-                            acronym: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).acronym : '',
-                            group: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).group : '',
+                            updatable: module && modAddr && modInfo ? modInfo.updatable : false,
+                            label: module && modAddr && modInfo ? modInfo.desc : 'Unknown Module',
+                            acronym: module && modAddr && modInfo ? modInfo.acronym : '',
+                            group: module && modAddr && modInfo ? modInfo.group : '',
                             nodeData: module,
                             asbuiltData: asBuiltByModule[modAddr] || undefined,
                         };
