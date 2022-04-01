@@ -343,7 +343,7 @@ module.exports = class FPW_App {
                                         HTML += `    <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
                                         HTML += `    <li>ReleaseNotes:`;
                                         HTML += `    <br>`;
-                                        HTML += `    ${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `    ${data.fuseResponse.languageText && data.fuseResponse.languageText.Text ? data.fuseResponse.languageText.Text : this.FPW.textMap().errorMessages.noData}</li>`;
                                         HTML += `</ul>`;
                                     }
                                     HTML += `</ul>`;
