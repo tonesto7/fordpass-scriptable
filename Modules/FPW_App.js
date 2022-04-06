@@ -2067,7 +2067,7 @@ module.exports = class FPW_App {
                         await this.createTableRow(
                             [
                                 await this.createImageCell(await this.FPW.Files.getImage(`info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell(`Version: ${vData.syncInfo.syncVersion}`, `Last Updated: ${vData.syncInfo.lastUpdatedDate}`, {
+                                await this.createTextCell(`Version: ${vData.syncInfo.syncVersion}`, `Last Updated: ${vData.syncInfo.lastUpdatedDate || 'Not Available'}`, {
                                     align: 'left',
                                     widthWeight: 93,
                                     titleColor: this.FPW.colorMap.normalText,
