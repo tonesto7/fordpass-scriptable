@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.03.11.0';
+        return '2022.04.14.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -577,6 +577,16 @@ module.exports = class FPW_Menus {
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Deep Sleep Toggle pressed`);
                                 await this.FPW.toggleNotificationType('deepSleep');
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Low Tires: ${(await this.FPW.getShowNotificationType('tireLow')) === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Low Tire Toggle pressed`);
+                                await this.FPW.toggleNotificationType('tireLow');
                                 this.menuBuilderByType('notifications');
                             },
                             destructive: false,

@@ -33,6 +33,8 @@ hash: 1055790018;
 
 /**************
 // Todo: Next Release (Post 2.0.x)
+// Add OTA Update Notification CHecks with Schedule.
+
 // vehicle info page with capabilities, job number, build date, etc.
 [-] use OTA info to show when an update is available or pending.
     [-] add actionable notifications for items like doors still unlocked after a certain time or low battery offer remote star... etc
@@ -182,6 +184,10 @@ const widgetConfig = {
         oilLow: {
             rate: 86400, // How often to show Oil Low Notifications (in seconds - 86400 = 1 day)
             enabled: false, // Default value of notification
+        },
+        tireLow: {
+            rate: Math.round(86400 * 0.25), // How often to show Tire Low Notifications (in seconds - 86400 * 0.25 = every 6 hours)
+            enabled: true, // Default value of Notification
         },
         lvBatteryLow: {
             rate: 86400, // How often to show 12v battery notifications (in seconds - 86400 = 1 day)
@@ -677,20 +683,34 @@ class Widget {
         if (vData) {
             if (vData.deepSleepMode !== undefined && vData.deepSleepMode) {
                 await this.Notifications.processNotification('deepSleep');
-                return;
+                // return;
             }
             if (vData.firmwareUpdating !== undefined && vData.firmwareUpdating) {
                 await this.Notifications.processNotification('otaUpdate');
-                return;
+                // return;
             }
             if (vData.batteryStatus !== undefined && vData.batteryLevel === 'STATUS_LOW') {
                 await this.Notifications.processNotification('lvBatteryLow');
-                return;
+                // return;
+            }
+            if (vData.tirePressure && Object.keys(vData.tirePressure).length) {
+                let lowTires = [];
+                let tires = ['leftFront', 'leftRear', 'rightFront', 'rightRear'];
+                for (let tire of tires) {
+                    const val = vData.tirePressure[tire];
+                    if (val && val >= 0 && val <= widgetConfig.tirePressureThresholds.low) {
+                        lowTires.push(`${tire}: ${val}`);
+                    }
+                }
+                if (lowTires.length) {
+                    await this.Notifications.processNotification('lowTires', lowTires.join(', '));
+                }
             }
             // if (vData.oilLow) {
             //     await this.Notifications.processNotification('oilLow');
             //     return;
             // }
+            return;
         } else {
             return;
         }
@@ -1532,6 +1552,10 @@ class Widget {
                 sKey = 'fpShowOilLowNotifications';
                 dtKey = 'fpLastOilLowNotificationDt';
                 break;
+            case 'tireLow':
+                sKey = 'fpShowTireLowNotifications';
+                dtKey = 'fpLastTireLowNotificationDt';
+                break;
         }
         return { sKey, dtKey };
     }
@@ -1691,6 +1715,8 @@ class Widget {
             'fpLastUpdateNotificationDt',
             'fpShowLvbBattLowNotifications',
             'fpLastDeepSleepNotificationDt',
+            'fpShowTireLowNotifications',
+            'fpLastTireLowNotificationDt',
             'fpLastFirmUpdNotificationDt',
             'fpLastOtaUpdNotificationDt',
             'fpLastOilLowNotificationDt',

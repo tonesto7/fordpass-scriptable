@@ -266,7 +266,7 @@ module.exports = class FPW_App {
         console.log(`showDataWebView(${title}, ${heading}, ${type})`); //, ${JSON.stringify(data)})`);
         let HTML = '';
         try {
-            data = this.FPW.scrubPersonalData(data);
+            data = data && data.toString().length ? this.FPW.scrubPersonalData(data) : data;
             switch (type) {
                 case 'OTA':
                     try {
@@ -343,7 +343,7 @@ module.exports = class FPW_App {
                                         HTML += `    <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
                                         HTML += `    <li>ReleaseNotes:`;
                                         HTML += `    <br>`;
-                                        HTML += `    ${data.fuseResponse.languageText && data.fuseResponse.languageText.Text ? data.fuseResponse.languageText.Text : this.FPW.textMap().errorMessages.noData}</li>`;
+                                        HTML += `    ${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
                                         HTML += `</ul>`;
                                     }
                                     HTML += `</ul>`;
@@ -2358,13 +2358,12 @@ module.exports = class FPW_App {
                     for (const [i, module] of asbData.AS_BUILT_DATA.VEHICLE.NODEID.entries()) {
                         // console.log(module);
                         const modAddr = module['#text'];
-                        const modInfo = this.FPW.AsBuilt.moduleInfo(modAddr);
                         const mod = {
                             addr: modAddr,
-                            updatable: module && modAddr && modInfo ? modInfo.updatable : false,
-                            label: module && modAddr && modInfo ? modInfo.desc : 'Unknown Module',
-                            acronym: module && modAddr && modInfo ? modInfo.acronym : '',
-                            group: module && modAddr && modInfo ? modInfo.group : '',
+                            updatable: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).updatable : false,
+                            label: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).desc : 'Unknown Module',
+                            acronym: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).acronym : '',
+                            group: module && modAddr ? this.FPW.AsBuilt.moduleInfo(modAddr).group : '',
                             nodeData: module,
                             asbuiltData: asBuiltByModule[modAddr] || undefined,
                         };
