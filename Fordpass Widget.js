@@ -3084,6 +3084,13 @@ class Widget {
                     large: { width: 260, height: 260 },
                     extraLarge: { width: 540, height: 260 },
                 },
+                '744x1133': {
+                    devices: ['iPad Mini 6'],
+                    small: { width: 141, height: 141 },
+                    medium: { width: 306, height: 141 },
+                    large: { width: 306, height: 306 },
+                    extraLarge: { width: 635, height: 306 },
+                },
                 '810x1080': {
                     devices: ['10.2" iPad'],
                     small: { width: 124, height: 124 },

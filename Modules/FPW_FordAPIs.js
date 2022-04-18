@@ -782,10 +782,10 @@ module.exports = class FPW_FordAPIs {
         //tire pressure
         let tpms = vehicleStatus.TPMS;
         vehicleData.tirePressure = {
-            leftFront: await this.FPW.pressureToFixed(tpms.leftFrontTirePressure.value, 0),
-            rightFront: await this.FPW.pressureToFixed(tpms.rightFrontTirePressure.value, 0),
-            leftRear: await this.FPW.pressureToFixed(tpms.outerLeftRearTirePressure.value, 0),
-            rightRear: await this.FPW.pressureToFixed(tpms.outerRightRearTirePressure.value, 0),
+            leftFront: tpms.leftFrontTirePressure ? await this.FPW.pressureToFixed(tpms.leftFrontTirePressure.value, 0) : undefined,
+            rightFront: tpms.rightFrontTirePressure ? await this.FPW.pressureToFixed(tpms.rightFrontTirePressure.value, 0) : undefined,
+            leftRear: tpms.outerLeftRearTirePressure ? await this.FPW.pressureToFixed(tpms.outerLeftRearTirePressure.value, 0) : undefined,
+            rightRear: tpms.outerRightRearTirePressure ? await this.FPW.pressureToFixed(tpms.outerRightRearTirePressure.value, 0) : undefined,
         };
 
         vehicleData.recallInfo = (await this.getVehicleRecalls()) || [];
