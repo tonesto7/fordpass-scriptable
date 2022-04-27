@@ -50,6 +50,14 @@ hash: 1055790018;
     
 **************/
 const changelogs = {
+    '2022.04.27.0': {
+        added: ['Builtin Updater Mechanism to Self-Update the main script without needing the widget tool (tool is still needed for install, and creating multiple instances)', 'New Alert Notifications for the following: Low Tire Pressure, EV Charging Paused'],
+        fixed: ['Fixes for the Fuel level showing -- when the tank was at 100%'],
+        removed: [],
+        updated: [],
+        clearFlags: [],
+    },
+
     '2022.03.27.0': {
         added: [],
         fixed: [],
@@ -191,6 +199,10 @@ const widgetConfig = {
         },
         lvBatteryLow: {
             rate: 86400, // How often to show 12v battery notifications (in seconds - 86400 = 1 day)
+            enabled: false, // Default value of notification
+        },
+        chargingPaused: {
+            rate: 14400, // How often to show 12v battery notifications (in seconds - 14400 = 4 hours)
             enabled: false, // Default value of notification
         },
     },
@@ -473,7 +485,7 @@ class Widget {
                     await this.App.createMainPage();
                     break;
                 case 'show_updater':
-                    this.runScript('FordWidgetTool');
+                    runScript('FordWidgetTool');
                     break;
                 case 'lock_command':
                 case 'start_command':
@@ -706,6 +718,10 @@ class Widget {
                     await this.Notifications.processNotification('lowTires', lowTires.join(', '));
                 }
             }
+            if (vehicleData.capabilities.includes('EV_SMART_CHARGING') && vData.chargingStatus && vData.chargingStatus.value && vData.chargingStatus.value === 'EvsePaused') {
+                await this.Notifications.processNotification('evChargingPaused');
+            }
+
             // if (vData.oilLow) {
             //     await this.Notifications.processNotification('oilLow');
             //     return;
@@ -944,11 +960,57 @@ class Widget {
     //*                                                     UTILITY FUNCTIONS
     //********************************************************************************************************************************
 
-    /**
-     * @description
-     * @param  {any} name
-     * @return {void}@memberof Widget
-     */
+    getIdFromCode(code) {
+        let match = code.match(/const SCRIPT_ID = [0-9]+;/);
+        if (match && match[0]) {
+            return match[0].split('=')[1].trim().replace(';', '');
+        } else {
+            return 0;
+        }
+    }
+
+    async getIdFromFIle(file) {
+        const fm = this.iCloudFM;
+        let filePath = fm.joinPath(fm.documentsDirectory(), file + '.js');
+        if (await fm.fileExists(filePath)) {
+            let code = await fm.readString(filePath);
+            return await this.getIdFromCode(code);
+        } else {
+            return undefined;
+        }
+    }
+
+    updateIdInCode(code, newId) {
+        let match = code.match(/const SCRIPT_ID = [0-9]+;/);
+        if (match && match[0]) {
+            code = code.replace(/const SCRIPT_ID = [0-9]+;/, `const SCRIPT_ID = ${newId};`);
+        }
+        return code;
+    }
+
+    async updateThisScript() {
+        const fm = this.iCloudFM();
+        try {
+            let req = new Request('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js');
+            let code = await req.loadString();
+            let curId = await this.getIdFromCode(code);
+            let fileName = 'Fordpass Widget';
+            if (curId && curId > 0) {
+                code = await this.updateIdInCode(code, curId);
+                fileName += `${fileName} ${curId}`;
+            }
+            let hash = Array.from(code).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
+            let codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\nhash: ${hash};\n\n${code}`);
+            let filePath = fm.joinPath(fm.documentsDirectory(), fileName + '.js');
+            await fm.write(filePath, codeToStore);
+            this.runScript(fileName);
+            return true;
+        } catch (e) {
+            console.error('updateThisScript error: ' + e);
+            return false;
+        }
+    }
+
     runScript(name, params = {}) {
         let callback = new CallbackURL('scriptable:///run');
         callback.addParameter('scriptName', name);
@@ -1370,6 +1432,21 @@ class Widget {
         // .toLowerCase();
     }
 
+    valueChk(value, min = undefined, max = undefined) {
+        // console.log(`valueChk(${value}, ${min}, ${max})`);
+        if (!isNaN(value)) {
+            const val = parseFloat(value);
+            if (min !== undefined && max !== undefined) {
+                // console.log(`valueChk: ${val} is between ${min} and ${max} | ${val >= min && val <= max}`);
+                return val >= min && val <= max;
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
     //********************************************************************************************************************************
     //*                                             KEYCHAIN/Settings MANAGEMENT FUNCTIONS
     //********************************************************************************************************************************
@@ -1440,6 +1517,25 @@ class Widget {
      */
     async toggleMapProvider() {
         await this.setMapProvider((await this.getMapProvider()) === 'google' ? 'apple' : 'google');
+    }
+
+    /**
+     * @description
+     * @return
+     * @memberof Widget
+     */
+    async getStorageLocation() {
+        return (await this.getSettingVal('fpStorageLocation')) || 'iCloud';
+    }
+
+    /**
+     * @description
+     * @param  {any} value
+     * @return {void}@memberof Widget
+     */
+    async moveStorageLocation() {
+        const newLocation = (await this.getStorageLocation()) === 'local' ? 'iCloud' : 'local';
+        await this.setSettingVal('fpStorageLocation', newLocation);
     }
 
     /**
@@ -1555,6 +1651,10 @@ class Widget {
             case 'tireLow':
                 sKey = 'fpShowTireLowNotifications';
                 dtKey = 'fpLastTireLowNotificationDt';
+                break;
+            case 'evChargingPaused':
+                sKey = 'fpShowEvChargingPausedNotifications';
+                dtKey = 'fpLastEvChargingPausedNotificationDt';
                 break;
         }
         return { sKey, dtKey };
@@ -1721,6 +1821,8 @@ class Widget {
             'fpLastOtaUpdNotificationDt',
             'fpLastOilLowNotificationDt',
             'fpLastLvbBattLowNotificationDt',
+            'fpShowEvChargingPausedNotifications',
+            'fpLastEvChargingPausedNotificationDt',
         ];
         for (const key in keys) {
             await this.removeSettingVal(keys[key]);
@@ -1855,7 +1957,7 @@ class Widget {
                 // DTE + Level Separator
                 await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, lvlValue < 0 || lvlValue > 100 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, this.valueChk(lvlValue, 0, 100) ? `${lvlValue}%` : '--', { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
 
                 // Odometer Text
                 let mileageContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });
@@ -2040,7 +2142,7 @@ class Widget {
                 // DTE + Level Separator
                 await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, lvlValue < 0 || lvlValue > 100 ? '--' : `${lvlValue}%`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, this.valueChk(lvlValue, 0, 100) ? `${lvlValue}%` : '--', { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
 
                 // leftContainer.addSpacer();
                 let mileageContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0] });
@@ -2740,7 +2842,7 @@ class Widget {
         //     context.setTextColor(Color.white());
         // }
         const icon = isEV ? String.fromCodePoint('0x1F50B') : '\u26FD';
-        const lvlStr = percent < 0 || percent > 100 ? '--' : `${percent}%`;
+        const lvlStr = this.valueChk(percent, 0, 100) ? `${percent}%` : '--';
         context.drawTextInRect(`${icon} ${lvlStr}`, new Rect(xPos, this.sizeMap[this.widgetSize].barGauge.h / this.sizeMap[this.widgetSize].barGauge.fs, this.sizeMap[this.widgetSize].barGauge.w, this.sizeMap[this.widgetSize].barGauge.h));
         context.setTextAlignedCenter();
         return await context.getImage();
@@ -3203,6 +3305,17 @@ class Widget {
 //*                                                    MODULE AND LOG FUNCTIONS
 //********************************************************************************************************************************
 
+function runScript(name, params = {}) {
+    let callback = new CallbackURL('scriptable:///run');
+    callback.addParameter('scriptName', name);
+    if (params && Object.keys(params).length > 0) {
+        for (let key in params) {
+            callback.addParameter(key, params[key]);
+        }
+    }
+    callback.open();
+}
+
 async function clearModuleCache() {
     console.log('FileManager: Clearing All Module Files from Local Cache...');
     try {
@@ -3255,10 +3368,12 @@ async function validateModules() {
             return false;
         }
     }
+
     async function hashCode(input) {
         return Array.from(input).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
         // return Array.from(input).reduce((accumulator, currentChar) => Math.imul(31, accumulator) + currentChar.charCodeAt(0), 0);
     }
+
     let available = [];
     try {
         const moduleDir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');

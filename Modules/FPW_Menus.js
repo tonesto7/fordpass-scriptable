@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.04.14.0';
+        return '2022.04.27.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -103,7 +103,7 @@ module.exports = class FPW_Menus {
     async menuBuilderByType(type, prefsMenu = false) {
         try {
             const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
-            // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
+            const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
             const typeDesc = this.FPW.capitalizeStr(type);
             let title = undefined;
             let message = undefined;
@@ -592,6 +592,16 @@ module.exports = class FPW_Menus {
                             destructive: false,
                             show: true,
                         },
+                        {
+                            title: `EV Charging Paused: ${(await this.FPW.getShowNotificationType('chargingPaused')) === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) EV Charging Paused Toggle pressed`);
+                                await this.FPW.toggleNotificationType('chargingPaused');
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: caps && caps.includes('EV_SMART_CHARGING'),
+                        },
                         // {
                         //     title: `Oil Low: ${(await this.FPW.getShowNotificationType('oilLow')) === false ? 'Off' : 'On'}`,
                         //     action: async() => {
@@ -625,12 +635,24 @@ module.exports = class FPW_Menus {
                     break;
                 case 'settings':
                     let mapProvider = await this.FPW.getMapProvider();
+                    let storageLocation = await this.FPW.getStorageLocation();
                     title = 'Widget Settings';
                     items = [{
                             title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Map Provider pressed`);
                                 await this.FPW.toggleMapProvider();
+                                this.menuBuilderByType('settings');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+
+                        {
+                            title: `Move Widget & Modules to: ${storageLocation === 'local' ? 'iCloud' : 'Local'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Storage Location pressed`);
+                                await this.FPW.moveStorageLocation();
                                 this.menuBuilderByType('settings');
                             },
                             destructive: false,

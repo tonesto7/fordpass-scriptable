@@ -4,7 +4,7 @@
 
 // This is based on the scriptdude installer https://github.com/kevinkub/scriptdu.de script and modified to manage the Ford Widget script
 
-const SCRIPT_VERSION = '2.0.1';
+const SCRIPT_VERSION = '2.0.2';
 const maxSupportedInstance = 10;
 const configUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/docs/config.json`;
 
@@ -23,7 +23,6 @@ class WidgetInstaller {
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Alerts.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Files.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_FordAPIs.js',
-                'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Keychain.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Menus.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_Notifications.js',
                 'https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Modules/FPW_ShortcutParser.js',
@@ -51,6 +50,9 @@ class WidgetInstaller {
                     'fpDeviceLanguage',
                     'fpLanguage',
                     'fpTz',
+                    'fpCity',
+                    'fpState',
+                    'fpZipCode',
                     'fpPressureUnits',
                     'fpDistanceUnits',
                     'fpSpeedUnits',
@@ -58,6 +60,22 @@ class WidgetInstaller {
                     'fpWidgetBackground',
                     'fpWidgetStyle',
                     'fpUIColorMode',
+                    'fpShowUpdateNotifications',
+                    'fpShowOtaNotifications',
+                    'fpShowSleepNotifications',
+                    'fpShowAlertNotifications',
+                    'fpShowOilLowNotifications',
+                    'fpLastUpdateNotificationDt',
+                    'fpShowLvbBattLowNotifications',
+                    'fpLastDeepSleepNotificationDt',
+                    'fpShowTireLowNotifications',
+                    'fpLastTireLowNotificationDt',
+                    'fpLastFirmUpdNotificationDt',
+                    'fpLastOtaUpdNotificationDt',
+                    'fpLastOilLowNotificationDt',
+                    'fpLastLvbBattLowNotificationDt',
+                    'fpShowEvChargingPausedNotifications',
+                    'fpLastEvChargingPausedNotificationDt',
                 ],
                 files: [
                     'gas-station_dark.png',

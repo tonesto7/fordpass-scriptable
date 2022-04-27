@@ -653,7 +653,7 @@ module.exports = class FPW_App {
             // Header Section - Row 4: Shows fuel/EV battery level and range
             let row4Items = [
                 await this.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue < 0 || lvlValue > 100 ? '--' : lvlValue + '%'}`, dteString, {
+                await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${this.FPW.valueChk(lvlValue, 0, 100) ? lvlValue + '%' : '--'}`, dteString, {
                     align: 'left',
                     widthWeight: 30,
                     titleColor: this.FPW.colorMap.text.dark,
@@ -786,7 +786,9 @@ module.exports = class FPW_App {
                             dismissOnSelect: true,
                             onSelect: async() => {
                                 console.log('(Main Menu) Update Widget was pressed');
-                                this.FPW.runScript('FordWidgetTool');
+                                if (await this.FPW.Alerts.showYesNoPrompt('Script Update', 'This will update your Ford Widget to the latest release.  Proceed?')) {
+                                    await this.FPW.updateThisScript();
+                                }
                             },
                         },
                     ),
