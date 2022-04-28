@@ -44,6 +44,13 @@
     
 **************/
 const changelogs = {
+    '2022.04.28.1': {
+        added: [],
+        fixed: ['Fixed self updater not working and other bugs'],
+        removed: [],
+        updated: [],
+        clearFlags: [],
+    },
     '2022.04.28.0': {
         added: [
             'Builtin Updater Mechanism to Self-Update the main script without needing the widget tool (tool is still needed for install, and creating multiple instances)',
@@ -114,7 +121,8 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.04.28.0';
+
+const SCRIPT_VERSION = '2022.04.28.1';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -939,8 +947,9 @@ class Widget {
     }
 
     async updateThisScript() {
-        const fm = this.iCloudFM();
+
         try {
+            const fm = this.iCloudFM;
             const req = new Request('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js');
             let code = await req.loadString();
             let curId = await this.getIdFromCode(code);
@@ -950,10 +959,11 @@ class Widget {
                 fileName += `${fileName} ${curId}`;
             }
             const hash = Array.from(code).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
-            const codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\nhash: ${hash};\n\n${code}`);
+
+            const codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: blue; icon-glyph: magic;\n// This script was downloaded using FordWidgetTool.\nhash: ${hash};\n\n${code}`);
             const filePath = fm.joinPath(fm.documentsDirectory(), fileName + '.js');
             await fm.write(filePath, codeToStore);
-            this.runScript(fileName);
+            console.log('Updated Fordpass Widget...');
             return true;
         } catch (e) {
             console.error('updateThisScript error: ' + e);
@@ -962,7 +972,7 @@ class Widget {
     }
 
     async downloadLatestWidgetTool() {
-        const fm = this.iCloudFM();
+        const fm = this.iCloudFM;
         const filePath = fm.joinPath(fm.documentsDirectory(), 'FordWidgetTool.js');
         const req = new Request('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/docs/FordWidgetTool.js');
         const code = await req.loadString();
@@ -972,6 +982,9 @@ class Widget {
     }
 
     runScript(name, params = {}) {
+        if (name === undefined) {
+            name = Script.name();
+        }
         let callback = new CallbackURL('scriptable:///run');
         callback.addParameter('scriptName', name);
         if (params && Object.keys(params).length > 0) {
@@ -3318,7 +3331,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||69869163707', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||-216644841620', 'FPW_Menus.js||-305793268544', 'FPW_Notifications.js||3873849830', 'FPW_ShortcutParser.js||-64651553673', 'FPW_Timers.js||60736692903'];
+const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||-864514422572', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||178808380013', 'FPW_Menus.js||-127338933051', 'FPW_Notifications.js||-203900879099', 'FPW_ShortcutParser.js||21731307768', 'FPW_Timers.js||-29551618136'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

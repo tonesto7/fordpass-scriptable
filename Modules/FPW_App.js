@@ -796,7 +796,9 @@ module.exports = class FPW_App {
                             onSelect: async() => {
                                 console.log('(Main Menu) Update Widget was pressed');
                                 if (await this.FPW.Alerts.showYesNoPrompt('Script Update', 'This will update your Ford Widget to the latest release.  Proceed?')) {
-                                    await this.FPW.updateThisScript();
+                                    const res = await this.FPW.updateThisScript();
+                                    console.log(`(Main Menu) Script Update Result: ${res}`);
+                                    await this.FPW.Alerts.showAlert('Widget Updater', 'Widget Code has been updated to the latest version.');
                                 }
                             },
                         },
@@ -1353,8 +1355,8 @@ module.exports = class FPW_App {
                 // Refreshes the page every 30 seconds
                 await this.FPW.Timers.scheduleMainPageRefresh('mainTableRefresh', 30000, false, true);
             }
-
-            await this.generateTableMenu('main', tableRows, false, Device.isPhone() || (!Device.isPhone() && !Device.isPad()), update);
+            const fullscreen = Device.isPhone() || (!Device.isPhone() && !Device.isPad());
+            await this.generateTableMenu('main', tableRows, false, fullscreen, update);
         } catch (err) {
             await this.FPW.logError(`createMainPage() Error: ${err}`);
         }
