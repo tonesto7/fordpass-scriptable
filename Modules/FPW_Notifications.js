@@ -94,6 +94,7 @@ module.exports = class FPW_Notifications {
     }
 
     async processNotification(nType, vals = undefined) {
+        // console.log('processNotification', nType, vals);
         switch (nType) {
             case 'scriptUpdate':
                 if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {

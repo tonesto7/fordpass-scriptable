@@ -52,7 +52,7 @@ hash: 1055790018;
 const changelogs = {
     '2022.04.27.0': {
         added: ['Builtin Updater Mechanism to Self-Update the main script without needing the widget tool (tool is still needed for install, and creating multiple instances)', 'New Alert Notifications for the following: Low Tire Pressure, EV Charging Paused'],
-        fixed: ['Fixes for the Fuel level showing -- when the tank was at 100%'],
+        fixed: ['Fixes for the Fuel level showing -- when the tank was at 100%', 'Notification menu takes you back to main menu instead of settings.'],
         removed: [],
         updated: [],
         clearFlags: [],
@@ -3337,7 +3337,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||89811049361', 'FPW_App.js||163869691917', 'FPW_AsBuilt.js||206767648724', 'FPW_Files.js||6884845894', 'FPW_FordAPIs.js||-59115545796', 'FPW_Menus.js||-439781838352', 'FPW_Notifications.js||-7752630097', 'FPW_ShortcutParser.js||-64651553673', 'FPW_Timers.js||60736692903'];
+const moduleFiles = ['FPW_Alerts.js||89811049361', 'FPW_App.js||163869691917', 'FPW_AsBuilt.js||206767648724', 'FPW_Files.js||6884845894', 'FPW_FordAPIs.js||-59115545796', 'FPW_Menus.js||526614925609', 'FPW_Notifications.js||3873849830', 'FPW_ShortcutParser.js||-64651553673', 'FPW_Timers.js||60736692903'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

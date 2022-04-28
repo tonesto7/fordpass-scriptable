@@ -593,10 +593,10 @@ module.exports = class FPW_Menus {
                             show: true,
                         },
                         {
-                            title: `EV Charging Paused: ${(await this.FPW.getShowNotificationType('chargingPaused')) === false ? 'Off' : 'On'}`,
+                            title: `EV Charging Paused: ${(await this.FPW.getShowNotificationType('evChargingPaused')) === false ? 'Off' : 'On'}`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) EV Charging Paused Toggle pressed`);
-                                await this.FPW.toggleNotificationType('chargingPaused');
+                                await this.FPW.toggleNotificationType('evChargingPaused');
                                 this.menuBuilderByType('notifications');
                             },
                             destructive: false,
@@ -626,7 +626,7 @@ module.exports = class FPW_Menus {
                             title: `Back`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
-                                this.menuBuilderByType('settings');
+                                this.menuBuilderByType('main');
                             },
                             destructive: false,
                             show: true,
@@ -656,7 +656,7 @@ module.exports = class FPW_Menus {
                                 this.menuBuilderByType('settings');
                             },
                             destructive: false,
-                            show: true,
+                            show: false,
                         },
 
                         {
