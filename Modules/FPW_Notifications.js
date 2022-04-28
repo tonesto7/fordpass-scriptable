@@ -6,7 +6,7 @@ module.exports = class FPW_Notifications {
     }
 
     getModuleVer() {
-        return '2022.03.11.0';
+        return '2022.04.27.0';
     }
 
     async createNotification(title, subtitle, body, options = {}) {
@@ -93,7 +93,8 @@ module.exports = class FPW_Notifications {
         return await Notification.removeAllDelivered();
     }
 
-    async processNotification(nType) {
+    async processNotification(nType, vals = undefined) {
+        // console.log('processNotification', nType, vals);
         switch (nType) {
             case 'scriptUpdate':
                 if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
@@ -136,6 +137,28 @@ module.exports = class FPW_Notifications {
                 if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
                     await this.FPW.storeLastNotificationDtByType(nType);
                     await this.createNotification('Vehicle Alert', `Oil Level Low`, `Your vehicle has indicated that your Oil is reporting low.`, {
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        scriptName: Script.name(),
+                    });
+                }
+                return;
+
+            case 'tireLow':
+                if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
+                    await this.FPW.storeLastNotificationDtByType(nType);
+                    await this.createNotification('Vehicle Alert', `Low Tire Alert`, `Your vehicle has indicated that the following tires are ${vals} are reporting low pressure.`, {
+                        identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
+                        scriptName: Script.name(),
+                    });
+                }
+                return;
+
+            case 'evChargingPaused':
+                if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
+                    await this.FPW.storeLastNotificationDtByType(nType);
+                    await this.createNotification('Vehicle Alert', `Vehicle Charging Paused`, `Your Smart Charger has reported that charging is currently paused for your vehicle.`, {
                         identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
                         threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
                         scriptName: Script.name(),

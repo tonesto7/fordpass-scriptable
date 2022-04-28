@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.03.11.0';
+        return '2022.04.27.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -103,7 +103,8 @@ module.exports = class FPW_Menus {
     async menuBuilderByType(type, prefsMenu = false) {
         try {
             const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
-            // const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
+            const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
+
             const typeDesc = this.FPW.capitalizeStr(type);
             let title = undefined;
             let message = undefined;
@@ -181,6 +182,9 @@ module.exports = class FPW_Menus {
                     break;
 
                 case 'helpInfo':
+                    const vinGuideUrl = vehicleData.info && vehicleData.info.modelYear ? this.FPW.getVinGuideUrl(vehicleData.info.modelYear) : undefined;
+                    // console.log(vehicleData.info.modelYear);
+                    // console.log(`VIN Guide URL: ${vinGuideUrl}`);
                     title = `Help & About`;
                     items = [{
                             title: 'Recent Changes',
@@ -230,6 +234,27 @@ module.exports = class FPW_Menus {
                             },
                             destructive: false,
                             show: false,
+                        },
+                        {
+                            title: `${vehicleData.info && vehicleData.info.modelYear ? vehicleData.info.modelYear : ''} VIN Guide`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) VIN Guide was pressed`);
+                                await Safari.openInApp(vinGuideUrl);
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: vehicleData.info && vehicleData.info.modelYear && vinGuideUrl ? true : false,
+                        },
+                        {
+                            title: `Update Widget Tool to Latest`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Update Widget Tool pressed`);
+                                await this.FPW.App.downloadLatestWidgetTool();
+                                await this.FPW.Alerts.showAlert('WidgetTool Updater', 'WidgetTool has been updated to the latest version.');
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: true,
                         },
                         {
                             title: 'Back',
@@ -582,6 +607,26 @@ module.exports = class FPW_Menus {
                             destructive: false,
                             show: true,
                         },
+                        {
+                            title: `Low Tires: ${(await this.FPW.getShowNotificationType('tireLow')) === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Low Tire Toggle pressed`);
+                                await this.FPW.toggleNotificationType('tireLow');
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `EV Charging Paused: ${(await this.FPW.getShowNotificationType('evChargingPaused')) === false ? 'Off' : 'On'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) EV Charging Paused Toggle pressed`);
+                                await this.FPW.toggleNotificationType('evChargingPaused');
+                                this.menuBuilderByType('notifications');
+                            },
+                            destructive: false,
+                            show: caps && caps.includes('EV_SMART_CHARGING'),
+                        },
                         // {
                         //     title: `Oil Low: ${(await this.FPW.getShowNotificationType('oilLow')) === false ? 'Off' : 'On'}`,
                         //     action: async() => {
@@ -606,7 +651,7 @@ module.exports = class FPW_Menus {
                             title: `Back`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
-                                this.menuBuilderByType('settings');
+                                this.menuBuilderByType('main');
                             },
                             destructive: false,
                             show: true,
@@ -615,6 +660,7 @@ module.exports = class FPW_Menus {
                     break;
                 case 'settings':
                     let mapProvider = await this.FPW.getMapProvider();
+                    let storageLocation = await this.FPW.getStorageLocation();
                     title = 'Widget Settings';
                     items = [{
                             title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
@@ -625,6 +671,17 @@ module.exports = class FPW_Menus {
                             },
                             destructive: false,
                             show: true,
+                        },
+
+                        {
+                            title: `Move Widget & Modules to: ${storageLocation === 'local' ? 'iCloud' : 'Local'}`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Storage Location pressed`);
+                                await this.FPW.moveStorageLocation();
+                                this.menuBuilderByType('settings');
+                            },
+                            destructive: false,
+                            show: false,
                         },
 
                         {
