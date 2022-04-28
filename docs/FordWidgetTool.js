@@ -4,7 +4,7 @@
 
 // This is based on the scriptdude installer https://github.com/kevinkub/scriptdu.de script and modified to manage the Ford Widget script
 
-const SCRIPT_VERSION = '2.0.2';
+const SCRIPT_VERSION = '2.1.0';
 const maxSupportedInstance = 10;
 const configUrl = `https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/docs/config.json`;
 
@@ -223,6 +223,7 @@ class WidgetInstaller {
             await this.removeKeychainValue(keys[key], id);
         }
         let files2Del = [`vehicle_image${id === 0 ? '' : id}.png`, `vehicle_data_${id === 0 ? '' : id}.json`];
+        files2Del.concat(this.scriptConfig.cleanup.files);
         files2Del.forEach(async(file) => {
             let filePath = this.localFileManager.joinPath(this.localDocDirectory, file);
             if (await this.localFileManager.fileExists(filePath)) {
@@ -247,6 +248,29 @@ class WidgetInstaller {
                 await this.localFileManager.remove(filePath);
             }
         }
+    }
+
+    async resetInstance(name) {
+        console.log(`resetInstance(${name})`);
+        try {
+            let filePath = this.icloudFileManager.joinPath(this.icloudDocDirectory, name + '.js');
+            if (await this.icloudFileManager.fileExists(filePath)) {
+                let id = await this.getIdFromFIle(name);
+                await this.clearDataForId(id);
+                // const files = this.scriptConfig.cleanup.files;
+                // for (let i = 0; i < files.length; i++) {
+                //     let filePath = this.localFileManager.joinPath(this.localDocDirectory, files[i]);
+                //     if (await this.localFileManager.fileExists(filePath)) {
+                //         console.log('Info: Deleting file: ' + files[i]);
+                //         await this.localFileManager.remove(filePath);
+                //     }
+                // }
+                return true;
+            }
+        } catch (e) {
+            console.error(`removeInstance | Error: ${e}`);
+        }
+        return false;
     }
 
     async removeInstance(name) {
@@ -463,6 +487,15 @@ async function menuBuilderByType(type) {
                         show: true,
                     },
                     {
+                        title: 'Reset Instances',
+                        action: async () => {
+                            console.log('(Main Menu) Instances Reset was pressed');
+                            await menuBuilderByType('reset');
+                        },
+                        destructive: true,
+                        show: true,
+                    },
+                    {
                         title: 'Remove Instances',
                         action: async () => {
                             console.log('(Main Menu) Instances Removal was pressed');
@@ -515,6 +548,35 @@ async function menuBuilderByType(type) {
                     },
                 ];
                 break;
+            case 'reset':
+                title = `Instance Reset Menu`;
+                message = `Tap on an instance to reset all settings and data`;
+                if (filesFnd.length) {
+                    for (const i in filesFnd) {
+                        items.push({
+                            title: filesFnd[i],
+                            action: async () => {
+                                console.log(`(Reset Menu) ${filesFnd[i]} was pressed`);
+                                await wTool.resetInstance(filesFnd[i]);
+                                await wTool.showAlert('Widget Tool - Instance Reset', `${filesFnd[i]} Instance Reset Please Open and Reconfigure Widget...`);
+                                menuBuilderByType('main');
+                            },
+                            destructive: true,
+                            show: true,
+                        });
+                    }
+                }
+                items.push({
+                    title: 'Back',
+                    action: async () => {
+                        console.log(`(${type} Menu) Back was pressed`);
+                        await menuBuilderByType('main');
+                    },
+                    destructive: false,
+                    show: true,
+                });
+                break;
+
             case 'removal':
                 title = `Instance Removal Menu`;
                 message = `Tap on an instance to delete it and remove all data`;

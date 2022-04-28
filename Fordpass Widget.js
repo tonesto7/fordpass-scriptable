@@ -937,7 +937,7 @@ class Widget {
     async updateThisScript() {
         const fm = this.iCloudFM();
         try {
-            let req = new Request('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js');
+            const req = new Request('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js');
             let code = await req.loadString();
             let curId = await this.getIdFromCode(code);
             let fileName = 'Fordpass Widget';
@@ -945,9 +945,9 @@ class Widget {
                 code = await this.updateIdInCode(code, curId);
                 fileName += `${fileName} ${curId}`;
             }
-            let hash = Array.from(code).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
-            let codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\nhash: ${hash};\n\n${code}`);
-            let filePath = fm.joinPath(fm.documentsDirectory(), fileName + '.js');
+            const hash = Array.from(code).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
+            const codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: ${color}; icon-glyph: ${icon};\n// This script was downloaded using FordWidgetTool.\nhash: ${hash};\n\n${code}`);
+            const filePath = fm.joinPath(fm.documentsDirectory(), fileName + '.js');
             await fm.write(filePath, codeToStore);
             this.runScript(fileName);
             return true;
@@ -955,6 +955,16 @@ class Widget {
             console.error('updateThisScript error: ' + e);
             return false;
         }
+    }
+
+    async downloadLatestWidgetTool() {
+        const fm = this.iCloudFM();
+        const filePath = fm.joinPath(fm.documentsDirectory(), 'FordWidgetTool.js');
+        const req = new Request('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/docs/FordWidgetTool.js');
+        const code = await req.loadString();
+        const codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: blue; icon-glyph: magic;\n${code}`);
+        await fm.write(filePath, codeToStore);
+        return true;
     }
 
     runScript(name, params = {}) {
@@ -970,7 +980,6 @@ class Widget {
 
     async buildCallbackUrl(params = {}) {
         let callback = new CallbackURL(URLScheme.forRunningScript());
-
         if (params && Object.keys(params).length > 0) {
             for (let key in params) {
                 callback.addParameter(key, params[key]);
@@ -3305,7 +3314,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||69869163707', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||-216644841620', 'FPW_Menus.js||-220814202017', 'FPW_Notifications.js||3873849830', 'FPW_ShortcutParser.js||-64651553673', 'FPW_Timers.js||60736692903'];
+const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||69869163707', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||-216644841620', 'FPW_Menus.js||-305793268544', 'FPW_Notifications.js||3873849830', 'FPW_ShortcutParser.js||-64651553673', 'FPW_Timers.js||60736692903'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

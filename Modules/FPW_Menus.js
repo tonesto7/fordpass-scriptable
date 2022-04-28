@@ -246,6 +246,17 @@ module.exports = class FPW_Menus {
                             show: vehicleData.info && vehicleData.info.modelYear && vinGuideUrl ? true : false,
                         },
                         {
+                            title: `Update Widget Tool to Latest`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Update Widget Tool pressed`);
+                                await this.FPW.App.downloadLatestWidgetTool();
+                                await this.FPW.Alerts.showAlert('WidgetTool Updater', 'WidgetTool has been updated to the latest version.');
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
                             title: 'Back',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
