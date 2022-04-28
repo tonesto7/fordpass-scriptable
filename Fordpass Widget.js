@@ -718,7 +718,7 @@ class Widget {
                     await this.Notifications.processNotification('lowTires', lowTires.join(', '));
                 }
             }
-            if (vehicleData.capabilities.includes('EV_SMART_CHARGING') && vData.chargingStatus && vData.chargingStatus.value && vData.chargingStatus.value === 'EvsePaused') {
+            if (vData.capabilities.includes('EV_SMART_CHARGING') && vData.chargingStatus && vData.chargingStatus.value && vData.chargingStatus.value === 'EvsePaused') {
                 await this.Notifications.processNotification('evChargingPaused');
             }
 
@@ -3337,7 +3337,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-6207818603', 'FPW_App.js||-209833493192', 'FPW_AsBuilt.js||-238747759024', 'FPW_Files.js||-194530353982', 'FPW_FordAPIs.js||-72439138670', 'FPW_Keychain.js||-116797043960', 'FPW_Menus.js||-99293359920', 'FPW_Notifications.js||-80726724921', 'FPW_ShortcutParser.js||-77337235981', 'FPW_Timers.js||81364949539'];
+const moduleFiles = ['FPW_Alerts.js||89811049361', 'FPW_App.js||163869691917', 'FPW_AsBuilt.js||206767648724', 'FPW_Files.js||6884845894', 'FPW_FordAPIs.js||-59115545796', 'FPW_Menus.js||-439781838352', 'FPW_Notifications.js||-7752630097', 'FPW_ShortcutParser.js||-64651553673', 'FPW_Timers.js||60736692903'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
