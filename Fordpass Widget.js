@@ -121,6 +121,7 @@ const changelogs = {
     },
 };
 
+
 const SCRIPT_VERSION = '2022.04.28.1';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
@@ -946,6 +947,7 @@ class Widget {
     }
 
     async updateThisScript() {
+
         try {
             const fm = this.iCloudFM;
             const req = new Request('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js');
@@ -957,6 +959,7 @@ class Widget {
                 fileName += `${fileName} ${curId}`;
             }
             const hash = Array.from(code).reduce((accumulator, currentChar) => (accumulator << 5) - accumulator + currentChar.charCodeAt(0), 0);
+
             const codeToStore = Data.fromString(`// Variables used by Scriptable.\n// These must be at the very top of the file. Do not edit.\n// icon-color: blue; icon-glyph: magic;\n// This script was downloaded using FordWidgetTool.\nhash: ${hash};\n\n${code}`);
             const filePath = fm.joinPath(fm.documentsDirectory(), fileName + '.js');
             await fm.write(filePath, codeToStore);
