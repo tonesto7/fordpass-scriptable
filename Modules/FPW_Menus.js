@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.04.27.0';
+        return '2022.04.28.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -249,8 +249,19 @@ module.exports = class FPW_Menus {
                             title: `Update Widget Tool to Latest`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Update Widget Tool pressed`);
-                                await this.FPW.App.downloadLatestWidgetTool();
+                                await this.FPW.downloadLatestWidgetTool();
                                 await this.FPW.Alerts.showAlert('WidgetTool Updater', 'WidgetTool has been updated to the latest version.');
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Update Widget to Latest Code`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Update Widget pressed`);
+                                await this.FPW.updateThisScript();
+                                await this.FPW.Alerts.showAlert('Widget Updater', 'Widget Code has been updated to the latest version.');
                                 this.menuBuilderByType('helpInfo');
                             },
                             destructive: false,

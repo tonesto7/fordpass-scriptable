@@ -7,7 +7,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     getModuleVer() {
-        return '2022.04.27.0';
+        return '2022.04.28.0';
     }
 
     appIDs() {
