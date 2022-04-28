@@ -3164,6 +3164,28 @@ class Widget {
         }
     }
 
+    getVinGuideUrl(modelYear) {
+        switch (modelYear.toString()) {
+            case '2015':
+                return 'https://www.fleet.ford.com/content/dam/aem_fleet/en_us/fleet/vin-guides/2015%20VIN%20Guide_2.pdf';
+            case '2016':
+                return 'https://www.fleet.ford.com/content/dam/aem_fleet/en_us/fleet/vin-guides/2016_VIN_Guide_Final.pdf';
+            case '2017':
+                return 'https://www.fleet.ford.com/content/dam/aem_fleet/en_us/fleet/vin-guides/2017%20VIN%20Guide%20V11.pdf';
+            case '2018':
+                return 'https://www.fleet.ford.com/content/dam/aem_fleet/en_us/fleet/vin-guides/FINALVIN%20GUIDE.pdf';
+            case '2019':
+                return 'https://www.fleet.ford.com/content/dam/aem_fleet/en_us/fleet/vin-guides/23377-2019-VIN-Guide-v7.pdf';
+            case '2020':
+                return 'https://www.fleet.ford.com/content/dam/aem_fleet/en_us/fleet/vin-guides/23377-2020-VIN-Guide.pdf';
+            case '2021':
+            case '2022':
+                return `https://www.fleet.ford.com/content/dam/aem_fleet/en_us/fleet/vin-guides/${modelYear}_VIN_Guide.pdf`;
+            default:
+                return undefined;
+        }
+    }
+
     // Modified version of this https://talk.automators.fm/t/get-available-widget-height-and-width-depending-on-the-devices-screensize/9258/5
     async getViewPortSizes(widgetFamily) {
         // const vpSize = `${this.screenSize.width}x${this.screenSize.height}`;

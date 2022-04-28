@@ -104,6 +104,7 @@ module.exports = class FPW_Menus {
         try {
             const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
             const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
+
             const typeDesc = this.FPW.capitalizeStr(type);
             let title = undefined;
             let message = undefined;
@@ -181,6 +182,9 @@ module.exports = class FPW_Menus {
                     break;
 
                 case 'helpInfo':
+                    const vinGuideUrl = vehicleData.info && vehicleData.info.vehicle && vehicleData.info.vehicle.modelYear ? this.FPW.getVinGuideUrl(vehicleData.info.vehicle.modelYear) : undefined;
+                    // console.log(vehicleData.info.vehicle.modelYear);
+                    // console.log(`VIN Guide URL: ${vinGuideUrl}`);
                     title = `Help & About`;
                     items = [{
                             title: 'Recent Changes',
@@ -230,6 +234,16 @@ module.exports = class FPW_Menus {
                             },
                             destructive: false,
                             show: false,
+                        },
+                        {
+                            title: `${vehicleData.info && vehicleData.info.vehicle && vehicleData.info.vehicle.modelYear ? vehicleData.info.vehicle.modelYear : ''} VIN Guide`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) VIN Guide was pressed`);
+                                await Safari.openInApp(vinGuideUrl);
+                                this.menuBuilderByType('helpInfo');
+                            },
+                            destructive: false,
+                            show: vehicleData.info.vehicle && vehicleData.info.vehicle.modelYear && vinGuideUrl ? true : false,
                         },
                         {
                             title: 'Back',
