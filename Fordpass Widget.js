@@ -45,7 +45,11 @@
 **************/
 const changelogs = {
     '2022.04.28.0': {
-        added: ['Builtin Updater Mechanism to Self-Update the main script without needing the widget tool (tool is still needed for install, and creating multiple instances)', 'You can now install the latest version of the widget tool', 'New Alert Notifications for the following: Low Tire Pressure, EV Charging Paused'],
+        added: [
+            'Builtin Updater Mechanism to Self-Update the main script without needing the widget tool (tool is still needed for install, and creating multiple instances)',
+            'You can now install the latest version of the widget tool by opening the menu > Help & Info > Update to Latest WidgetTool.',
+            'New Alert Notifications for the following: Low Tire Pressure, EV Charging Paused',
+        ],
         fixed: ['Fixes for the Fuel level showing -- when the tank was at 100%', 'Notification menu takes you back to main menu instead of settings.'],
         removed: [],
         updated: ["Updated the Advanced Info page layout and added a new page for the vehicle's capabilities.", 'New version of the widget tool is now available for download. It adds the ability to reset a specific instance of the widget.'],
