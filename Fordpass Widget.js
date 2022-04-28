@@ -1,12 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
-// This script was downloaded using FordWidgetTool.
-hash: 1055790018;
-
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: car;
 
 /**************
  * Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted.
@@ -50,11 +44,11 @@ hash: 1055790018;
     
 **************/
 const changelogs = {
-    '2022.04.27.0': {
+    '2022.04.28.0': {
         added: ['Builtin Updater Mechanism to Self-Update the main script without needing the widget tool (tool is still needed for install, and creating multiple instances)', 'New Alert Notifications for the following: Low Tire Pressure, EV Charging Paused'],
         fixed: ['Fixes for the Fuel level showing -- when the tank was at 100%', 'Notification menu takes you back to main menu instead of settings.'],
         removed: [],
-        updated: [],
+        updated: ["Updated the Advanced Info page layout and added a new page for the vehicle's capabilities."],
         clearFlags: [],
     },
 
@@ -114,57 +108,9 @@ const changelogs = {
         updated: ['Widget refreshes seem to be working much more consistently for me on the various sizes.', 'Module data is much more robust, and covers names for more modules.', "Module Info now displays the module group for it's function", 'Modified the module info page layout slightly to be easier to follow.'],
         clearFlags: [],
     },
-    '2022.02.27.0': {
-        added: ['New vehicle module section under advanced info page.', 'Use a custom background color for the widget by storing a file in the Scriptable iCloud folder.  It must be a .png and be named with your VIN number.  You can also define the image for the different widget sizes by naming it like "${VIN Here}_small.png"'],
-        fixed: ["Lot's of minor tweaks."],
-        removed: [],
-        updated: ['Updated the view all widget data page to use formatted text like the OTA page.'],
-        clearFlags: [],
-    },
-    '2022.02.22.0': {
-        added: ['Added vehicle image viewer to the advanced info page. You can tap on the image to save it to photos or a file for external use.', 'Added FordPass rewards points to the dashboard menu.'],
-        fixed: [],
-        removed: [],
-        updated: ['Dashboard should load immediately now from cached data and then update with current data in the next few seconds', 'Modified the layout of the dashboard header to make the image larger.', 'Moved the diagnostics menu item in the advanced info page as a menu there.'],
-    },
-    '2022.02.21.0': {
-        added: ['The dashboard now shows the vehicle health alert for a low 12V battery.'],
-        fixed: [
-            'First attempt at fixing the issues with the large widget loading by reducing the source image size for the widget buttons.',
-            'Fixed the fuel/battery level to show -- if value is above 100%',
-            'Fixed issue with the color mode menu going back to the settings menu.',
-            'Fixed issue with the OTA page not showing the correct output in the status section.',
-        ],
-        removed: [],
-        updated: ['The large widget buttons are now slightly smaller.'],
-    },
-    '2022.02.18.0': {
-        added: ['Dashboard page now refreshes the data every 30 seconds if you leave it open. It also includes a timestamp at the bottom of the page showing when it was last refreshed.', 'New Advanced Info link added to the bottom of the Dashboard page to quickly access the Sync Version info, all Widget data, and OTA info.'],
-        fixed: ['Fixed issues with the widget parameters not working.  you no longer need to add the prefix of the widget size.  you can just detailed, detailedDark, detailedLight, simple, simpleDark, and simpleLight.'],
-        removed: ['Disabled Oil Low Notifications', 'The OTA and vehicle data page is no longer in the menu, its been moved to the advanced info page that located at the botton of the dashboard.'],
-        updated: ['OTA Page now has vehicle status and schedule info in the formatted section.  Also rearranged the layout slightly.'],
-    },
-    '2022.02.14.0': {
-        added: [
-            'All new menu that functions like an app interface',
-            'New widget layouts for small, medium, and large widgets and some include quick action buttons.',
-            'Alarm status now shown in the dashboard menu.',
-            'Receive push notification for script updates (every 24H) as well as notifications for deep sleep mode, and firmware updates every 6H (Can turn the notifications off in Widget Menu > Settings > Notifications).',
-            'Notification support for oil low, 12V battery low',
-            'Added the ability to turn on and off the individual notification types',
-            'For users who use multiple widgets for the same device you can define the widget type and color using the Edit Widget on the homescreen and use one of the following params: smallSimple, smallDetailed, and an optional definition of color (no color = use system color mode) Dark, Light, the same applies to the medium and large widgets.  The large Widget only has a detailed version of the layout',
-            'Setup menu now includes widget style and color mode settings, links to setup videos and documentation.',
-            'Added new option to advanced info menu to allow emailing your anonymous vehicle data to me (Because this is email I will see your address, but you can choose to setup a private email using icloud hide email feature)(Either way i will never share or use your email for anything).',
-            'Script changes are shown in a window when new versions are released.',
-            "Lot's of other items I can't remember yet",
-        ],
-        fixed: ['Modified the margins of the widget to be more consistent and be better on small screens and small widgets.', 'Vehicle images should now load correctly.', "Lot's of other items I can't remember yet"],
-        removed: ['Removed vehicle odometer from the widget UI to save space (moved it to the dashboard menu section).'],
-        updated: ['Modified the fuel/battery bar to show the icon and percentage in the bar. The bar is now green when vehicle is EV, and red when below 10% and yellow below 20%.', 'Renamed debug menu to advanced info menu.', "Lot's of other items I can't remember yet"],
-    },
 };
 
-const SCRIPT_VERSION = '2022.03.27.0';
+const SCRIPT_VERSION = '2022.04.28.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -1126,8 +1072,8 @@ class Widget {
     async createVehicleDataEmail(data, attachJson = false) {
         try {
             let email = new Mail();
-            const vehType = data.info && data.info.vehicle && data.info.vehicle.vehicleType ? data.info.vehicle.vehicleType : undefined;
-            const vehVin = data.info && data.info.vehicle && data.info.vehicle.vin ? data.info.vehicle.vin : undefined;
+            const vehType = data.info && data.info.vehicleType ? data.info.vehicleType : undefined;
+            const vehVin = data.info && data.info.vin ? data.info.vin : undefined;
             email.subject = `${vehType || 'FordPass'} Vehicle Data`;
             email.toRecipients = [this.textMap().about.email]; // This is my anonymous email address provided by Apple,
             email.body = attachJson ? 'Vehicle data is attached file' : JSON.stringify(data, null, 4);
@@ -1924,7 +1870,7 @@ class Widget {
             // Vehicle Title
             const vehicleNameContainer = await this.createRow(topLeftContainer, { '*setPadding': [paddingTop, 0, 0, 0] });
 
-            let vehicleNameStr = vData.info.vehicle.vehicleType || '';
+            let vehicleNameStr = vData.info.vehicleType || '';
             // get dynamic size
             let vehicleNameSize = Math.round(width * 0.12);
             if (vehicleNameStr.length >= 10) {
@@ -1995,7 +1941,7 @@ class Widget {
             let canvasWidth = Math.round(width * 0.85);
             // let newH = this.isSmallDisplay ? 0.27 : 0.32;
             let canvasHeight = Math.round(width * 0.32);
-            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(canvasWidth, canvasHeight), resizable: true, '*rightAlignImage': null });
+            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.modelYear, false, 1), { imageSize: new Size(canvasWidth, canvasHeight), resizable: true, '*rightAlignImage': null });
             carImageContainer.addSpacer();
 
             //**************************
@@ -2120,7 +2066,7 @@ class Widget {
             leftContainer.addSpacer();
             // Vehicle Title
             const vehicleNameContainer = await this.createRow(leftContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
-            let vehicleNameStr = vData.info.vehicle.vehicleType || ''; //'2021 Mustang Mach-E';
+            let vehicleNameStr = vData.info.vehicleType || ''; //'2021 Mustang Mach-E';
 
             let vehicleNameSize = 24;
             if (vehicleNameStr.length >= 10) {
@@ -2156,7 +2102,7 @@ class Widget {
 
             // Vehicle Location Row
             const locationContainer = await this.createRow(leftContainer, { '*setPadding': [5, paddingLeft, 0, 0], '*topAlignContent': null });
-            let url = (await this.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
+            let url = (await this.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.nickName)}&ll=${vData.latitude},${vData.longitude}`;
             let locationStr = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.textMap().errorMessages.noData;
             await this.createText(locationContainer, locationStr, { url: url, font: Font.body(), textColor: this.colorMap.text[colorMode], lineLimit: 2, minimumScaleFactor: 0.6, textOpacity: 0.7 });
 
@@ -2174,7 +2120,7 @@ class Widget {
             let imgHeight = Math.round(height * 0.4);
             const carImageContainer = await this.createRow(rightContainer, { '*setPadding': [paddingTop, 0, 0, 0], '*centerAlignContent': null });
             carImageContainer.addSpacer();
-            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), '*rightAlignImage': null, resizable: true });
+            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.modelYear, false, 1), { imageSize: new Size(imgWidth, imgHeight), '*rightAlignImage': null, resizable: true });
             carImageContainer.addSpacer();
             const doorWindStatusContainer = await this.createRow(rightContainer, { '*setPadding': [0, 0, 0, 0] });
             doorWindStatusContainer.addSpacer();
@@ -2353,7 +2299,7 @@ class Widget {
             // Vehicle Title
             let nameContainer = await this.createRow(topRowLeftCol, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
             // nameContainer.addSpacer(); // Pushes the vehicle name to the left
-            let nameStr = vData.info.vehicle.vehicleType || '';
+            let nameStr = vData.info.vehicleType || '';
 
             let nameSize = 24;
             if (nameStr.length >= 10) {
@@ -2390,7 +2336,7 @@ class Widget {
             let imgHeight = Math.round(height * 0.25);
             const carImageContainer = await this.createRow(topRowRightCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
             // carImageContainer.addSpacer();
-            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { resizable: true, imageSize: new Size(imgWidth, imgHeight) });
+            await this.createImage(carImageContainer, await this.Files.getVehicleImage(vData.info.modelYear, false, 1), { resizable: true, imageSize: new Size(imgWidth, imgHeight) });
             carImageContainer.addSpacer();
             topRowRightCol.addSpacer(); // Pushes Content to the middle to help center
 
@@ -2654,7 +2600,7 @@ class Widget {
             }
 
             const valueRow = await this.createRow(srcStack, { '*centerAlignContent': null });
-            let url = (await this.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.vehicle.nickName)}&ll=${vData.latitude},${vData.longitude}`;
+            let url = (await this.getMapProvider()) == 'google' ? `https://www.google.com/maps/search/?api=1&query=${vData.latitude},${vData.longitude}` : `http://maps.apple.com/?q=${encodeURI(vData.info.nickName)}&ll=${vData.latitude},${vData.longitude}`;
             let value = vData.position ? (this.widgetConfig.screenShotMode ? '1234 Someplace Drive, Somewhere' : `${vData.position}`) : this.textMap().errorMessages.noData;
             if (position == 'center' || position == 'right') {
                 valueRow.addSpacer();
@@ -2850,8 +2796,8 @@ class Widget {
 
     async createVehicleImageElement(srcElem, vData, width, height, angle = 4) {
         let logoRow = await this.createRow(srcElem, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-        if (vData.info !== undefined && vData.info.vehicle !== undefined) {
-            await this.createImage(logoRow, await this.Files.getVehicleImage(vData.info.vehicle.modelYear, false, angle), { imageSize: new Size(width, height), '*centerAlignImage': null, resizable: true });
+        if (vData.info !== undefined && vData.info !== undefined) {
+            await this.createImage(logoRow, await this.Files.getVehicleImage(vData.info.modelYear, false, angle), { imageSize: new Size(width, height), '*centerAlignImage': null, resizable: true });
             srcElem.addSpacer(3);
         }
     }
@@ -3359,7 +3305,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||89811049361', 'FPW_App.js||163869691917', 'FPW_AsBuilt.js||206767648724', 'FPW_Files.js||6884845894', 'FPW_FordAPIs.js||-59115545796', 'FPW_Menus.js||526614925609', 'FPW_Notifications.js||3873849830', 'FPW_ShortcutParser.js||-64651553673', 'FPW_Timers.js||60736692903'];
+const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||69869163707', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||-216644841620', 'FPW_Menus.js||-220814202017', 'FPW_Notifications.js||3873849830', 'FPW_ShortcutParser.js||-64651553673', 'FPW_Timers.js||60736692903'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

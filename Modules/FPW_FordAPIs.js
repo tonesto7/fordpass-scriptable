@@ -634,7 +634,7 @@ module.exports = class FPW_FordAPIs {
             vehicleData.error = statusData;
             return vehicleData;
         }
-        vehicleData.rawStatus = statusData;
+        vehicleData.rawStatus = statusData.vehicleStatus;
         if (this.widgetConfig.logVehicleData) {
             console.log(`Status: ${JSON.stringify(statusData)}`);
         }
@@ -642,7 +642,7 @@ module.exports = class FPW_FordAPIs {
         // Pulls in info about the vehicle like brand, model, year, etc. (Used to help with getting vehicle image and name for the map)
         let infoData = await this.getVehicleInfo();
         // console.log(`infoData: ${JSON.stringify(infoData)}`);
-        vehicleData.info = infoData;
+        vehicleData.info = infoData.vehicle;
         if (this.widgetConfig.logVehicleData) {
             console.log(`Info: ${JSON.stringify(infoData)}`);
         }
@@ -786,6 +786,8 @@ module.exports = class FPW_FordAPIs {
             rightFront: tpms.rightFrontTirePressure ? await this.FPW.pressureToFixed(tpms.rightFrontTirePressure.value, 0) : undefined,
             leftRear: tpms.outerLeftRearTirePressure ? await this.FPW.pressureToFixed(tpms.outerLeftRearTirePressure.value, 0) : undefined,
             rightRear: tpms.outerRightRearTirePressure ? await this.FPW.pressureToFixed(tpms.outerRightRearTirePressure.value, 0) : undefined,
+            recommendedFront: tpms.recommendedFrontTirePressure && tpms.recommendedFrontTirePressure.value ? tpms.recommendedFrontTirePressure.value.toString() : undefined,
+            recommendedRear: tpms.recommendedRearTirePressure && tpms.recommendedRearTirePressure.value ? tpms.recommendedRearTirePressure.value.toString() : undefined,
         };
 
         vehicleData.recallInfo = (await this.getVehicleRecalls()) || [];
@@ -793,7 +795,7 @@ module.exports = class FPW_FordAPIs {
 
         vehicleData.fordpassRewardsInfo = await this.getFordpassRewardsInfo();
         // console.log(`Fordpass Rewards Info: ${JSON.stringify(vehicleData.fordpassRewardsInfo)}`);
-        vehicleData.syncInfo = await this.getSyncVersion(vehicleData.info.vehicle.brandCode);
+        vehicleData.syncInfo = await this.getSyncVersion(vehicleData.info.brandCode);
         // console.log(`Sync Info: ${JSON.stringify(vehicleData.syncInfo)}`);
 
         // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();

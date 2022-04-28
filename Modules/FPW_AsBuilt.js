@@ -101,7 +101,7 @@ module.exports = class FPW_AsBuilt {
     }
 
     getModuleVer() {
-        return '2022.04.27.0';
+        return '2022.04.28.0';
     }
 
     moduleInfo(addr) {
@@ -228,7 +228,7 @@ module.exports = class FPW_AsBuilt {
         // await wv.waitForLoad();
         // console.log(`imageData: ${imgData}`);
         if (imgData && imgData.length > 0) {
-            console.log('imageData: ' + imgData.length);
+            // console.log('imageDataLen: ' + imgData.length);
             let id = Data.fromBase64String(imgData);
             // console.log(id);
             let captchaImg = await Image.fromData(id);
@@ -237,9 +237,9 @@ module.exports = class FPW_AsBuilt {
                 // captchaImg.saveAs(`${vin}.gif`);
                 await this.FPW.App.createCaptchaPage(captchaImg);
                 const code = await this.FPW.Alerts.showCaptchaPrompt();
-                console.log(`Captcha code: ${code}`);
+                console.log(`Captcha Code Entered: ${code}`);
                 if (code) {
-                    this.FPW.Alerts.showAlert('Please wait...', 'This process can take many seconds to complete.  You will receive another prompt when the data is downloaded and saved.');
+                    this.FPW.Alerts.showAlert('Please wait...', 'This process may take many seconds.  You will receive another prompt when the data is downloaded and saved.');
                     let js3 = await wv.evaluateJavaScript(`
                         function setVinAndCaptcha() {
                             document.querySelector('#VIN').value = '${vin}';
@@ -250,11 +250,12 @@ module.exports = class FPW_AsBuilt {
                         }
                          setVinAndCaptcha();
                     `);
+                    // console.log(js3);
                     await wv.waitForLoad();
                     let html2 = await wv.getHTML();
-                    // console.log(html2);
+                    console.log(html2);
                     if (html2.includes('/AsBuilt/Download') && html2.includes('asbuiltJson')) {
-                        console.log('found download page');
+                        // console.log('found download page');
                         let js4 = await wv.evaluateJavaScript(`
                             function getAsbuilt() {
                                 let asbJsonElem = document.querySelector("input[name='asbuiltJson']")
@@ -271,6 +272,8 @@ module.exports = class FPW_AsBuilt {
                             await this.FPW.Files.saveJsonFile('AsBuilt Data', JSON.parse(js4.toString()), `${vin}`, true);
                             this.FPW.Alerts.showAlert('AsBuilt Data', `AsBuilt data for ${vin} has been saved.`);
                         }
+                    } else {
+                        this.FPW.Alerts.showAlert('Download Issue', 'Something went wrong with the download. Please try the process again...');
                     }
                 }
             }

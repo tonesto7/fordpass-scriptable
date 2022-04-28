@@ -6,7 +6,7 @@ module.exports = class FPW_Files {
     }
 
     getModuleVer() {
-        return '2022.04.27.0';
+        return '2022.04.28.0';
     }
 
     async loadImage(imgUrl) {
@@ -261,11 +261,11 @@ module.exports = class FPW_Files {
     }
 
     async downloadAllVehicleImagesToIcloud(vData) {
-        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 1);
-        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 2);
-        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 3);
-        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 4);
-        await this.getVehicleImage(vData.info.vehicle.modelYear, true, 5);
+        await this.getVehicleImage(vData.info.modelYear, true, 1);
+        await this.getVehicleImage(vData.info.modelYear, true, 2);
+        await this.getVehicleImage(vData.info.modelYear, true, 3);
+        await this.getVehicleImage(vData.info.modelYear, true, 4);
+        await this.getVehicleImage(vData.info.modelYear, true, 5);
         return;
     }
 

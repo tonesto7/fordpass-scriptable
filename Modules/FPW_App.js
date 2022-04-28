@@ -24,7 +24,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.03.11.0';
+        return '2022.04.28.0';
     }
 
     async getTable(tableName) {
@@ -204,6 +204,15 @@ module.exports = class FPW_App {
                 return '';
         }
     }
+
+    // getCapabilityDescByType(caps) {
+    //     for (const [i, cap] of caps.entries()) {
+    //         switch (type) {
+    //             case 'test':
+    //                 return 'Test';
+    //         }
+    //     }
+    // }
 
     // async omLoader() {
     //     try {
@@ -566,7 +575,7 @@ module.exports = class FPW_App {
                             },
                         }),
 
-                        await this.createTextCell(vData.info.vehicle.vehicleType, odometerVal, {
+                        await this.createTextCell(vData.info.vehicleType, odometerVal, {
                             align: 'center',
                             widthWeight: 40,
                             dismissOnTap: false,
@@ -628,7 +637,7 @@ module.exports = class FPW_App {
                             subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                         }),
                         await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nLR: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
-                        await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
+                        await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
                         await this.createTextCell(`RF: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         // Window Status Cells
                         await this.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
@@ -1988,7 +1997,7 @@ module.exports = class FPW_App {
                 ),
             );
             for (const [i, angle] of[1, 2, 3, 4, 5].entries()) {
-                const vehicleImg = await this.FPW.Files.getVehicleImage(vData.info.vehicle.modelYear, false, angle, false, true);
+                const vehicleImg = await this.FPW.Files.getVehicleImage(vData.info.modelYear, false, angle, false, true);
                 tableRows.push(
                     await this.createTableRow(
                         [
@@ -2055,21 +2064,21 @@ module.exports = class FPW_App {
                 // console.log(JSON.stringify(vData, null, 2));
                 // console.log(`Sync: ${Object.keys(vData.syncInfo).length}`);
 
-                if (vData['syncInfo'] && Object.keys(vData['syncInfo']).length && vData['syncInfo'].syncVersion) {
-                    tableRows.push(
-                        await this.createTableRow([await this.createTextCell('SYNC Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
-                            height: 25,
-                            isHeader: true,
-                            dismissOnSelect: false,
-                            backgroundColor: new Color(titleBgColor),
-                        }),
-                    );
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell('Vehicle Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+                );
 
+                if (vData['syncInfo'] && Object.keys(vData['syncInfo']).length && vData['syncInfo'].syncVersion) {
                     tableRows.push(
                         await this.createTableRow(
                             [
                                 await this.createImageCell(await this.FPW.Files.getImage(`info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell(`Version: ${vData.syncInfo.syncVersion}`, `Last Updated: ${vData.syncInfo.lastUpdatedDate || 'Not Available'}`, {
+                                await this.createTextCell(`Sync`, `Version: ${vData.syncInfo.syncVersion}\nUpdated: ${vData.syncInfo.lastUpdatedDate || 'Not Available'}`, {
                                     align: 'left',
                                     widthWeight: 93,
                                     titleColor: this.FPW.colorMap.normalText,
@@ -2078,25 +2087,18 @@ module.exports = class FPW_App {
                                     subtitleFont: Font.regularSystemFont(11),
                                 }),
                             ], {
-                                height: 60,
+                                height: 70,
                                 dismissOnSelect: false,
                             },
                         ),
                     );
                 }
-                tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Vehicle Data Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
-                );
+
                 tableRows.push(
                     await this.createTableRow(
                         [
                             await this.createImageCell(await this.FPW.Files.getImage(`notepad_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await this.createTextCell(`View All Widget Data`, 'Tap to view', {
+                            await this.createTextCell(`View More Details`, 'Tap to view', {
                                 align: 'left',
                                 widthWeight: 93,
                                 titleColor: this.FPW.colorMap.normalText,
@@ -2109,21 +2111,11 @@ module.exports = class FPW_App {
                             dismissOnSelect: false,
                             onSelect: async() => {
                                 console.log('(Advanced Info) Vehicle Data was pressed');
-                                await this.showDataWebView('Vehicle Data Page', 'Raw Data', vData, 'vehicleData');
-                                // await this.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', vData);
+                                await this.createVehicleInfoPage();
                             },
                         },
                     ),
-                );
-                tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Over-The-Air Update Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
-                );
-                tableRows.push(
+
                     await this.createTableRow(
                         [
                             await this.createImageCell(await this.FPW.Files.getImage(`ota_info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
@@ -2145,18 +2137,7 @@ module.exports = class FPW_App {
                             },
                         },
                     ),
-                );
 
-                tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Vehicle Module Info', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
-                );
-
-                tableRows.push(
                     await this.createTableRow(
                         [
                             await this.createImageCell(await this.FPW.Files.getImage(`module_info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
@@ -2191,7 +2172,7 @@ module.exports = class FPW_App {
                     await this.createTableRow(
                         [
                             await this.createImageCell(await this.FPW.Files.getImage(`view_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await this.createTextCell(`View Vehicle Images`, 'Tap to view', {
+                            await this.createTextCell(`View Images`, 'Tap to view', {
                                 align: 'left',
                                 widthWeight: 93,
                                 titleColor: this.FPW.colorMap.normalText,
@@ -2205,6 +2186,37 @@ module.exports = class FPW_App {
                             onSelect: async() => {
                                 console.log('(Advanced Info) View Vehicle Images was pressed');
                                 await this.createVehicleImagesPage();
+                            },
+                        },
+                    ),
+                );
+
+                tableRows.push(
+                    await this.createTableRow([await this.createTextCell('Widget Data Viewer', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.headline) })], {
+                        height: 25,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                        backgroundColor: new Color(titleBgColor),
+                    }),
+
+                    await this.createTableRow(
+                        [
+                            await this.createImageCell(await this.FPW.Files.getImage(`notepad_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                            await this.createTextCell(`View All Data`, 'Tap to view', {
+                                align: 'left',
+                                widthWeight: 93,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(11),
+                            }),
+                        ], {
+                            height: 60,
+                            dismissOnSelect: false,
+                            onSelect: async() => {
+                                console.log('(Advanced Info) Vehicle Data was pressed');
+                                await this.showDataWebView('Vehicle Data Page', 'Raw Data', vData, 'vehicleData');
+                                // await this.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', vData);
                             },
                         },
                     ),
@@ -2250,6 +2262,130 @@ module.exports = class FPW_App {
             await this.generateTableMenu('captchaPage', tableRows, false, false);
         } catch (error) {
             console.error(`createCaptchaPage() Error: ${error}`);
+        }
+    }
+
+    async createVehicleInfoPage(update = false) {
+        const titleBgColor = darkMode ? '#444141' : '#F5F5F5';
+        const headerColor = Color.darkGray(); //new Color('#13233F');
+        try {
+            const vData = await this.FPW.FordAPI.fetchVehicleData(true);
+            const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
+            const vInfo = vData && vData.info ? vData.info : undefined;
+            const rawData = vData && vData.rawStatus ? vData.rawStatus : undefined;
+            // console.log(JSON.stringify(vData, null, 2));
+            let tableRows = [];
+
+            tableRows.push(
+                await this.createTableRow(
+                    [
+                        await this.createTextCell('Vehicle Details', undefined, {
+                            align: 'center',
+                            widthWeight: 100,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            subtitleColor: Color.lightGray(),
+                            titleFont: Font.boldRoundedSystemFont(18),
+                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
+                        }),
+                    ], {
+                        backgroundColor: headerColor,
+                        height: 20,
+                        isHeader: true,
+                        dismissOnSelect: false,
+                    },
+                ),
+            );
+
+            if (vInfo) {
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell(vInfo.warrantyStartDate ? 'Purchase Date' : '', vInfo.warrantyStartDate ? new Date(vInfo.warrantyStartDate).toLocaleDateString() : undefined, {
+                                align: 'center',
+                                widthWeight: 33,
+                                titleColor: this.FPW.colorMap.text.dark,
+                                subtitleColor: this.FPW.colorMap.text.dark,
+                                titleFont: Font.boldRoundedSystemFont(fontSizes.subheadline),
+                                subtitleFont: Font.thinSystemFont(fontSizes.body),
+                            }),
+                            await this.createTextCell(vInfo.latestMileage ? 'Milage' : '', vInfo.latestMileage ? vInfo.latestMileage : undefined, {
+                                align: 'center',
+                                widthWeight: 33,
+                                dismissOnTap: false,
+                                titleColor: this.FPW.colorMap.text.dark,
+                                subtitleColor: this.FPW.colorMap.text.dark,
+                                titleFont: Font.boldRoundedSystemFont(fontSizes.subheadline),
+                                subtitleFont: Font.thinSystemFont(fontSizes.body),
+                            }),
+                            await this.createTextCell(vInfo.licenseplate ? 'License Plate' : '', vInfo.licenseplate ? vInfo.licenseplate : undefined, {
+                                align: 'center',
+                                widthWeight: 33,
+                                dismissOnTap: false,
+                                titleColor: this.FPW.colorMap.text.dark,
+                                subtitleColor: this.FPW.colorMap.text.dark,
+                                titleFont: Font.boldRoundedSystemFont(fontSizes.subheadline),
+                                subtitleFont: Font.thinSystemFont(fontSizes.body),
+                            }),
+                        ], {
+                            backgroundColor: headerColor,
+                            height: 40,
+                            isHeader: true,
+                            dismissOnSelect: false,
+                        },
+                    ),
+                );
+            }
+
+            if (caps && caps.length) {
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('Capabilities', 'These are the items your vehicle supports reported by the FordPass Mobile App', {
+                                align: 'center',
+                                widthWeight: 1,
+                                dismissOnTap: false,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.regularRoundedSystemFont(fontSizes.headline),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(11),
+                            }),
+                        ], {
+                            height: 60,
+                            isHeader: true,
+                            dismissOnSelect: false,
+                            backgroundColor: new Color(titleBgColor),
+                        },
+                    ),
+                );
+                for (const [i, cap] of caps.entries()) {
+                    if (cap && cap.length > 0) {
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createTextCell(cap.split('_').join(' '), 'Description: Not Available', {
+                                        align: 'left',
+                                        widthWeight: 50,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                        subtitleColor: this.FPW.colorMap.normalText,
+                                        subtitleFont: Font.regularSystemFont(11),
+                                    }),
+                                ], {
+                                    // backgroundColor: headerColor,
+                                    height: 40,
+                                    // isHeader: true,
+                                    dismissOnSelect: false,
+                                },
+                            ),
+                        );
+                    }
+                }
+            }
+
+            await this.generateTableMenu('vehicleDetailsPage', tableRows, true, false, update);
+        } catch (error) {
+            console.error(`createVehicleInfoPage() Error: ${error}`);
         }
     }
 

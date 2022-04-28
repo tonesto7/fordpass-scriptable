@@ -182,8 +182,8 @@ module.exports = class FPW_Menus {
                     break;
 
                 case 'helpInfo':
-                    const vinGuideUrl = vehicleData.info && vehicleData.info.vehicle && vehicleData.info.vehicle.modelYear ? this.FPW.getVinGuideUrl(vehicleData.info.vehicle.modelYear) : undefined;
-                    // console.log(vehicleData.info.vehicle.modelYear);
+                    const vinGuideUrl = vehicleData.info && vehicleData.info.modelYear ? this.FPW.getVinGuideUrl(vehicleData.info.modelYear) : undefined;
+                    // console.log(vehicleData.info.modelYear);
                     // console.log(`VIN Guide URL: ${vinGuideUrl}`);
                     title = `Help & About`;
                     items = [{
@@ -236,14 +236,14 @@ module.exports = class FPW_Menus {
                             show: false,
                         },
                         {
-                            title: `${vehicleData.info && vehicleData.info.vehicle && vehicleData.info.vehicle.modelYear ? vehicleData.info.vehicle.modelYear : ''} VIN Guide`,
+                            title: `${vehicleData.info && vehicleData.info.modelYear ? vehicleData.info.modelYear : ''} VIN Guide`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) VIN Guide was pressed`);
                                 await Safari.openInApp(vinGuideUrl);
                                 this.menuBuilderByType('helpInfo');
                             },
                             destructive: false,
-                            show: vehicleData.info.vehicle && vehicleData.info.vehicle.modelYear && vinGuideUrl ? true : false,
+                            show: vehicleData.info && vehicleData.info.modelYear && vinGuideUrl ? true : false,
                         },
                         {
                             title: 'Back',
