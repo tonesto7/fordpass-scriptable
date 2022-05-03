@@ -378,8 +378,6 @@ class Widget {
                 await this.logInfo('(generateWidget) Running in Widget (else)...');
                 await this.generateWidget(runningWidgetSize, fordData);
             }
-            this.removeSettingVal('fpLastUpdateNotificationDt');
-
             await this.checkForVehicleAlerts(fordData);
             Script.complete();
         } catch (e) {
