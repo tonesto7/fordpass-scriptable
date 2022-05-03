@@ -1453,6 +1453,7 @@ module.exports = class FPW_App {
                     true,
                 );
                 break;
+
             case 'request_refresh':
                 await this.FPW.Alerts.showActionPrompt(
                     'Vehicle Data Refresh',

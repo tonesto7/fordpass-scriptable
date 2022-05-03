@@ -71,7 +71,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.03.0';
+const SCRIPT_VERSION = '2022.04.28.1';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -378,6 +378,8 @@ class Widget {
                 await this.logInfo('(generateWidget) Running in Widget (else)...');
                 await this.generateWidget(runningWidgetSize, fordData);
             }
+            this.removeSettingVal('fpLastUpdateNotificationDt');
+
             await this.checkForVehicleAlerts(fordData);
             Script.complete();
         } catch (e) {
@@ -391,8 +393,15 @@ class Widget {
                 case 'show_menu':
                     await this.App.createMainPage();
                     break;
-                case 'show_updater':
-                    runScript('FordWidgetTool');
+                case 'open_updater':
+                    console.log('processQueryParams()', params);
+                    // this.runScript('FordWidgetTool');
+                    if (await this.Alerts.showYesNoPrompt('Script Update', 'This will update your Ford Widget to the latest release.  Proceed?')) {
+                        const res = await this.updateThisScript();
+                        console.log(`(Main Menu) Script Update Result: ${res}`);
+                        await this.Alerts.showAlert('Widget Updater', 'Widget Code has been updated to the latest version.');
+                        this.runScript(Script.name());
+                    }
                     break;
                 case 'lock_command':
                 case 'start_command':
@@ -3396,7 +3405,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||-63143283190', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||-395044504100', 'FPW_Menus.js||-408835560406', 'FPW_Notifications.js||-83526369547', 'FPW_ShortcutParser.js||-29506917687', 'FPW_Timers.js||-77400635330'];
+const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||-431284932872', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||180250121499', 'FPW_Menus.js||-194720505178', 'FPW_Notifications.js||286886255160', 'FPW_ShortcutParser.js||-29506917687', 'FPW_Timers.js||-77400635330'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
