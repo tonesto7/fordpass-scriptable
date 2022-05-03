@@ -7,7 +7,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     getModuleVer() {
-        return '2022.04.28.0';
+        return '2022.05.03.0';
     }
 
     appIDs() {
@@ -15,6 +15,7 @@ module.exports = class FPW_FordAPIs {
             UK_Europe: '1E8C7794-FF5F-49BC-9596-A1E0C86C5B19',
             Australia: '5C80A6BB-CF0D-4A30-BDBF-FC804B5C1A98',
             NA: '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
+            Web: 'b08429de-8440-478d-a323-7a1e05cc9844',
         };
     }
 
@@ -71,7 +72,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/x-www-form-urlencoded',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Accept-Encoding': 'gzip, deflate, br',
             authorization: 'Basic ZWFpLWNsaWVudDo=',
         };
@@ -143,7 +144,7 @@ module.exports = class FPW_FordAPIs {
             req.headers = {
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+                'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
                 'Application-Id': this.appIDs().NA,
@@ -253,7 +254,7 @@ module.exports = class FPW_FordAPIs {
                 'Content-Type': 'application/json',
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+                'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
                 'Application-Id': this.appIDs().NA,
                 'auth-token': `${token}`,
                 countryCode: country,
@@ -306,7 +307,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
@@ -326,7 +327,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
             Referer: 'https://ford.com',
@@ -350,7 +351,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
@@ -402,7 +403,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
             vin: vin,
@@ -435,27 +436,40 @@ module.exports = class FPW_FordAPIs {
             'getVehicleSubscriptions',
             'https://api.mps.ford.com/api/subscription-orchestration/v2/getSubscriptionSummaryByVin',
             'POST',
-            false, {
+            true, {
                 accept: 'application/json',
+                'accept-encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
-                'Application-Id': this.appIDs().NA,
-                'auth-token': `${token}`,
-            }, {
-                classification: 'FordPass',
-                geoFilter: {
-                    countryCode: country,
-                    state: state,
-                    city: city,
-                    zipCode: zipCode,
-                },
-                language: lang,
-                vin: vin,
-            },
+                'Application-Id': this.appIDs().Web,
+                'auth-token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNlcnZlciJ9.eyJGaXJzdCBOYW1lIjoiQU5USE9OWSIsInVuaXF1ZVNlY3VyaXR5TmFtZSI6IjEzNkE2NjJCLTg3QzYtQzhDNi01MjEwLTQ3OTg1MjEwNDc5OCIsIkxhc3QgTmFtZSI6IlNBTlRJTExJIiwiY2xpZW50X2lkIjoiMmI0YzIxNGMtMTM3Ni00ZWIyLTllNjItNTMzMDQ3Y2MzNGJmIiwicmVhbG1OYW1lIjoiY2xvdWRJZGVudGl0eVJlYWxtIiwicHJlZmVycmVkX3VzZXJuYW1lIjoidG9uZXN0bzdAZ21haWwuY29tIiwiRW1haWwgQWRkcmVzcyI6IlRPTkVTVE83QEdNQUlMLkNPTSIsImF1ZCI6IjJiNGMyMTRjLTEzNzYtNGViMi05ZTYyLTUzMzA0N2NjMzRiZiIsImdyYW50X3R5cGUiOiJhdXRob3JpemF0aW9uX2NvZGUiLCJhY3IiOiJ1cm46aWJtOnNlY3VyaXR5OnBvbGljeTppZDoxIiwiZ3JhbnRfaWQiOiJiMmI2YzcyNy0yOTE1LTQ0MmYtOTA4Ni03ZTc4ZjVhNDAyM2YiLCJ1c2VyVHlwZSI6InJlZ3VsYXIiLCJBTVIiOiIiLCJhdXRoX3RpbWUiOjE2NTE1ODcxNDEsIlVzZXJuYW1lIjoidG9uZXN0bzdAZ21haWwuY29tIiwic2NvcGUiOiJvcGVuaWQiLCJqdGkiOiJWUUU2aDlQZnlNSmFWRVp6emJ3TjRSY0FmNHdjUXUiLCJpc3MiOiJodHRwczovL2ZjaXMuaWNlLmlibWNsb3VkLmNvbS9vaWRjL2VuZHBvaW50L2RlZmF1bHQiLCJzdWIiOiIxMzZBNjYyQi04N0M2LUM4QzYtNTIxMC00Nzk4NTIxMDQ3OTgiLCJpYXQiOjE2NTE1ODg1ODEsImV4cCI6MTY1MTU4ODg4MX0.bXGIhrLmedmsGC9axenP6mm28jhVJCIL0xJC4LUMcQNimSVP1TAlK7AwOy202_Qys51NCPdaOGBIw4YO26r-WFOOZuw_qrJkZ4VnT9OuzRJLRxN5wJSs8ue-KjnYtUi3bbnMrUQP76s7CR5ZoYqbcU5rPoM59a0lCArcMg6BVIoZvHjOsRxX0rEPrLazwmlNu6z1B-YqKp1CoAJSXXv9BeoFyKhlRx1eYdLy5k7t9NKn4NMVKUtEc9as56wsyirFYEhuMvU-DxB6T4FXaLqdVMGoFFQUfNmWgBrlxIyP05UvAQA3cy9L1QuOH6KrWBlWPElaBo29tCbmZVoRl8G6GA', //`${token}`,
+                Referer: 'https://ford.com',
+                Origin: 'https://ford.com',
+                //'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
+            }, { classification: 'FordPass', geoFilter: { countryCode: 'USA', state: 'MI', city: 'Ypsilanti', zipCode: '48197' }, language: 'en-US', vin: '1FTFW1E80MFA24380' },
         );
 
         console.log(data);
         return data;
         // return data && data.usageBalanceList ? data.usageBalanceList : [];
+    }
+
+    async getWarrantyInfo() {
+        let vin = await this.FPW.getSettingVal('fpVin');
+        if (!vin) {
+            return this.FPW.textMap().errorMessages.noVin;
+        }
+        const data = await this.makeFordRequest('getWarrantyInfo', `https://www.digitalservices.ford.com/owner/api/v2/vehicle/warranty?vin=${vin}`, 'GET', false, {
+            'Content-Type': 'application/json',
+            Accept: 'application/json, text/plain, */*',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
+            'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
+            Referer: 'https://ford.com',
+            Origin: 'https://ford.com',
+        });
+        // console.log('getWarrantyInfo: ' + JSON.stringify(data));
+        return data && data.coverages && data.coverages.length > 0 ? data : undefined;
     }
 
     async getSecuriAlertStatus() {
@@ -563,7 +577,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
         };
@@ -574,6 +588,7 @@ module.exports = class FPW_FordAPIs {
         request.timeoutInterval = 20;
         if (body) {
             request.body = JSON.stringify(body);
+            // console.log('makeFordRequest: ' + JSON.stringify(request.body));
         }
         try {
             let data = json ? await request.loadJSON() : await request.loadString();
@@ -947,7 +962,7 @@ module.exports = class FPW_FordAPIs {
             req.headers = {
                 Accept: '*/*',
                 'Accept-Language': 'en-us',
-                'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+                'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
                 'Application-Id': this.appIDs().NA,

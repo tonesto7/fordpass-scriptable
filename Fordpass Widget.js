@@ -44,6 +44,13 @@
     
 **************/
 const changelogs = {
+    '2022.05.03.0': {
+        added: ['Added Warranty Info to advanced info page.', 'Added ability to send me just OTA data under Advanced Info > Diagnostics > Send OTA Data.'],
+        fixed: [],
+        removed: [],
+        updated: ['Condensed more than 3 recalls on the mainpage to a single button.', 'Updated UI elements colors and layouts to be more consistent and easier to follow.'],
+        clearFlags: [],
+    },
     '2022.04.28.1': {
         added: [],
         fixed: ['Fixed self updater not working and other bugs'],
@@ -62,67 +69,9 @@ const changelogs = {
         updated: ["Updated the Advanced Info page layout and added a new page for the vehicle's capabilities.", 'New version of the widget tool is now available for download. It adds the ability to reset a specific instance of the widget.'],
         clearFlags: [],
     },
-
-    '2022.03.27.0': {
-        added: [],
-        fixed: [],
-        removed: [],
-        updated: ['Added more module descriptions.'],
-        clearFlags: [],
-    },
-    '2022.03.14.0': {
-        added: [],
-        fixed: [],
-        removed: [],
-        updated: ['Modified module page to sort modules alphabetically.'],
-        clearFlags: [],
-    },
-    '2022.03.11.1': {
-        added: [],
-        fixed: ['more fixes for script module loading issues'],
-        removed: [],
-        updated: [],
-        clearFlags: [],
-    },
-    '2022.03.11.0': {
-        added: [],
-        fixed: ['more fixes for script module loading issues', 'fix for asbuilt file loading after last update'],
-        removed: [],
-        updated: [],
-        clearFlags: ['mod'],
-    },
-    '2022.03.10.2': {
-        added: ['added new flag system to changes so I can force the widget to clear image and modules and refresh the files when newer versions are available'],
-        fixed: ['Fixes for script module loading issues'],
-        removed: [],
-        updated: [],
-        clearFlags: ['img', 'mod'],
-    },
-    '2022.03.10.1': {
-        added: [],
-        fixed: ['fixed issue with right front and left rear tire info being switched in the dashboard UI.'],
-        removed: [],
-        updated: [],
-        clearFlags: ['img', 'mod'],
-    },
-    '2022.03.10.0': {
-        added: [],
-        fixed: ['fixed possible bug with viewing modules after latest update.'],
-        removed: [],
-        updated: [],
-        clearFlags: [],
-    },
-    '2022.03.09.0': {
-        added: [],
-        fixed: ['fixed a bug with module loading from cloud vs local directory.'],
-        removed: [],
-        updated: ['Widget refreshes seem to be working much more consistently for me on the various sizes.', 'Module data is much more robust, and covers names for more modules.', "Module Info now displays the module group for it's function", 'Modified the module info page layout slightly to be easier to follow.'],
-        clearFlags: [],
-    },
 };
 
-
-const SCRIPT_VERSION = '2022.04.28.1';
+const SCRIPT_VERSION = '2022.05.03.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -140,7 +89,7 @@ const widgetConfig = {
             enabled: true, // Default value of notification
         },
         otaUpdate: {
-            rate: Math.round(86400 * 0.25), // How often to allow available alert notifications (in seconds - 86400 * 0.25 = every 6 hours)
+            rate: Math.round(86400 * 2), // How often to allow available alert notifications (in seconds - 86400 * 0.25 = every 6 hours)
             enabled: true, // Default value of notification
         },
         deepSleep: {
@@ -649,19 +598,115 @@ class Widget {
         }
     }
 
+    async timeIsBetween(start, end) {
+        const now = new Date();
+        try {
+            const startTime = new Date(start);
+            const endTime = new Date(end);
+            if (startTime <= endTime) {
+                return startTime <= now && now <= endTime;
+            } else {
+                return !(endTime < now && now < startTime);
+            }
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // otaDemoData() {
+    //     return {
+    //         displayOTAStatusReport: 'UserAllowed',
+    //         ccsStatus: { ccsConnectivity: 'On', ccsVehicleData: 'On' },
+    //         error: null,
+    //         fuseResponse: {
+    //             fuseResponseList: [{
+    //                 vin: '3FMTK4SX6MME0XXXX',
+    //                 oemCorrelationId: 'FLARE-PRD-SOFTWARE-FNV2-488616-531743',
+    //                 deploymentId: '6f988608-3ec4-4597-9e49-c843310318a8',
+    //                 deploymentCreationDate: '2022-02-28T19:35:38.896+0000',
+    //                 deploymentExpirationTime: '2022-03-07T19:35:38.896+0000',
+    //                 otaTriggerExpirationTime: '2022-01-29T21:12:54.875+0000',
+    //                 communicationPriority: 'High',
+    //                 type: 'NEW_FEATURE',
+    //                 triggerType: 'SOFTWARE',
+    //                 inhibitRequired: false,
+    //                 additionalConsentLevel: 1,
+    //                 tmcEnvironment: 'PRD',
+    //                 latestStatus: { aggregateStatus: 'success', detailedStatus: 'OTAM_S1010', dateTimestamp: '2022-02-28T20:05:04.459+0000' },
+    //                 packageUpdateDetails: {
+    //                     releaseNotesUrl: 'https://mmota.autonomic.ai/1/bytestream/custom-release-note-1643652676921-4f36ab37-6ff2-41a2-9472-7f9bd6140b20',
+    //                     updateDisplayTime: 13,
+    //                     wifiRequired: false,
+    //                     packagePriority: 1,
+    //                     failedOnResponse: 'none',
+    //                     cdnreleaseNotesUrl: 'http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1643652676921-4f36ab37-6ff2-41a2-9472-7f9bd6140b20',
+    //                 },
+    //                 deploymentFinalConsumerAction: 'Not Set',
+    //             }, ],
+    //             languageText: { Language: 'English (US/NA)', LanguageCode: 'ENU', LanguageCodeMobileApp: 'en-US', Text: 'The Ford BlueCruise map in your vehicle has been updated so you can continue taking advantage of hands-free highway driving on more than 130,000 miles of prequalified sections of divided highways.' },
+    //         },
+    //         tappsResponse: {
+    //             vin: '3FMTK4SX6MME0XXXX',
+    //             status: 200,
+    //             vehicleInhibitStatus: null,
+    //             lifeCycleModeStatus: { lifeCycleMode: 'NORMAL', oemCorrelationId: '', vehicleDateTime: '2022-02-02T19:15:01.000Z', tappsDateTime: '2022-02-02T19:15:14.321802Z' },
+    //             asuActivationSchedule: { scheduleType: '', dayOfWeekAndTime: null, activationScheduleDaysOfWeek: [], activationScheduleTimeOfDay: null, oemCorrelationId: '', vehicleDateTime: '', tappsDateTime: '' },
+    //             asuSettingsStatus: null,
+    //             version: '2.0.0',
+    //         },
+    //         updatePendingState: null,
+    //         otaAlertStatus: 'YOU ARE ALL SET',
+    //     };
+    // }
+
     async checkForVehicleAlerts(vData) {
+        // const otaCheckOk = true; //(await this.getShowNotificationType('otaUpdate')) && (await this.getOtaUpdCheckOk());
+        // if (otaCheckOk) {
+        //     let otaInfo = undefined;
+        //     const data = this.otaDemoData(); //await this.FordAPI.getVehicleOtaInfo();
+        //     // console.log(`OTA Info: ${JSON.stringify(data, null, 2)}`);
+        //     const fuseResp = data && data.fuseResponse ? data.fuseResponse : undefined;
+        //     const fuseList = fuseResp && fuseResp.fuseResponseList ? fuseResp.fuseResponseList : undefined;
+        //     if (fuseList && fuseList.length > 0) {
+
+        //         // console.log(`Fuse List: ${JSON.stringify(fuseList, null, 2)}`);
+        //         for (const [i, item] of fuseList.entries()) {
+        //             const statusTs = item.latestStatus && item.latestStatus.dateTimestamp ? new Date(Date.parse(item.latestStatus.dateTimestamp)) : undefined;
+        //             const lastStatusUpdDt = await this.getSettingVal('fpLastOtaStatusUpdDt');
+
+        //             // console.log(`Last Status Update Date: ${lastStatusUpdDt}`);
+        //             if ((statusTs && !lastStatusUpdDt) || statusTs.getTime() > parseInt(lastStatusUpdDt)) {
+        //                 console.log('OTA Status Timestamp is newer than saved timestamp | Saving Timestamp');
+        //                 this.setSettingVal('fpLastOtaStatusUpdDt', statusTs.getTime().toString());
+        //             }
+        //             const depStartDt = item.deploymentCreationDate ? new Date(Date.parse(item.deploymentCreationDate)) : undefined;
+        //             const depEndDt = item.deploymentExpirationTime ? new Date(Date.parse(item.deploymentExpirationTime)) : undefined;
+        //             console.log(`depStartDt: ${depStartDt.toLocaleString()} | depEndDt: ${depEndDt.toLocaleString()}`);
+        //             const isBtwnTime = await this.timeIsBetween(depStartDt, depEndDt);
+        //             console.log(`isBtwnTime: ${isBtwnTime}`);
+        //             const latestStatus = item.latestStatus && item.latestStatus.aggregateStatus ? item.latestStatus.aggregateStatus : undefined;
+        //             if (isBtwnTime && latestStatus && latestStatus.toLowerCase() !== '') {
+        //                 otaInfo = item;
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //     if (otaInfo) {
+        //         this.setStateVal('updateAvailable', true);
+        //         await this.Notifications.processNotification('otaUpdate', otaInfo);
+        //     }
+        // }
+
         if (vData) {
             if (vData.deepSleepMode !== undefined && vData.deepSleepMode) {
                 await this.Notifications.processNotification('deepSleep');
-                // return;
             }
-            if (vData.firmwareUpdating !== undefined && vData.firmwareUpdating) {
-                await this.Notifications.processNotification('otaUpdate');
-                // return;
-            }
+            // if (vData.firmwareUpdating !== undefined && vData.firmwareUpdating) {
+            //     await this.Notifications.processNotification('otaUpdate');
+            //     // return;
+            // }
             if (vData.batteryStatus !== undefined && vData.batteryLevel === 'STATUS_LOW') {
                 await this.Notifications.processNotification('lvBatteryLow');
-                // return;
             }
             if (vData.tirePressure && Object.keys(vData.tirePressure).length) {
                 let lowTires = [];
@@ -947,7 +992,6 @@ class Widget {
     }
 
     async updateThisScript() {
-
         try {
             const fm = this.iCloudFM;
             const req = new Request('https://raw.githubusercontent.com/tonesto7/fordpass-scriptable/main/Fordpass%20Widget.js');
@@ -1092,21 +1136,22 @@ class Widget {
     /**
      * @description
      * @param  {any} data
+     * @param  {any} params
      * @param  {boolean} [attachJson=false]
      * @return {void}@memberof Widget
      */
-    async createVehicleDataEmail(data, attachJson = false) {
+    async createDataEmail(data, params, attachJson = false) {
         try {
             let email = new Mail();
             const vehType = data.info && data.info.vehicleType ? data.info.vehicleType : undefined;
             const vehVin = data.info && data.info.vin ? data.info.vin : undefined;
-            email.subject = `${vehType || 'FordPass'} Vehicle Data`;
+            email.subject = `${vehType || 'FordPass'} ${params.title}`;
             email.toRecipients = [this.textMap().about.email]; // This is my anonymous email address provided by Apple,
-            email.body = attachJson ? 'Vehicle data is attached file' : JSON.stringify(data, null, 4);
+            email.body = attachJson ? `${params.title} is in attached file` : JSON.stringify(data, null, 4);
             email.isBodyHTML = true;
             let fm = FileManager.local();
             let dir = fm.documentsDirectory();
-            let path = fm.joinPath(dir, vehType ? `${vehType.replace(/\s/g, '_')}${vehVin ? '_' + vehVin : '_export'}.json` : `vehicleDataExport.json`);
+            let path = fm.joinPath(dir, vehType ? `${vehType.replace(/\s/g, '_')}${vehVin ? '_' + vehVin : params.fileNamePost}.json` : params.fileName);
             if (attachJson) {
                 // Creates temporary JSON file and attaches it to the email
                 if (await fm.fileExists(path)) {
@@ -1118,7 +1163,7 @@ class Widget {
             await email.send();
             await fm.remove(path);
         } catch (e) {
-            await this.logError(`createVehicleDataEmail Error: Could Not Create Email | ${e}`, true);
+            await this.logError(`createDataEmail Error: Could Not Create Email | ${e}`, true);
         }
     }
 
@@ -1663,6 +1708,24 @@ class Widget {
         }
     }
 
+    async getOtaUpdCheckOk() {
+        const type = 'otaUpdate';
+        try {
+            const rateSec = this.widgetConfig.notifications[type].rate || 86400 * 2;
+            const lastNotif = await this.getSettingVal('fpLastOtaUpdCheckDt');
+            if (lastNotif === null || lastNotif === undefined) {
+                return true;
+            }
+            const lastDt = parseInt(lastNotif);
+            const nowDt = Date.now();
+            const elap = Math.round((nowDt - lastDt) / 1000);
+            return elap > rateSec;
+        } catch (e) {
+            this.logError(`getOtaUpdCheckOk(${type}) Error: ${e}`, true);
+            return false;
+        }
+    }
+
     async getLastNotifElapsedOkByType(type) {
         try {
             const { sKey, dtKey } = await this.getNotificationTypeKeys(type);
@@ -1791,10 +1854,12 @@ class Widget {
             'fpLastTireLowNotificationDt',
             'fpLastFirmUpdNotificationDt',
             'fpLastOtaUpdNotificationDt',
+            'fpLastOtaUpdCheckDt',
             'fpLastOilLowNotificationDt',
             'fpLastLvbBattLowNotificationDt',
             'fpShowEvChargingPausedNotifications',
             'fpLastEvChargingPausedNotificationDt',
+            'fpLastOtaStatusUpdDt',
         ];
         for (const key in keys) {
             await this.removeSettingVal(keys[key]);
@@ -3331,7 +3396,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||-864514422572', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||178808380013', 'FPW_Menus.js||-127338933051', 'FPW_Notifications.js||-203900879099', 'FPW_ShortcutParser.js||21731307768', 'FPW_Timers.js||-29551618136'];
+const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||-63143283190', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||-395044504100', 'FPW_Menus.js||-408835560406', 'FPW_Notifications.js||-83526369547', 'FPW_ShortcutParser.js||-29506917687', 'FPW_Timers.js||-77400635330'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
