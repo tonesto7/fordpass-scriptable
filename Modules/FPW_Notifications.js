@@ -99,7 +99,7 @@ module.exports = class FPW_Notifications {
             case 'scriptUpdate':
                 if ((await this.FPW.getShowNotificationType(nType)) && (await this.FPW.getLastNotifElapsedOkByType(nType))) {
                     await this.FPW.storeLastNotificationDtByType(nType);
-                    await this.createNotification(`Newer Widget Release`, `V${this.FPW.getStateVal('LATEST_VERSION')} Available`, `You are running an older version of the Ford Pass Widget (${this.FPW.SCRIPT_VERSION}). Please update to the latest version.`, {
+                    await this.createNotification(`Ford Widget Notice`, `New Version Available`, `A new version of the Ford Widget is available.\n(v${this.FPW.SCRIPT_VERSION}) > (v${this.FPW.getStateVal('LATEST_VERSION')})\n\nHold down on this Notification and select Update to launch the Updater...`, {
                         actions: [{
                             title: 'Update Widget',
                             url: await this.FPW.buildCallbackUrl({ command: 'open_updater' }),
@@ -107,6 +107,8 @@ module.exports = class FPW_Notifications {
                         identifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
                         threadIdentifier: `FPW_${this.FPW.SCRIPT_ID}_${nType}`,
                         scriptName: Script.name(),
+                        openUrl: await this.FPW.buildCallbackUrl({ command: 'open_updater' }),
+                        sound: 'complete',
                     });
                 }
                 return;
