@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.04.28.0';
+        return '2022.05.03.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -370,7 +370,7 @@ module.exports = class FPW_Menus {
                             title: 'Copy All Data to Clipboard',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Copy Data was pressed`);
-                                let data = await this.FPW.FordAPI.collectAllData(true);
+                                const data = await this.FPW.FordAPI.collectAllData(true);
                                 await Pasteboard.copyString(JSON.stringify(data, null, 4));
                                 await this.FPW.Alerts.showAlert('Debug Menu', 'Vehicle Data Copied to Clipboard');
                                 // this.menuBuilderByType('diagnostics');
@@ -379,12 +379,43 @@ module.exports = class FPW_Menus {
                             show: true,
                         },
                         {
-                            title: 'Send Data to Developer',
+                            title: 'Send OTA Data to Developer',
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Send OTA Data was pressed`);
+                                const data = await this.FPW.FordAPI.getVehicleOtaInfo();
+                                if (data) {
+                                    await this.FPW.createDataEmail(
+                                        data, {
+                                            title: 'Over-the-Air (OTA) Data',
+                                            fileName: 'OTA_Data.json',
+                                            fileNamePost: '_OTA_Data',
+                                        },
+                                        true,
+                                    );
+                                } else {
+                                    await this.FPW.Alerts.showAlert('OTA Data Error', 'No data returned for OTA data.  We will not be sending the email!!!');
+                                }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: 'Send All Data to Developer',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
-                                let data = await this.FPW.FordAPI.collectAllData(true);
-                                await this.FPW.createVehicleDataEmail(data, true);
-                                // this.menuBuilderByType('diagnostics');
+                                const data = await this.FPW.FordAPI.collectAllData(true);
+                                if (data) {
+                                    await this.FPW.createDataEmail(
+                                        data, {
+                                            title: 'Vehicle Data',
+                                            fileName: 'vehicleDataExport.json',
+                                            fileNamePost: '_export',
+                                        },
+                                        true,
+                                    );
+                                } else {
+                                    await this.FPW.Alerts.showAlert('OTA Data Error', 'No data returned for OTA data.  We will not be sending the email!!!');
+                                }
                             },
                             destructive: true,
                             show: true,
