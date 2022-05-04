@@ -6,7 +6,7 @@ module.exports = class FPW_Alerts {
     }
 
     getModuleVer() {
-        return '2022.04.28.0';
+        return '2022.05.04.1';
     }
 
     async showAlert(title, message) {

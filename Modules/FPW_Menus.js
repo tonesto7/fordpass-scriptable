@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.05.03.0';
+        return '2022.05.04.1';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {

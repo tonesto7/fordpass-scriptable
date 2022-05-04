@@ -30,7 +30,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.05.03.0';
+        return '2022.05.04.1';
     }
 
     async getTable(tableName) {

@@ -44,9 +44,9 @@
     
 **************/
 const changelogs = {
-    '2022.05.04.1': {
+    '2022.05.04.2': {
         added: [],
-        fixed: ['Fixes for version not sticking'],
+        fixed: ['Trying to fix the module hashes not calculating properly and are contantly downloading'],
         removed: [],
         updated: [],
         clearFlags: [],
@@ -85,7 +85,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.04.1';
+const SCRIPT_VERSION = '2022.05.04.2';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -3417,7 +3417,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-45948353581', 'FPW_App.js||203673973313', 'FPW_AsBuilt.js||168995733960', 'FPW_Files.js||259736685833', 'FPW_FordAPIs.js||180250121499', 'FPW_Menus.js||-194720505178', 'FPW_Notifications.js||20808039446', 'FPW_ShortcutParser.js||-29506917687', 'FPW_Timers.js||-77400635330'];
+const moduleFiles = ['FPW_Alerts.js||128743752625', 'FPW_App.js||-1025952134721', 'FPW_AsBuilt.js||203369178410', 'FPW_Files.js||200402270055', 'FPW_FordAPIs.js||78648408473', 'FPW_Menus.js||44388683684', 'FPW_Notifications.js||110856269812', 'FPW_ShortcutParser.js||-88615553365', 'FPW_Timers.js||-66994188640'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
