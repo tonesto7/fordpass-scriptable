@@ -643,6 +643,7 @@ module.exports = class FPW_App {
                         await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nLR: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
                         await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
                         await this.createTextCell(`RF: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+
                         // Window Status Cells
                         await this.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
                             align: 'right',
@@ -653,6 +654,7 @@ module.exports = class FPW_App {
                             subtitleColor: new Color(openWindows.length ? '#FF5733' : '#5A65C0'),
                             subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                         }),
+
                         await this.createImageCell(await this.FPW.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
                     ], {
                         backgroundColor: new Color(headerColor),
@@ -715,15 +717,39 @@ module.exports = class FPW_App {
                 }),
             );
 
-            // Header Section - Row 5: Padding Row
-            tableRows.push(
-                await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], {
-                    backgroundColor: new Color(headerColor),
-                    height: 20,
-                    dismissOnSelect: false,
-                }),
-            );
-            // Header Section - Row 6: Shows vehicle checkin timestamp
+            if (vData.batteryLevel) {
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                            await this.createTextCell('12V Battery', `${vData.batteryLevel}V`, {
+                                align: 'center',
+                                widthWeight: 40,
+                                dismissOnTap: false,
+                                titleColor: this.FPW.colorMap.text.dark,
+                                titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                                subtitleColor: this.FPW.colorMap.closedColor,
+                                subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                            }),
+                            await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                        ], {
+                            backgroundColor: new Color(headerColor),
+                            height: 40,
+                            dismissOnSelect: false,
+                        },
+                    ),
+                );
+            }
+
+            // Header Section - Row 6: Padding Row
+            // tableRows.push(
+            //     await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], {
+            //         backgroundColor: new Color(headerColor),
+            //         height: 20,
+            //         dismissOnSelect: false,
+            //     }),
+            // );
+            // Header Section - Row 7: Shows vehicle checkin timestamp
             tableRows.push(
                 await this.createTableRow(
                     [
