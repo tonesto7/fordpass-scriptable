@@ -717,28 +717,39 @@ module.exports = class FPW_App {
                 }),
             );
 
-            // Header Section - Row 5: Padding Row
-            tableRows.push(
-                await this.createTableRow(
-                    await this.createTextCell('', undefined, { align: 'center', widthWeight: 33 }),
-                    await this.createTextCell('12V Battery', vData.batteryLevel, {
-                        align: 'center',
-                        widthWeight: 33,
-                        dismissOnTap: false,
-                        titleColor: this.FPW.colorMap.text.dark,
-                        titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                        subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
-                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                    }),
-                    await this.createTextCell('', undefined, { align: 'center', widthWeight: 33 }),
-                ),
-                await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], {
-                    backgroundColor: new Color(headerColor),
-                    height: 20,
-                    dismissOnSelect: false,
-                }),
-            );
-            // Header Section - Row 6: Shows vehicle checkin timestamp
+            if (vData.batteryLevel) {
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                            await this.createTextCell('12V Battery', `${vData.batteryLevel}V`, {
+                                align: 'center',
+                                widthWeight: 40,
+                                dismissOnTap: false,
+                                titleColor: this.FPW.colorMap.text.dark,
+                                titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                                subtitleColor: this.FPW.colorMap.closedColor,
+                                subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                            }),
+                            await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                        ], {
+                            backgroundColor: new Color(headerColor),
+                            height: 40,
+                            dismissOnSelect: false,
+                        },
+                    ),
+                );
+            }
+
+            // Header Section - Row 6: Padding Row
+            // tableRows.push(
+            //     await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], {
+            //         backgroundColor: new Color(headerColor),
+            //         height: 20,
+            //         dismissOnSelect: false,
+            //     }),
+            // );
+            // Header Section - Row 7: Shows vehicle checkin timestamp
             tableRows.push(
                 await this.createTableRow(
                     [
