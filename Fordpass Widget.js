@@ -1,5 +1,11 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: magic;
+// This script was downloaded using FordWidgetTool.
+hash: -730306854103;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -44,6 +50,14 @@
     
 **************/
 const changelogs = {
+    '2022.05.05.0': {
+        added: [],
+        fixed: ['Fixed module Info text overrun on so of the modules'],
+        removed: [],
+        updated: [],
+        clearFlags: [],
+    },
+
     '2022.05.04.2': {
         added: [],
         fixed: ['Trying to fix the module hashes not calculating properly and are contantly downloading'],
@@ -85,7 +99,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.04.2';
+const SCRIPT_VERSION = '2022.05.05.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -821,6 +835,7 @@ class Widget {
             doors: colorMode === 'dark' ? 'door_dark.png' : 'door_light.png', // Image Used for Door Lock Icon
             windows: colorMode === 'dark' ? 'window_dark.png' : 'window_light.png', // Image Used for Window Icon
             oil: colorMode === 'dark' ? 'oil_dark.png' : 'oil_light.png', // Image Used for Oil Icon
+            odometer: colorMode === 'dark' ? 'info_dark.png' : 'info_light.png', // Image Used for Odometer Icon
             ignitionStatus: colorMode === 'dark' ? 'key_dark.png' : 'key_light.png', // Image Used for Ignition Icon
             keyIcon: colorMode === 'dark' ? 'key_dark.png' : 'key_light.png', // Image Used for Key Icon
             position: colorMode === 'dark' ? 'location_dark.png' : 'location_light.png', // Image Used for Location Icon
@@ -909,7 +924,7 @@ class Widget {
             // Widget Title
             elemHeaders: {
                 fuelTank: 'Fuel',
-                odometer: '',
+                odometer: 'Odom',
                 oil: 'Oil Life',
                 windows: 'Windows',
                 doors: 'Doors',
@@ -2319,6 +2334,7 @@ class Widget {
                 // Creates EV Plug Elements
                 await this.createEvChargeElement(mainCol1, vData, 'left');
             }
+            // await this.createOdometerInlineElement(mainCol1, vData, 'left');
             mainCol1.addSpacer();
 
             //************************
@@ -2335,6 +2351,7 @@ class Widget {
 
             // Create Tire Pressure Elements
             await this.createTireElement(mainCol2, vData, 'center');
+            // await this.createOdometerElement(mainCol2, vData, 'center');
             mainCol2.addSpacer();
 
             //****************
@@ -2351,6 +2368,7 @@ class Widget {
 
             // Creates the Vehicle Location Element
             await this.createPositionElement(mainCol3, vData, 'center');
+
             mainCol3.addSpacer();
 
             //**********************
@@ -2677,6 +2695,51 @@ class Widget {
             }
         } catch (e) {
             await this.logError(`createOilElement() Error: ${e}`, true);
+        }
+    }
+
+    async createOdometerInlineElement(srcStack, vData, position = 'center') {
+        try {
+            const { odometerVal } = await this.getRangeData(vData);
+            const txtStyle = { font: Font.systemFont(this.sizeMap[this.widgetSize].titleFontSize), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 };
+            const titleRow = await this.createRow(srcStack, { '*setPadding': [0, 0, 3, 0] });
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, 'odometer', true, this.isSmallDisplay || this.widgetSize === 'small');
+            titleRow.addSpacer(3);
+            // console.log(`oilLife: ${vData.oilLife}`);
+            await this.createText(titleRow, odometerVal ? `${odometerVal}` : this.textMap().errorMessages.noData, txtStyle);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+        } catch (e) {
+            await this.logError(`createOdometerElement() Error: ${e}`, true);
+        }
+    }
+
+    async createOdometerElement(srcStack, vData, position = 'center') {
+        try {
+            const { odometerVal } = await this.getRangeData(vData);
+            const titleRow = await this.createRow(srcStack);
+            if (position == 'center' || position == 'right') {
+                titleRow.addSpacer();
+            }
+            await this.createTitle(titleRow, 'odometer', false);
+            if (position == 'center' || position == 'left') {
+                titleRow.addSpacer();
+            }
+
+            const valueRow = await this.createRow(srcStack, { '*centerAlignContent': null });
+            if (position == 'center' || position == 'right') {
+                valueRow.addSpacer();
+            }
+            await this.createText(valueRow, odometerVal, { font: Font.mediumSystemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1, minimumScaleFactor: 0.8 });
+            if (position == 'center' || position == 'left') {
+                valueRow.addSpacer();
+            }
+        } catch (e) {
+            await this.logError(`createOdometerElement() Error: ${e}`, true);
         }
     }
 
@@ -3417,7 +3480,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||128743752625', 'FPW_App.js||-1025952134721', 'FPW_AsBuilt.js||203369178410', 'FPW_Files.js||200402270055', 'FPW_FordAPIs.js||78648408473', 'FPW_Menus.js||44388683684', 'FPW_Notifications.js||110856269812', 'FPW_ShortcutParser.js||-88615553365', 'FPW_Timers.js||-66994188640'];
+const moduleFiles = ['FPW_Alerts.js||-10130184335', 'FPW_App.js||-686134507505', 'FPW_AsBuilt.js||-125906523798', 'FPW_Files.js||-243314513113', 'FPW_FordAPIs.js||652514291161', 'FPW_Menus.js||89905820644', 'FPW_Notifications.js||42296595380', 'FPW_ShortcutParser.js||116875889387', 'FPW_Timers.js||-74214952224'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

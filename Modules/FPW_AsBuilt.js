@@ -101,7 +101,7 @@ module.exports = class FPW_AsBuilt {
     }
 
     getModuleVer() {
-        return '2022.05.04.1';
+        return '2022.05.05.0';
     }
 
     moduleInfo(addr) {

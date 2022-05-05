@@ -30,7 +30,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.05.04.1';
+        return '2022.05.05.0';
     }
 
     async getTable(tableName) {
@@ -2871,20 +2871,21 @@ module.exports = class FPW_App {
                         if (!['#text', 'F106'].includes(i)) {
                             // console.log(`Node: ${i}`);
                             const nodeDesc = this.FPW.AsBuilt.nodeDesc[i] || 'Unknown Node';
-
+                            const nodeVal = moduleData.nodeData[i];
+                            const nodeValH = nodeVal.toString().length > 40 ? Math.ceil(nodeVal.toString().length / 40) * 20 : 60;
                             tableRows.push(
                                 await this.createTableRow(
                                     [
-                                        await this.createTextCell(`(${i}): ${nodeDesc}`, `${moduleData.nodeData[i]}`, {
+                                        await this.createTextCell(`(${i}): ${nodeDesc}`, `${nodeVal}`, {
                                             align: 'left',
                                             widthWeight: 100,
                                             titleColor: this.FPW.colorMap.normalText,
-                                            titleFont: Font.semiboldRoundedSystemFont(fontSizes.headline),
+                                            titleFont: Font.semiboldRoundedSystemFont(fontSizes.footnote),
                                             subtitleColor: this.FPW.colorMap.normalText,
                                             subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
                                         }),
                                     ], {
-                                        height: 60,
+                                        height: nodeValH >= 60 ? nodeValH : 60,
                                         dismissOnSelect: false,
                                     },
                                 ),
