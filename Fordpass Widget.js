@@ -3480,7 +3480,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-10130184335', 'FPW_App.js||-686134507505', 'FPW_AsBuilt.js||-125906523798', 'FPW_Files.js||-243314513113', 'FPW_FordAPIs.js||652514291161', 'FPW_Menus.js||89905820644', 'FPW_Notifications.js||42296595380', 'FPW_ShortcutParser.js||116875889387', 'FPW_Timers.js||-74214952224'];
+const moduleFiles = ['FPW_Alerts.js||-81177699280', 'FPW_App.js||-686134507505', 'FPW_AsBuilt.js||73666602154', 'FPW_Files.js||217178879481', 'FPW_FordAPIs.js||652514291161', 'FPW_Menus.js||89905820644', 'FPW_Notifications.js||42296595380', 'FPW_ShortcutParser.js||116875889387', 'FPW_Timers.js||-74214952224'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
