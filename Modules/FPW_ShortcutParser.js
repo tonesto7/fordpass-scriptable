@@ -10,7 +10,7 @@ module.exports = class FPW_ShortcutParser {
     }
 
     getModuleVer() {
-        return '2022.04.28.0';
+        return '2022.05.05.0';
     }
 
     // [
