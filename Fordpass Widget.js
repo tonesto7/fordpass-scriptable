@@ -244,7 +244,7 @@ class Widget {
             },
         },
         large: {
-            titleFontSize: isSmallDisplay ? 12 : 14,
+            titleFontSize: isSmallDisplay ? 11 : 13,
             fontSizeSmall: isSmallDisplay ? 9 : 10,
             fontSizeMedium: isSmallDisplay ? 11 : 13,
             fontSizeBig: isSmallDisplay ? 14 : 16,
@@ -2471,7 +2471,7 @@ class Widget {
             const extraPadding = this.isSmallDisplay ? 0 : 15;
             const topLeftInfoCol = await this.createColumn(topRowLeftCol, { '*setPadding': [0, paddingLeft + extraPadding, 0, 0] });
             // Creates Battery Level Elements
-            topLeftInfoCol.addSpacer();
+            // topLeftInfoCol.addSpacer();
             await this.createBatteryElement(topLeftInfoCol, vData, 'left');
 
             // Creates Oil Life Elements
