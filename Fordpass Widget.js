@@ -1,11 +1,5 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: magic;
-// This script was downloaded using FordWidgetTool.
-hash: -730306854103;
-
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -50,6 +44,13 @@ hash: -730306854103;
     
 **************/
 const changelogs = {
+    '2022.05.05.1': {
+        added: ['Added new setting to the dashboard menu > Menu > Widget Settings > Show Nickname to show the nickname of the verhicle that set in FordPass in the widgets.'],
+        fixed: ['Fixed module Info text overrun on so of the modules'],
+        removed: [],
+        updated: ['Restored the mileage values on the Large widget.'],
+        clearFlags: [],
+    },
     '2022.05.05.0': {
         added: [],
         fixed: ['Fixed module Info text overrun on so of the modules'],
@@ -57,7 +58,6 @@ const changelogs = {
         updated: [],
         clearFlags: [],
     },
-
     '2022.05.04.2': {
         added: [],
         fixed: ['Trying to fix the module hashes not calculating properly and are contantly downloading'],
@@ -99,7 +99,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.05.0';
+const SCRIPT_VERSION = '2022.05.05.1';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -924,7 +924,8 @@ class Widget {
             // Widget Title
             elemHeaders: {
                 fuelTank: 'Fuel',
-                odometer: 'Odom',
+                odometerAbbr: 'Odom',
+                odometer: 'Mileage',
                 oil: 'Oil Life',
                 windows: 'Windows',
                 doors: 'Doors',
@@ -1624,6 +1625,31 @@ class Widget {
         return false;
     }
 
+    /**
+     * @description
+     * @param  {any} setKey
+     * @param  {boolean} [def=false]
+     * @return
+     * @memberof Widget
+     */
+    async getBooleanSettingValue(setKey) {
+        return (await this.getSettingVal(setKey)) === 'true';
+    }
+
+    /**
+     * @description
+     * @param  {any} setKey
+     * @return {void}@memberof Widget
+     */
+    async toggleBoolSettingValue(setKey) {
+        try {
+            // const cur = await this.getBooleanSettingValue(setKey);
+            await this.setSettingVal(setKey, (await this.getBooleanSettingValue(setKey)) === true ? 'false' : 'true');
+        } catch (e) {
+            await this.logError(`toggleBoolSettingValue(${setKey}) Error: ${e}`, true);
+        }
+    }
+
     async getUIColorMode(frcMode = undefined) {
         try {
             const modeSetting = await this.getSettingVal('fpUIColorMode');
@@ -1878,6 +1904,7 @@ class Widget {
             'fpWidgetBackground',
             'fpWidgetStyle',
             'fpUIColorMode',
+            'fpShowNickname',
             'fpShowUpdateNotifications',
             'fpShowOtaNotifications',
             'fpShowSleepNotifications',
@@ -2193,7 +2220,8 @@ class Widget {
             leftContainer.addSpacer();
             // Vehicle Title
             const vehicleNameContainer = await this.createRow(leftContainer, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
-            let vehicleNameStr = vData.info.vehicleType || ''; //'2021 Mustang Mach-E';
+            const showNickname = (await this.getBooleanSettingValue('fpShowNickname')) === true && vData.info.nickName && vData.info.nickName !== '';
+            let vehicleNameStr = showNickname ? vData.info.nickName : vData.info.vehicleType || ''; //'2021 Mustang Mach-E';
 
             let vehicleNameSize = 24;
             if (vehicleNameStr.length >= 10) {
@@ -2428,8 +2456,9 @@ class Widget {
             // topRowLeftCol.addSpacer();
             // Vehicle Title
             let nameContainer = await this.createRow(topRowLeftCol, { '*setPadding': [paddingTop, paddingLeft, 0, 0] });
+            const showNickname = (await this.getBooleanSettingValue('fpShowNickname')) === true && vData.info.nickName && vData.info.nickName !== '';
             // nameContainer.addSpacer(); // Pushes the vehicle name to the left
-            let nameStr = vData.info.vehicleType || '';
+            let nameStr = showNickname ? vData.info.nickName : vData.info.vehicleType || ''; //'2021 Mustang Mach-E';
 
             let nameSize = 24;
             if (nameStr.length >= 10) {
@@ -2452,6 +2481,7 @@ class Widget {
                 // Creates EV Plug Elements
                 await this.createEvChargeElement(topLeftInfoCol, vData, 'left');
             }
+            await this.createOdometerInlineElement(topLeftInfoCol, vData, 'left');
             // topRowLeftCol.addSpacer();
 
             //*********************
@@ -3480,7 +3510,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-81177699280', 'FPW_App.js||-686134507505', 'FPW_AsBuilt.js||73666602154', 'FPW_Files.js||217178879481', 'FPW_FordAPIs.js||652514291161', 'FPW_Menus.js||89905820644', 'FPW_Notifications.js||42296595380', 'FPW_ShortcutParser.js||116875889387', 'FPW_Timers.js||-74214952224'];
+const moduleFiles = ['FPW_Alerts.js||-10130184335', 'FPW_App.js||-375404527068', 'FPW_AsBuilt.js||73666602154', 'FPW_Files.js||-243314513113', 'FPW_FordAPIs.js||20954060442', 'FPW_Menus.js||370545326241', 'FPW_Notifications.js||169525548630', 'FPW_ShortcutParser.js||-53556298730', 'FPW_Timers.js||15242478022'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
