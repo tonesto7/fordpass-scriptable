@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.05.05.0';
+        return '2022.05.04.1';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -135,7 +135,7 @@ module.exports = class FPW_Menus {
                             show: true,
                         },
                         {
-                            title: 'Widget Appearance',
+                            title: 'Widget Settings',
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Widget Appearance was pressed`);
                                 this.menuBuilderByType('widget_settings');
@@ -580,9 +580,11 @@ module.exports = class FPW_Menus {
                 case 'widget_settings':
                     const widgetStyle = await this.FPW.getWidgetStyle();
                     const colorMode = await this.FPW.getColorMode();
+                    // const showNickname = (await this.FPW.getBooleanSettingValue('fpShowNickname')) === true;
+                    // console.log(`showNickname: ${showNickname}`);
                     title = 'Widget Settings';
                     items = [{
-                            title: `Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
+                            title: `Style: [${this.FPW.capitalizeStr(widgetStyle)}]`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Style pressed`);
                                 await this.FPW.App.createWidgetStylePage();
@@ -594,11 +596,21 @@ module.exports = class FPW_Menus {
                             show: true,
                         },
                         {
-                            title: `Color Mode: ${this.FPW.capitalizeStr(colorMode)}`,
+                            title: `Color Mode: [${this.FPW.capitalizeStr(colorMode)}]`,
                             action: async() => {
                                 console.log(`(${typeDesc} Menu) Color Mode pressed`);
                                 await this.menuBuilderByType('color_mode');
                                 // this.menuBuilderByType('widget_settings');
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Show Nickname: [${(await this.FPW.getBooleanSettingValue('fpShowNickname')) === true ? 'On' : 'Off'}]`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Show Nickname Toggle pressed`);
+                                await this.FPW.toggleBoolSettingValue('fpShowNickname');
+                                this.menuBuilderByType('widget_settings');
                             },
                             destructive: false,
                             show: true,
