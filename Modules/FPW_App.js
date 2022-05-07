@@ -30,7 +30,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.05.05.0';
+        return '2022.05.04.1';
     }
 
     async getTable(tableName) {
@@ -2868,15 +2868,15 @@ module.exports = class FPW_App {
                 // console.log(`NodeData: ${Object.keys(moduleData.nodeData).length}`);
                 if (Object.keys(moduleData.nodeData).length > 0) {
                     for (const i in moduleData.nodeData) {
-                        if (!['#text', 'F106'].includes(i)) {
+                        if (!['#text'].includes(i)) {
                             // console.log(`Node: ${i}`);
-                            const nodeDesc = this.FPW.AsBuilt.nodeDesc[i] || 'Unknown Node';
+                            const didDesc = this.FPW.AsBuilt.didDescs[i] || 'Unknown Node';
                             const nodeVal = moduleData.nodeData[i];
                             const nodeValH = nodeVal.toString().length > 40 ? Math.ceil(nodeVal.toString().length / 40) * 20 : 60;
                             tableRows.push(
                                 await this.createTableRow(
                                     [
-                                        await this.createTextCell(`(${i}): ${nodeDesc}`, `${nodeVal}`, {
+                                        await this.createTextCell(`(${i}): ${didDesc}`, `${nodeVal}`, {
                                             align: 'left',
                                             widthWeight: 100,
                                             titleColor: this.FPW.colorMap.normalText,
