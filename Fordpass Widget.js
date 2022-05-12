@@ -48,7 +48,7 @@ const changelogs = {
         added: ['You no longer need to enter a VIN the widget will ask for your credentials and then show the available vehicles and you just tap on the one you want.', 'Shows payload info on the advanced info page.'],
         fixed: ['Fixed broken capabilities errors since recent ford changes.', 'lots of bugfixes and optimizations.'],
         removed: [],
-        updated: [],
+        updated: ['Switched one of the widget buttons to open Fordpass app.'],
         clearFlags: [],
     },
     '2022.05.06.0': {
