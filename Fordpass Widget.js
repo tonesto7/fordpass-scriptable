@@ -49,7 +49,7 @@ const changelogs = {
         fixed: ['Fixed broken capabilities errors since recent ford changes.', 'lots of bugfixes and optimizations.'],
         removed: [],
         updated: [],
-        clearFlags: ['token', 'data_cache'],
+        clearFlags: [],
     },
     '2022.05.06.0': {
         added: [],
@@ -3534,7 +3534,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-10130184335', 'FPW_App.js||481842534757', 'FPW_AsBuilt.js||-159434077373', 'FPW_Files.js||-243314513113', 'FPW_FordAPIs.js||20954060442', 'FPW_Menus.js||370545326241', 'FPW_Notifications.js||169525548630', 'FPW_ShortcutParser.js||-53556298730', 'FPW_Timers.js||15242478022'];
+const moduleFiles = ['FPW_Alerts.js||-103752335731', 'FPW_App.js||540247627997', 'FPW_AsBuilt.js||160631883825', 'FPW_Files.js||155201478467', 'FPW_FordAPIs.js||-147338855024', 'FPW_Menus.js||-390786217375', 'FPW_Notifications.js||-125971442992', 'FPW_ShortcutParser.js||-50577889021', 'FPW_Timers.js||11567471684'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

@@ -39,6 +39,7 @@ module.exports = class FPW_FordAPIs {
             if (legacyToken) {
                 console.log('Legacy Token found... Clearing and Forcing Fetch...');
                 await this.clearTokenCache();
+                await this.FPW.Files.removeFile('fp_vehicleData.json');
             } else {
                 console.log('Token or Expiration State is Missing... Fetching Token...');
             }
@@ -294,7 +295,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     async getAllVehicleDetails(tcuSupportOnly = false) {
-        console.log(`getAllVehicleDetails(${tcuSupportOnly})`);
+        // console.log(`getAllVehicleDetails(${tcuSupportOnly})`);
         const vin = (await this.FPW.getSettingVal('fpVin')) || '';
         const token = await this.FPW.getSettingVal('fpToken');
         const country = await this.FPW.getSettingVal('fpCountry');
@@ -393,7 +394,6 @@ module.exports = class FPW_FordAPIs {
             console.log(`userVehicles Count: (${data.value.vehicles.length})`);
             const supportedVehicles = await this.getAllVehicleDetails(true);
             console.log(`supportedVehicles: ${JSON.stringify(supportedVehicles, null, 2)}`);
-
             return data && data.value && data.value.vehicles && data.value.vehicles.length ? data.value.vehicles.filter((v) => supportedVehicles.includes(v.vin)) : [];
         } catch (e) {
             console.log(`getVehiclesForUser: ${e}`);
