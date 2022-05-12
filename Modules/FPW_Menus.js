@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.05.04.1';
+        return '2022.05.12.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -15,84 +15,103 @@ module.exports = class FPW_Menus {
             pass = pass || (await this.FPW.getSettingVal('fpPass'));
             vin = vin || (await this.FPW.getSettingVal('fpVin'));
 
-            let mapProvider = await this.FPW.getMapProvider();
-            const widgetStyle = await this.FPW.getWidgetStyle();
-            const colorMode = await this.FPW.getColorMode();
             let prefsMenu = new Alert();
-            prefsMenu.title = 'Required Settings Missing';
-            prefsMenu.message = 'Please enter you FordPass Credentials and Vehicle VIN.\n\nTap a setting to toggle change\nPress Done to Save.';
+            if (!vin || !user || !pass) {
+                prefsMenu.title = 'Required Settings Missing';
+                prefsMenu.message = 'Enter your FordPass Credentials and press `Get Vehicles` to display a list of the supported vehicles on your account';
+                prefsMenu.addTextField('Ford Email', user || '');
+                prefsMenu.addSecureTextField('Ford Password', pass || '');
+                prefsMenu.addAction('Get Vehicles'); //5
+                prefsMenu.addCancelAction('Cancel'); //6
 
-            prefsMenu.addTextField('FordPass Email', user || '');
-            prefsMenu.addSecureTextField('FordPass Password', pass || '');
-            prefsMenu.addTextField('Vehicle VIN', vin || '');
+                const devCreds = await this.FPW.Files.loadLocalDevCredentials();
 
-            prefsMenu.addAction(`Widget Style: ${this.FPW.capitalizeStr(widgetStyle)}`);
-            prefsMenu.addAction(`Widget Color: ${this.FPW.capitalizeStr(colorMode)}`);
-            prefsMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //0
-            prefsMenu.addAction('View Documentation'); //1
-            prefsMenu.addAction('Watch Setup Video'); //2
+                let respInd = await prefsMenu.presentAlert();
+                user = prefsMenu.textFieldValue(0);
+                pass = prefsMenu.textFieldValue(1);
+                switch (respInd) {
+                    case 0:
+                        console.log('(Required Prefs Menu) Done was pressed');
+                        user = devCreds && devCreds.user ? devCreds.user : prefsMenu.textFieldValue(0);
+                        pass = devCreds && devCreds.password ? devCreds.password : prefsMenu.textFieldValue(1);
+                        // vin = devCreds && devCreds.vin ? devCreds.vin : prefsMenu.textFieldValue(2);
+                        // console.log(`${user} ${pass} ${vin}`);
 
-            prefsMenu.addAction('Save'); //3
-            prefsMenu.addCancelAction('Cancel'); //4
+                        if (this.FPW.inputTest(user) && this.FPW.inputTest(pass)) {
+                            // && this.FPW.inputTest(vin)) {
+                            await this.FPW.setSettingVal('fpUser', user);
+                            await this.FPW.setSettingVal('fpPass', pass);
+                            const selectResp = await this.availableVehiclesMenu();
+                            console.log(`Select Response: ${selectResp}`);
 
-            const devCreds = await this.FPW.Files.loadLocalDevCredentials();
-            // console.log(JSON.stringify(devCreds));
+                            vin = await this.FPW.getSettingVal('fpVin');
+                            console.log(`VIN Number: ${vin}`);
 
-            let respInd = await prefsMenu.presentAlert();
-            user = prefsMenu.textFieldValue(0);
-            pass = prefsMenu.textFieldValue(1);
-            vin = prefsMenu.textFieldValue(2);
-            switch (respInd) {
-                case 0:
-                    console.log(`(Required Prefs Menu) Widget Style pressed`);
-                    await this.FPW.App.createWidgetStylePage();
-                    return await this.requiredPrefsMenu(user, pass, vin);
-                case 1:
-                    console.log('(Required Prefs Menu) Widget Style pressed');
-                    await this.menuBuilderByType('color_mode', true);
-                    return await this.requiredPrefsMenu(user, pass, vin);
-                case 2:
-                    console.log('(Required Prefs Menu) Map Provider pressed');
-                    await this.FPW.toggleMapProvider();
-                    return await this.requiredPrefsMenu(user, pass, vin);
-                case 3:
-                    console.log('(Required Prefs Menu) View Documentation pressed');
-                    await Safari.openInApp(this.FPW.textMap().about.documentationUrl);
-                    return await this.requiredPrefsMenu(user, pass, vin);
-                case 4:
-                    console.log('(Required Prefs Menu) View Help Videos pressed');
-                    await Safari.openInApp(this.FPW.textMap().about.helpVideos.setup.url);
-                    return await this.requiredPrefsMenu(user, pass, vin);
-                case 5:
-                    console.log('(Required Prefs Menu) Done was pressed');
-                    user = devCreds && devCreds.user ? devCreds.user : prefsMenu.textFieldValue(0);
-                    pass = devCreds && devCreds.password ? devCreds.password : prefsMenu.textFieldValue(1);
-                    vin = devCreds && devCreds.vin ? devCreds.vin : prefsMenu.textFieldValue(2);
-                    console.log(`${user} ${pass} ${vin}`);
-
-                    if (this.FPW.inputTest(user) && this.FPW.inputTest(pass) && this.FPW.inputTest(vin)) {
-                        await this.FPW.setSettingVal('fpUser', user);
-                        await this.FPW.setSettingVal('fpPass', pass);
-                        await this.FPW.setSettingVal('fpMapProvider', mapProvider);
-                        let vinChk = await this.FPW.vinCheck(vin, true);
-                        console.log(`VIN Number Ok: ${vinChk}`);
-                        if (vinChk) {
-                            await this.FPW.setSettingVal('fpVin', vin.toUpperCase());
-                            // await this.FPW.FordAPI.checkAuth();
-                            // await this.FPW.FordAPI.queryFordPassPrefs(true);
-                            return true;
+                            let vinChk = await this.FPW.vinCheck(vin, true);
+                            console.log(`VIN Number Ok: ${vinChk}`);
+                            if (vinChk) {
+                                await this.FPW.setSettingVal('fpVin', vin.toUpperCase());
+                                // return true;
+                                return await this.requiredPrefsMenu(user, pass, vin);
+                                // return undefined;
+                            } else {
+                                return undefined;
+                            }
                         } else {
-                            // await requiredPrefsMenu();
                             // await prepWidget();
                             return undefined;
                         }
-                    } else {
-                        // await prepWidget();
-                        return undefined;
-                    }
-                    break;
-                case 6:
-                    return false;
+                        break;
+                    case 1:
+                        console.log('(Required Prefs Menu) Cancel was pressed');
+                        return false;
+                }
+            } else {
+                let mapProvider = await this.FPW.getMapProvider();
+                const widgetStyle = await this.FPW.getWidgetStyle();
+                const colorMode = await this.FPW.getColorMode();
+
+                prefsMenu.title = 'Required Settings Missing';
+                prefsMenu.message = 'Tap a setting below to toggle a change or to view documentation/videos\nPress Save to proceed.';
+                prefsMenu.addAction(`Widget Style: ${this.FPW.capitalizeStr(widgetStyle)}`); //0
+                prefsMenu.addAction(`Widget Color: ${this.FPW.capitalizeStr(colorMode)}`); //1
+                prefsMenu.addAction(`Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`); //2
+                prefsMenu.addAction('View Documentation'); //3
+                prefsMenu.addAction('Watch Setup Video'); //4
+
+                prefsMenu.addAction('Save'); //5
+                prefsMenu.addCancelAction('Cancel'); //6
+
+                let respInd = await prefsMenu.presentAlert();
+                switch (respInd) {
+                    case 0:
+                        console.log(`(Required Prefs Menu) Widget Style pressed`);
+                        await this.FPW.App.createWidgetStylePage();
+                        return await this.requiredPrefsMenu(user, pass, vin);
+                    case 1:
+                        console.log('(Required Prefs Menu) Widget Style pressed');
+                        await this.menuBuilderByType('color_mode', true);
+                        return await this.requiredPrefsMenu(user, pass, vin);
+                    case 2:
+                        console.log('(Required Prefs Menu) Map Provider pressed');
+                        await this.FPW.toggleMapProvider();
+                        return await this.requiredPrefsMenu(user, pass, vin);
+                    case 3:
+                        console.log('(Required Prefs Menu) View Documentation pressed');
+                        await Safari.openInApp(this.FPW.textMap().about.documentationUrl);
+                        return await this.requiredPrefsMenu(user, pass, vin);
+                    case 4:
+                        console.log('(Required Prefs Menu) View Help Videos pressed');
+                        await Safari.openInApp(this.FPW.textMap().about.helpVideos.setup.url);
+                        return await this.requiredPrefsMenu(user, pass, vin);
+                    case 5:
+                        console.log('(Required Prefs Menu) Done was pressed');
+                        await this.FPW.setSettingVal('fpMapProvider', mapProvider);
+                        return true;
+                        // break;
+                    case 6:
+                        return false;
+                }
             }
         } catch (err) {
             this.FPW.logError(`(Required Prefs Menu) Error: ${err}`);
@@ -100,8 +119,56 @@ module.exports = class FPW_Menus {
         }
     }
 
+    async availableVehiclesMenu() {
+        let menu = new Alert();
+        menu.title = 'Supported Vehicles List';
+        menu.message = 'Please select the vehicle you would like to use with this instance of the Widget';
+        try {
+            let menuItems = [];
+            const vehicles = await this.FPW.FordAPI.getVehiclesForUser();
+            console.log(`userVehicles Menu: ${vehicles}`);
+            if (vehicles && vehicles.length > 0) {
+                for (const [i, vehicle] of vehicles.entries()) {
+                    menuItems.push(`${vehicle.modelYear} ${vehicle.modelName}${vehicle.nickName && vehicle.nickName.length ? ' (' + vehicle.nickName + ')' : ''}`);
+                }
+            } else {
+                menu.addAction('No Vehicles Found'); //0
+            }
+            menuItems.push('Cancel');
+            for (const [i, item] of menuItems.entries()) {
+                if (item === 'Cancel') {
+                    menu.addCancelAction(item);
+                } else {
+                    menu.addAction(item);
+                }
+            }
+
+            let respInd = await menu.presentAlert();
+            if (respInd !== null) {
+                if (menuItems[respInd] === 'Cancel') {
+                    return false;
+                } else if (menuItems[respInd] === 'No Vehicles Found') {
+                    console.log(`(availableVehiclesMenu) No Vehicles Found Pressed`);
+                    return undefined;
+                } else {
+                    const vin = vehicles[respInd] && vehicles[respInd].vin ? vehicles[respInd].vin : undefined;
+                    if (vin && vin.length > 0) {
+                        await this.FPW.setSettingVal('fpVin', vin);
+                    }
+                    console.log(`(availableVehiclesMenu) Selected Vin: ${vin}`);
+                    return vin;
+                }
+            }
+            return undefined;
+        } catch (err) {
+            this.FPW.logError(`(Available Vehicles Menu) Error: ${err}`);
+            return undefined;
+        }
+    }
+
     async menuBuilderByType(type, prefsMenu = false) {
         try {
+            console.log(`(menuBuilderByType) Type: ${type}`);
             const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
             const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
 
@@ -679,7 +746,7 @@ module.exports = class FPW_Menus {
                                 this.menuBuilderByType('notifications');
                             },
                             destructive: false,
-                            show: caps && caps.includes('EV_SMART_CHARGING'),
+                            show: caps && caps.includes('smartCharge'),
                         },
                         // {
                         //     title: `Oil Low: ${(await this.FPW.getShowNotificationType('oilLow')) === false ? 'Off' : 'On'}`,

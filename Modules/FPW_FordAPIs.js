@@ -7,7 +7,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     getModuleVer() {
-        return '2022.05.05.0';
+        return '2022.05.12.0';
     }
 
     appIDs() {
@@ -20,9 +20,10 @@ module.exports = class FPW_FordAPIs {
     }
 
     async checkAuth(src = undefined) {
-        let token = await this.FPW.getSettingVal('fpToken2');
-        let expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
-        let expired = expiresAt ? Date.now() >= Date.parse(expiresAt) : false;
+        const token = await this.FPW.getSettingVal('fpToken');
+        const legacyToken = await this.FPW.getSettingVal('fpToken2');
+        const expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
+        const expired = expiresAt ? Date.now() >= Date.parse(expiresAt) : false;
         if (this.widgetConfig.debugMode) {
             console.log(`chechAuth(${src})`);
             console.log(`checkAuth | Token: ${token}`);
@@ -34,8 +35,13 @@ module.exports = class FPW_FordAPIs {
         if (expired) {
             console.log('Token has expired... Refreshing Token...');
             refresh = await this.refreshToken();
-        } else if (token === null || token === undefined || token === '' || expiresAt === null || expiresAt === undefined || expiresAt === '') {
-            console.log('Token or Expiration State is Missing... Fetching Token...');
+        } else if (legacyToken || token === null || token === undefined || token === '' || expiresAt === null || expiresAt === undefined || expiresAt === '') {
+            if (legacyToken) {
+                console.log('Legacy Token found... Clearing and Forcing Fetch...');
+                await this.clearTokenCache();
+            } else {
+                console.log('Token or Expiration State is Missing... Fetching Token...');
+            }
             tok = await this.fetchToken();
         }
         if ((tok || refresh) && (tok == this.FPW.textMap().errorMessages.invalidGrant || tok == this.FPW.textMap().errorMessages.noCredentials || refresh == this.FPW.textMap().errorMessages.invalidGrant || refresh == this.FPW.textMap().errorMessages.noCredentials)) {
@@ -60,6 +66,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     async fetchToken() {
+        // console.log('Fetching Token...');
         let username = await this.FPW.getSettingVal('fpUser');
         if (!username) {
             return this.FPW.textMap().errorMessages.noCredentials;
@@ -72,7 +79,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/x-www-form-urlencoded',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Accept-Encoding': 'gzip, deflate, br',
             authorization: 'Basic ZWFpLWNsaWVudDo=',
         };
@@ -97,12 +104,12 @@ module.exports = class FPW_FordAPIs {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
             if (resp1.statusCode === 200) {
-                let req2 = new Request(`https://api.mps.ford.com/api/oauth2/v1/token`);
+                let req2 = new Request(`https://api.mps.ford.com/api/token/v2/cat-with-ci-access-token`);
                 headers['content-type'] = 'application/json';
                 headers['application-id'] = this.appIDs().NA;
                 req2.headers = headers;
-                req2.method = 'PUT';
-                req2.body = JSON.stringify({ code: token1.access_token });
+                req2.method = 'POST';
+                req2.body = JSON.stringify({ ciToken: token1.access_token });
                 req2.timeoutInterval = 15;
 
                 let token2 = await req2.loadJSON();
@@ -118,11 +125,13 @@ module.exports = class FPW_FordAPIs {
                     return this.FPW.textMap().errorMessages.invalidGrant;
                 }
                 if (resp2.statusCode === 200) {
-                    await this.FPW.setSettingVal('fpToken2', token2.access_token);
+                    await this.FPW.setSettingVal('fpToken', token2.access_token);
                     await this.FPW.setSettingVal('fpRefreshToken', token2.refresh_token);
+                    await this.FPW.setSettingVal('fpFordConsumerId', token2.ford_consumer_id);
                     await this.FPW.setSettingVal('fpTokenExpiresAt', (Date.now() + token2.expires_in).toString());
-                    let token = await this.FPW.getSettingVal('fpToken2');
-                    let expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
+                    // let token = await this.FPW.getSettingVal('fpToken');
+                    // console.log(`------- New Token Set: ${token} -------`);
+                    // let expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
                     // console.log(`expiresAt: ${expiresAt}`);
                     return;
                 }
@@ -137,14 +146,14 @@ module.exports = class FPW_FordAPIs {
     }
 
     async refreshToken() {
+        // console.log('Refreshing Token...');
         try {
             const refreshToken = await this.FPW.getSettingVal('fpRefreshToken');
-
-            let req = new Request(`https://api.mps.ford.com/api/oauth2/v1/refresh`);
+            let req = new Request(`https://api.mps.ford.com/api/token/v2/cat-with-refresh-token`);
             req.headers = {
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
                 'Application-Id': this.appIDs().NA,
@@ -166,8 +175,9 @@ module.exports = class FPW_FordAPIs {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
             if (resp.statusCode === 200) {
-                await this.FPW.setSettingVal('fpToken2', token.access_token);
+                await this.FPW.setSettingVal('fpToken', token.access_token);
                 await this.FPW.setSettingVal('fpRefreshToken', token.refresh_token);
+                await this.FPW.setSettingVal('fpFordConsumerId', token.ford_consumer_id);
                 await this.FPW.setSettingVal('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
                 // console.log(`expiresAt: ${expiresAt}`);
                 return;
@@ -183,16 +193,23 @@ module.exports = class FPW_FordAPIs {
         }
     }
 
+    async clearTokenCache() {
+        const keys = ['fpToken', 'fpToken2', 'fpRefreshToken', 'fpFordConsumerId', 'fpTokenExpiresAt'];
+        for (const key of keys) {
+            await this.FPW.removeSettingVal(key);
+        }
+    }
+
     async getVehicleStatus() {
-        let vin = await this.FPW.getSettingVal('fpVin');
+        const vin = await this.FPW.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
-        return await this.makeFordRequest('getVehicleStatus', `https://usapi.cv.ford.com/api/vehicles/v4/${vin}/status`, 'GET', false);
+        return await this.makeFordRequest('getVehicleStatus', `https://usapi.cv.ford.com/api/vehicles/v5/${vin}/status`, 'GET', false);
     }
 
     async getVehicleInfo() {
-        let vin = await this.FPW.getSettingVal('fpVin');
+        const vin = await this.FPW.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -205,13 +222,13 @@ module.exports = class FPW_FordAPIs {
     }
 
     async getSyncVersion(brand) {
-        let vin = await this.FPW.getSettingVal('fpVin');
+        const vin = await this.FPW.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
-        let token = await this.FPW.getSettingVal('fpToken2');
-        let lang = await this.FPW.getSettingVal('fpLanguage');
-        let data = await this.makeFordRequest('getSyncVersion', `https://www.digitalservices.ford.com/owner/api/v2/sync/firmware-update?vin=${vin}&locale=${lang}&brand=${brand}`, 'POST', false, {
+        const token = await this.FPW.getSettingVal('fpToken');
+        const lang = await this.FPW.getSettingVal('fpLanguage');
+        const data = await this.makeFordRequest('getSyncVersion', `https://www.digitalservices.ford.com/owner/api/v2/sync/firmware-update?vin=${vin}&locale=${lang}&brand=${brand}`, 'POST', false, {
             'Content-Type': 'application/json',
             Accept: 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -239,10 +256,10 @@ module.exports = class FPW_FordAPIs {
     }
 
     async getVehicleAlerts() {
-        let vin = await this.FPW.getSettingVal('fpVin');
-        let token = await this.FPW.getSettingVal('fpToken2');
-        let country = await this.FPW.getSettingVal('fpCountry');
-        let lang = await this.FPW.getSettingVal('fpLanguage');
+        const vin = await this.FPW.getSettingVal('fpVin');
+        const token = await this.FPW.getSettingVal('fpToken');
+        const country = await this.FPW.getSettingVal('fpCountry');
+        const lang = await this.FPW.getSettingVal('fpLanguage');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -254,7 +271,7 @@ module.exports = class FPW_FordAPIs {
                 'Content-Type': 'application/json',
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
                 'Application-Id': this.appIDs().NA,
                 'auth-token': `${token}`,
                 countryCode: country,
@@ -276,29 +293,76 @@ module.exports = class FPW_FordAPIs {
         };
     }
 
-    async getVehicleCapabilities() {
-        let vin = await this.FPW.getSettingVal('fpVin');
-        if (!vin) {
-            return this.FPW.textMap().errorMessages.noVin;
-        }
-        let data = await this.makeFordRequest('getVehicleCapabilities', `https://api.mps.ford.com/api/capability/v1/vehicles/${vin}?lrdt=01-01-1970%2000:00:00`, 'GET', false);
-        if (data && data.result && data.result.features && data.result.features.length > 0) {
-            let caps = data.result.features
-                .filter((cap) => {
-                    return cap.state && cap.state.eligible === true;
-                })
-                .map((cap) => {
-                    return cap.feature;
-                });
-            return caps;
+    async getAllVehicleDetails(tcuSupportOnly = false) {
+        console.log(`getAllVehicleDetails(${tcuSupportOnly})`);
+        const vin = (await this.FPW.getSettingVal('fpVin')) || '';
+        const token = await this.FPW.getSettingVal('fpToken');
+        const country = await this.FPW.getSettingVal('fpCountry');
+        const lang = await this.FPW.getSettingVal('fpLanguage');
+        const data = await this.makeFordRequest(
+            'getAllVehicleDetails',
+            `https://api.mps.ford.com/api/expdashboard/v1/details`,
+            'POST',
+            false, {
+                'Content-Type': 'application/json',
+                Accept: '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+                locale: lang,
+                countryCode: country,
+                'application-id': this.appIDs().NA,
+                'auth-token': token,
+            }, {
+                dashboardRefreshRequest: 'All',
+                smsWakeUpVIN: vin,
+            },
+        );
+
+        // console.log(JSON.stringify(data, null, 2));
+        if (data && Object.keys(data).length > 0) {
+            if (tcuSupportOnly) {
+                // console.log(`vehicles: ${JSON.stringify(data.userVehicles.vehicleDetails, null, 2)}`);
+                return data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.filter((v) => v.tcuEnabled === true).map((v) => v.VIN) : [];
+            } else {
+                const vehicle = data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.find((v) => v.VIN === vin) : undefined;
+                const profile = data.vehicleProfile && data.vehicleProfile.length > 0 ? data.vehicleProfile.find((v) => v.VIN === vin) : undefined;
+                let caps = data.vehicleCapabilities && data.vehicleCapabilities.length ? data.vehicleCapabilities.find((v) => v.VIN === vin) : undefined;
+                let capsArr = [];
+                if (caps && Object.keys(caps).length > 0) {
+                    let nCaps = {};
+                    for (let key in caps) {
+                        if (caps[key] === 'NoDisplay') {
+                            nCaps[key] = false;
+                        } else if (caps[key] === 'Display') {
+                            nCaps[key] = true;
+                            capsArr.push(key);
+                        } else {
+                            if (nCaps[key] === 'On') {
+                                capsArr.push(key);
+                            }
+                            nCaps[key] = caps[key];
+                        }
+                    }
+                    caps = nCaps;
+                }
+                const out = {
+                    nickName: vehicle && vehicle.nickName ? vehicle.nickName : undefined,
+                    tcuEnabled: vehicle && vehicle.tcuEnabled ? vehicle.tcuEnabled : false,
+                    profile: profile,
+                    caps: caps,
+                    capsArr: capsArr.sort(),
+                };
+                // console.log(`output: ${JSON.stringify(out, null, 2)}`);
+                return out;
+            }
         }
         return undefined;
     }
 
     async getVehicleOtaInfo() {
-        let vin = await this.FPW.getSettingVal('fpVin');
-        let token = await this.FPW.getSettingVal('fpToken2');
-        let country = await this.FPW.getSettingVal('fpCountry');
+        const vin = await this.FPW.getSettingVal('fpVin');
+        const token = await this.FPW.getSettingVal('fpToken');
+        const country = await this.FPW.getSettingVal('fpCountry');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -307,7 +371,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
@@ -317,41 +381,38 @@ module.exports = class FPW_FordAPIs {
     }
 
     async getVehiclesForUser() {
-        let vin = await this.FPW.getSettingVal('fpVin');
-        if (!vin) {
-            return this.FPW.textMap().errorMessages.noVin;
-        }
-        let token = await this.FPW.getSettingVal('fpToken2');
-        let lang = await this.FPW.getSettingVal('fpLanguage');
-        let data = await this.makeFordRequest('getVehiclesForUser', `https://www.digitalservices.ford.com/fs/api/v2/profile`, 'GET', false, {
-            'Content-Type': 'application/json',
-            Accept: '*/*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
-            'Application-Id': this.appIDs().NA,
-            'auth-token': `${token}`,
-            Referer: 'https://ford.com',
-            Origin: 'https://ford.com',
-        });
-        console.log(`getVehiclesForUser: ${JSON.stringify(data)}`);
+        try {
+            const authMsg = await this.checkAuth(`getVehiclesForUser()`);
+            if (authMsg) {
+                return authMsg;
+            }
 
-        return data && data.value && data.value.vehicles && data.value.vehicles.length ? data.value.vehicles : undefined;
+            await this.queryFordPassPrefs(true);
+            // const token = await this.FPW.getSettingVal('fpToken');
+            const data = await this.makeFordRequest('getVehiclesForUser', `https://www.digitalservices.ford.com/fs/api/v2/profile`, 'GET', false, undefined);
+            console.log(`userVehicles Count: (${data.value.vehicles.length})`);
+            const supportedVehicles = await this.getAllVehicleDetails(true);
+            console.log(`supportedVehicles: ${JSON.stringify(supportedVehicles, null, 2)}`);
+
+            return data && data.value && data.value.vehicles && data.value.vehicles.length ? data.value.vehicles.filter((v) => supportedVehicles.includes(v.vin)) : [];
+        } catch (e) {
+            console.log(`getVehiclesForUser: ${e}`);
+        }
     }
 
     async getVehicleManual() {
         let vin = await this.FPW.getSettingVal('fpVin');
-        let token = await this.FPW.getSettingVal('fpToken2');
+        let token = await this.FPW.getSettingVal('fpToken');
         const country = await this.FPW.getSettingVal('fpCountry');
         let lang = await this.FPW.getSettingVal('fpLanguage');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
-
         return await this.makeFordRequest('getVehicleManual', `https://api.mps.ford.com/api/ownersmanual/v1/manuals/${vin}?countryCode=${country}&language=${lang}`, 'GET', false, {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
@@ -362,7 +423,7 @@ module.exports = class FPW_FordAPIs {
 
     async getVehicleRecalls() {
         const vin = await this.FPW.getSettingVal('fpVin');
-        const token = await this.FPW.getSettingVal('fpToken2');
+        const token = await this.FPW.getSettingVal('fpToken');
         const country = await this.FPW.getSettingVal('fpCountry');
         let lang = await this.FPW.getSettingVal('fpLanguage');
         if (!lang) {
@@ -394,7 +455,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     async getEvPlugStatus() {
-        const token = await this.FPW.getSettingVal('fpToken2');
+        const token = await this.FPW.getSettingVal('fpToken');
         const vin = await this.FPW.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
@@ -403,7 +464,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Application-Id': this.appIDs().NA,
             'auth-token': `${token}`,
             vin: vin,
@@ -427,7 +488,7 @@ module.exports = class FPW_FordAPIs {
         const city = await this.FPW.getSettingVal('fpCity');
         const state = await this.FPW.getSettingVal('fpState');
         const zipCode = await this.FPW.getSettingVal('fpZipCode');
-        let token = await this.FPW.getSettingVal('fpToken2');
+        let token = await this.FPW.getSettingVal('fpToken');
         const vin = await this.FPW.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
@@ -441,7 +502,7 @@ module.exports = class FPW_FordAPIs {
                 'accept-encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
                 'Application-Id': this.appIDs().Web,
-                'auth-token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNlcnZlciJ9.eyJGaXJzdCBOYW1lIjoiQU5USE9OWSIsInVuaXF1ZVNlY3VyaXR5TmFtZSI6IjEzNkE2NjJCLTg3QzYtQzhDNi01MjEwLTQ3OTg1MjEwNDc5OCIsIkxhc3QgTmFtZSI6IlNBTlRJTExJIiwiY2xpZW50X2lkIjoiMmI0YzIxNGMtMTM3Ni00ZWIyLTllNjItNTMzMDQ3Y2MzNGJmIiwicmVhbG1OYW1lIjoiY2xvdWRJZGVudGl0eVJlYWxtIiwicHJlZmVycmVkX3VzZXJuYW1lIjoidG9uZXN0bzdAZ21haWwuY29tIiwiRW1haWwgQWRkcmVzcyI6IlRPTkVTVE83QEdNQUlMLkNPTSIsImF1ZCI6IjJiNGMyMTRjLTEzNzYtNGViMi05ZTYyLTUzMzA0N2NjMzRiZiIsImdyYW50X3R5cGUiOiJhdXRob3JpemF0aW9uX2NvZGUiLCJhY3IiOiJ1cm46aWJtOnNlY3VyaXR5OnBvbGljeTppZDoxIiwiZ3JhbnRfaWQiOiJiMmI2YzcyNy0yOTE1LTQ0MmYtOTA4Ni03ZTc4ZjVhNDAyM2YiLCJ1c2VyVHlwZSI6InJlZ3VsYXIiLCJBTVIiOiIiLCJhdXRoX3RpbWUiOjE2NTE1ODcxNDEsIlVzZXJuYW1lIjoidG9uZXN0bzdAZ21haWwuY29tIiwic2NvcGUiOiJvcGVuaWQiLCJqdGkiOiJWUUU2aDlQZnlNSmFWRVp6emJ3TjRSY0FmNHdjUXUiLCJpc3MiOiJodHRwczovL2ZjaXMuaWNlLmlibWNsb3VkLmNvbS9vaWRjL2VuZHBvaW50L2RlZmF1bHQiLCJzdWIiOiIxMzZBNjYyQi04N0M2LUM4QzYtNTIxMC00Nzk4NTIxMDQ3OTgiLCJpYXQiOjE2NTE1ODg1ODEsImV4cCI6MTY1MTU4ODg4MX0.bXGIhrLmedmsGC9axenP6mm28jhVJCIL0xJC4LUMcQNimSVP1TAlK7AwOy202_Qys51NCPdaOGBIw4YO26r-WFOOZuw_qrJkZ4VnT9OuzRJLRxN5wJSs8ue-KjnYtUi3bbnMrUQP76s7CR5ZoYqbcU5rPoM59a0lCArcMg6BVIoZvHjOsRxX0rEPrLazwmlNu6z1B-YqKp1CoAJSXXv9BeoFyKhlRx1eYdLy5k7t9NKn4NMVKUtEc9as56wsyirFYEhuMvU-DxB6T4FXaLqdVMGoFFQUfNmWgBrlxIyP05UvAQA3cy9L1QuOH6KrWBlWPElaBo29tCbmZVoRl8G6GA', //`${token}`,
+                'auth-token': `${token}`,
                 Referer: 'https://ford.com',
                 Origin: 'https://ford.com',
                 //'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
@@ -454,7 +515,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     async getWarrantyInfo() {
-        let vin = await this.FPW.getSettingVal('fpVin');
+        const vin = await this.FPW.getSettingVal('fpVin');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -484,9 +545,9 @@ module.exports = class FPW_FordAPIs {
 
     async queryFordPassPrefs(force = false) {
         try {
-            let dtNow = Date.now();
-            let lastDt = await this.FPW.getSettingVal('fpLastPrefsQueryTs');
-            let ok2Upd = lastDt && dtNow - Number(lastDt) > 1000 * 60 * 5;
+            const dtNow = Date.now();
+            const lastDt = await this.FPW.getSettingVal('fpLastPrefsQueryTs');
+            const ok2Upd = lastDt && dtNow - Number(lastDt) > 1000 * 60 * 5;
             // console.log(`Last prefs query: ${lastDt} | Now: ${dtNow} | Diff: ${dtNow - Number(lastDt)} | Ok2Upd: ${ok2Upd}`);
             if (ok2Upd || lastDt === null || force) {
                 await this.FPW.setSettingVal('fpLastPrefsQueryTs', dtNow.toString());
@@ -534,7 +595,7 @@ module.exports = class FPW_FordAPIs {
 
     // NOT WORKING YET (CORS ISSUE)
     async getEarlyAccessInfo() {
-        const token = await this.FPW.getSettingVal('fpToken2');
+        const token = await this.FPW.getSettingVal('fpToken');
         const vin = await this.FPW.getSettingVal('fpVin');
         let request = new Request(`https://fsm-service-fordbeta-prod.apps.pd01.useast.cf.ford.com/api/earlyAccess/eapMemberInfo`);
         request.headers = {
@@ -555,7 +616,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     async getAllUserData() {
-        let data = await this.makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
+        const data = await this.makeFordRequest('setUserPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
         // console.log('user data: ' + JSON.stringify(data));
         if (data && data.status === 200 && data.profile) {
             return data;
@@ -564,53 +625,58 @@ module.exports = class FPW_FordAPIs {
     }
 
     async makeFordRequest(desc, url, method, json = false, headerOverride = undefined, body = undefined) {
-        let authMsg = await this.checkAuth('makeFordRequest(' + desc + ')');
-        if (authMsg) {
-            return authMsg;
-        }
-        let token = await this.FPW.getSettingVal('fpToken2');
-        let vin = await this.FPW.getSettingVal('fpVin');
-        if (!vin) {
-            return this.FPW.textMap().errorMessages.noVin;
-        }
-        const headers = headerOverride || {
-            'Content-Type': 'application/json',
-            Accept: '*/*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
-            'Application-Id': this.appIDs().NA,
-            'auth-token': `${token}`,
-        };
-
-        let request = new Request(url);
-        request.headers = headers;
-        request.method = method;
-        request.timeoutInterval = 20;
-        if (body) {
-            request.body = JSON.stringify(body);
-            // console.log('makeFordRequest: ' + JSON.stringify(request.body));
-        }
         try {
+            const authMsg = await this.checkAuth(`makeFordRequest(${desc})`);
+            if (authMsg) {
+                return authMsg;
+            }
+            const token = await this.FPW.getSettingVal('fpToken');
+            const headers = headerOverride || {
+                'Content-Type': 'application/json',
+                Accept: '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'Application-Id': this.appIDs().NA,
+                'auth-token': `${token}`,
+                Referer: 'https://ford.com',
+                Origin: 'https://ford.com',
+            };
+
+            let request = new Request(url);
+            request.headers = headers;
+            request.method = method;
+            request.timeoutInterval = 20;
+            if (body) {
+                request.body = JSON.stringify(body);
+                // console.log(`makeFordRequest body: ${JSON.stringify(request.body, null, 2)}`);
+            }
             let data = json ? await request.loadJSON() : await request.loadString();
             let resp = request.response;
             if (this.widgetConfig.debugMode) {
-                console.log(`makeFordRequest Req | Status: ${resp.statusCode}) | Resp: ${data}`);
+                console.log(`makeFordRequest(${desc}) | Status: ${resp.statusCode}) | Resp: ${data}`);
             }
+            // switch (desc) {
+            //     case 'getVehiclesForUser':
+            //     case 'getAllVehicleDetails':
+            //         console.log(`makeFordRequest(${desc}) | Status: ${resp.statusCode}) | Resp: ${data}`);
+            //         break;
+            // }
             if (data == this.FPW.textMap().errorMessages.accessDenied) {
                 console.log(`makeFordRequest(${desc}): Auth Token Expired. Fetching New Token and Requesting Data Again!`);
                 let result = await this.fetchToken();
                 if (result && result == this.FPW.textMap().errorMessages.invalidGrant) {
                     return result;
                 }
-                data = await this.makeFordRequest(desc, url, method, json, body);
+                data = await this.makeFordRequest(desc, url, method, json, headerOverride, body);
             } else {
                 data = json ? data : JSON.parse(data);
             }
-            if (data.statusCode && data.statusCode !== 200) {
+            if (data.statusCode && (data.statusCode !== 200 || data.statusCode !== 207)) {
                 return this.FPW.textMap().errorMessages.connectionErrorOrVin;
             }
             return data;
         } catch (e) {
+            console.log(`makeFordRequest Error: ${e.message}`);
             await this.FPW.logInfo(`makeFordRequest(${desc}) Error: ${e}`, true);
             return this.FPW.textMap().errorMessages.unknownError;
         }
@@ -663,14 +729,16 @@ module.exports = class FPW_FordAPIs {
         }
 
         // Pulls in a list of the vehicles capabilities like zone lighting, remote start, etc.
-        let capData = await this.getVehicleCapabilities();
-        // console.log(`capData: ${JSON.stringify(capData)}`);
-        vehicleData.capabilities = capData;
+        const vehicleDetails = await this.getAllVehicleDetails();
+        // console.log(`vehicleDetails: ${JSON.stringify(vehicleDetails, null, 2)}`);
+
+        vehicleData.details = vehicleDetails;
+        vehicleData.capabilities = vehicleDetails.capsArr;
         if (this.widgetConfig.logVehicleData) {
-            console.log(`Capabilities: ${JSON.stringify(capData)}`);
+            console.log(`Capabilities: ${JSON.stringify(vehicleData.capabilities, null, 2)}`);
         }
 
-        if (vehicleData.capabilities.includes('GUARD_MODE')) {
+        if (vehicleData.capabilities.includes('guardMode')) {
             vehicleData.securiAlertStatus = await this.getSecuriAlertStatus();
             if (this.widgetConfig.logVehicleData) {
                 console.log(`SecuriAlert Status: ${vehicleData.securiAlertStatus}`);
@@ -719,13 +787,13 @@ module.exports = class FPW_FordAPIs {
         vehicleData.ignitionStatus = vehicleStatus.ignitionStatus ? vehicleStatus.ignitionStatus.value : 'Off';
 
         //zone-lighting status
-        if (vehicleData.capabilities.includes('ZONE_LIGHTING_FOUR_ZONES') || vehicleData.capabilities.includes('ZONE_LIGHTING_TWO_ZONES')) {
+        if (vehicleData.capabilities.includes('zoneLighting')) {
             vehicleData.zoneLightingSupported = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value === undefined ? false : true;
             vehicleData.zoneLightingStatus = vehicleStatus.zoneLighting && vehicleStatus.zoneLighting.activationData && vehicleStatus.zoneLighting.activationData.value ? vehicleStatus.zoneLighting.activationData.value : 'Off';
         }
 
         // trailer light check status
-        if (vehicleData.capabilities.includes('TRAILER_LIGHT')) {
+        if (vehicleData.capabilities.includes('trailerLightCheck')) {
             vehicleData.trailerLightCheckStatus = vehicleStatus.trailerLightCheck && vehicleStatus.trailerLightCheck.trailerLightCheckStatus && vehicleStatus.trailerLightCheck.trailerLightCheckStatus.value ? (vehicleStatus.trailerLightCheck.trailerLightCheckStatus.value === 'LIGHT_CHECK_STOPPED' ? 'Off' : 'On') : undefined;
         }
 
@@ -839,35 +907,35 @@ module.exports = class FPW_FordAPIs {
             lock: {
                 desc: 'Lock Doors',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                    uri: `${baseUrl}/vehicles/${vin}/v5/doors/lock`,
                     method: 'PUT',
                 }, ],
             },
             unlock: {
                 desc: 'Unlock Doors',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/doors/lock`,
+                    uri: `${baseUrl}/vehicles/${vin}/v5/doors/lock`,
                     method: 'DELETE',
                 }, ],
             },
             start: {
                 desc: 'Remote Start',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                    uri: `${baseUrl}/vehicles/${vin}/v5/engine/start`,
                     method: 'PUT',
                 }, ],
             },
             stop: {
                 desc: 'Remote Stop',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/engine/start`,
+                    uri: `${baseUrl}/vehicles/${vin}/v5/engine/start`,
                     method: 'DELETE',
                 }, ],
             },
             horn_and_lights: {
                 desc: 'Horn & Lights On',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/panic/3`,
+                    uri: `${baseUrl}/vehicles/${vin}/v5/panic/3`,
                     method: 'PUT',
                 }, ],
             },
@@ -902,7 +970,7 @@ module.exports = class FPW_FordAPIs {
             status: {
                 desc: 'Refresh Vehicle Status',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/status`,
+                    uri: `${baseUrl}/vehicles/v5/${vin}/status`,
                     method: 'PUT',
                 }, ],
             },
@@ -944,7 +1012,7 @@ module.exports = class FPW_FordAPIs {
             console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
             return;
         }
-        let token = await this.FPW.getSettingVal('fpToken2');
+        let token = await this.FPW.getSettingVal('fpToken');
         let vin = await this.FPW.getSettingVal('fpVin');
         let cmdCfgs = this.vehicleCmdConfigs(vin);
         let cmds = cmdCfgs[cmd_type].cmds;
@@ -962,7 +1030,7 @@ module.exports = class FPW_FordAPIs {
             req.headers = {
                 Accept: '*/*',
                 'Accept-Language': 'en-us',
-                'User-Agent': 'FordPass/8 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
                 'Application-Id': this.appIDs().NA,

@@ -44,6 +44,13 @@
     
 **************/
 const changelogs = {
+    '2022.05.12.0': {
+        added: ['You no longer need to enter a VIN the widget will ask for your credentials and then show the available vehicles and you just tap on the one you want.', 'Shows payload info on the advanced info page.'],
+        fixed: ['Fixed broken capabilities errors since recent ford changes.', 'lots of bugfixes and optimizations.'],
+        removed: [],
+        updated: [],
+        clearFlags: ['token', 'data_cache'],
+    },
     '2022.05.06.0': {
         added: [],
         fixed: [],
@@ -106,7 +113,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.06.0';
+const SCRIPT_VERSION = '2022.05.12.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -441,6 +448,9 @@ class Widget {
                 case 'request_refresh':
                     await this.App.createMainPage(false, params.command);
                     break;
+                case 'open_fp_app':
+                    Safari.open('fordapp://');
+                    break;
             }
         }
     }
@@ -502,6 +512,10 @@ class Widget {
         delete vData.messages;
         delete vData.syncInfo;
         delete vData.recallInfo;
+        if (vData.details) {
+            delete vData.details.caps;
+            delete vData.details.profile;
+        }
         // delete vData.otaInfo
         return vData;
     }
@@ -1849,7 +1863,7 @@ class Widget {
      */
     prefKeys() {
         return {
-            core: ['fpUser', 'fpPass', 'fpToken2', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits'], // 'fpDeviceLanguage'
+            core: ['fpUser', 'fpPass', 'fpToken', 'fpVin', 'fpMapProvider', 'fpCountry', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits'], // 'fpDeviceLanguage'
             user: ['fpCountry', 'fpDeviceLanguage', 'fpLanguage', 'fpTz', 'fpPressureUnits', 'fpDistanceUnits'],
         };
     }
@@ -1895,6 +1909,7 @@ class Widget {
             'fpUsePsi',
             'fpVehicleType',
             'fpMapProvider',
+            'fpFordConsumerId',
             'fpCat1Token',
             'fpTokenExpiresAt',
             'fpCountry',
@@ -3223,28 +3238,28 @@ class Widget {
         const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, padding || 0, 0, padding || 0], spacing: 10 });
 
         const buttons = [{
-                show: caps && caps.includes('DOOR_LOCK_UNLOCK'),
+                show: caps && caps.length && caps.includes('remoteLock'),
                 icon: {
                     image: await this.Files.getImage(lockBtnIcon),
                     opts: { url: await this.buildCallbackUrl({ command: 'lock_command' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
             {
-                show: caps && caps.includes('REMOTE_START'),
+                show: caps && caps.length && caps.includes('remoteStart'),
                 icon: {
                     image: await this.Files.getImage(startBtnIcon),
                     opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'start_command' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
             {
-                show: caps && caps.includes('REMOTE_PANIC_ALARM'),
+                show: caps && caps.length && caps.includes('remotePanicAlarm'),
                 icon: {
                     image: await this.Files.getImage(useDarkMode ? 'horn_lights_dark_64.png' : 'horn_lights_light_64.png'),
                     opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'horn_and_lights' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
                 },
             },
             {
-                show: true,
+                show: false,
                 icon: {
                     image: await this.Files.getImage(useDarkMode ? 'refresh_btn_dark_64.png' : 'refresh_btn_light_64.png'),
                     opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'request_refresh' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
@@ -3259,7 +3274,7 @@ class Widget {
             },
 
             {
-                show: false,
+                show: true,
                 icon: {
                     image: await this.Files.getImage('FP_Logo.png'),
                     opts: { resizable: true, url: await this.buildCallbackUrl({ command: 'open_fp_app' }), '*centerAlignImage': null, imageSize: new Size(btnImgSize, btnImgSize) },
@@ -3501,15 +3516,17 @@ async function clearModuleCache() {
     try {
         const fm = FileManager.local();
         const dir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
-        fm.listContents(dir).forEach(async(file) => {
-            const fp = fm.joinPath(dir, file);
-            if ((await fm.fileExtension(fp)) === 'js') {
-                console.log(`FileManager: Removing Module File: ${file}`);
-                await fm.remove(fp);
-            }
-        });
+        if (await fm.isDirectory(dir)) {
+            fm.listContents(dir).forEach(async(file) => {
+                const fp = fm.joinPath(dir, file);
+                if ((await fm.fileExtension(fp)) === 'js') {
+                    console.log(`FileManager: Removing Module File: ${file}`);
+                    await fm.remove(fp);
+                }
+            });
+        }
     } catch (e) {
-        this.FPW.logError(`clearModuleCache Error: ${e}`);
+        console.error(`clearModuleCache ${e}`);
     }
 }
 

@@ -38,6 +38,7 @@ class WidgetInstaller {
                     'fpUsername',
                     'fpUser',
                     'fpPass',
+                    'fpFordConsumerId',
                     'fpPassword',
                     'fpVin',
                     'fpUseMetricUnits',

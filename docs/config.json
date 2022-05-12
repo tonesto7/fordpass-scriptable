@@ -29,6 +29,7 @@
             "fpVehicleType",
             "fpMapProvider",
             "fpCat1Token",
+            "fpFordConsumerId",
             "fpTokenExpiresAt",
             "fpCountry",
             "fpDeviceLanguage",

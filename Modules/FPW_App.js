@@ -30,7 +30,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.05.04.1';
+        return '2022.05.12.0';
     }
 
     async getTable(tableName) {
@@ -535,358 +535,337 @@ module.exports = class FPW_App {
     async createMainPage(update = false, widgetCmd = undefined) {
         try {
             const vData = await this.FPW.FordAPI.fetchVehicleData(true);
-            const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
-            const isEV = vData.evVehicle === true;
-            const pressureUnits = await this.FPW.getSettingVal('fpPressureUnits');
-            const distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-            const distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
-            const tireUnit = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
-            const dtePostfix = isEV ? 'Range' : 'to E';
-
-            let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
-            let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
-            let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
-
-            const lvbBatteryLow = vData.evVehicle !== true && vData.batteryStatus === 'STATUS_LOW';
-            let ignStatus = '';
-            if (vData.remoteStartStatus && vData.remoteStartStatus.running ? true : false) {
-                ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
-            } else {
-                ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
-            }
-            let refreshTime = (await this.FPW.getLastRefreshElapsedString(vData)) || this.textMap.UIValues.unknown;
-            const odometerVal = vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : this.FPW.textMap().errorMessages.noData;
-            const msgs = vData.messages && vData.messages.length ? vData.messages : [];
-            const recalls = vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
-            const msgsUnread = msgs && msgs.length ? msgs.filter((msg) => msg.isRead === false) : [];
-
-            const showTestUIStuff = this.FPW.widgetConfig.showTestUIStuff === true;
-            let updateAvailable = this.FPW.getStateVal('updateAvailable') === true;
-
             let tableRows = [];
+            if (vData && Object.keys(vData).length > 0) {
+                const caps = vData && vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
+                const isEV = vData && vData.evVehicle === true;
+                const pressureUnits = await this.FPW.getSettingVal('fpPressureUnits');
+                const distanceMultiplier = (await this.FPW.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
+                const distanceUnit = (await this.FPW.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+                const tireUnit = pressureUnits.toLowerCase() === 'kpa' ? 'kPa' : pressureUnits.toLowerCase();
+                const dtePostfix = isEV ? 'Range' : 'to E';
 
-            // Header Section - Row 1: vehicle messages, vehicle type, vehicle alerts
-            tableRows.push(
-                await this.createTableRow(
-                    [
-                        await this.createImageCell(await this.FPW.Files.getFPImage(`ic_message_center_notification_dark.png`), { align: 'left', widthWeight: 3 }),
-                        await this.createButtonCell(`${msgs.length || 0}`, {
-                            align: 'left',
-                            widthWeight: 27,
-                            onTap: async() => {
-                                console.log('(Dashboard) View Messages was pressed');
-                                await this.createMessagesPage(vData, false);
-                            },
-                        }),
+                let lvlValue = !isEV ? (vData && vData.fuelLevel ? vData.fuelLevel : 0) : vData && vData.evBatteryLevel ? vData.evBatteryLevel : 0;
+                let dteValue = !isEV ? (vData && vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData && vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
+                let dteString = dteValue ? `${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.FPW.textMap().errorMessages.noData;
 
-                        await this.createTextCell(vData.info.vehicleType, odometerVal, {
-                            align: 'center',
-                            widthWeight: 40,
-                            dismissOnTap: false,
-                            titleColor: this.FPW.colorMap.text.dark,
-                            subtitleColor: Color.lightGray(),
-                            titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
-                            subtitleFont: Font.thinSystemFont(fontSizes.footnote),
-                        }),
-                        await this.createButtonCell('Menu', {
-                            align: 'right',
-                            widthWeight: 30,
-                            dismissOnTap: false,
-                            onTap: async() => {
-                                console.log(`(Dashboard) Menu Button was pressed`);
-                                this.FPW.Menus.menuBuilderByType('main');
-                            },
-                        }),
-                    ], {
-                        backgroundColor: new Color(headerColor),
-                        height: 40,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                    },
-                ),
-            );
+                const lvbBatteryLow = vData && vData.evVehicle !== true && vData.batteryStatus === 'STATUS_LOW';
+                let ignStatus = '';
+                if (vData && vData.remoteStartStatus && vData.remoteStartStatus.running === true) {
+                    ignStatus = `Remote Start (ON)` + (vData.remoteStartStatus.runtimeLeft && vData.remoteStartStatus.runtime ? `\n(${vData.remoteStartStatus.runtimeLeft} of ${vData.remoteStartStatus.runtime} minutes remain)` : '');
+                } else {
+                    ignStatus = vData.ignitionStatus !== undefined ? vData.ignitionStatus.charAt(0).toUpperCase() + vData.ignitionStatus.slice(1) : this.FPW.textMap().errorMessages.noData;
+                }
+                let refreshTime = (await this.FPW.getLastRefreshElapsedString(vData)) || this.textMap.UIValues.unknown;
+                const odometerVal = vData && vData.odometer ? `${Math.round(vData.odometer * distanceMultiplier)} ${distanceUnit}` : this.FPW.textMap().errorMessages.noData;
+                const msgs = vData && vData.messages && vData.messages.length ? vData.messages : [];
+                const recalls = vData && vData.recallInfo && vData.recallInfo.length && vData.recallInfo[0].recalls && vData.recallInfo[0].recalls.length > 0 ? vData.recallInfo[0].recalls : [];
+                const msgsUnread = msgs && msgs.length ? msgs.filter((msg) => msg.isRead === false) : [];
 
-            // Header Section - Row 2: Shows tire pressure label and unit
-            tableRows.push(
-                await this.createTableRow(
-                    [
-                        await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
-                        await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 50, subtitleColor: this.FPW.colorMap.text.dark, subtitleFont: Font.semiboldSystemFont(fontSizes.body2) }),
-                        await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
-                    ], {
-                        backgroundColor: new Color(headerColor),
-                        height: 15,
-                        dismissOnSelect: false,
-                    },
-                ),
-            );
+                const showTestUIStuff = this.FPW.widgetConfig.showTestUIStuff === true;
+                let updateAvailable = this.FPW.getStateVal('updateAvailable') === true;
 
-            // Header Section - Row 3: Displays the Vehicle Image in center and doors on the left and windows on the right
-            const openDoors = await this.FPW.getOpenItems('doors', vData.statusDoors); //['LF', 'RF', 'LR', 'RR', 'HD'];
-            const openWindows = await this.FPW.getOpenItems('windows', vData.statusWindows); //['LF', 'RF', 'LR', 'RR', 'HD'];
-            // console.log(`openDoors: ${JSON.stringify(openDoors)}`);
-            // console.log(`openWindows: ${JSON.stringify(openWindows)}`);
-            tableRows.push(
-                await this.createTableRow(
-                    [
-                        // Door Status Cells
-                        await this.createImageCell(await this.FPW.Files.getImage(`door_dark_menu.png`), { align: 'center', widthWeight: 5 }),
-                        await this.createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', {
-                            align: 'left',
-                            widthWeight: 20,
-                            dismissOnTap: false,
-                            titleColor: this.FPW.colorMap.text.dark,
-                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                            subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
-                            subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                        }),
-                        await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nLR: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
-                        await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
-                        await this.createTextCell(`RF: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
-
-                        // Window Status Cells
-                        await this.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
-                            align: 'right',
-                            widthWeight: 20,
-                            dismissOnTap: false,
-                            titleColor: this.FPW.colorMap.text.dark,
-                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                            subtitleColor: new Color(openWindows.length ? '#FF5733' : '#5A65C0'),
-                            subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                        }),
-
-                        await this.createImageCell(await this.FPW.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
-                    ], {
-                        backgroundColor: new Color(headerColor),
-                        height: 110,
-                        cellSpacing: 0,
-                        dismissOnSelect: false,
-                    },
-                ),
-            );
-
-            // Header Section - Row 4: Shows fuel/EV battery level and range
-            let row4Items = [
-                await this.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${this.FPW.valueChk(lvlValue, 0, 100) ? lvlValue + '%' : '--'}`, dteString, {
-                    align: 'left',
-                    widthWeight: 30,
-                    titleColor: this.FPW.colorMap.text.dark,
-                    titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                    subtitleColor: Color.lightGray(),
-                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                }),
-            ];
-            if (vData.fordpassRewardsInfo && vData.fordpassRewardsInfo.points) {
-                row4Items.push(
-                    await this.createTextCell('FordPass Rewards', `${vData.fordpassRewardsInfo.points}`, {
-                        align: 'center',
-                        widthWeight: 40,
-                        dismissOnTap: false,
-                        titleColor: this.FPW.colorMap.text.dark,
-                        titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                        subtitleColor: this.FPW.colorMap.closedColor,
-                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                    }),
-                );
-            } else {
-                row4Items.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 40 }));
-            }
-
-            if (vData.alarmStatus && vData.alarmStatus.length) {
-                row4Items.push(
-                    await this.createTextCell('Alarm', vData.alarmStatus && vData.alarmStatus === 'On' ? 'Active' : 'Inactive', {
-                        align: 'right',
-                        widthWeight: 30,
-                        dismissOnTap: false,
-                        titleColor: this.FPW.colorMap.text.dark,
-                        titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                        subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
-                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                    }),
-                    await this.createImageCell(await this.FPW.Files.getImage(`alarm_dark_menu.png`), { align: 'center', widthWeight: 5 }),
-                );
-            } else {
-                row4Items.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 35 }));
-            }
-            tableRows.push(
-                await this.createTableRow(row4Items, {
-                    backgroundColor: new Color(headerColor),
-                    height: 40,
-                    dismissOnSelect: false,
-                }),
-            );
-
-            if (vData.batteryLevel) {
+                // Header Section - Row 1: vehicle messages, vehicle type, vehicle alerts
                 tableRows.push(
                     await this.createTableRow(
                         [
-                            await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
-                            await this.createTextCell('12V Battery', `${vData.batteryLevel}V`, {
+                            await this.createImageCell(await this.FPW.Files.getFPImage(`ic_message_center_notification_dark.png`), { align: 'left', widthWeight: 3 }),
+                            await this.createButtonCell(`${msgs.length || 0}`, {
+                                align: 'left',
+                                widthWeight: 27,
+                                onTap: async() => {
+                                    console.log('(Dashboard) View Messages was pressed');
+                                    await this.createMessagesPage(vData, false);
+                                },
+                            }),
+
+                            await this.createTextCell(vData.info.vehicleType, odometerVal, {
                                 align: 'center',
                                 widthWeight: 40,
                                 dismissOnTap: false,
                                 titleColor: this.FPW.colorMap.text.dark,
-                                titleFont: Font.semiboldSystemFont(fontSizes.headline),
-                                subtitleColor: this.FPW.colorMap.closedColor,
-                                subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                subtitleColor: Color.lightGray(),
+                                titleFont: Font.boldRoundedSystemFont(fontSizes.title3),
+                                subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                             }),
-                            await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                            await this.createButtonCell('Menu', {
+                                align: 'right',
+                                widthWeight: 30,
+                                dismissOnTap: false,
+                                onTap: async() => {
+                                    console.log(`(Dashboard) Menu Button was pressed`);
+                                    this.FPW.Menus.menuBuilderByType('main');
+                                },
+                            }),
                         ], {
                             backgroundColor: new Color(headerColor),
                             height: 40,
-                            dismissOnSelect: false,
-                        },
-                    ),
-                );
-            }
-
-            // Header Section - Row 6: Padding Row
-            // tableRows.push(
-            //     await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], {
-            //         backgroundColor: new Color(headerColor),
-            //         height: 20,
-            //         dismissOnSelect: false,
-            //     }),
-            // );
-            // Header Section - Row 7: Shows vehicle checkin timestamp
-            tableRows.push(
-                await this.createTableRow(
-                    [
-                        // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
-                        await this.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularSystemFont(9) }),
-                        // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
-                    ], {
-                        backgroundColor: new Color(headerColor),
-                        height: 20,
-                        dismissOnSelect: false,
-                    },
-                ),
-            );
-
-            // console.log(`showTestUIStuff: ${showTestUIStuff}`);
-            if (showTestUIStuff) {
-                updateAvailable = true;
-                vData.alerts = {
-                    vha: [{
-                        alertIdentifier: 'E19-374-43',
-                        activityId: '91760a25-5e8a-48f8-9f10-41392781e0d7',
-                        eventTimeStamp: '1/6/2022 12:3:4 AM',
-                        colorCode: 'A',
-                        iconName: 'ic_washer_fluid',
-                        activeAlertBody: {
-                            headline: 'Low Washer Fluid',
-                            formattedBody: "<div class='accordion' id='SymptomHeader'><h2 class='toggle'><b>What Is Happening?</b></h2><div class='content' id='SymptomHeaderDesc'><p>Low windshield washer fluid.</p></div><h2 class='toggle' id='CustomerActionHeader'><b>What Should I Do?</b></h2><div class='content' id='CustomerActionHeaderDesc'><p>Check the windshield washer reservoir. Add washer fluid as needed.</p></div></div>",
-                            wilcode: '600E19',
-                            dtccode: '',
-                        },
-                        hmiAlertBody: null,
-                    }, ],
-                    mmota: [{
-                        alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL',
-                        inhibitRequired: false,
-                        dateTimeStamp: '1641426296850',
-                        releaseNotesUrl: 'http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185',
-                        colorCode: 'G',
-                        iconName: 'ic_mmota_alert_update_successful',
-                        scheduleRequired: false,
-                        wifiRequired: false,
-                        consentRequired: false,
-                        vehicleTime: '23:44',
-                        vehicleDate: '2022-01-05',
-                        updateDisplayTime: null,
-                    }, ],
-                    summary: [
-                        { alertType: 'VHA', alertDescription: 'Low Washer Fluid', alertIdentifier: 'E19-374-43', urgency: 'L', colorCode: 'A', iconName: 'ic_washer_fluid', alertPriority: 1 },
-                        { alertType: 'MMOTA', alertDescription: 'UPDATE SUCCESSFUL', alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL', urgency: null, colorCode: 'G', iconName: 'ic_mmota_alert_update_successful', alertPriority: 2 },
-                    ],
-                };
-
-                vData.firmwareUpdating = true;
-                vData.deepSleepMode = true;
-                updateAvailable = true;
-            }
-
-            // Script Update Available Row
-            if (updateAvailable) {
-                tableRows.push(
-                    await this.createTableRow(
-                        [
-                            await this.createTextCell(`New Widget Update Available (v${this.FPW.getStateVal('LATEST_VERSION')})`, 'Tap here to update', {
-                                align: 'center',
-                                widthWeight: 100,
-                                titleColor: new Color('#b605fc'),
-                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
-                                subtitleColor: this.FPW.colorMap.normalText,
-                                subtitleFont: Font.regularSystemFont(11),
-                            }),
-                        ], {
-                            height: 40,
-                            dismissOnSelect: true,
-                            onSelect: async() => {
-                                console.log('(Main Menu) Update Widget was pressed');
-                                if (await this.FPW.Alerts.showYesNoPrompt('Script Update', 'This will update your Ford Widget to the latest release.  Proceed?')) {
-                                    const res = await this.FPW.updateThisScript();
-                                    console.log(`(Main Menu) Script Update Result: ${res}`);
-                                    await this.FPW.Alerts.showAlert('Widget Updater', 'Widget Code has been updated to the latest version.');
-                                }
-                            },
-                        },
-                    ),
-                );
-            }
-
-            // Vehicle Recalls Section - Creates rows for each summary recall
-            if (recalls && recalls.length) {
-                // Creates the Vehicle Recalls Title Row
-                tableRows.push(
-                    await this.createTableRow(
-                        [
-                            await this.createTextCell(`Recall(s)`, undefined, {
-                                align: 'center',
-                                widthWeight: 1,
-                                dismissOnTap: false,
-                                titleColor: this.FPW.colorMap.normalText,
-                                titleFont: Font.regularRoundedSystemFont(fontSizes.title3),
-                            }),
-                        ], {
-                            height: 25,
                             isHeader: true,
                             dismissOnSelect: false,
-                            backgroundColor: new Color(titleBgColor),
                         },
                     ),
                 );
-                // Creates a single row for each recall in the top 10 of recalls array
-                if (recalls.length > 3) {
+
+                // Header Section - Row 2: Shows tire pressure label and unit
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
+                            await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 50, subtitleColor: this.FPW.colorMap.text.dark, subtitleFont: Font.semiboldSystemFont(fontSizes.body2) }),
+                            await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
+                        ], {
+                            backgroundColor: new Color(headerColor),
+                            height: 15,
+                            dismissOnSelect: false,
+                        },
+                    ),
+                );
+
+                // Header Section - Row 3: Displays the Vehicle Image in center and doors on the left and windows on the right
+                const openDoors = await this.FPW.getOpenItems('doors', vData.statusDoors); //['LF', 'RF', 'LR', 'RR', 'HD'];
+                const openWindows = await this.FPW.getOpenItems('windows', vData.statusWindows); //['LF', 'RF', 'LR', 'RR', 'HD'];
+                // console.log(`openDoors: ${JSON.stringify(openDoors)}`);
+                // console.log(`openWindows: ${JSON.stringify(openWindows)}`);
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            // Door Status Cells
+                            await this.createImageCell(await this.FPW.Files.getImage(`door_dark_menu.png`), { align: 'center', widthWeight: 5 }),
+                            await this.createTextCell('Doors', openDoors.length ? openDoors.join(', ') : 'Closed', {
+                                align: 'left',
+                                widthWeight: 20,
+                                dismissOnTap: false,
+                                titleColor: this.FPW.colorMap.text.dark,
+                                titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                                subtitleColor: new Color(openDoors.length ? '#FF5733' : '#5A65C0'),
+                                subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                            }),
+                            await this.createTextCell(`LF: ${vData.tirePressure.leftFront}\n\n\n\nLR: ${vData.tirePressure.leftRear}`, undefined, { align: 'right', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+                            await this.createImageCell(await this.FPW.Files.getVehicleImage(vData.info.modelYear, false, 1), { align: 'center', widthWeight: 30 }),
+                            await this.createTextCell(`RF: ${vData.tirePressure.rightFront}\n\n\n\nRR: ${vData.tirePressure.rightRear}`, undefined, { align: 'left', widthWeight: 10, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.mediumSystemFont(fontSizes.medium) }),
+
+                            // Window Status Cells
+                            await this.createTextCell('Windows', openWindows.length ? openWindows.join(', ') : 'Closed', {
+                                align: 'right',
+                                widthWeight: 20,
+                                dismissOnTap: false,
+                                titleColor: this.FPW.colorMap.text.dark,
+                                titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                                subtitleColor: new Color(openWindows.length ? '#FF5733' : '#5A65C0'),
+                                subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                            }),
+
+                            await this.createImageCell(await this.FPW.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
+                        ], {
+                            backgroundColor: new Color(headerColor),
+                            height: 110,
+                            cellSpacing: 0,
+                            dismissOnSelect: false,
+                        },
+                    ),
+                );
+
+                // Header Section - Row 4: Shows fuel/EV battery level and range
+                let row4Items = [
+                    await this.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
+                    await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${this.FPW.valueChk(lvlValue, 0, 100) ? lvlValue + '%' : '--'}`, dteString, {
+                        align: 'left',
+                        widthWeight: 30,
+                        titleColor: this.FPW.colorMap.text.dark,
+                        titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                        subtitleColor: Color.lightGray(),
+                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                    }),
+                ];
+                if (vData.fordpassRewardsInfo && vData.fordpassRewardsInfo.points) {
+                    row4Items.push(
+                        await this.createTextCell('FordPass Rewards', `${vData.fordpassRewardsInfo.points}`, {
+                            align: 'center',
+                            widthWeight: 40,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                            subtitleColor: this.FPW.colorMap.closedColor,
+                            subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                        }),
+                    );
+                } else {
+                    row4Items.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 40 }));
+                }
+
+                if (vData.alarmStatus && vData.alarmStatus.length) {
+                    row4Items.push(
+                        await this.createTextCell('Alarm', vData.alarmStatus && vData.alarmStatus === 'On' ? 'Active' : 'Inactive', {
+                            align: 'right',
+                            widthWeight: 30,
+                            dismissOnTap: false,
+                            titleColor: this.FPW.colorMap.text.dark,
+                            titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                            subtitleColor: new Color(vData.alarmStatus === 'On' ? '#FF5733' : '#5A65C0'),
+                            subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                        }),
+                        await this.createImageCell(await this.FPW.Files.getImage(`alarm_dark_menu.png`), { align: 'center', widthWeight: 5 }),
+                    );
+                } else {
+                    row4Items.push(await this.createTextCell('', undefined, { align: 'center', widthWeight: 35 }));
+                }
+                tableRows.push(
+                    await this.createTableRow(row4Items, {
+                        backgroundColor: new Color(headerColor),
+                        height: 40,
+                        dismissOnSelect: false,
+                    }),
+                );
+
+                if (vData.batteryLevel) {
                     tableRows.push(
                         await this.createTableRow(
                             [
-                                await this.createImageCell(await this.FPW.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell(`(${recalls.length}) Vehicle Recalls Found`, 'Tap to view', { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.mediumSystemFont(fontSizes.headline), subtitleColor: this.FPW.colorMap.normalText, subtitleFont: Font.regularSystemFont(10) }),
+                                await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
+                                await this.createTextCell('12V Battery', `${vData.batteryLevel}V`, {
+                                    align: 'center',
+                                    widthWeight: 40,
+                                    dismissOnTap: false,
+                                    titleColor: this.FPW.colorMap.text.dark,
+                                    titleFont: Font.semiboldSystemFont(fontSizes.headline),
+                                    subtitleColor: this.FPW.colorMap.closedColor,
+                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                }),
+                                await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
                             ], {
-                                height: 44,
+                                backgroundColor: new Color(headerColor),
+                                height: 40,
                                 dismissOnSelect: false,
-                                cellSpacing: 5,
+                            },
+                        ),
+                    );
+                }
+
+                // Header Section - Row 6: Padding Row
+                // tableRows.push(
+                //     await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 100 })], {
+                //         backgroundColor: new Color(headerColor),
+                //         height: 20,
+                //         dismissOnSelect: false,
+                //     }),
+                // );
+                // Header Section - Row 7: Shows vehicle checkin timestamp
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
+                            await this.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularSystemFont(9) }),
+                            // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
+                        ], {
+                            backgroundColor: new Color(headerColor),
+                            height: 20,
+                            dismissOnSelect: false,
+                        },
+                    ),
+                );
+
+                // console.log(`showTestUIStuff: ${showTestUIStuff}`);
+                if (showTestUIStuff) {
+                    updateAvailable = true;
+                    vData.alerts = {
+                        vha: [{
+                            alertIdentifier: 'E19-374-43',
+                            activityId: '91760a25-5e8a-48f8-9f10-41392781e0d7',
+                            eventTimeStamp: '1/6/2022 12:3:4 AM',
+                            colorCode: 'A',
+                            iconName: 'ic_washer_fluid',
+                            activeAlertBody: {
+                                headline: 'Low Washer Fluid',
+                                formattedBody: "<div class='accordion' id='SymptomHeader'><h2 class='toggle'><b>What Is Happening?</b></h2><div class='content' id='SymptomHeaderDesc'><p>Low windshield washer fluid.</p></div><h2 class='toggle' id='CustomerActionHeader'><b>What Should I Do?</b></h2><div class='content' id='CustomerActionHeaderDesc'><p>Check the windshield washer reservoir. Add washer fluid as needed.</p></div></div>",
+                                wilcode: '600E19',
+                                dtccode: '',
+                            },
+                            hmiAlertBody: null,
+                        }, ],
+                        mmota: [{
+                            alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL',
+                            inhibitRequired: false,
+                            dateTimeStamp: '1641426296850',
+                            releaseNotesUrl: 'http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185',
+                            colorCode: 'G',
+                            iconName: 'ic_mmota_alert_update_successful',
+                            scheduleRequired: false,
+                            wifiRequired: false,
+                            consentRequired: false,
+                            vehicleTime: '23:44',
+                            vehicleDate: '2022-01-05',
+                            updateDisplayTime: null,
+                        }, ],
+                        summary: [
+                            { alertType: 'VHA', alertDescription: 'Low Washer Fluid', alertIdentifier: 'E19-374-43', urgency: 'L', colorCode: 'A', iconName: 'ic_washer_fluid', alertPriority: 1 },
+                            { alertType: 'MMOTA', alertDescription: 'UPDATE SUCCESSFUL', alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL', urgency: null, colorCode: 'G', iconName: 'ic_mmota_alert_update_successful', alertPriority: 2 },
+                        ],
+                    };
+
+                    vData.firmwareUpdating = true;
+                    vData.deepSleepMode = true;
+                    updateAvailable = true;
+                }
+
+                // Script Update Available Row
+                if (updateAvailable) {
+                    tableRows.push(
+                        await this.createTableRow(
+                            [
+                                await this.createTextCell(`New Widget Update Available (v${this.FPW.getStateVal('LATEST_VERSION')})`, 'Tap here to update', {
+                                    align: 'center',
+                                    widthWeight: 100,
+                                    titleColor: new Color('#b605fc'),
+                                    titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                    subtitleColor: this.FPW.colorMap.normalText,
+                                    subtitleFont: Font.regularSystemFont(11),
+                                }),
+                            ], {
+                                height: 40,
+                                dismissOnSelect: true,
                                 onSelect: async() => {
-                                    console.log('(Dashboard) Recall Item row was pressed');
-                                    await this.createRecallPage(vData);
+                                    console.log('(Main Menu) Update Widget was pressed');
+                                    if (await this.FPW.Alerts.showYesNoPrompt('Script Update', 'This will update your Ford Widget to the latest release.  Proceed?')) {
+                                        const res = await this.FPW.updateThisScript();
+                                        console.log(`(Main Menu) Script Update Result: ${res}`);
+                                        await this.FPW.Alerts.showAlert('Widget Updater', 'Widget Code has been updated to the latest version.');
+                                    }
                                 },
                             },
                         ),
                     );
-                } else {
-                    for (const [i, recall] of recalls.entries()) {
-                        if (i >= 10) {
-                            break;
-                        }
+                }
+
+                // Vehicle Recalls Section - Creates rows for each summary recall
+                if (recalls && recalls.length) {
+                    // Creates the Vehicle Recalls Title Row
+                    tableRows.push(
+                        await this.createTableRow(
+                            [
+                                await this.createTextCell(`Recall(s)`, undefined, {
+                                    align: 'center',
+                                    widthWeight: 1,
+                                    dismissOnTap: false,
+                                    titleColor: this.FPW.colorMap.normalText,
+                                    titleFont: Font.regularRoundedSystemFont(fontSizes.title3),
+                                }),
+                            ], {
+                                height: 25,
+                                isHeader: true,
+                                dismissOnSelect: false,
+                                backgroundColor: new Color(titleBgColor),
+                            },
+                        ),
+                    );
+                    // Creates a single row for each recall in the top 10 of recalls array
+                    if (recalls.length > 3) {
                         tableRows.push(
                             await this.createTableRow(
                                 [
                                     await this.createImageCell(await this.FPW.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                    await this.createTextCell(recall.title, `${recall.type}\n(ID: ${recall.id})`, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.mediumSystemFont(fontSizes.headline), subtitleColor: this.FPW.colorMap.normalText, subtitleFont: Font.regularSystemFont(10) }),
+                                    await this.createTextCell(`(${recalls.length}) Vehicle Recalls Found`, 'Tap to view', { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.mediumSystemFont(fontSizes.headline), subtitleColor: this.FPW.colorMap.normalText, subtitleFont: Font.regularSystemFont(10) }),
                                 ], {
-                                    height: recall.id && recall.id.length ? 60 : 44,
+                                    height: 44,
                                     dismissOnSelect: false,
                                     cellSpacing: 5,
                                     onSelect: async() => {
@@ -896,488 +875,512 @@ module.exports = class FPW_App {
                                 },
                             ),
                         );
+                    } else {
+                        for (const [i, recall] of recalls.entries()) {
+                            if (i >= 10) {
+                                break;
+                            }
+                            tableRows.push(
+                                await this.createTableRow(
+                                    [
+                                        await this.createImageCell(await this.FPW.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                        await this.createTextCell(recall.title, `${recall.type}\n(ID: ${recall.id})`, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.mediumSystemFont(fontSizes.headline), subtitleColor: this.FPW.colorMap.normalText, subtitleFont: Font.regularSystemFont(10) }),
+                                    ], {
+                                        height: recall.id && recall.id.length ? 60 : 44,
+                                        dismissOnSelect: false,
+                                        cellSpacing: 5,
+                                        onSelect: async() => {
+                                            console.log('(Dashboard) Recall Item row was pressed');
+                                            await this.createRecallPage(vData);
+                                        },
+                                    },
+                                ),
+                            );
+                        }
                     }
                 }
-            }
 
-            // Vehicle Alerts Section - Creates rows for each summary alert
-            if ((vData.alerts && vData.alerts.summary && vData.alerts.summary.length) || vData.firmwareUpdating || vData.deepSleepMode || lvbBatteryLow) {
-                let alertsSummary = vData.alerts && vData.alerts.summary && vData.alerts.summary.length ? vData.alerts.summary : [];
+                // Vehicle Alerts Section - Creates rows for each summary alert
+                if ((vData.alerts && vData.alerts.summary && vData.alerts.summary.length) || vData.firmwareUpdating || vData.deepSleepMode || lvbBatteryLow) {
+                    let alertsSummary = vData.alerts && vData.alerts.summary && vData.alerts.summary.length ? vData.alerts.summary : [];
 
-                if (vData.deepSleepMode) {
-                    alertsSummary.push({ alertType: 'VHA', alertDescription: 'Deep Sleep Active - Low Battery', urgency: 'L', colorCode: 'R', iconName: 'battery_12v', alertPriority: 1, noButton: true });
-                }
-                if (lvbBatteryLow) {
-                    alertsSummary.push({ alertType: 'VHA', alertDescription: '12V Battery Low', urgency: 'L', colorCode: 'R', iconName: 'battery_12v', alertPriority: 1, noButton: true });
-                }
-                if (vData.firmwareUpdating) {
-                    alertsSummary.push({ alertType: 'MMOTA', alertDescription: 'Firmware Update in Progress', urgency: 'L', colorCode: 'G', iconName: 'ic_software_updates', alertPriority: 1, noButton: true });
-                }
-
-                // Creates the Vehicle Alerts Title Row
-                tableRows.push(
-                    await this.createTableRow([await this.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
-                );
-                // Creates a single row for each alert in the top 10 of alerts.summary array
-                for (const [i, alert] of alertsSummary.entries()) {
-                    if (i >= 10) {
-                        break;
+                    if (vData.deepSleepMode) {
+                        alertsSummary.push({ alertType: 'VHA', alertDescription: 'Deep Sleep Active - Low Battery', urgency: 'L', colorCode: 'R', iconName: 'battery_12v', alertPriority: 1, noButton: true });
                     }
+                    if (lvbBatteryLow) {
+                        alertsSummary.push({ alertType: 'VHA', alertDescription: '12V Battery Low', urgency: 'L', colorCode: 'R', iconName: 'battery_12v', alertPriority: 1, noButton: true });
+                    }
+                    if (vData.firmwareUpdating) {
+                        alertsSummary.push({ alertType: 'MMOTA', alertDescription: 'Firmware Update in Progress', urgency: 'L', colorCode: 'G', iconName: 'ic_software_updates', alertPriority: 1, noButton: true });
+                    }
+
+                    // Creates the Vehicle Alerts Title Row
+                    tableRows.push(
+                        await this.createTableRow([await this.createTextCell(`Vehicle Alert(s)`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                            height: 25,
+                            isHeader: true,
+                            dismissOnSelect: false,
+                            backgroundColor: new Color(titleBgColor),
+                        }),
+                    );
+                    // Creates a single row for each alert in the top 10 of alerts.summary array
+                    for (const [i, alert] of alertsSummary.entries()) {
+                        if (i >= 10) {
+                            break;
+                        }
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createImageCell(await this.FPW.Files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                    await this.createTextCell(alert.alertDescription, this.getAlertDescByType(alert.alertType), {
+                                        align: 'left',
+                                        widthWeight: 93,
+                                        titleColor: new Color(this.getAlertColorByCode(alert.colorCode)),
+                                        titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                        subtitleColor: this.FPW.colorMap.normalText,
+                                        subtitleFont: Font.regularSystemFont(10),
+                                    }),
+                                ], {
+                                    height: 44,
+                                    dismissOnSelect: false,
+                                    cellSpacing: 5,
+                                    onSelect: alert.noButton === undefined || alert.noButton === false ?
+                                        async() => {
+                                            console.log('(Dashboard) Alert Item row was pressed');
+                                            // await this.FPW.Alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
+                                            await this.createAlertsPage(vData);
+                                        } :
+                                        undefined,
+                                },
+                            ),
+                        );
+                    }
+                }
+
+                // Unread Messages Section - Displays a count of unread messages and a button to view all messages
+                if (msgsUnread.length) {
+                    tableRows.push(
+                        await this.createTableRow([await this.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                            height: 25,
+                            isHeader: true,
+                            dismissOnSelect: false,
+                            backgroundColor: new Color(titleBgColor),
+                        }),
+                    );
+
                     tableRows.push(
                         await this.createTableRow(
                             [
-                                await this.createImageCell(await this.FPW.Files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell(alert.alertDescription, this.getAlertDescByType(alert.alertType), {
+                                await this.createImageCell(await this.FPW.Files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.createTextCell(`Unread Message${msgsUnread.length > 1 ? 's' : ''}: (${msgsUnread.length})`, undefined, {
                                     align: 'left',
-                                    widthWeight: 93,
-                                    titleColor: new Color(this.getAlertColorByCode(alert.colorCode)),
-                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                    widthWeight: 76,
+                                    titleColor: this.FPW.colorMap.normalText,
+                                    titleFont: Font.body(),
                                     subtitleColor: this.FPW.colorMap.normalText,
-                                    subtitleFont: Font.regularSystemFont(10),
+                                    subtitleFont: Font.regularSystemFont(9),
+                                }),
+                                await this.createButtonCell('View', {
+                                    align: 'center',
+                                    widthWeight: 17,
+                                    onTap: async() => {
+                                        console.log('(Dashboard) View Unread Messages was pressed');
+                                        await this.createMessagesPage(vData, true);
+                                    },
                                 }),
                             ], {
                                 height: 44,
                                 dismissOnSelect: false,
                                 cellSpacing: 5,
-                                onSelect: alert.noButton === undefined || alert.noButton === false ?
-                                    async() => {
-                                        console.log('(Dashboard) Alert Item row was pressed');
-                                        // await this.FPW.Alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
-                                        await this.createAlertsPage(vData);
-                                    } :
-                                    undefined,
+                                onSelect: async() => {
+                                    console.log('(Dashboard) View Unread Messages was pressed');
+                                    await this.createMessagesPage(vData, true);
+                                },
                             },
                         ),
                     );
                 }
-            }
 
-            // Unread Messages Section - Displays a count of unread messages and a button to view all messages
-            if (msgsUnread.length) {
+                // Vehicle Controls Section - Remote Start, Door Locks, and Horn/Lights
+                if (caps && caps.length && (caps.includes('remoteLock') || caps.includes('remoteStart') || caps.includes('remotePanicAlarm'))) {
+                    // Creates the Status & Remote Controls Header Row
+                    tableRows.push(
+                        await this.createTableRow([await this.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                            height: 25,
+                            isHeader: true,
+                            dismissOnSelect: false,
+                            backgroundColor: new Color(titleBgColor),
+                        }),
+                    );
+
+                    // Generates the Lock Control Row
+                    if (caps.includes('remoteLock')) {
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createImageCell(await this.FPW.Files.getFPImage(`${vData.lockStatus === 'LOCKED' ? 'lock_icon' : 'unlock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                    await this.createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', {
+                                        align: 'left',
+                                        widthWeight: 59,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'),
+                                        titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                    }),
+                                    await this.createButtonCell('Unlock', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Unlock was pressed');
+                                            if (await this.FPW.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
+                                                await this.FPW.FordAPI.sendVehicleCmd('unlock');
+                                            }
+                                        },
+                                    }),
+                                    await this.createButtonCell('Lock', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Lock was pressed');
+                                            await this.FPW.FordAPI.sendVehicleCmd('lock');
+                                        },
+                                    }),
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                            ),
+                        );
+                    }
+
+                    // Generates the Remote Start Control Row
+                    if (caps.includes('remoteStart')) {
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createImageCell(await this.FPW.Files.getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                    await this.createTextCell('Ignition', ignStatus, {
+                                        align: 'left',
+                                        widthWeight: 59,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'),
+                                        titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                    }),
+                                    await this.createButtonCell('Stop', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Stop was pressed');
+                                            await this.FPW.FordAPI.sendVehicleCmd('stop');
+                                        },
+                                    }),
+                                    await this.createButtonCell('Start', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Start was pressed');
+                                            if (await this.FPW.Alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
+                                                await this.FPW.FordAPI.sendVehicleCmd('start');
+                                            }
+                                        },
+                                    }),
+                                ], { height: ignStatus.length > 17 ? 64 : 44, cellSpacing: 5, dismissOnSelect: false },
+                            ),
+                        );
+                    }
+
+                    // Generates the Horn/Lights Control Row
+                    if (caps.includes('remotePanicAlarm')) {
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createImageCell(await this.FPW.Files.getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                    await this.createTextCell('Sound Horn/Lights', undefined, {
+                                        align: 'left',
+                                        widthWeight: 76,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'),
+                                        titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                    }),
+
+                                    await this.createButtonCell('Start', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Horn/Lights was pressed');
+                                            if (await this.FPW.Alerts.showYesNoPrompt('Horn/Lights', 'Your Horn and Lights will activate for a few seconds.  Are you sure you want to proceed?')) {
+                                                await this.FPW.FordAPI.sendVehicleCmd('horn_and_lights');
+                                            }
+                                        },
+                                    }),
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                            ),
+                        );
+                    }
+                }
+
+                // Advanced Controls Section - Zone Lighting, SecuriAlert, Trailer Lights(if available)
+                if (caps && caps.length && (caps.includes('zoneLighting') || caps.includes('guardMode') || caps.includes('trailerLightCheck'))) {
+                    // Creates the Advanced Controls Header Text
+                    tableRows.push(
+                        await this.createTableRow([await this.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
+                            height: 25,
+                            isHeader: true,
+                            dismissOnSelect: false,
+                            backgroundColor: new Color(titleBgColor),
+                        }),
+                    );
+
+                    // Generates the SecuriAlert Control Row
+                    if (caps.includes('guardMode')) {
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createImageCell(await this.FPW.Files.getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                    await this.createTextCell('SecuriAlert', vData.securiAlertStatus === 'enable' ? 'On' : 'Off', {
+                                        align: 'left',
+                                        widthWeight: 59,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        subtitleColor: new Color(vData.securiAlertStatus === 'enable' ? '#FF5733' : '#5A65C0'),
+                                        titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                    }),
+                                    await this.createButtonCell('Enable', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) SecuriAlert Enable was pressed');
+                                            await this.FPW.FordAPI.sendVehicleCmd('guard_mode_on');
+                                        },
+                                    }),
+                                    await this.createButtonCell('Disable', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) SecuriAlert Disable was pressed');
+                                            if (await this.FPW.Alerts.showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
+                                                await this.FPW.FordAPI.sendVehicleCmd('guard_mode_off');
+                                            }
+                                        },
+                                    }),
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                            ),
+                        );
+                    }
+
+                    // Generates the Zone Lighting Control Row
+                    if (caps.includes('zoneLighting')) {
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createImageCell(await this.FPW.Files.getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                    await this.createTextCell('Zone Lighting', vData.zoneLightingStatus, {
+                                        align: 'left',
+                                        widthWeight: 59,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'),
+                                        titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                    }),
+                                    await this.createButtonCell('Enable', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Zone Lighting On Button was pressed');
+                                            await this.FPW.Alerts.showActionPrompt(
+                                                'Zone Lighting On Menu',
+                                                undefined, [{
+                                                        title: 'Front Zone',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone Front On was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_front_on');
+                                                        },
+                                                        destructive: false,
+                                                        show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                                    },
+                                                    {
+                                                        title: 'Rear Zone',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone Rear On was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_rear_on');
+                                                        },
+                                                        destructive: false,
+                                                        show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                                    },
+                                                    {
+                                                        title: 'Left Zone',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone Left On was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_left_on');
+                                                        },
+                                                        destructive: false,
+                                                        show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                                    },
+                                                    {
+                                                        title: 'Right Zone',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone Right On was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_right_on');
+                                                        },
+                                                        destructive: false,
+                                                        show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                                    },
+                                                    {
+                                                        title: 'All Zones',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone All On was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_all_on');
+                                                        },
+                                                        destructive: false,
+                                                        show: true,
+                                                    },
+                                                ],
+                                                true,
+                                            );
+                                        },
+                                    }),
+                                    await this.createButtonCell('Disable', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Zone Lighting Off Button was pressed');
+                                            await this.FPW.Alerts.showActionPrompt(
+                                                'Zone Lighting Off',
+                                                undefined, [{
+                                                        title: 'Front Zone',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone Front Off was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_front_off');
+                                                        },
+                                                        destructive: false,
+                                                        show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                                    },
+                                                    {
+                                                        title: 'Rear Zone',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone Rear Off was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_rear_off');
+                                                        },
+                                                        destructive: false,
+                                                        show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                                    },
+                                                    {
+                                                        title: 'Left Zone',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone Left Off was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_left_off');
+                                                        },
+                                                        destructive: false,
+                                                        show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                                    },
+                                                    {
+                                                        title: 'Right Zone',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone Right Off was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_right_off');
+                                                        },
+                                                        destructive: false,
+                                                        show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
+                                                    },
+                                                    {
+                                                        title: 'All Zones',
+                                                        action: async() => {
+                                                            console.log(`(Dashboard) Zone All Off was pressed`);
+                                                            await this.FPW.FordAPI.sendVehicleCmd('zone_lights_all_off');
+                                                        },
+                                                        destructive: false,
+                                                        show: true,
+                                                    },
+                                                ],
+                                                true,
+                                            );
+                                        },
+                                    }),
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                            ),
+                        );
+                    }
+
+                    // Generates the Trailer Light Check Control Row
+                    if (caps.includes('trailerLightCheck')) {
+                        tableRows.push(
+                            await this.createTableRow(
+                                [
+                                    await this.createImageCell(await this.FPW.Files.getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                    await this.createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, {
+                                        align: 'left',
+                                        widthWeight: 59,
+                                        titleColor: this.FPW.colorMap.normalText,
+                                        subtitleColor: new Color(vData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'),
+                                        titleFont: Font.mediumSystemFont(fontSizes.headline),
+                                        subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
+                                    }),
+                                    await this.createButtonCell('Start', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Trailer Light Check Start was pressed');
+                                            if (await this.FPW.Alerts.showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
+                                                await this.FPW.FordAPI.sendVehicleCmd('trailer_light_check_on');
+                                            }
+                                        },
+                                    }),
+                                    await this.createButtonCell('Stop', {
+                                        align: 'center',
+                                        widthWeight: 17,
+                                        onTap: async() => {
+                                            console.log('(Dashboard) Trailer Light Check Stop was pressed');
+                                            await this.FPW.FordAPI.sendVehicleCmd('trailer_light_check_off');
+                                        },
+                                    }),
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                            ),
+                        );
+                    }
+                }
+
                 tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Unread Messages', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
+                    // await this.createTableRow([
+                    //     await this.createTextCell('', undefined, {
+                    //         align: 'center',
+                    //         widthWeight: 100,
+                    //     }),
+                    // ]),
+                    await this.createTableRow([
+                        await this.createTextCell('Last Refreshed:', new Date().toLocaleString(), {
+                            align: 'center',
+                            widthWeight: 100,
+                            titleColor: this.FPW.colorMap.normalText,
+                            subtitleColor: this.FPW.colorMap.normalText,
+                            titleFont: Font.mediumSystemFont(fontSizes.body2),
+                            subtitleFont: Font.mediumSystemFont(fontSizes.body),
+                        }),
+                    ]),
                 );
 
                 tableRows.push(
                     await this.createTableRow(
                         [
-                            await this.createImageCell(await this.FPW.Files.getFPImage(`ic_message_center_notification_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await this.createTextCell(`Unread Message${msgsUnread.length > 1 ? 's' : ''}: (${msgsUnread.length})`, undefined, {
-                                align: 'left',
-                                widthWeight: 76,
-                                titleColor: this.FPW.colorMap.normalText,
-                                titleFont: Font.body(),
-                                subtitleColor: this.FPW.colorMap.normalText,
-                                subtitleFont: Font.regularSystemFont(9),
-                            }),
-                            await this.createButtonCell('View', {
+                            await this.createTextCell(`Advanced Info`, 'Tap to view', {
                                 align: 'center',
-                                widthWeight: 17,
-                                onTap: async() => {
-                                    console.log('(Dashboard) View Unread Messages was pressed');
-                                    await this.createMessagesPage(vData, true);
-                                },
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(11),
                             }),
                         ], {
-                            height: 44,
+                            height: 40,
                             dismissOnSelect: false,
-                            cellSpacing: 5,
                             onSelect: async() => {
-                                console.log('(Dashboard) View Unread Messages was pressed');
-                                await this.createMessagesPage(vData, true);
+                                console.log('(Main Menu) Advanced Info Page was pressed');
+                                this.createAdvancedInfoPage();
                             },
                         },
                     ),
                 );
+            } else {
+                tableRows.push(await this.createTableRow([await this.createTextCell('No Valid Data to Display... Something must be wrong!!!', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body2) })], { height: 44, dismissOnSelect: false }));
             }
-
-            // Vehicle Controls Section - Remote Start, Door Locks, and Horn/Lights
-            if (caps && caps.length && (caps.includes('DOOR_LOCK_UNLOCK') || caps.includes('REMOTE_START') || caps.includes('REMOTE_PANIC_ALARM'))) {
-                // Creates the Status & Remote Controls Header Row
-                tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Remote Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
-                );
-
-                // Generates the Lock Control Row
-                if (caps.includes('DOOR_LOCK_UNLOCK')) {
-                    tableRows.push(
-                        await this.createTableRow(
-                            [
-                                await this.createImageCell(await this.FPW.Files.getFPImage(`${vData.lockStatus === 'LOCKED' ? 'lock_icon' : 'unlock_icon'}_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell('Locks', vData.lockStatus === 'LOCKED' ? 'Locked' : 'Unlocked', {
-                                    align: 'left',
-                                    widthWeight: 59,
-                                    titleColor: this.FPW.colorMap.normalText,
-                                    subtitleColor: new Color(vData.lockStatus === 'LOCKED' ? '#5A65C0' : '#FF5733'),
-                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
-                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                                }),
-                                await this.createButtonCell('Unlock', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Unlock was pressed');
-                                        if (await this.FPW.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
-                                            await this.FPW.FordAPI.sendVehicleCmd('unlock');
-                                        }
-                                    },
-                                }),
-                                await this.createButtonCell('Lock', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Lock was pressed');
-                                        await this.FPW.FordAPI.sendVehicleCmd('lock');
-                                    },
-                                }),
-                            ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
-                        ),
-                    );
-                }
-
-                // Generates the Remote Start Control Row
-                if (caps.includes('REMOTE_START')) {
-                    tableRows.push(
-                        await this.createTableRow(
-                            [
-                                await this.createImageCell(await this.FPW.Files.getFPImage(`ic_paak_key_settings_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell('Ignition', ignStatus, {
-                                    align: 'left',
-                                    widthWeight: 59,
-                                    titleColor: this.FPW.colorMap.normalText,
-                                    subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'),
-                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
-                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                                }),
-                                await this.createButtonCell('Stop', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Stop was pressed');
-                                        await this.FPW.FordAPI.sendVehicleCmd('stop');
-                                    },
-                                }),
-                                await this.createButtonCell('Start', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Start was pressed');
-                                        if (await this.FPW.Alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
-                                            await this.FPW.FordAPI.sendVehicleCmd('start');
-                                        }
-                                    },
-                                }),
-                            ], { height: ignStatus.length > 17 ? 64 : 44, cellSpacing: 5, dismissOnSelect: false },
-                        ),
-                    );
-                }
-
-                // Generates the Horn/Lights Control Row
-                if (caps.includes('REMOTE_PANIC_ALARM')) {
-                    tableRows.push(
-                        await this.createTableRow(
-                            [
-                                await this.createImageCell(await this.FPW.Files.getFPImage(`res_0x7f080088_ic_control_lights_and_horn_active__0_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell('Sound Horn/Lights', undefined, {
-                                    align: 'left',
-                                    widthWeight: 76,
-                                    titleColor: this.FPW.colorMap.normalText,
-                                    subtitleColor: new Color(ignStatus === 'Off' ? '#5A65C0' : '#FF5733'),
-                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
-                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                                }),
-
-                                await this.createButtonCell('Start', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Horn/Lights was pressed');
-                                        if (await this.FPW.Alerts.showYesNoPrompt('Horn/Lights', 'Your Horn and Lights will activate for a few seconds.  Are you sure you want to proceed?')) {
-                                            await this.FPW.FordAPI.sendVehicleCmd('horn_and_lights');
-                                        }
-                                    },
-                                }),
-                            ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
-                        ),
-                    );
-                }
-            }
-
-            // Advanced Controls Section - Zone Lighting, SecuriAlert, Trailer Lights(if available)
-            if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES' || caps.includes('GUARD_MODE') || caps.includes('TRAILER_LIGHT'))) {
-                // Creates the Advanced Controls Header Text
-                tableRows.push(
-                    await this.createTableRow([await this.createTextCell('Advanced Controls', undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
-                        height: 25,
-                        isHeader: true,
-                        dismissOnSelect: false,
-                        backgroundColor: new Color(titleBgColor),
-                    }),
-                );
-
-                // Generates the SecuriAlert Control Row
-                if (caps.includes('GUARD_MODE')) {
-                    tableRows.push(
-                        await this.createTableRow(
-                            [
-                                await this.createImageCell(await this.FPW.Files.getFPImage(`ic_guard_mode_vd_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell('SecuriAlert', vData.securiAlertStatus === 'enable' ? 'On' : 'Off', {
-                                    align: 'left',
-                                    widthWeight: 59,
-                                    titleColor: this.FPW.colorMap.normalText,
-                                    subtitleColor: new Color(vData.securiAlertStatus === 'enable' ? '#FF5733' : '#5A65C0'),
-                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
-                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                                }),
-                                await this.createButtonCell('Enable', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) SecuriAlert Enable was pressed');
-                                        await this.FPW.FordAPI.sendVehicleCmd('guard_mode_on');
-                                    },
-                                }),
-                                await this.createButtonCell('Disable', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) SecuriAlert Disable was pressed');
-                                        if (await this.FPW.Alerts.showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
-                                            await this.FPW.FordAPI.sendVehicleCmd('guard_mode_off');
-                                        }
-                                    },
-                                }),
-                            ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
-                        ),
-                    );
-                }
-
-                // Generates the Zone Lighting Control Row
-                if (caps.includes('ZONE_LIGHTING_FOUR_ZONES') || caps.includes('ZONE_LIGHTING_TWO_ZONES')) {
-                    tableRows.push(
-                        await this.createTableRow(
-                            [
-                                await this.createImageCell(await this.FPW.Files.getFPImage(`ic_zone_lighting_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell('Zone Lighting', vData.zoneLightingStatus, {
-                                    align: 'left',
-                                    widthWeight: 59,
-                                    titleColor: this.FPW.colorMap.normalText,
-                                    subtitleColor: new Color(vData.zoneLightingStatus === 'On' ? '#FF5733' : '#5A65C0'),
-                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
-                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                                }),
-                                await this.createButtonCell('Enable', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Zone Lighting On Button was pressed');
-                                        await this.FPW.Alerts.showActionPrompt(
-                                            'Zone Lighting On Menu',
-                                            undefined, [{
-                                                    title: 'Front Zone',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone Front On was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_front_on');
-                                                    },
-                                                    destructive: false,
-                                                    show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
-                                                },
-                                                {
-                                                    title: 'Rear Zone',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone Rear On was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_rear_on');
-                                                    },
-                                                    destructive: false,
-                                                    show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
-                                                },
-                                                {
-                                                    title: 'Left Zone',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone Left On was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_left_on');
-                                                    },
-                                                    destructive: false,
-                                                    show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
-                                                },
-                                                {
-                                                    title: 'Right Zone',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone Right On was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_right_on');
-                                                    },
-                                                    destructive: false,
-                                                    show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
-                                                },
-                                                {
-                                                    title: 'All Zones',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone All On was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_all_on');
-                                                    },
-                                                    destructive: false,
-                                                    show: true,
-                                                },
-                                            ],
-                                            true,
-                                        );
-                                    },
-                                }),
-                                await this.createButtonCell('Disable', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Zone Lighting Off Button was pressed');
-                                        await this.FPW.Alerts.showActionPrompt(
-                                            'Zone Lighting Off',
-                                            undefined, [{
-                                                    title: 'Front Zone',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone Front Off was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_front_off');
-                                                    },
-                                                    destructive: false,
-                                                    show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
-                                                },
-                                                {
-                                                    title: 'Rear Zone',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone Rear Off was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_rear_off');
-                                                    },
-                                                    destructive: false,
-                                                    show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
-                                                },
-                                                {
-                                                    title: 'Left Zone',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone Left Off was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_left_off');
-                                                    },
-                                                    destructive: false,
-                                                    show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
-                                                },
-                                                {
-                                                    title: 'Right Zone',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone Right Off was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_right_off');
-                                                    },
-                                                    destructive: false,
-                                                    show: caps.includes('ZONE_LIGHTING_FOUR_ZONES'),
-                                                },
-                                                {
-                                                    title: 'All Zones',
-                                                    action: async() => {
-                                                        console.log(`(Dashboard) Zone All Off was pressed`);
-                                                        await this.FPW.FordAPI.sendVehicleCmd('zone_lights_all_off');
-                                                    },
-                                                    destructive: false,
-                                                    show: true,
-                                                },
-                                            ],
-                                            true,
-                                        );
-                                    },
-                                }),
-                            ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
-                        ),
-                    );
-                }
-
-                // Generates the Trailer Light Check Control Row
-                if (caps.includes('TRAILER_LIGHT')) {
-                    tableRows.push(
-                        await this.createTableRow(
-                            [
-                                await this.createImageCell(await this.FPW.Files.getFPImage(`ic_trailer_light_check_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                                await this.createTextCell('Trailer Light Check', vData.trailerLightCheckStatus, {
-                                    align: 'left',
-                                    widthWeight: 59,
-                                    titleColor: this.FPW.colorMap.normalText,
-                                    subtitleColor: new Color(vData.trailerLightCheckStatus === 'On' ? '#FF5733' : '#5A65C0'),
-                                    titleFont: Font.mediumSystemFont(fontSizes.headline),
-                                    subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
-                                }),
-                                await this.createButtonCell('Start', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Trailer Light Check Start was pressed');
-                                        if (await this.FPW.Alerts.showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
-                                            await this.FPW.FordAPI.sendVehicleCmd('trailer_light_check_on');
-                                        }
-                                    },
-                                }),
-                                await this.createButtonCell('Stop', {
-                                    align: 'center',
-                                    widthWeight: 17,
-                                    onTap: async() => {
-                                        console.log('(Dashboard) Trailer Light Check Stop was pressed');
-                                        await this.FPW.FordAPI.sendVehicleCmd('trailer_light_check_off');
-                                    },
-                                }),
-                            ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
-                        ),
-                    );
-                }
-            }
-
-            tableRows.push(
-                // await this.createTableRow([
-                //     await this.createTextCell('', undefined, {
-                //         align: 'center',
-                //         widthWeight: 100,
-                //     }),
-                // ]),
-                await this.createTableRow([
-                    await this.createTextCell('Last Refreshed:', new Date().toLocaleString(), {
-                        align: 'center',
-                        widthWeight: 100,
-                        titleColor: this.FPW.colorMap.normalText,
-                        subtitleColor: this.FPW.colorMap.normalText,
-                        titleFont: Font.mediumSystemFont(fontSizes.body2),
-                        subtitleFont: Font.mediumSystemFont(fontSizes.body),
-                    }),
-                ]),
-            );
-
-            tableRows.push(
-                await this.createTableRow(
-                    [
-                        await this.createTextCell(`Advanced Info`, 'Tap to view', {
-                            align: 'center',
-                            widthWeight: 100,
-                            titleColor: this.FPW.colorMap.normalText,
-                            titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
-                            subtitleColor: this.FPW.colorMap.normalText,
-                            subtitleFont: Font.regularSystemFont(11),
-                        }),
-                    ], {
-                        height: 40,
-                        dismissOnSelect: false,
-                        onSelect: async() => {
-                            console.log('(Main Menu) Advanced Info Page was pressed');
-                            this.createAdvancedInfoPage();
-                        },
-                    },
-                ),
-            );
 
             if (!update) {
                 let lastVersion = await this.FPW.getSettingVal('fpScriptVersion');
@@ -1421,6 +1424,11 @@ module.exports = class FPW_App {
                     case 'mod':
                         await this.FPW.Files.clearModuleCache();
                         break;
+                    case 'tokens':
+                        await this.FPW.FordAPI.clearTokenCache();
+                        break;
+                    case 'data_cache':
+                        await this.FPW.Files.removeFile('fp_vehicleData.json');
                 }
             }
         }
@@ -1954,6 +1962,99 @@ module.exports = class FPW_App {
         }
     }
 
+    async createVehiclePayloadPage(vData) {
+        try {
+            const gvwr = vData.details && vData.details.profile && vData.details.profile.grossVehicleWeightRatingPounds ? vData.details.profile.grossVehicleWeightRatingPounds : undefined;
+            const maxTowW = vData.details && vData.details.profile && vData.details.profile.maximumConventionalPounds ? vData.details.profile.maximumConventionalPounds : undefined;
+            const gcwr = vData.details && vData.details.profile && vData.details.profile.grossCombinedWeightRatingPounds ? vData.details.profile.grossCombinedWeightRatingPounds : undefined;
+            const maxPl = vData.details && vData.details.profile && vData.details.profile.maximumPayloadPounds ? vData.details.profile.maximumPayloadPounds : undefined;
+            const canTow = vData.capabilities && vData.capabilities.includes('canITow');
+
+            let tableRows = [];
+
+            tableRows.push(
+                await this.createTableRow([await this.createTextCell(`Weight & Payload Info`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularRoundedSystemFont(fontSizes.title2) })], {
+                    height: 40,
+                    isHeader: true,
+                    dismissOnSelect: false,
+                    backgroundColor: new Color(headerColor),
+                }),
+            );
+            if (gvwr) {
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('Gross Vehicle Weight Rating', gvwr + ' lbs', {
+                                align: 'left',
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.mediumSystemFont(fontSizes.headline2),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(fontSizes.body2),
+                            }),
+                        ], { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                    ),
+                );
+            }
+            if (gcwr) {
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('Gross Combined Weight Rating', gcwr + ' lbs', {
+                                align: 'left',
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.mediumSystemFont(fontSizes.headline2),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(fontSizes.body2),
+                            }),
+                        ], { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                    ),
+                );
+            }
+            if (maxTowW) {
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('Max Towing Weight', maxTowW + ' lbs', {
+                                align: 'left',
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.mediumSystemFont(fontSizes.headline2),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(fontSizes.body2),
+                            }),
+                        ], { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                    ),
+                );
+            }
+            if (maxPl) {
+                tableRows.push(
+                    await this.createTableRow(
+                        [
+                            await this.createTextCell('Max Payload Weight', maxPl + ' lbs', {
+                                align: 'left',
+                                widthWeight: 100,
+                                titleColor: this.FPW.colorMap.normalText,
+                                titleFont: Font.mediumSystemFont(fontSizes.headline2),
+                                subtitleColor: this.FPW.colorMap.normalText,
+                                subtitleFont: Font.regularSystemFont(fontSizes.body2),
+                            }),
+                        ], { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                    ),
+                );
+            }
+
+            if (!gvwr || !gcwr || !maxTowW || !maxPl) {
+                tableRows.push(await this.createTableRow([await this.createTextCell('No Payload Data is Available', undefined, { align: 'left', widthWeight: 1, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.body2) })], { height: 44, dismissOnSelect: false }));
+            }
+
+            await this.generateTableMenu('recalls', tableRows, false, false);
+        } catch (err) {
+            this.FPW.logError(`createVehiclePayloadPage() Error: ${err}`);
+        }
+    }
+
     async createWidgetStylePage() {
         try {
             let widgetStyle = await this.FPW.getWidgetStyle();
@@ -2133,7 +2234,7 @@ module.exports = class FPW_App {
                     }),
                 );
 
-                if (vData['syncInfo'] && Object.keys(vData['syncInfo']).length && vData['syncInfo'].syncVersion) {
+                if (vData.syncInfo && Object.keys(vData.syncInfo).length && vData.syncInfo.syncVersion) {
                     const syncVerStr = vData.syncInfo.syncVersion.split(' ');
                     const syncModel = syncVerStr && syncVerStr[0] ? syncVerStr[0] : 'Unavailable';
                     const syncVer = syncVerStr && syncVerStr[1] ? syncVerStr[1] : 'Unavailable';
@@ -2153,6 +2254,31 @@ module.exports = class FPW_App {
                             ], {
                                 height: lastUpd ? 80 : 70,
                                 dismissOnSelect: false,
+                            },
+                        ),
+                    );
+                }
+
+                if (vData.capabilities && vData.capabilities.includes('canITow')) {
+                    tableRows.push(
+                        await this.createTableRow(
+                            [
+                                await this.createImageCell(await this.FPW.Files.getImage(`info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                                await this.createTextCell(`View Towing Payload Info`, 'Tap to view', {
+                                    align: 'left',
+                                    widthWeight: 93,
+                                    titleColor: this.FPW.colorMap.normalText,
+                                    titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                                    subtitleColor: this.FPW.colorMap.normalText,
+                                    subtitleFont: Font.regularSystemFont(11),
+                                }),
+                            ], {
+                                height: 60,
+                                dismissOnSelect: false,
+                                onSelect: async() => {
+                                    console.log('(Advanced Info) Vehicle Data was pressed');
+                                    await this.createVehiclePayloadPage(vData);
+                                },
                             },
                         ),
                     );
