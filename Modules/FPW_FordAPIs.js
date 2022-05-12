@@ -907,35 +907,35 @@ module.exports = class FPW_FordAPIs {
             lock: {
                 desc: 'Lock Doors',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/v5/doors/lock`,
+                    uri: `${baseUrl}/vehicles/v5/${vin}/doors/lock`,
                     method: 'PUT',
                 }, ],
             },
             unlock: {
                 desc: 'Unlock Doors',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/v5/doors/lock`,
+                    uri: `${baseUrl}/vehicles/v5/${vin}/doors/lock`,
                     method: 'DELETE',
                 }, ],
             },
             start: {
                 desc: 'Remote Start',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/v5/engine/start`,
+                    uri: `${baseUrl}/vehicles/v5/${vin}/engine/start`,
                     method: 'PUT',
                 }, ],
             },
             stop: {
                 desc: 'Remote Stop',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/v5/engine/start`,
+                    uri: `${baseUrl}/vehicles/v5/${vin}/engine/start`,
                     method: 'DELETE',
                 }, ],
             },
             horn_and_lights: {
                 desc: 'Horn & Lights On',
                 cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/v5/panic/3`,
+                    uri: `${baseUrl}/vehicles/v5/${vin}/panic/5`,
                     method: 'PUT',
                 }, ],
             },
@@ -1058,7 +1058,7 @@ module.exports = class FPW_FordAPIs {
                     console.log(`sendVehicleCmd(${cmd_type}) Status Code (${cmdResp.statusCode})`);
                     if (cmdResp.statusCode !== 200) {
                         wasError = true;
-                        if (widgetConfig.debugMode) {
+                        if (this.widgetConfig.debugMode) {
                             console.log('Debug: Error while sending vehicle cmd');
                             console.log(JSON.stringify(data));
                         }

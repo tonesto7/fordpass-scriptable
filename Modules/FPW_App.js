@@ -949,8 +949,7 @@ module.exports = class FPW_App {
                                             console.log('(Dashboard) Alert Item row was pressed');
                                             // await this.FPW.Alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
                                             await this.createAlertsPage(vData);
-                                        } :
-                                        undefined,
+                                        } : undefined,
                                 },
                             ),
                         );
@@ -1486,6 +1485,12 @@ module.exports = class FPW_App {
                     ],
                     true,
                 );
+                break;
+
+            case 'horn_and_lights':
+                if (await this.FPW.Alerts.showYesNoPrompt('Horn/Lights', 'Your Horn and Lights will activate for a few seconds.  Are you sure you want to proceed?')) {
+                    await this.FPW.FordAPI.sendVehicleCmd('horn_and_lights');
+                }
                 break;
 
             case 'request_refresh':
