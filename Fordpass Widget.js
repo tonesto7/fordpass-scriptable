@@ -44,6 +44,13 @@
     
 **************/
 const changelogs = {
+    '2022.05.13.0': {
+        added: [],
+        fixed: ['Fixed fuel reporting -- when tank is full and ford reports 102% level.'],
+        removed: [],
+        updated: ['Messages and recall page UI tweaks for consistency.'],
+        clearFlags: [],
+    },
     '2022.05.12.1': {
         added: ['You no longer need to enter a VIN the widget will ask for your credentials and then show the available vehicles and you just tap on the one you want.', 'Shows payload info on the advanced info page.'],
         fixed: ['Fixed broken capabilities errors since recent ford changes.', 'lots of bugfixes and optimizations.', 'Fixed horn/lights button not working on widget', 'Fixed other vehicle commands.'],
@@ -86,34 +93,9 @@ const changelogs = {
         updated: [],
         clearFlags: [],
     },
-    '2022.05.03.0': {
-        added: ['Added Warranty Info to advanced info page.', 'Added ability to send me just OTA data under Advanced Info > Diagnostics > Send OTA Data.'],
-        fixed: [],
-        removed: [],
-        updated: ['Condensed more than 3 recalls on the mainpage to a single button.', 'Updated UI elements colors and layouts to be more consistent and easier to follow.'],
-        clearFlags: [],
-    },
-    '2022.04.28.1': {
-        added: [],
-        fixed: ['Fixed self updater not working and other bugs'],
-        removed: [],
-        updated: [],
-        clearFlags: [],
-    },
-    '2022.04.28.0': {
-        added: [
-            'Builtin Updater Mechanism to Self-Update the main script without needing the widget tool (tool is still needed for install, and creating multiple instances)',
-            'You can now install the latest version of the widget tool by opening the menu > Help & Info > Update to Latest WidgetTool.',
-            'New Alert Notifications for the following: Low Tire Pressure, EV Charging Paused',
-        ],
-        fixed: ['Fixes for the Fuel level showing -- when the tank was at 100%', 'Notification menu takes you back to main menu instead of settings.'],
-        removed: [],
-        updated: ["Updated the Advanced Info page layout and added a new page for the vehicle's capabilities.", 'New version of the widget tool is now available for download. It adds the ability to reset a specific instance of the widget.'],
-        clearFlags: [],
-    },
 };
 
-const SCRIPT_VERSION = '2022.05.12.1';
+const SCRIPT_VERSION = '2022.05.13.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -1508,11 +1490,15 @@ class Widget {
         // .toLowerCase();
     }
 
-    valueChk(value, min = undefined, max = undefined) {
+    valueChk(value, min = undefined, max = undefined, setToMax = false) {
         // console.log(`valueChk(${value}, ${min}, ${max})`);
         if (!isNaN(value)) {
             const val = parseFloat(value);
             if (min !== undefined && max !== undefined) {
+                if (setToMax && val > max) {
+                    console.log(`valueChk: ${value} is greater than ${max}. Setting to ${max}`);
+                    return max;
+                }
                 // console.log(`valueChk: ${val} is between ${min} and ${max} | ${val >= min && val <= max}`);
                 return val >= min && val <= max;
             } else {
@@ -2080,7 +2066,8 @@ class Widget {
                 // DTE + Level Separator
                 await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, this.valueChk(lvlValue, 0, 100) ? `${lvlValue}%` : '--', { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
+
+                await this.createText(levelContainer, lvlValue >= 0 ? `${lvlValue > 100 ? 100 : lvlValue}%` : '--', { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
 
                 // Odometer Text
                 let mileageContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });
@@ -2266,7 +2253,7 @@ class Widget {
                 // DTE + Level Separator
                 await this.createText(levelContainer, ' / ', { font: Font.systemFont(fs - 2), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
                 // Level Text
-                await this.createText(levelContainer, this.valueChk(lvlValue, 0, 100) ? `${lvlValue}%` : '--', { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
+                await this.createText(levelContainer, lvlValue >= 0 ? `${lvlValue > 100 ? 100 : lvlValue}%` : '--', { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.6 });
 
                 // leftContainer.addSpacer();
                 let mileageContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0] });
@@ -3016,7 +3003,7 @@ class Widget {
         //     context.setTextColor(Color.white());
         // }
         const icon = isEV ? String.fromCodePoint('0x1F50B') : '\u26FD';
-        const lvlStr = this.valueChk(percent, 0, 100) ? `${percent}%` : '--';
+        const lvlStr = percent >= 0 ? `${percent}%` : '--';
         context.drawTextInRect(`${icon} ${lvlStr}`, new Rect(xPos, this.sizeMap[this.widgetSize].barGauge.h / this.sizeMap[this.widgetSize].barGauge.fs, this.sizeMap[this.widgetSize].barGauge.w, this.sizeMap[this.widgetSize].barGauge.h));
         context.setTextAlignedCenter();
         return await context.getImage();
@@ -3038,7 +3025,7 @@ class Widget {
         const dteValueRaw = !isEV ? (data.distanceToEmpty ? data.distanceToEmpty : undefined) : data.evDistanceToEmpty ? data.evDistanceToEmpty : undefined;
         return {
             isEV: isEV,
-            lvlValue: !isEV ? (data.fuelLevel ? data.fuelLevel : 0) : data.evBatteryLevel ? data.evBatteryLevel : 0,
+            lvlValue: !isEV ? (data.fuelLevel ? (data.fuelLevel > 100 ? 100 : data.fuelLevel) : 0) : data.evBatteryLevel ? (data.evBatteryLevel > 100 ? 100 : data.evBatteryLevel) : 0,
             dteValue: dteValueRaw ? Math.round(dteValueRaw * distanceMultiplier) : undefined,
             odometerVal: data.odometer ? `${Math.round(data.odometer * distanceMultiplier)} ${distanceUnit}` : this.textMap().errorMessages.noData,
             dtePostfix: dtePostfix,
@@ -3535,7 +3522,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ["FPW_Alerts.js||32416001940", "FPW_App.js||-413140733716", "FPW_AsBuilt.js||160631883825", "FPW_Files.js||66954203669", "FPW_FordAPIs.js||-2041107052", "FPW_Menus.js||-390786217375", "FPW_Notifications.js||-125971442992", "FPW_ShortcutParser.js||-50577889021", "FPW_Timers.js||11567471684"];
+const moduleFiles = ['FPW_Alerts.js||-103752335731', 'FPW_App.js||513368020044', 'FPW_AsBuilt.js||160631883825', 'FPW_Files.js||155201478467', 'FPW_FordAPIs.js||119268042247', 'FPW_Menus.js||-118950948484', 'FPW_Notifications.js||-50474146190', 'FPW_ShortcutParser.js||52695948030', 'FPW_Timers.js||124279688674'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
