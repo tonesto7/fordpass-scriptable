@@ -44,6 +44,13 @@
     
 **************/
 const changelogs = {
+    '2022.05.14.0': {
+        added: [],
+        fixed: ['fixed issues with the fuel levels.', 'code cleanups...'],
+        removed: [],
+        updated: [],
+        clearFlags: [],
+    },
     '2022.05.13.0': {
         added: [],
         fixed: ['Fixed fuel reporting -- when tank is full and ford reports 102% level.'],
@@ -95,7 +102,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.13.0';
+const SCRIPT_VERSION = '2022.05.14.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -2056,7 +2063,7 @@ class Widget {
             const miContainer = await this.createRow(carInfoContainer, { '*bottomAlignContent': null });
 
             try {
-                const { isEV, lvlValue, dteValue, odometerVal, dtePostfix, distanceMultiplier, distanceUnit, dteInfo } = await this.getRangeData(vData);
+                const { lvlValue, odometerVal, dteInfo } = await this.getRangeData(vData);
                 const fs = this.isSmallDisplay ? 14 : 16;
 
                 // DTE Text
@@ -2244,7 +2251,7 @@ class Widget {
             let miContainer = await this.createRow(leftContainer, { '*setPadding': [0, paddingLeft, 0, 0], '*bottomAlignContent': null });
 
             try {
-                const { isEV, lvlValue, dteValue, odometerVal, dtePostfix, distanceMultiplier, distanceUnit, dteInfo } = await this.getRangeData(vData);
+                const { lvlValue, odometerVal, dteInfo } = await this.getRangeData(vData);
                 const fs = this.isSmallDisplay ? 14 : 16;
                 // DTE Text
                 await this.createText(miContainer, `${dteInfo}`, { font: Font.systemFont(fs), textColor: this.colorMap.text[colorMode], textOpacity: 0.7 });
@@ -2444,11 +2451,7 @@ class Widget {
             let paddingLeft = 7; //Math.round(width * 0.06);
             console.log(`padding | Top: ${paddingTop} | Left: ${paddingLeft}`);
             const wContent = await this.createColumn(widget, { '*setPadding': [paddingTop, paddingLeft, paddingTop, paddingLeft] });
-
-            const isEV = vData.evVehicle === true;
-            let dtePostfix = isEV ? 'Range' : 'to E';
-            let distanceMultiplier = (await this.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-            let distanceUnit = (await this.useMetricUnits()) ? 'km' : 'mi'; // unit of length
+            const { lvlValue, dteInfo } = await this.getRangeData(vData);
             // vData.deepSleepMode = true;
             // vData.firmwareUpdating = true;
             const hasStatusMsg = await this.hasStatusMsg(vData);
@@ -2521,17 +2524,15 @@ class Widget {
 
             // Fuel/Battery Level BAR
             const barRow = await this.createRow(fuelBattCol, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
-            let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
-            let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
+
             barRow.addSpacer();
             await this.createImage(barRow, await this.createProgressBar(lvlValue ? lvlValue : 50, vData), { '*centerAlignImage': null, imageSize: new Size(this.sizeMap[this.widgetSize].barGauge.w, this.sizeMap[this.widgetSize].barGauge.h + 3) });
             barRow.addSpacer();
 
             // Distance/Range to Empty
             const dteRow = await this.createRow(fuelBattCol, { '*setPadding': [0, 0, 0, 0] });
-            let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap().errorMessages.noData;
             dteRow.addSpacer();
-            await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.systemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[colorMode], lineLimit: 1 });
+            await this.createText(dteRow, dteInfo || this.textMap().errorMessages.noData, { '*centerAlignText': null, font: Font.systemFont(this.sizeMap[this.widgetSize].fontSizeMedium), textColor: this.colorMap.text[colorMode], lineLimit: 1 });
             dteRow.addSpacer();
             fuelBattRow.addSpacer();
             fuelBattCol.addSpacer();
@@ -2650,19 +2651,9 @@ class Widget {
 
     async createFuelRangeElements(srcElem, vData) {
         try {
-            const isEV = vData.evVehicle === true;
-            let lvlValue = !isEV ? (vData.fuelLevel ? vData.fuelLevel : 0) : vData.evBatteryLevel ? vData.evBatteryLevel : 0;
-            let dteValue = !isEV ? (vData.distanceToEmpty ? vData.distanceToEmpty : null) : vData.evDistanceToEmpty ? vData.evDistanceToEmpty : null;
-            let dtePostfix = isEV ? 'Range' : 'to E';
-            let distanceMultiplier = (await this.useMetricUnits()) ? 1 : 0.621371; // distance multiplier
-            let distanceUnit = (await this.useMetricUnits()) ? 'km' : 'mi'; // unit of length
-            // console.log('isEV: ' + isEV);
-            // console.log(`fuelLevel: ${vData.fuelLevel}`);
-            // console.log(`distanceToEmpty: ${vData.distanceToEmpty}`);
-            // console.log(`evBatteryLevel: ${vData.evBatteryLevel}`);
-            // console.log('evDistanceToEmpty: ' + vData.evDistanceToEmpty);
+            const { lvlValue, dteInfo } = await this.getRangeData(vData);
             // console.log(`lvlValue: ${lvlValue}`);
-            // console.log(`dteValue: ${dteValue}`);
+            // console.log(`dteInfo: ${dteInfo}`);
 
             // Fuel/Battery Section
             let elemCol = await this.createColumn(srcElem, { '*setPadding': [0, 0, 0, 0], '*centerAlignContent': null });
@@ -2673,7 +2664,6 @@ class Widget {
 
             // Distance to Empty
             let dteRow = await this.createRow(elemCol, { '*centerAlignContent': null, '*topAlignContent': null });
-            let dteInfo = dteValue ? `    ${Math.round(dteValue * distanceMultiplier)}${distanceUnit} ${dtePostfix}` : this.textMap().errorMessages.noData;
             await this.createText(dteRow, dteInfo, { '*centerAlignText': null, font: Font.regularSystemFont(this.sizeMap[this.widgetSize].fontSizeSmall), textColor: this.colorMap.text[this.widgetColor], lineLimit: 1 });
             srcElem.addSpacer(3);
         } catch (e) {
