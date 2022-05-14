@@ -503,8 +503,8 @@ module.exports = class FPW_FordAPIs {
                 'Content-Type': 'application/json',
                 'Application-Id': this.appIDs().Web,
                 'auth-token': `${token}`,
-                Referer: 'https://ford.com',
-                Origin: 'https://ford.com',
+                Referer: 'https://www.subscriptions.ford.com',
+                Origin: 'https://www.subscriptions.ford.com',
                 //'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
             }, { classification: 'FordPass', geoFilter: { countryCode: 'USA', state: 'MI', city: 'Ypsilanti', zipCode: '48197' }, language: 'en-US', vin: '1FTFW1E80MFA24380' },
         );
