@@ -7,7 +7,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     getModuleVer() {
-        return '2022.05.12.0';
+        return '2022.05.25.0';
     }
 
     appIDs() {
@@ -17,6 +17,14 @@ module.exports = class FPW_FordAPIs {
             NA: '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
             Web: 'b08429de-8440-478d-a323-7a1e05cc9844',
         };
+    }
+
+    async getAppID() {
+        const appIds = this.appIDs();
+        const region = await this.FPW.getRegion();
+        const id = appIds[region] ? appIds[region] : appIds.NA;
+        // console.log(`getAppID() | Region: ${region} | ID: ${id}`);
+        return id;
     }
 
     async checkAuth(src = undefined) {
@@ -107,7 +115,7 @@ module.exports = class FPW_FordAPIs {
             if (resp1.statusCode === 200) {
                 let req2 = new Request(`https://api.mps.ford.com/api/token/v2/cat-with-ci-access-token`);
                 headers['content-type'] = 'application/json';
-                headers['application-id'] = this.appIDs().NA;
+                headers['application-id'] = await this.getAppID();
                 req2.headers = headers;
                 req2.method = 'POST';
                 req2.body = JSON.stringify({ ciToken: token1.access_token });
@@ -157,7 +165,7 @@ module.exports = class FPW_FordAPIs {
                 'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
-                'Application-Id': this.appIDs().NA,
+                'Application-Id': await this.getAppID(),
             };
             req.timeoutInterval = 15;
             req.method = 'PUT';
@@ -273,7 +281,7 @@ module.exports = class FPW_FordAPIs {
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
                 'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
-                'Application-Id': this.appIDs().NA,
+                'Application-Id': await this.getAppID(),
                 'auth-token': `${token}`,
                 countryCode: country,
                 locale: lang,
@@ -311,7 +319,7 @@ module.exports = class FPW_FordAPIs {
                 'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
                 locale: lang,
                 countryCode: country,
-                'application-id': this.appIDs().NA,
+                'application-id': await this.getAppID(),
                 'auth-token': token,
             }, {
                 dashboardRefreshRequest: 'All',
@@ -373,7 +381,7 @@ module.exports = class FPW_FordAPIs {
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
             'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
-            'Application-Id': this.appIDs().NA,
+            'Application-Id': await this.getAppID(),
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
             Referer: 'https://ford.com',
@@ -413,7 +421,7 @@ module.exports = class FPW_FordAPIs {
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
             'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
-            'Application-Id': this.appIDs().NA,
+            'Application-Id': await this.getAppID(),
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
             Referer: 'https://ford.com',
@@ -465,7 +473,7 @@ module.exports = class FPW_FordAPIs {
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
             'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
-            'Application-Id': this.appIDs().NA,
+            'Application-Id': await this.getAppID(),
             'auth-token': `${token}`,
             vin: vin,
         });
@@ -636,7 +644,7 @@ module.exports = class FPW_FordAPIs {
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
                 'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
-                'Application-Id': this.appIDs().NA,
+                'Application-Id': await this.getAppID(),
                 'auth-token': `${token}`,
                 Referer: 'https://ford.com',
                 Origin: 'https://ford.com',
@@ -1033,7 +1041,7 @@ module.exports = class FPW_FordAPIs {
                 'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
-                'Application-Id': this.appIDs().NA,
+                'Application-Id': await this.getAppID(),
                 'auth-token': `${token}`,
             };
             req.method = cmds[cmd].method;
