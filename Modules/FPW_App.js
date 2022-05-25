@@ -30,7 +30,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.05.12.0';
+        return '2022.05.25.0';
     }
 
     async getTable(tableName) {
@@ -62,7 +62,7 @@ module.exports = class FPW_App {
             }
             // console.log(`${exists ? 'Updating' : 'Creating'} ${tableName} Table and ${update ? 'Reloading' : 'Presenting'}`);
             table.showSeparators = showSeparators;
-            rows.forEach(async (row) => {
+            rows.forEach(async(row) => {
                 await table.addRow(row);
             });
             if (update) {
@@ -277,6 +277,14 @@ module.exports = class FPW_App {
         return result;
     }
 
+    textValidator(text) {
+        try {
+            return text && text.length ? text : this.FPW.textMap().errorMessages.noData;
+        } catch (err) {
+            this.FPW.textMap().errorMessages.noData;
+        }
+    }
+
     async showDataWebView(title, heading, data, type = undefined) {
         console.log(`showDataWebView(${title}, ${heading}, ${type})`); //, ${JSON.stringify(data)})`);
         let HTML = '';
@@ -285,94 +293,125 @@ module.exports = class FPW_App {
             switch (type) {
                 case 'OTA':
                     try {
-                        if (data.tappsResponse) {
-                            HTML += `<h3>OTA Status & Vehicle Schedule Settings</h3>`;
+                        HTML += `<h1>${title}</h1>`;
+                        HTML += `<h4>Deployments</h4>`;
+                        const fuseResp = data.fuseResponse;
+                        if (fuseResp && fuseResp.fuseResponseList && fuseResp.fuseResponseList.length) {
+                            let that = this;
+                            for (const [i, fuse] of fuseResp.fuseResponseList.entries()) {
+                                if (fuse && Object.keys(fuse).length) {
+                                    HTML += `<ul>`;
+                                    HTML += `<li><b>CorrelationID</b>: ${this.textValidator(fuse.oemCorrelationId)}</li>`;
+                                    HTML += `<li><b>Created</b>: ${this.textValidator(fuse.deploymentCreationDate)}</li>`;
+                                    HTML += `<li><b>Expiration</b>: ${this.textValidator(fuse.deploymentExpirationTime)}</li>`;
+                                    HTML += `<li><b>Priority</b>: ${this.textValidator(fuse.communicationPriority)}</li>`;
+                                    HTML += `<li><b>Type</b>: ${this.textValidator(fuse.type)}</li>`;
+                                    HTML += `<li><b>Trigger</b>: ${this.textValidator(fuse.triggerType)}</li>`;
+                                    HTML += `<li><b>Inhibit Required</b>: ${this.textValidator(fuse.inhibitRequired)}</li>`;
+                                    HTML += `<li><b>Environment</b>: ${this.textValidator(fuse.tmcEnvironment)}</li>`;
+                                    if (fuse.latestStatus) {
+                                        HTML += `<li><b>Latest Status</b>:</li>`;
+                                        HTML += `<ul>`;
+                                        HTML += `    <li><i>Status</i>: ${this.textValidator(fuse.latestStatus.aggregateStatus)}</li>`;
+                                        HTML += `    <li><i>Details</i>: ${this.textValidator(fuse.latestStatus.detailedStatus)}</li>`;
+                                        HTML += `    <li><i>DateTime</i>: ${this.textValidator(fuse.latestStatus.dateTimestamp)}</li>`;
+                                        HTML += `</ul>`;
+                                    }
+                                    if (fuse.packageUpdateDetails) {
+                                        HTML += `<li><b>Package Details</b>:</li>`;
+                                        HTML += `<ul>`;
+                                        HTML += `    <li><i>WiFiRequired</i>: ${this.textValidator(fuse.packageUpdateDetails.wifiRequired)}</li>`;
+                                        HTML += `    <li><i>Priority</i>: ${this.textValidator(fuse.packageUpdateDetails.packagePriority)}</li>`;
+                                        HTML += `    <li><i>FailedResponse</i>: ${this.textValidator(fuse.packageUpdateDetails.failedOnResponse)}</li>`;
+                                        HTML += `    <li><i>DisplayTime</i>: ${this.textValidator(fuse.packageUpdateDetails.updateDisplayTime)}</li>`;
+                                        if (fuseResp && fuseResp.languageText && fuseResp.languageText.Text && fuseResp.languageText.Text.length) {
+                                            HTML += `    <li><i>ReleaseNotes</i>:`;
+                                            HTML += `    <br>`;
+                                            HTML += `    ${this.textValidator(fuseResp.languageText.Text)}</li>`;
+                                        }
+                                        HTML += `</ul>`;
+                                    }
+                                    HTML += `</ul>`;
+                                } else {
+                                    HTML += `<p>${this.FPW.textMap().errorMessages.noData}</p>`;
+                                }
+                            }
+                        } else {
                             HTML += `<ul>`;
-                            HTML += `<li>Vehicle Inhibit Status: ${data.tappsResponse.vehicleInhibitStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                            HTML += `   <li>No OTA Deployments Scheduled...</li>`;
+                            HTML += `</ul>`;
+                        }
+
+                        HTML += `<hr>`;
+                        if (data.tappsResponse) {
+                            HTML += `<h4>Status & Schedule</h4>`;
+                            HTML += `<ul>`;
+                            HTML += `<li><b>Vehicle Inhibit Status</b>: ${this.textValidator(data.tappsResponse.vehicleInhibitStatus)}</li>`;
                             if (data.tappsResponse.lifeCycleModeStatus) {
-                                HTML += '<li>Life Cycle Mode Status:</li>';
+                                HTML += '<li><b>Life Cycle Mode Status</b>:</li>';
                                 HTML += '<ul>';
                                 for (const [i, key] of Object.keys(data.tappsResponse.lifeCycleModeStatus).entries()) {
                                     const val = data.tappsResponse.lifeCycleModeStatus[key];
                                     if (val !== null || val !== undefined || val !== '') {
-                                        HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val}</li>`;
+                                        HTML += `<li><i>${this.FPW.camelKeyToWords(key)}</i>: ${val}</li>`;
                                     }
                                 }
                                 HTML += '</ul>';
                             }
                             if (data.tappsResponse.asuActivationSchedule) {
-                                HTML += '<li>OTA Activation Schedule:</li>';
+                                HTML += '<li><b>OTA Activation Schedule</b>:</li>';
                                 HTML += '<ul>';
                                 for (const [i, key] of Object.keys(data.tappsResponse.asuActivationSchedule).entries()) {
                                     const val = data.tappsResponse.asuActivationSchedule[key];
                                     if (val !== null || val !== undefined || val !== '') {
-                                        HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                                        if (Array.isArray(val)) {
+                                            HTML += `<li><i>${this.FPW.camelKeyToWords(key)}</i>:`;
+                                            HTML += `<ul>`;
+                                            for (const [j, val2] of val.entries()) {
+                                                HTML += `<li>${val2}</li>`;
+                                            }
+                                            HTML += `</ul>`;
+                                            HTML += `</li>`;
+                                        } else {
+                                            HTML += `<li><i>${this.FPW.camelKeyToWords(key)}</i>: ${val}</li>`;
+                                        }
+                                        // HTML += `<li><i>${this.FPW.decamelize(key, '', true)}</i>: ${Array.isArray(val) ? val.join(',\n') : val}</li>`;
                                     }
                                 }
                                 HTML += '</ul>';
                             }
                             if (data.tappsResponse.asuSettingsStatus) {
-                                HTML += '<li>OTA Setting Status:</li>';
+                                HTML += '<li><b>OTA Setting Status</b>:</li>';
                                 HTML += '<ul>';
                                 for (const [i, key] of Object.keys(data.tappsResponse.asuSettingsStatus).entries()) {
                                     const val = data.tappsResponse.asuSettingsStatus[key];
                                     if (val !== null || val !== undefined || val !== '') {
-                                        HTML += `<li>${this.FPW.decamelize(key, '', true)}: ${val instanceof Array ? val.join(', ') : val}</li>`;
+                                        if (Array.isArray(val)) {
+                                            HTML += `<li><i>${this.FPW.camelKeyToWords(key)}</i>:`;
+                                            HTML += `<ul>`;
+                                            for (const [j, val2] of val.entries()) {
+                                                HTML += `<li>${val2}</li>`;
+                                            }
+                                            HTML += `</ul>`;
+                                            HTML += `</li>`;
+                                        } else {
+                                            HTML += `<li><i>${this.FPW.camelKeyToWords(key)}</i>: ${val}</li>`;
+                                        }
+                                        // HTML += `<li><i>${this.FPW.decamelize(key, '', true)}</i>: ${Array.isArray(val) ? val.join(',\n') : val}</li>`;
                                     }
                                 }
                                 HTML += '</ul>';
                             }
-                            HTML += `<li>UpdatePendingState: ${data.tappsResponse.updatePendingState || this.FPW.textMap().errorMessages.noData}</li>`;
-                            HTML += `<li>OtaAlertStatus: ${data.tappsResponse.otaAlertStatus || this.FPW.textMap().errorMessages.noData}</li>`;
+                            HTML += `<li><b>UpdatePendingState</b>: ${this.textValidator(data.tappsResponse.updatePendingState)}</li>`;
+                            HTML += `<li><b>OtaAlertStatus</b>: ${this.textValidator(data.tappsResponse.otaAlertStatus)}</li>`;
                             HTML += `</ul>`;
-                        }
-
-                        if (data.fuseResponse && data.fuseResponse.fuseResponseList && data.fuseResponse.fuseResponseList.length) {
-                            HTML += `<h3>OTA Deployments</h3>`;
-                            let that = this;
-                            for (const [i, fuse] of data.fuseResponse.fuseResponseList.entries()) {
-                                if (fuse && Object.keys(fuse).length) {
-                                    HTML += `<ul>`;
-                                    HTML += `<li>CorrelationID: ${fuse.oemCorrelationId || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `<li>Created: ${fuse.deploymentCreationDate || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `<li>Expiration: ${fuse.deploymentExpirationTime || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `<li>Priority: ${fuse.communicationPriority || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `<li>Type: ${fuse.type || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `<li>Trigger: ${fuse.triggerType || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `<li>Inhibit Required: ${fuse.inhibitRequired || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    HTML += `<li>Environment: ${fuse.tmcEnvironment || this.FPW.textMap().errorMessages.noData}</li>`;
-                                    if (fuse.latestStatus) {
-                                        HTML += `<li>Latest Status:</li>`;
-                                        HTML += `<ul>`;
-                                        HTML += `    <li>Status: ${fuse.latestStatus.aggregateStatus || this.FPW.textMap().errorMessages.noData}</li>`;
-                                        HTML += `    <li>Details: ${fuse.latestStatus.detailedStatus || this.FPW.textMap().errorMessages.noData}</li>`;
-                                        HTML += `    <li>DateTime: ${fuse.latestStatus.dateTimestamp || this.FPW.textMap().errorMessages.noData}</li>`;
-                                        HTML += `</ul>`;
-                                    }
-                                    if (fuse.packageUpdateDetails) {
-                                        HTML += `<li>Package Details:</li>`;
-                                        HTML += `<ul>`;
-                                        HTML += `    <li>WiFiRequired: ${fuse.packageUpdateDetails.wifiRequired || this.FPW.textMap().errorMessages.noData}</li>`;
-                                        HTML += `    <li>Priority: ${fuse.packageUpdateDetails.packagePriority || this.FPW.textMap().errorMessages.noData}</li>`;
-                                        HTML += `    <li>FailedResponse: ${fuse.packageUpdateDetails.failedOnResponse || this.FPW.textMap().errorMessages.noData}</li>`;
-                                        HTML += `    <li>DisplayTime: ${fuse.packageUpdateDetails.updateDisplayTime || this.FPW.textMap().errorMessages.noData}</li>`;
-                                        HTML += `    <li>ReleaseNotes:`;
-                                        HTML += `    <br>`;
-                                        HTML += `    ${data.fuseResponse.languageText.Text || this.FPW.textMap().errorMessages.noData}</li>`;
-                                        HTML += `</ul>`;
-                                    }
-                                    HTML += `</ul>`;
-                                } else {
-                                    HTML += `<p>${'No Data'}</p>`;
-                                }
-                            }
                         }
 
                         HTML += `<hr>`;
                     } catch (err) {
                         // console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
-                        HTML = `<h3>OTA Details</h3>`;
-                        HTML += `<H5 style="Color: red;">Error Message</h5>`;
+                        HTML = `<h4>Error Details</h4>`;
+                        HTML += `<h5 style="Color: red;">Error Message</h5>`;
                         HTML += `<p style="Color: red;">${err}</p>`;
                     }
                     break;
@@ -382,8 +421,8 @@ module.exports = class FPW_App {
                         HTML = this.outputObjToHtml(data, 'Vehicle Data');
                     } catch (err) {
                         console.log(`showDataWebView(${title}, ${heading}, ${data}) error: ${err}`);
-                        HTML = `<h3>${title}</h3>`;
-                        HTML += `<H5 style="Color: red;">Error Message</h5>`;
+                        HTML = `<h4>${title}</h4>`;
+                        HTML += `<h5 style="Color: red;">Error Message</h5>`;
                         HTML += `<p style="Color: red;">${err}</p>`;
                     }
                     break;
@@ -430,7 +469,7 @@ module.exports = class FPW_App {
             await wv.loadHTML(html);
             await wv.waitForLoad();
             // let result = await wv.evaluateJavaScript(`hljs.highlightAll();`, true);
-            await wv.present(true);
+            await wv.present(false);
         } catch (e) {
             this.FPW.logError(`showDataWebView() | Error: ${e}`);
         }
@@ -573,7 +612,7 @@ module.exports = class FPW_App {
                             await this.createButtonCell(`${msgs.length || 0}`, {
                                 align: 'left',
                                 widthWeight: 27,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log('(Dashboard) View Messages was pressed');
                                     await this.createMessagesPage(vData, false);
                                 },
@@ -592,13 +631,12 @@ module.exports = class FPW_App {
                                 align: 'right',
                                 widthWeight: 30,
                                 dismissOnTap: false,
-                                onTap: async () => {
+                                onTap: async() => {
                                     console.log(`(Dashboard) Menu Button was pressed`);
                                     this.FPW.Menus.menuBuilderByType('main');
                                 },
                             }),
-                        ],
-                        {
+                        ], {
                             backgroundColor: new Color(headerColor),
                             height: 40,
                             isHeader: true,
@@ -614,8 +652,7 @@ module.exports = class FPW_App {
                             await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
                             await this.createTextCell(undefined, `Tires: (${tireUnit})`, { align: 'center', widthWeight: 50, subtitleColor: this.FPW.colorMap.text.dark, subtitleFont: Font.semiboldSystemFont(fontSizes.body2) }),
                             await this.createTextCell('', undefined, { align: 'center', widthWeight: 25 }),
-                        ],
-                        {
+                        ], {
                             backgroundColor: new Color(headerColor),
                             height: 15,
                             dismissOnSelect: false,
@@ -658,8 +695,7 @@ module.exports = class FPW_App {
                             }),
 
                             await this.createImageCell(await this.FPW.Files.getImage(`window_dark_menu.png`), { align: 'center', widthWeight: 5 }),
-                        ],
-                        {
+                        ], {
                             backgroundColor: new Color(headerColor),
                             height: 110,
                             cellSpacing: 0,
@@ -669,9 +705,10 @@ module.exports = class FPW_App {
                 );
 
                 // Header Section - Row 4: Shows fuel/EV battery level and range
+                const lvlDesc = lvlValue >= 0 ? `${lvlValue > 100 ? 100 : lvlValue}%` : '--';
                 let row4Items = [
                     await this.createImageCell(isEV ? await this.FPW.Files.getImage(`ev_battery_dark_menu.png`) : await this.FPW.Files.getFPImage(`ic_gauge_fuel_dark.png`), { align: 'center', widthWeight: 5 }),
-                    await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlValue >= 0 ? `${lvlValue > 100 ? 100 : lvlValue}%` : '--'}`, dteString, {
+                    await this.createTextCell(`${isEV ? 'Charge' : 'Fuel'}: ${lvlDesc}`, dteString, {
                         align: 'left',
                         widthWeight: 30,
                         titleColor: this.FPW.colorMap.text.dark,
@@ -735,8 +772,7 @@ module.exports = class FPW_App {
                                     subtitleFont: Font.mediumSystemFont(fontSizes.subheadline),
                                 }),
                                 await this.createTextCell('', undefined, { align: 'center', widthWeight: 30 }),
-                            ],
-                            {
+                            ], {
                                 backgroundColor: new Color(headerColor),
                                 height: 40,
                                 dismissOnSelect: false,
@@ -760,8 +796,7 @@ module.exports = class FPW_App {
                             // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
                             await this.createTextCell('Last Checkin: ' + refreshTime, undefined, { align: 'center', widthWeight: 100, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularSystemFont(9) }),
                             // await this.createTextCell('', undefined, { align: 'center', widthWeight: 20 }),
-                        ],
-                        {
+                        ], {
                             backgroundColor: new Color(headerColor),
                             height: 20,
                             dismissOnSelect: false,
@@ -773,39 +808,34 @@ module.exports = class FPW_App {
                 if (showTestUIStuff) {
                     updateAvailable = true;
                     vData.alerts = {
-                        vha: [
-                            {
-                                alertIdentifier: 'E19-374-43',
-                                activityId: '91760a25-5e8a-48f8-9f10-41392781e0d7',
-                                eventTimeStamp: '1/6/2022 12:3:4 AM',
-                                colorCode: 'A',
-                                iconName: 'ic_washer_fluid',
-                                activeAlertBody: {
-                                    headline: 'Low Washer Fluid',
-                                    formattedBody:
-                                        "<div class='accordion' id='SymptomHeader'><h2 class='toggle'><b>What Is Happening?</b></h2><div class='content' id='SymptomHeaderDesc'><p>Low windshield washer fluid.</p></div><h2 class='toggle' id='CustomerActionHeader'><b>What Should I Do?</b></h2><div class='content' id='CustomerActionHeaderDesc'><p>Check the windshield washer reservoir. Add washer fluid as needed.</p></div></div>",
-                                    wilcode: '600E19',
-                                    dtccode: '',
-                                },
-                                hmiAlertBody: null,
+                        vha: [{
+                            alertIdentifier: 'E19-374-43',
+                            activityId: '91760a25-5e8a-48f8-9f10-41392781e0d7',
+                            eventTimeStamp: '1/6/2022 12:3:4 AM',
+                            colorCode: 'A',
+                            iconName: 'ic_washer_fluid',
+                            activeAlertBody: {
+                                headline: 'Low Washer Fluid',
+                                formattedBody: "<div class='accordion' id='SymptomHeader'><h2 class='toggle'><b>What Is Happening?</b></h2><div class='content' id='SymptomHeaderDesc'><p>Low windshield washer fluid.</p></div><h2 class='toggle' id='CustomerActionHeader'><b>What Should I Do?</b></h2><div class='content' id='CustomerActionHeaderDesc'><p>Check the windshield washer reservoir. Add washer fluid as needed.</p></div></div>",
+                                wilcode: '600E19',
+                                dtccode: '',
                             },
-                        ],
-                        mmota: [
-                            {
-                                alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL',
-                                inhibitRequired: false,
-                                dateTimeStamp: '1641426296850',
-                                releaseNotesUrl: 'http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185',
-                                colorCode: 'G',
-                                iconName: 'ic_mmota_alert_update_successful',
-                                scheduleRequired: false,
-                                wifiRequired: false,
-                                consentRequired: false,
-                                vehicleTime: '23:44',
-                                vehicleDate: '2022-01-05',
-                                updateDisplayTime: null,
-                            },
-                        ],
+                            hmiAlertBody: null,
+                        }, ],
+                        mmota: [{
+                            alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL',
+                            inhibitRequired: false,
+                            dateTimeStamp: '1641426296850',
+                            releaseNotesUrl: 'http://vehicleupdates.files.ford.com/release-notes/custom-release-note-1634252934280-a3b8e883-d3aa-44fc-8419-4f0d6c78e185',
+                            colorCode: 'G',
+                            iconName: 'ic_mmota_alert_update_successful',
+                            scheduleRequired: false,
+                            wifiRequired: false,
+                            consentRequired: false,
+                            vehicleTime: '23:44',
+                            vehicleDate: '2022-01-05',
+                            updateDisplayTime: null,
+                        }, ],
                         summary: [
                             { alertType: 'VHA', alertDescription: 'Low Washer Fluid', alertIdentifier: 'E19-374-43', urgency: 'L', colorCode: 'A', iconName: 'ic_washer_fluid', alertPriority: 1 },
                             { alertType: 'MMOTA', alertDescription: 'UPDATE SUCCESSFUL', alertIdentifier: 'MMOTA_UPDATE_SUCCESSFUL', urgency: null, colorCode: 'G', iconName: 'ic_mmota_alert_update_successful', alertPriority: 2 },
@@ -830,11 +860,10 @@ module.exports = class FPW_App {
                                     subtitleColor: this.FPW.colorMap.normalText,
                                     subtitleFont: Font.regularSystemFont(11),
                                 }),
-                            ],
-                            {
+                            ], {
                                 height: 40,
                                 dismissOnSelect: true,
-                                onSelect: async () => {
+                                onSelect: async() => {
                                     console.log('(Main Menu) Update Widget was pressed');
                                     if (await this.FPW.Alerts.showYesNoPrompt('Script Update', 'This will update your Ford Widget to the latest release.  Proceed?')) {
                                         const res = await this.FPW.updateThisScript();
@@ -860,8 +889,7 @@ module.exports = class FPW_App {
                                     titleColor: this.FPW.colorMap.normalText,
                                     titleFont: Font.regularRoundedSystemFont(fontSizes.title3),
                                 }),
-                            ],
-                            {
+                            ], {
                                 height: 25,
                                 isHeader: true,
                                 dismissOnSelect: false,
@@ -876,12 +904,11 @@ module.exports = class FPW_App {
                                 [
                                     await this.createImageCell(await this.FPW.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                                     await this.createTextCell(`(${recalls.length}) Vehicle Recalls Found`, 'Tap to view', { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.mediumSystemFont(fontSizes.headline), subtitleColor: this.FPW.colorMap.normalText, subtitleFont: Font.regularSystemFont(10) }),
-                                ],
-                                {
+                                ], {
                                     height: 44,
                                     dismissOnSelect: false,
                                     cellSpacing: 5,
-                                    onSelect: async () => {
+                                    onSelect: async() => {
                                         console.log('(Dashboard) Recall Item row was pressed');
                                         await this.createRecallPage(vData);
                                     },
@@ -898,12 +925,11 @@ module.exports = class FPW_App {
                                     [
                                         await this.createImageCell(await this.FPW.Files.getFPImage(`ic_recall_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
                                         await this.createTextCell(recall.title, `${recall.type}\n(ID: ${recall.id})`, { align: 'left', widthWeight: 93, titleColor: new Color('#E96C00'), titleFont: Font.mediumSystemFont(fontSizes.headline), subtitleColor: this.FPW.colorMap.normalText, subtitleFont: Font.regularSystemFont(10) }),
-                                    ],
-                                    {
+                                    ], {
                                         height: recall.id && recall.id.length ? 60 : 44,
                                         dismissOnSelect: false,
                                         cellSpacing: 5,
-                                        onSelect: async () => {
+                                        onSelect: async() => {
                                             console.log('(Dashboard) Recall Item row was pressed');
                                             await this.createRecallPage(vData);
                                         },
@@ -954,19 +980,17 @@ module.exports = class FPW_App {
                                         subtitleColor: this.FPW.colorMap.normalText,
                                         subtitleFont: Font.regularSystemFont(10),
                                     }),
-                                ],
-                                {
+                                ], {
                                     height: 44,
                                     dismissOnSelect: false,
                                     cellSpacing: 5,
-                                    onSelect:
-                                        alert.noButton === undefined || alert.noButton === false
-                                            ? async () => {
-                                                  console.log('(Dashboard) Alert Item row was pressed');
-                                                  // await this.FPW.Alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
-                                                  await this.createAlertsPage(vData);
-                                              }
-                                            : undefined,
+                                    onSelect: alert.noButton === undefined || alert.noButton === false ?
+                                        async() => {
+                                            console.log('(Dashboard) Alert Item row was pressed');
+                                            // await this.FPW.Alerts.showAlert('Alert Item', `Alert Type: ${alert.alertType}`);
+                                            await this.createAlertsPage(vData);
+                                        } :
+                                        undefined,
                                 },
                             ),
                         );
@@ -999,17 +1023,16 @@ module.exports = class FPW_App {
                                 await this.createButtonCell('View', {
                                     align: 'center',
                                     widthWeight: 17,
-                                    onTap: async () => {
+                                    onTap: async() => {
                                         console.log('(Dashboard) View Unread Messages was pressed');
                                         await this.createMessagesPage(vData, true);
                                     },
                                 }),
-                            ],
-                            {
+                            ], {
                                 height: 44,
                                 dismissOnSelect: false,
                                 cellSpacing: 5,
-                                onSelect: async () => {
+                                onSelect: async() => {
                                     console.log('(Dashboard) View Unread Messages was pressed');
                                     await this.createMessagesPage(vData, true);
                                 },
@@ -1047,7 +1070,7 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Unlock', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Unlock was pressed');
                                             if (await this.FPW.Alerts.showYesNoPrompt('Locks', 'Are you sure you want to unlock the vehicle?')) {
                                                 await this.FPW.FordAPI.sendVehicleCmd('unlock');
@@ -1057,13 +1080,12 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Lock', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Lock was pressed');
                                             await this.FPW.FordAPI.sendVehicleCmd('lock');
                                         },
                                     }),
-                                ],
-                                { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                             ),
                         );
                     }
@@ -1085,7 +1107,7 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Stop', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Stop was pressed');
                                             await this.FPW.FordAPI.sendVehicleCmd('stop');
                                         },
@@ -1093,15 +1115,14 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Start', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Start was pressed');
                                             if (await this.FPW.Alerts.showYesNoPrompt('Remote Start', 'Are you sure you want to start the vehicle?')) {
                                                 await this.FPW.FordAPI.sendVehicleCmd('start');
                                             }
                                         },
                                     }),
-                                ],
-                                { height: ignStatus.length > 17 ? 64 : 44, cellSpacing: 5, dismissOnSelect: false },
+                                ], { height: ignStatus.length > 17 ? 64 : 44, cellSpacing: 5, dismissOnSelect: false },
                             ),
                         );
                     }
@@ -1124,15 +1145,14 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Start', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Horn/Lights was pressed');
                                             if (await this.FPW.Alerts.showYesNoPrompt('Horn/Lights', 'Your Horn and Lights will activate for a few seconds.  Are you sure you want to proceed?')) {
                                                 await this.FPW.FordAPI.sendVehicleCmd('horn_and_lights');
                                             }
                                         },
                                     }),
-                                ],
-                                { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                             ),
                         );
                     }
@@ -1167,7 +1187,7 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Enable', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) SecuriAlert Enable was pressed');
                                             await this.FPW.FordAPI.sendVehicleCmd('guard_mode_on');
                                         },
@@ -1175,15 +1195,14 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Disable', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) SecuriAlert Disable was pressed');
                                             if (await this.FPW.Alerts.showYesNoPrompt('SecuriAlert', 'Are you sure you want to disable SecuriAlert?')) {
                                                 await this.FPW.FordAPI.sendVehicleCmd('guard_mode_off');
                                             }
                                         },
                                     }),
-                                ],
-                                { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                             ),
                         );
                     }
@@ -1205,15 +1224,13 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Enable', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Zone Lighting On Button was pressed');
                                             await this.FPW.Alerts.showActionPrompt(
                                                 'Zone Lighting On Menu',
-                                                undefined,
-                                                [
-                                                    {
+                                                undefined, [{
                                                         title: 'Front Zone',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone Front On was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_front_on');
                                                         },
@@ -1222,7 +1239,7 @@ module.exports = class FPW_App {
                                                     },
                                                     {
                                                         title: 'Rear Zone',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone Rear On was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_rear_on');
                                                         },
@@ -1231,7 +1248,7 @@ module.exports = class FPW_App {
                                                     },
                                                     {
                                                         title: 'Left Zone',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone Left On was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_left_on');
                                                         },
@@ -1240,7 +1257,7 @@ module.exports = class FPW_App {
                                                     },
                                                     {
                                                         title: 'Right Zone',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone Right On was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_right_on');
                                                         },
@@ -1249,7 +1266,7 @@ module.exports = class FPW_App {
                                                     },
                                                     {
                                                         title: 'All Zones',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone All On was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_all_on');
                                                         },
@@ -1264,15 +1281,13 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Disable', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Zone Lighting Off Button was pressed');
                                             await this.FPW.Alerts.showActionPrompt(
                                                 'Zone Lighting Off',
-                                                undefined,
-                                                [
-                                                    {
+                                                undefined, [{
                                                         title: 'Front Zone',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone Front Off was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_front_off');
                                                         },
@@ -1281,7 +1296,7 @@ module.exports = class FPW_App {
                                                     },
                                                     {
                                                         title: 'Rear Zone',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone Rear Off was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_rear_off');
                                                         },
@@ -1290,7 +1305,7 @@ module.exports = class FPW_App {
                                                     },
                                                     {
                                                         title: 'Left Zone',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone Left Off was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_left_off');
                                                         },
@@ -1299,7 +1314,7 @@ module.exports = class FPW_App {
                                                     },
                                                     {
                                                         title: 'Right Zone',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone Right Off was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_right_off');
                                                         },
@@ -1308,7 +1323,7 @@ module.exports = class FPW_App {
                                                     },
                                                     {
                                                         title: 'All Zones',
-                                                        action: async () => {
+                                                        action: async() => {
                                                             console.log(`(Dashboard) Zone All Off was pressed`);
                                                             await this.FPW.FordAPI.sendVehicleCmd('zone_lights_all_off');
                                                         },
@@ -1320,8 +1335,7 @@ module.exports = class FPW_App {
                                             );
                                         },
                                     }),
-                                ],
-                                { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                             ),
                         );
                     }
@@ -1343,7 +1357,7 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Start', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Trailer Light Check Start was pressed');
                                             if (await this.FPW.Alerts.showYesNoPrompt('Trailer Light Check', 'Are you sure want to start the trailer light check process?')) {
                                                 await this.FPW.FordAPI.sendVehicleCmd('trailer_light_check_on');
@@ -1353,13 +1367,12 @@ module.exports = class FPW_App {
                                     await this.createButtonCell('Stop', {
                                         align: 'center',
                                         widthWeight: 17,
-                                        onTap: async () => {
+                                        onTap: async() => {
                                             console.log('(Dashboard) Trailer Light Check Stop was pressed');
                                             await this.FPW.FordAPI.sendVehicleCmd('trailer_light_check_off');
                                         },
                                     }),
-                                ],
-                                { height: 44, cellSpacing: 5, dismissOnSelect: false },
+                                ], { height: 44, cellSpacing: 5, dismissOnSelect: false },
                             ),
                         );
                     }
@@ -1395,11 +1408,10 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
-                        ],
-                        {
+                        ], {
                             height: 40,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Main Menu) Advanced Info Page was pressed');
                                 this.createAdvancedInfoPage();
                             },
@@ -1467,11 +1479,9 @@ module.exports = class FPW_App {
             case 'lock_command':
                 await this.FPW.Alerts.showActionPrompt(
                     'Locks',
-                    'Are you sure you want to unlock the vehicle?',
-                    [
-                        {
+                    'Are you sure you want to unlock the vehicle?', [{
                             title: 'Unlock',
-                            action: async () => {
+                            action: async() => {
                                 console.log('(WidgetCommand) Unlock was pressed');
                                 await this.FPW.FordAPI.sendVehicleCmd('unlock');
                             },
@@ -1480,7 +1490,7 @@ module.exports = class FPW_App {
                         },
                         {
                             title: 'Lock',
-                            action: async () => {
+                            action: async() => {
                                 console.log('(WidgetCommand) Lock was pressed');
                                 await this.FPW.FordAPI.sendVehicleCmd('lock');
                             },
@@ -1495,11 +1505,9 @@ module.exports = class FPW_App {
             case 'start_command':
                 await this.FPW.Alerts.showActionPrompt(
                     'Remote Start',
-                    'Are you sure you want to start the vehicle?',
-                    [
-                        {
+                    'Are you sure you want to start the vehicle?', [{
                             title: 'Start',
-                            action: async () => {
+                            action: async() => {
                                 console.log('(WidgetCommand) Start was pressed');
                                 await this.FPW.FordAPI.sendVehicleCmd('start');
                             },
@@ -1508,7 +1516,7 @@ module.exports = class FPW_App {
                         },
                         {
                             title: 'Stop',
-                            action: async () => {
+                            action: async() => {
                                 console.log('(WidgetCommand) Stop was pressed');
                                 await this.FPW.FordAPI.sendVehicleCmd('stop');
                             },
@@ -1529,18 +1537,15 @@ module.exports = class FPW_App {
             case 'request_refresh':
                 await this.FPW.Alerts.showActionPrompt(
                     'Vehicle Data Refresh',
-                    "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...",
-                    [
-                        {
-                            title: 'Refresh',
-                            action: async () => {
-                                console.log(`(WidgetCommand) Refresh was pressed`);
-                                await this.FPW.FordAPI.sendVehicleCmd('status');
-                            },
-                            destructive: true,
-                            show: true,
+                    "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...", [{
+                        title: 'Refresh',
+                        action: async() => {
+                            console.log(`(WidgetCommand) Refresh was pressed`);
+                            await this.FPW.FordAPI.sendVehicleCmd('status');
                         },
-                    ],
+                        destructive: true,
+                        show: true,
+                    }, ],
                     true,
                 );
         }
@@ -1557,23 +1562,20 @@ module.exports = class FPW_App {
                     await this.createTableRow(
                         [
                             await this.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
-                            await this.createTextCell(`${msgs.length} ${unreadOnly ? 'Unread ' : ''}Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularRoundedSystemFont(fontSizes.headline3) }),
+                            await this.createTextCell(`${msgs.length} ${unreadOnly ? 'Unread ' : ''}Message${msgs.length === 1 ? '' : 's'}`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularRoundedSystemFont(fontSizes.headline3) }),
                             await this.createTextCell('All', undefined, { align: 'right', widthWeight: 20, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.regularRoundedSystemFont(fontSizes.title3) }),
-                        ],
-                        {
+                        ], {
                             height: 40,
                             dismissOnSelect: false,
                             backgroundColor: new Color(headerColor),
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log(`(Messages Table) All Message Options was pressed`);
                                 let msgIds = msgs.map((msg) => msg.messageId);
                                 await this.FPW.Alerts.showActionPrompt(
                                     'All Message Options',
-                                    undefined,
-                                    [
-                                        {
+                                    undefined, [{
                                             title: 'Mark All Read',
-                                            action: async () => {
+                                            action: async() => {
                                                 console.log(`(Messages Table) Mark All Messages Read was pressed`);
                                                 let ok = await this.FPW.Alerts.showPrompt(`All Message Options`, `Are you sure you want to mark all messages as read?`, `Mark (${msgIds.length}) Read`, true);
                                                 if (ok) {
@@ -1591,7 +1593,7 @@ module.exports = class FPW_App {
                                         },
                                         {
                                             title: 'Delete All',
-                                            action: async () => {
+                                            action: async() => {
                                                 console.log(`(Messages Table) Delete All Messages was pressed`);
                                                 let ok = await this.FPW.Alerts.showPrompt('Delete All Messages', 'Are you sure you want to delete all messages?', `Delete (${msgIds.length}) Messages`, true);
                                                 if (ok) {
@@ -1609,7 +1611,7 @@ module.exports = class FPW_App {
                                         },
                                     ],
                                     true,
-                                    async () => {
+                                    async() => {
                                         this.createMessagesPage(vData, unreadOnly);
                                     },
                                 );
@@ -1632,20 +1634,17 @@ module.exports = class FPW_App {
                                 await this.createTextCell(this.getMessageDescByType(msg.messageType), undefined, { align: 'left', widthWeight: 55, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.headline) }),
                                 await this.createTextCell(msg.isRead === false ? 'Unread' : 'Read', undefined, { align: 'right', widthWeight: 25, titleColor: msg.isRead === false ? new Color('#008200') : Color.darkGray(), titleFont: Font.regularRoundedSystemFont(fontSizes.headline) }),
                                 await this.createTextCell('...', undefined, { align: 'right', widthWeight: 10, dismissOnTap: false, titleColor: Color.purple(), titleFont: Font.mediumRoundedSystemFont(fontSizes.headline) }),
-                            ],
-                            {
+                            ], {
                                 height: 35,
                                 dismissOnSelect: false,
                                 backgroundColor: new Color(titleBgColor),
-                                onSelect: async () => {
+                                onSelect: async() => {
                                     console.log(`(Messages Table) Message Options button was pressed for ${msg.messageId}`);
                                     await this.FPW.Alerts.showActionPrompt(
                                         'Message Options',
-                                        undefined,
-                                        [
-                                            {
+                                        undefined, [{
                                                 title: 'Mark as Read',
-                                                action: async () => {
+                                                action: async() => {
                                                     console.log(`(Messages Table) Marking Message with ID: ${msg.messageId} as Read...`);
                                                     if (await this.FPW.FordAPI.markMultipleUserMessagesRead([msg.messageId])) {
                                                         console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
@@ -1659,7 +1658,7 @@ module.exports = class FPW_App {
                                             },
                                             {
                                                 title: 'Delete Message',
-                                                action: async () => {
+                                                action: async() => {
                                                     console.log(`(Messages Table) Delete Message ${msg.messageId} was pressed`);
                                                     let ok = await this.FPW.Alerts.showPrompt('Delete Message', 'Are you sure you want to delete this message?', 'Delete', true);
                                                     if (ok) {
@@ -1680,7 +1679,7 @@ module.exports = class FPW_App {
                                             },
                                         ],
                                         true,
-                                        async () => {
+                                        async() => {
                                             await this.createMessagesPage(vData, unreadOnly);
                                         },
                                     );
@@ -1710,10 +1709,9 @@ module.exports = class FPW_App {
                     await this.createTableRow(
                         [
                             await this.createTextCell('', undefined, { align: 'left', widthWeight: 20 }),
-                            await this.createTextCell(`${msgs.length} Messages(s)`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularRoundedSystemFont(fontSizes.headline3) }),
+                            await this.createTextCell(`${msgs.length} Message${msgs.length === 1 ? '' : 's'}`, undefined, { align: 'center', widthWeight: 60, dismissOnTap: false, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularRoundedSystemFont(fontSizes.headline3) }),
                             await this.createTextCell('', undefined, { align: 'right', widthWeight: 20 }),
-                        ],
-                        { height: 44, dismissOnSelect: false, backgroundColor: new Color(headerColor) },
+                        ], { height: 44, dismissOnSelect: false, backgroundColor: new Color(headerColor) },
                     ),
                 );
                 tableRows.push(await this.createTableRow([await this.createTextCell('', undefined, { align: 'center', widthWeight: 1 })], { backgroundColor: Color.darkGray(), height: 10, dismissOnSelect: false }));
@@ -1753,8 +1751,7 @@ module.exports = class FPW_App {
                                     subtitleColor: Color.darkGray(),
                                     subtitleFont: Font.regularSystemFont(fontSizes.body2),
                                 }),
-                            ],
-                            { height: 40, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                            ], { height: 40, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
                         ),
                     );
                 }
@@ -1785,8 +1782,7 @@ module.exports = class FPW_App {
                             [
                                 await this.createImageCell(await this.FPW.Files.getFPImage(`${alert.iconName}_${darkMode ? 'dark' : 'light'}.png`), { align: 'left', widthWeight: 7 }),
                                 await this.createTextCell(title, timeDiff, { align: 'left', widthWeight: 93, titleColor: new Color(this.getAlertColorByCode(alert.colorCode)), titleFont: Font.mediumSystemFont(fontSizes.headline), subtitleColor: Color.darkGray(), subtitleFont: Font.regularSystemFont(fontSizes.body2) }),
-                            ],
-                            { height: 40, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                            ], { height: 40, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
                         ),
                     );
 
@@ -1826,8 +1822,7 @@ module.exports = class FPW_App {
                                         titleColor: this.FPW.colorMap.text.dark,
                                         titleFont: Font.regularRoundedSystemFont(fontSizes.headline2),
                                     }),
-                                ],
-                                {
+                                ], {
                                     height: 30,
                                     isHeader: true,
                                     dismissOnSelect: false,
@@ -1835,7 +1830,7 @@ module.exports = class FPW_App {
                                 },
                             ),
                         );
-                        for (const [i, type] of ['added', 'fixed', 'updated', 'removed'].entries()) {
+                        for (const [i, type] of['added', 'fixed', 'updated', 'removed'].entries()) {
                             if (release[type].length) {
                                 // console.log(`(RecentChanges Table) ${type} changes: ${release[type].length}`);
                                 let { name, color } = this.getChangeLabelColorAndNameByType(type);
@@ -1868,8 +1863,7 @@ module.exports = class FPW_App {
                                         titleColor: this.FPW.colorMap.text.dark,
                                         titleFont: Font.regularRoundedSystemFont(fontSizes.headline2),
                                     }),
-                                ],
-                                {
+                                ], {
                                     height: 30,
                                     isHeader: true,
                                     dismissOnSelect: false,
@@ -1935,8 +1929,7 @@ module.exports = class FPW_App {
                                     subtitleColor: this.FPW.colorMap.normalText,
                                     subtitleFont: Font.regularSystemFont(fontSizes.body2),
                                 }),
-                            ],
-                            { height: 70, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                            ], { height: 70, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
                         ),
                     );
 
@@ -1953,8 +1946,7 @@ module.exports = class FPW_App {
                                         subtitleColor: Color.lightGray(),
                                         subtitleFont: Font.regularSystemFont(fontSizes.body2),
                                     }),
-                                ],
-                                {
+                                ], {
                                     height: this.getRowHeightByTxtLength(recall.nhtsaInfo.safetyDescription, 60),
                                     dismissOnSelect: false,
                                 },
@@ -1965,8 +1957,7 @@ module.exports = class FPW_App {
                     if (recall.nhtsaInfo && recall.nhtsaInfo.remedyProgram) {
                         tableRows.push(
                             await this.createTableRow(
-                                [await this.createTextCell('Remedy Program', recall.nhtsaInfo.remedyProgram, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.headline2), subtitleColor: Color.lightGray(), subtitleFont: Font.regularSystemFont(fontSizes.body2) })],
-                                {
+                                [await this.createTextCell('Remedy Program', recall.nhtsaInfo.remedyProgram, { align: 'left', widthWeight: 100, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularSystemFont(fontSizes.headline2), subtitleColor: Color.lightGray(), subtitleFont: Font.regularSystemFont(fontSizes.body2) })], {
                                     height: this.getRowHeightByTxtLength(recall.nhtsaInfo.remedyProgram, 60),
                                     dismissOnSelect: false,
                                 },
@@ -1986,8 +1977,7 @@ module.exports = class FPW_App {
                                         subtitleColor: Color.lightGray(),
                                         subtitleFont: Font.regularSystemFont(fontSizes.body2),
                                     }),
-                                ],
-                                {
+                                ], {
                                     height: this.getRowHeightByTxtLength(recall.nhtsaInfo.manufacturerNotes, 60),
                                     dismissOnSelect: false,
                                 },
@@ -2018,7 +2008,7 @@ module.exports = class FPW_App {
             let tableRows = [];
 
             tableRows.push(
-                await this.createTableRow([await this.createTextCell(`Weight & Payload Info`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularRoundedSystemFont(fontSizes.title2) })], {
+                await this.createTableRow([await this.createTextCell(`Towing & Payload Info`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.text.dark, titleFont: Font.regularRoundedSystemFont(fontSizes.title2) })], {
                     height: 40,
                     isHeader: true,
                     dismissOnSelect: false,
@@ -2037,8 +2027,7 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(fontSizes.body2),
                             }),
-                        ],
-                        { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                        ], { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
                     ),
                 );
             }
@@ -2054,8 +2043,7 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(fontSizes.body2),
                             }),
-                        ],
-                        { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                        ], { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
                     ),
                 );
             }
@@ -2071,8 +2059,7 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(fontSizes.body2),
                             }),
-                        ],
-                        { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                        ], { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
                     ),
                 );
             }
@@ -2088,8 +2075,7 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(fontSizes.body2),
                             }),
-                        ],
-                        { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
+                        ], { height: 60, dismissOnSelect: false, backgroundColor: new Color(titleBgColor) },
                     ),
                 );
             }
@@ -2122,14 +2108,13 @@ module.exports = class FPW_App {
                             subtitleColor: Color.lightGray(),
                             subtitleFont: Font.mediumSystemFont(fontSizes.body2),
                         }),
-                    ],
-                    {
+                    ], {
                         height: 100,
                         dismissOnSelect: false,
                     },
                 ),
             );
-            for (const [i, size] of ['small', 'medium', 'large'].entries()) {
+            for (const [i, size] of['small', 'medium', 'large'].entries()) {
                 tableRows.push(
                     await this.createTableRow([await this.createTextCell(`${this.FPW.capitalizeStr(size)}`, undefined, { align: 'center', widthWeight: 1, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.regularRoundedSystemFont(fontSizes.title3) })], {
                         height: 30,
@@ -2137,7 +2122,7 @@ module.exports = class FPW_App {
                         dismissOnSelect: false,
                     }),
                 );
-                for (const [i, style] of ['simple', 'detailed'].entries()) {
+                for (const [i, style] of['simple', 'detailed'].entries()) {
                     if (!(size === 'large' && style === 'simple')) {
                         let h = 150;
                         switch (size) {
@@ -2157,12 +2142,11 @@ module.exports = class FPW_App {
                                     await this.createTextCell(`${this.FPW.capitalizeStr(style)}`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.mediumSystemFont(fontSizes.headline2) }),
                                     await this.createImageCell(await this.FPW.Files.getImage(`${size}${this.FPW.capitalizeStr(style)}Light.png`), { align: 'center', widthWeight: 60 }),
                                     await this.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
-                                ],
-                                {
+                                ], {
                                     height: h,
                                     dismissOnSelect: true,
                                     backgroundColor: widgetStyle === style ? Color.lightGray() : undefined,
-                                    onSelect: async () => {
+                                    onSelect: async() => {
                                         console.log(`Setting WidgetStyle to ${style}`);
                                         await this.FPW.setWidgetStyle(style);
                                         this.widgetStyleSelector(size);
@@ -2204,14 +2188,13 @@ module.exports = class FPW_App {
                             subtitleColor: Color.lightGray(),
                             subtitleFont: Font.mediumSystemFont(fontSizes.body2),
                         }),
-                    ],
-                    {
+                    ], {
                         height: 50,
                         dismissOnSelect: false,
                     },
                 ),
             );
-            for (const [i, angle] of [1, 2, 3, 4, 5].entries()) {
+            for (const [i, angle] of[1, 2, 3, 4, 5].entries()) {
                 const vehicleImg = await this.FPW.Files.getVehicleImage(vData.info.modelYear, false, angle, false, true);
                 tableRows.push(
                     await this.createTableRow(
@@ -2219,11 +2202,10 @@ module.exports = class FPW_App {
                             await this.createTextCell(`Angle ${angle}`, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false, titleColor: this.FPW.colorMap.normalText, titleFont: Font.mediumSystemFont(fontSizes.headline2) }),
                             await this.createImageCell(vehicleImg, { align: 'center', widthWeight: 60 }),
                             await this.createTextCell(``, undefined, { align: 'center', widthWeight: 20, dismissOnTap: false }),
-                        ],
-                        {
+                        ], {
                             height: 150,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Advanced Info) Vehicle Data was pressed');
                                 this.FPW.Menus.imageExportMenu(vehicleImg, `vehicle_image_angle_${angle}.png`);
                             },
@@ -2260,13 +2242,12 @@ module.exports = class FPW_App {
                             align: 'right',
                             widthWeight: 25,
                             dismissOnTap: false,
-                            onTap: async () => {
+                            onTap: async() => {
                                 console.log(`(Dashboard) Menu Button was pressed`);
                                 this.FPW.Menus.menuBuilderByType('diagnostics');
                             },
                         }),
-                    ],
-                    {
+                    ], {
                         height: 50,
                         isHeader: true,
                         dismissOnSelect: false,
@@ -2305,8 +2286,7 @@ module.exports = class FPW_App {
                                     subtitleColor: this.FPW.colorMap.normalText,
                                     subtitleFont: Font.regularSystemFont(11),
                                 }),
-                            ],
-                            {
+                            ], {
                                 height: lastUpd ? 80 : 70,
                                 dismissOnSelect: false,
                             },
@@ -2327,11 +2307,10 @@ module.exports = class FPW_App {
                                     subtitleColor: this.FPW.colorMap.normalText,
                                     subtitleFont: Font.regularSystemFont(11),
                                 }),
-                            ],
-                            {
+                            ], {
                                 height: 60,
                                 dismissOnSelect: false,
-                                onSelect: async () => {
+                                onSelect: async() => {
                                     console.log('(Advanced Info) Vehicle Data was pressed');
                                     await this.createVehiclePayloadPage(vData);
                                 },
@@ -2352,11 +2331,10 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
-                        ],
-                        {
+                        ], {
                             height: 60,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Advanced Info) Vehicle Data was pressed');
                                 await this.createVehicleInfoPage();
                             },
@@ -2374,14 +2352,13 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
-                        ],
-                        {
+                        ], {
                             height: 60,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Advanced Info) OTA Info was pressed');
                                 let data = await this.FPW.FordAPI.getVehicleOtaInfo();
-                                await this.showDataWebView('OTA Info Page', 'OTA Raw Data', data, 'OTA');
+                                await this.showDataWebView('Over-the-Air Details', 'Raw Data', data, 'OTA');
                             },
                         },
                     ),
@@ -2397,11 +2374,10 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
-                        ],
-                        {
+                        ], {
                             height: 60,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Advanced Info) AsBuilt was pressed');
                                 await this.createAsBuiltPage();
                             },
@@ -2421,11 +2397,10 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
-                        ],
-                        {
+                        ], {
                             height: 60,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Advanced Info) Warranty Info was pressed');
                                 await this.createWarranyInfoPage();
                             },
@@ -2453,11 +2428,10 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
-                        ],
-                        {
+                        ], {
                             height: 60,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Advanced Info) View Vehicle Images was pressed');
                                 await this.createVehicleImagesPage();
                             },
@@ -2484,11 +2458,10 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
-                        ],
-                        {
+                        ], {
                             height: 60,
                             dismissOnSelect: false,
-                            onSelect: async () => {
+                            onSelect: async() => {
                                 console.log('(Advanced Info) Vehicle Data was pressed');
                                 await this.showDataWebView('Vehicle Data Page', 'Raw Data', vData, 'vehicleData');
                                 // await this.showDataWebView('Vehicle Data Output', 'All Vehicle Data Collected', vData);
@@ -2520,8 +2493,7 @@ module.exports = class FPW_App {
                             subtitleColor: Color.lightGray(),
                             subtitleFont: Font.mediumSystemFont(fontSizes.headline2),
                         }),
-                    ],
-                    {
+                    ], {
                         height: 70,
                         dismissOnSelect: false,
                     },
@@ -2561,8 +2533,7 @@ module.exports = class FPW_App {
                             titleFont: Font.boldRoundedSystemFont(18),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                         }),
-                    ],
-                    {
+                    ], {
                         backgroundColor: new Color(headerColor),
                         height: 40,
                         isHeader: true,
@@ -2591,8 +2562,7 @@ module.exports = class FPW_App {
                                     subtitleColor: this.FPW.colorMap.text.dark,
                                     subtitleFont: Font.regularSystemFont(11),
                                 }),
-                            ],
-                            {
+                            ], {
                                 height: 50,
                                 dismissOnSelect: false,
                                 backgroundColor: new Color(headerColor),
@@ -2616,8 +2586,7 @@ module.exports = class FPW_App {
                                             subtitleColor: this.FPW.colorMap.normalText,
                                             subtitleFont: Font.regularSystemFont(11),
                                         }),
-                                    ],
-                                    {
+                                    ], {
                                         backgroundColor: new Color(titleBgColor),
                                         height: 40,
                                         dismissOnSelect: false,
@@ -2634,8 +2603,7 @@ module.exports = class FPW_App {
                                             subtitleColor: this.FPW.colorMap.normalText,
                                             subtitleFont: Font.regularSystemFont(11),
                                         }),
-                                    ],
-                                    {
+                                    ], {
                                         height: 60,
                                         dismissOnSelect: false,
                                     },
@@ -2651,8 +2619,7 @@ module.exports = class FPW_App {
                                             subtitleColor: this.FPW.colorMap.normalText,
                                             subtitleFont: Font.regularSystemFont(11),
                                         }),
-                                    ],
-                                    {
+                                    ], {
                                         height: rowH < 60 ? 60 : rowH,
                                         dismissOnSelect: false,
                                     },
@@ -2671,8 +2638,7 @@ module.exports = class FPW_App {
                                 titleColor: this.FPW.colorMap.normalText,
                                 titleFont: Font.systemFont(fontSizes.headline2),
                             }),
-                        ],
-                        { height: 50, dismissOnSelect: false },
+                        ], { height: 50, dismissOnSelect: false },
                     ),
                 );
             }
@@ -2723,8 +2689,7 @@ module.exports = class FPW_App {
                             titleFont: Font.boldRoundedSystemFont(18),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                         }),
-                    ],
-                    {
+                    ], {
                         backgroundColor: darkGrayHeaderColor,
                         height: 20,
                         isHeader: true,
@@ -2763,8 +2728,7 @@ module.exports = class FPW_App {
                                 titleFont: Font.boldRoundedSystemFont(fontSizes.subheadline),
                                 subtitleFont: Font.thinSystemFont(fontSizes.body),
                             }),
-                        ],
-                        {
+                        ], {
                             backgroundColor: darkGrayHeaderColor,
                             height: 40,
                             isHeader: true,
@@ -2787,8 +2751,7 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.normalText,
                                 subtitleFont: Font.regularSystemFont(11),
                             }),
-                        ],
-                        {
+                        ], {
                             height: 60,
                             isHeader: true,
                             dismissOnSelect: false,
@@ -2809,8 +2772,7 @@ module.exports = class FPW_App {
                                         subtitleColor: this.FPW.colorMap.normalText,
                                         subtitleFont: Font.regularSystemFont(11),
                                     }),
-                                ],
-                                {
+                                ], {
                                     // backgroundColor: darkGrayHeaderColor,
                                     height: 40,
                                     // isHeader: true,
@@ -2845,7 +2807,7 @@ module.exports = class FPW_App {
                             align: 'left',
                             widthWeight: 25,
                             dismissOnTap: false,
-                            onTap: async () => {
+                            onTap: async() => {
                                 console.log(`(Dashboard) Remove Module Data Button was pressed`);
                                 await this.FPW.Files.removeFile(`${vin}.json`, true);
                                 // await this.FPW.Alerts.showAlert('Removed Successfully', 'Local AsBuilt File Removed');
@@ -2865,14 +2827,13 @@ module.exports = class FPW_App {
                             align: 'right',
                             widthWeight: 25,
                             dismissOnTap: false,
-                            onTap: async () => {
+                            onTap: async() => {
                                 console.log(`(Dashboard) Get Module Data Button was pressed`);
                                 await this.FPW.AsBuilt.getAsBuiltFile(vin);
                                 this.createAsBuiltPage(true);
                             },
                         }),
-                    ],
-                    {
+                    ], {
                         backgroundColor: darkGrayHeaderColor,
                         height: 40,
                         isHeader: true,
@@ -2895,8 +2856,7 @@ module.exports = class FPW_App {
                             subtitleFont: Font.thinSystemFont(fontSizes.body),
                         }),
                         await this.createTextCell('', undefined, { align: 'left', widthWeight: 25 }),
-                    ],
-                    {
+                    ], {
                         backgroundColor: darkGrayHeaderColor,
                         height: 40,
                         isHeader: true,
@@ -2960,11 +2920,10 @@ module.exports = class FPW_App {
                                         subtitleColor: this.FPW.colorMap.normalText,
                                         subtitleFont: Font.regularSystemFont(11),
                                     }),
-                                ],
-                                {
+                                ], {
                                     height: module.group && module.group.length ? 70 : 50,
                                     dismissOnSelect: false,
-                                    onSelect: async () => {
+                                    onSelect: async() => {
                                         console.log(`(AsBuilt Info) View Module (${module.label}) was pressed`);
                                         await this.createModuleInfoPage(module);
                                     },
@@ -2985,8 +2944,7 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.lightText,
                                 subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
                             }),
-                        ],
-                        { height: 80, dismissOnSelect: false },
+                        ], { height: 80, dismissOnSelect: false },
                     ),
                     await this.createTableRow(
                         [
@@ -2998,8 +2956,7 @@ module.exports = class FPW_App {
                                 subtitleColor: this.FPW.colorMap.lightText,
                                 subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
                             }),
-                        ],
-                        { height: 80, dismissOnSelect: false },
+                        ], { height: 80, dismissOnSelect: false },
                     ),
                 );
             }
@@ -3025,8 +2982,7 @@ module.exports = class FPW_App {
                             titleFont: Font.boldRoundedSystemFont(moduleData.label.length > 18 ? fontSizes.subheadline : fontSizes.headline2),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                         }),
-                    ],
-                    {
+                    ], {
                         backgroundColor: darkGrayHeaderColor,
                         height: 50,
                         isHeader: true,
@@ -3053,8 +3009,7 @@ module.exports = class FPW_App {
                             titleFont: Font.boldRoundedSystemFont(moduleData.label.length > 18 ? fontSizes.subheadline : fontSizes.headline),
                             subtitleFont: Font.thinSystemFont(fontSizes.footnote),
                         }),
-                    ],
-                    {
+                    ], {
                         backgroundColor: darkGrayHeaderColor,
                         height: 60,
                         isHeader: true,
@@ -3091,8 +3046,7 @@ module.exports = class FPW_App {
                                             subtitleColor: this.FPW.colorMap.normalText,
                                             subtitleFont: Font.regularSystemFont(fontSizes.subheadline),
                                         }),
-                                    ],
-                                    {
+                                    ], {
                                         height: nodeValH >= 60 ? nodeValH : 60,
                                         dismissOnSelect: false,
                                     },

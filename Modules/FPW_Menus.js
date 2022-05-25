@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.05.12.0';
+        return '2022.05.25.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -14,13 +14,14 @@ module.exports = class FPW_Menus {
             user = user || (await this.FPW.getSettingVal('fpUser'));
             pass = pass || (await this.FPW.getSettingVal('fpPass'));
             vin = vin || (await this.FPW.getSettingVal('fpVin'));
-
+            const region = await this.FPW.getRegion();
             let prefsMenu = new Alert();
             if (!vin || !user || !pass) {
                 prefsMenu.title = 'Required Settings Missing';
                 prefsMenu.message = 'Enter your FordPass Credentials and press `Get Vehicles` to display a list of the supported vehicles on your account';
                 prefsMenu.addTextField('Ford Email', user || '');
                 prefsMenu.addSecureTextField('Ford Password', pass || '');
+                prefsMenu.addAction(`Region: ${this.FPW.capitalizeStr(region)}`); //0
                 prefsMenu.addAction('Get Vehicles'); //5
                 prefsMenu.addCancelAction('Cancel'); //6
 
@@ -31,6 +32,10 @@ module.exports = class FPW_Menus {
                 pass = prefsMenu.textFieldValue(1);
                 switch (respInd) {
                     case 0:
+                        console.log(`(Required Prefs Menu) Region pressed`);
+                        await this.menuBuilderByType('region');
+                        return await this.requiredPrefsMenu(user, pass, vin);
+                    case 1:
                         console.log('(Required Prefs Menu) Done was pressed');
                         user = devCreds && devCreds.user ? devCreds.user : prefsMenu.textFieldValue(0);
                         pass = devCreds && devCreds.password ? devCreds.password : prefsMenu.textFieldValue(1);
@@ -70,7 +75,6 @@ module.exports = class FPW_Menus {
                 let mapProvider = await this.FPW.getMapProvider();
                 const widgetStyle = await this.FPW.getWidgetStyle();
                 const colorMode = await this.FPW.getColorMode();
-
                 prefsMenu.title = 'Required Settings Missing';
                 prefsMenu.message = 'Tap a setting below to toggle a change or to view documentation/videos\nPress Save to proceed.';
                 prefsMenu.addAction(`Widget Style: ${this.FPW.capitalizeStr(widgetStyle)}`); //0
@@ -621,6 +625,58 @@ module.exports = class FPW_Menus {
                                 if (!prefsMenu) {
                                     this.menuBuilderByType('widget_settings');
                                 }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                    ];
+                    break;
+
+                case 'region':
+                    title = 'Set Region';
+                    items = [{
+                            title: `North America`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) NA pressed`);
+                                await this.FPW.setRegion('NA');
+                                // if (!prefsMenu) {
+                                //     this.menuBuilderByType('widget_settings');
+                                // }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `UK & Europe`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) UK_Europe pressed`);
+                                await this.FPW.setRegion('UK_Europe');
+                                // if (!prefsMenu) {
+                                //     this.menuBuilderByType('widget_settings');
+                                // }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Australia`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Australia pressed`);
+                                await this.FPW.setRegion('Australia');
+                                // if (!prefsMenu) {
+                                //     this.menuBuilderByType('widget_settings');
+                                // }
+                            },
+                            destructive: false,
+                            show: true,
+                        },
+                        {
+                            title: `Back`,
+                            action: async() => {
+                                console.log(`(${typeDesc} Menu) Back pressed`);
+                                // if (!prefsMenu) {
+                                //     this.menuBuilderByType('widget_settings');
+                                // }
                             },
                             destructive: false,
                             show: true,

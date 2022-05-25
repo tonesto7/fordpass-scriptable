@@ -44,6 +44,13 @@
     
 **************/
 const changelogs = {
+    '2022.05.25.0': {
+        added: ['Added region selection to signin page.'],
+        fixed: ['fixed issues ota and all data views.'],
+        removed: [],
+        updated: ['updated the OTA data layout and structure'],
+        clearFlags: [],
+    },
     '2022.05.14.0': {
         added: [],
         fixed: ['fixed issues with the fuel levels.', 'code cleanups...'],
@@ -102,7 +109,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.14.0';
+const SCRIPT_VERSION = '2022.05.25.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -1431,7 +1438,7 @@ class Widget {
                 switch (type) {
                     case 'vin':
                     case 'relevantVin':
-                        return str.substring(0, str.length - 4) + 'XXXX';
+                        return str && str.length ? str.substring(0, str.length - 4) + 'XXXX' : str;
                     case 'position':
                     case 'address1':
                     case 'streetAddress':
@@ -1492,9 +1499,21 @@ class Widget {
 
     decamelize(str, separator) {
         separator = typeof separator === 'undefined' ? '_' : separator;
-
         return str.replace(/([a-z\d])([A-Z])/g, '$1' + separator + '$2').replace(/([A-Z]+)([A-Z][a-z\d]+)/g, '$1' + separator + '$2');
         // .toLowerCase();
+    }
+
+    camelKeyToWords(str) {
+        str = this.decamelize(str);
+        return this.capitalizeWords(str);
+    }
+
+    capitalizeWords(str) {
+        const words = str.split(' ');
+        for (let i = 0; i < words.length; i++) {
+            words[i] = words[i][0].toUpperCase() + words[i].substr(1);
+        }
+        return words.join(' ');
     }
 
     valueChk(value, min = undefined, max = undefined, setToMax = false) {
@@ -1697,6 +1716,14 @@ class Widget {
 
     async setBackgroundType(type) {
         return await this.setSettingVal('fpWidgetBackground', type);
+    }
+
+    async getRegion() {
+        return (await this.getSettingVal('fpRegion')) || 'NA';
+    }
+
+    async setRegion(reg) {
+        return await this.setSettingVal('fpRegion', reg);
     }
 
     /**
@@ -3512,7 +3539,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-103752335731', 'FPW_App.js||513368020044', 'FPW_AsBuilt.js||160631883825', 'FPW_Files.js||155201478467', 'FPW_FordAPIs.js||119268042247', 'FPW_Menus.js||-118950948484', 'FPW_Notifications.js||-50474146190', 'FPW_ShortcutParser.js||52695948030', 'FPW_Timers.js||124279688674'];
+const moduleFiles = ['FPW_Alerts.js||32416001940', 'FPW_App.js||-274831936199', 'FPW_AsBuilt.js||160631883825', 'FPW_Files.js||66954203669', 'FPW_FordAPIs.js||-1083387778085', 'FPW_Menus.js||148561121386', 'FPW_Notifications.js||-125971442992', 'FPW_ShortcutParser.js||-50577889021', 'FPW_Timers.js||11567471684'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
