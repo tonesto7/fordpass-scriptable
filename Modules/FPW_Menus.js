@@ -130,13 +130,15 @@ module.exports = class FPW_Menus {
         try {
             let menuItems = [];
             const vehicles = await this.FPW.FordAPI.getVehiclesForUser();
-            console.log(`userVehicles Menu: ${vehicles}`);
+            console.log(`userVehicles Menu: ${JSON.stringify(vehicles)}`);
             if (vehicles && vehicles.length > 0) {
                 for (const [i, vehicle] of vehicles.entries()) {
                     menuItems.push(`${vehicle.modelYear} ${vehicle.modelName}${vehicle.nickName && vehicle.nickName.length ? ' (' + vehicle.nickName + ')' : ''}`);
                 }
             } else {
-                menu.addAction('No Vehicles Found'); //0
+                let vin = await this.FPW.getSettingVal('fpVin');
+                menu.addTextField('Vehicle VIN Number', vin || '');
+                menuItems.push('No Vehicles Found - Tap to save VIN');
             }
             menuItems.push('Cancel');
             for (const [i, item] of menuItems.entries()) {
@@ -148,11 +150,16 @@ module.exports = class FPW_Menus {
             }
 
             let respInd = await menu.presentAlert();
+            let manVin = menu.textFieldValue(0);
             if (respInd !== null) {
                 if (menuItems[respInd] === 'Cancel') {
                     return false;
-                } else if (menuItems[respInd] === 'No Vehicles Found') {
-                    console.log(`(availableVehiclesMenu) No Vehicles Found Pressed`);
+                } else if (menuItems[respInd] === 'No Vehicles Found - Tap to save VIN') {
+                    console.log(`(availableVehiclesMenu) No Vehicles Found - Manual Vin Entry Displayed`);
+                    if (manVin && manVin.length > 0) {
+                        await this.FPW.setSettingVal('fpVin', manVin);
+                        return manVin;
+                    }
                     return undefined;
                 } else {
                     const vin = vehicles[respInd] && vehicles[respInd].vin ? vehicles[respInd].vin : undefined;

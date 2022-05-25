@@ -1,5 +1,11 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: magic;
+// This script was downloaded using FordWidgetTool.
+hash: -584743853047;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -44,6 +50,13 @@
     
 **************/
 const changelogs = {
+    '2022.05.25.1': {
+        added: ['Added manual VIN entry input when no vehicles are discovered automatically.'],
+        fixed: [],
+        removed: [],
+        updated: [],
+        clearFlags: [],
+    },
     '2022.05.25.0': {
         added: ['Added region selection to signin page.'],
         fixed: ['fixed issues ota and all data views.'],
@@ -109,7 +122,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.25.0';
+const SCRIPT_VERSION = '2022.05.25.1';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -3539,7 +3552,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||32416001940', 'FPW_App.js||-274831936199', 'FPW_AsBuilt.js||160631883825', 'FPW_Files.js||66954203669', 'FPW_FordAPIs.js||-1083387778085', 'FPW_Menus.js||148561121386', 'FPW_Notifications.js||-125971442992', 'FPW_ShortcutParser.js||-50577889021', 'FPW_Timers.js||11567471684'];
+const moduleFiles = ['FPW_Alerts.js||32416001940', 'FPW_App.js||-274831936199', 'FPW_AsBuilt.js||160631883825', 'FPW_Files.js||66954203669', 'FPW_FordAPIs.js||-1083387778085', 'FPW_Menus.js||-205811933801', 'FPW_Notifications.js||-125971442992', 'FPW_ShortcutParser.js||-50577889021', 'FPW_Timers.js||11567471684'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
