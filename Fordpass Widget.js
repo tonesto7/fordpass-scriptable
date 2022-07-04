@@ -1,11 +1,5 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: magic;
-// This script was downloaded using FordWidgetTool.
-hash: -584743853047;
-
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -50,6 +44,13 @@ hash: -584743853047;
     
 **************/
 const changelogs = {
+    '2022.07.03.0': {
+        added: [],
+        fixed: [],
+        removed: [],
+        updated: ['Reworked Authentication flow due to lock down of Ford security.'],
+        clearFlags: [],
+    },
     '2022.05.25.1': {
         added: ['Added manual VIN entry input when no vehicles are discovered automatically.'],
         fixed: [],
@@ -122,7 +123,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.05.25.1';
+const SCRIPT_VERSION = '2022.07.03.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -998,6 +999,7 @@ class Widget {
                 accessDenied: 'Access Denied',
                 noData: 'No Data',
                 noCredentials: 'Missing Login Credentials',
+                authFailed: 'Authentication Failed',
                 noVin: 'VIN Missing',
                 cmd_err_590: 'Command Failed!\n\nVehicle failed to start. You must start from inside your vehicle after two consecutive remote start events. ',
                 cmd_err: `There was an error sending the command to the vehicle!\n`,
@@ -1500,6 +1502,17 @@ class Widget {
         return val !== '' && val !== null && val !== undefined;
     }
 
+    async delayExec(ms) {
+        const webView = new WebView();
+        const js = `
+            setTimeout(function() {
+                completion(true)
+            }, ${ms})
+        `;
+        // log(`Waiting ${ms / 1000} seconds...`);
+        return await webView.evaluateJavaScript(js, true);
+    }
+
     /**
      * @description
      * @param  {any} str
@@ -1516,8 +1529,8 @@ class Widget {
         // .toLowerCase();
     }
 
-    camelKeyToWords(str) {
-        str = this.decamelize(str);
+    camelKeyToWords(str, separator = undefined) {
+        str = this.decamelize(str, separator);
         return this.capitalizeWords(str);
     }
 
@@ -3254,8 +3267,8 @@ class Widget {
         const menuBtnIcon = hasStatusMsg ? 'menu_btn_red_64.png' : useDarkMode ? 'menu_btn_dark_64.png' : 'menu_btn_light_64.png';
 
         const buttonRow = await this.createRow(srcRow, { '*setPadding': [0, padding || 0, 0, padding || 0], spacing: 10 });
-
-        const buttons = [{
+        const buttons = [
+            {
                 show: caps && caps.length && caps.includes('remoteLock'),
                 icon: {
                     image: await this.Files.getImage(lockBtnIcon),
@@ -3535,7 +3548,7 @@ async function clearModuleCache() {
         const fm = FileManager.local();
         const dir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
         if (await fm.isDirectory(dir)) {
-            fm.listContents(dir).forEach(async(file) => {
+            fm.listContents(dir).forEach(async (file) => {
                 const fp = fm.joinPath(dir, file);
                 if ((await fm.fileExtension(fp)) === 'js') {
                     console.log(`FileManager: Removing Module File: ${file}`);
@@ -3552,7 +3565,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||32416001940', 'FPW_App.js||-274831936199', 'FPW_AsBuilt.js||160631883825', 'FPW_Files.js||66954203669', 'FPW_FordAPIs.js||-1083387778085', 'FPW_Menus.js||-205811933801', 'FPW_Notifications.js||-125971442992', 'FPW_ShortcutParser.js||-50577889021', 'FPW_Timers.js||11567471684'];
+const moduleFiles = ['FPW_Alerts.js||-984133028', 'FPW_App.js||-255999079700', 'FPW_AsBuilt.js||310958614603', 'FPW_Files.js||233772759426', 'FPW_FordAPIs.js||-226707151403', 'FPW_Menus.js||22091920821', 'FPW_Notifications.js||91913032662', 'FPW_ShortcutParser.js||4079300033', 'FPW_Timers.js||-41110768774'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
