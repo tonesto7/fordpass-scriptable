@@ -4,10 +4,13 @@ module.exports = class FPW_FordAPIs {
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.SCRIPT_VERSION = FPW.SCRIPT_VERSION;
         this.widgetConfig = FPW.widgetConfig;
+        this.fpUserAgent = 'FordPass/5 CFNetwork/1378.1 Darwin/22.0.0';
+        this.tokenRetryCnt = 0;
+        this.isFetchingToken = false;
     }
 
     getModuleVer() {
-        return '2022.05.25.0';
+        return '2022.07.04.0';
     }
 
     appIDs() {
@@ -19,6 +22,41 @@ module.exports = class FPW_FordAPIs {
         };
     }
 
+    defaultHeaders = () => {
+        return {
+            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+        };
+    };
+
+    async getCodeChallenge() {
+        let request = new Request('https://fpw-pkce-svc.herokuapp.com/getchallenge');
+        request.method = 'POST';
+        request.headers = {
+            'Content-Type': 'application/json',
+        };
+        const data = await request.loadJSON();
+        return data;
+    }
+
+    getUrlParams(q) {
+        let result = {};
+        q.split('&').forEach(function (part) {
+            var item = part.split('=');
+            result[item[0]] = decodeURIComponent(item[1]);
+        });
+        return result;
+    }
+
+    findRegexMatch(regex, html) {
+        const match = regex.exec(html);
+        if (match) {
+            return match[1];
+        }
+        return undefined;
+    }
+
     async getAppID() {
         const appIds = this.appIDs();
         const region = await this.FPW.getRegion();
@@ -28,10 +66,16 @@ module.exports = class FPW_FordAPIs {
     }
 
     async checkAuth(src = undefined) {
+        // log('checkAuth() | src: ' + src);
+
+        const noValue = (val) => {
+            return val === null || val === undefined || val === '';
+        };
         const token = await this.FPW.getSettingVal('fpToken');
-        const legacyToken = await this.FPW.getSettingVal('fpToken2');
+        const refreshToken = await this.FPW.getSettingVal('fpRefreshToken');
         const expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
-        const expired = expiresAt ? Date.now() >= Date.parse(expiresAt) : false;
+        const expired = noValue(expiresAt) === false ? Date.now() >= Date.parse(expiresAt) : false;
+        const legacyToken = await this.FPW.getSettingVal('fpToken2');
         if (this.widgetConfig.debugMode) {
             console.log(`chechAuth(${src})`);
             console.log(`checkAuth | Token: ${token}`);
@@ -40,20 +84,20 @@ module.exports = class FPW_FordAPIs {
         }
         let tok;
         let refresh;
-        if (expired) {
+        if (expired && refreshToken) {
             console.log('Token has expired... Refreshing Token...');
             refresh = await this.refreshToken();
-        } else if (legacyToken || token === null || token === undefined || token === '' || expiresAt === null || expiresAt === undefined || expiresAt === '') {
+        } else if (legacyToken || noValue(token) || noValue(expiresAt) || noValue(refreshToken)) {
             if (legacyToken) {
                 console.log('Legacy Token found... Clearing and Forcing Fetch...');
                 await this.clearTokenCache();
                 await this.FPW.Files.removeFile('fp_vehicleData.json');
             } else {
-                console.log('Token or Expiration State is Missing... Fetching Token...');
+                console.log('Token, RefreshToken, or Expiration State is Missing... Fetching NEW Token...');
             }
-            tok = await this.fetchToken();
+            tok = await this.fetchToken('checkAuth()');
         }
-        if ((tok || refresh) && (tok == this.FPW.textMap().errorMessages.invalidGrant || tok == this.FPW.textMap().errorMessages.noCredentials || refresh == this.FPW.textMap().errorMessages.invalidGrant || refresh == this.FPW.textMap().errorMessages.noCredentials)) {
+        if ((tok || refresh) && (tok == this.FPW.textMap().errorMessages.invalidGrant || tok == this.FPW.textMap().errorMessages.authFailed || tok == this.FPW.textMap().errorMessages.noCredentials || refresh == this.FPW.textMap().errorMessages.invalidGrant || refresh == this.FPW.textMap().errorMessages.noCredentials)) {
             return tok;
         } else {
             return undefined;
@@ -74,8 +118,224 @@ module.exports = class FPW_FordAPIs {
         return scrub ? this.FPW.scrubPersonalData(data) : data;
     }
 
+    async fetchJwtToken(src = undefined) {
+        // console.log(`fetchJwtToken(${src})`);
+        if (this.isFetchingToken) {
+            console.log('fetchJwtToken() | Already fetching token...');
+            return;
+        }
+        this.isFetchingToken = true;
+        const that = this;
+        const { code_challenge, code_verifier } = await this.getCodeChallenge();
+        const redirect_uri = 'fordapp://userauthorized';
+        const client_id = '9fb503e0-715b-47e8-adfd-ad4b7770f73b';
+        // console.log(`fetchToken | code_challenge: ${code_challenge}`);
+        // console.log(`fetchToken | code_verifier: ${code_verifier}`);
+
+        const username = await this.FPW.getSettingVal('fpUser');
+        if (!username) {
+            return this.FPW.textMap().errorMessages.noCredentials;
+        }
+        const password = await this.FPW.getSettingVal('fpPass');
+        if (!password) {
+            return this.FPW.textMap().errorMessages.noCredentials;
+        }
+
+        async function clearCookies() {
+            console.log('Clearing Session Cookies()');
+            const wv = new WebView();
+            // wv.present();
+            await wv.loadURL(`https://www.ford.com/#$userSignOut`);
+            await wv.waitForLoad();
+            await wv.evaluateJavaScript(`(function(){document.cookie.split(";").forEach(function(c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";domain=." + location.host.split('.').slice(-2).join(".") +";path=/"); }); })();`);
+            // console.log('clearCookies() | Success');
+            return true;
+        }
+
+        async function auth_step1() {
+            let nextUrl;
+            let nextCookies;
+            console.log('clearCookies: ' + (await clearCookies()));
+            let request = new Request(`https://sso.ci.ford.com/v1.0/endpoint/default/authorize?redirect_uri=${redirect_uri}&client_id=${client_id}&response_type=code&state=&scope=openid&login_hint=%7B%22realm%22%20%3A%20%22cloudIdentityRealm%22%7D&code_challenge=${code_challenge}&code_challenge_method=S256`);
+            request.method = 'GET';
+            request.headers = {
+                ...that.defaultHeaders(),
+            };
+            request.onRedirect = (req) => {
+                // console.log(`fetchToken | Step 1 | Redirect: ${req.url}`);
+                nextUrl = req.url;
+            };
+            try {
+                const data = await request.load();
+                const resp = request.response;
+                // console.log(`statusCode1: ${resp.statusCode}`);
+                // console.log('redireCnt1: ' + redirectCnt);
+                // console.log(`resp1: ${JSON.stringify(resp, null, 2)}`);
+                nextUrl = resp.headers['Location'];
+                nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
+                // console.log(`nextUrl1: ${nextUrl}`);
+                // console.log('cookies1: ' + JSON.stringify(nextCookies));
+                if (nextUrl && nextCookies) {
+                    if (nextUrl.includes('code=') && nextUrl.includes('grant_id=')) {
+                        const params = that.getUrlParams(nextUrl.split('?')[1]);
+                        // console.log('params: ' + JSON.stringify(params));
+                        const code = params['code'];
+                        if (code) {
+                            return await auth_step5(code, nextCookies);
+                        }
+                    }
+                    if (nextUrl.includes('https://sso.ci.ford.com/idaas/mtfim/sps/idaas/login?client_id=')) {
+                        return await auth_step2(nextUrl, nextCookies);
+                    }
+                }
+                return that.FPW.textMap().errorMessages.authFailed;
+            } catch (err) {
+                console.log('auth_step1 | Error: ' + err.message);
+                return that.FPW.textMap().errorMessages.authFailed;
+            }
+        }
+
+        async function auth_step2(url, cookies) {
+            let nextUrl;
+            let nextCookies;
+            let request = new Request(url);
+            request.method = 'GET';
+            request.headers = {
+                ...that.defaultHeaders(),
+                cookie: cookies,
+            };
+            request.onRedirect = function (req) {
+                nextUrl = req.url;
+            };
+            try {
+                const data = await request.load();
+                const resp = await request.response;
+                // console.log(`statusCode2: ${resp.statusCode}`);
+                // console.log(`resp2: ${JSON.stringify(resp, null, 2)}`);
+                nextUrl = resp.headers['Location'];
+                nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
+                // console.log(`nextUrl2: ${nextUrl}`);
+                // console.log('cookies2: ' + JSON.stringify(nextCookies));
+                if (nextUrl && nextUrl.includes('https://sso.ci.ford.com/authsvc/mtfim/sps/authsvc?PolicyId=urn:ibm:security:authentication:asf:basicldapuser&identity_source_id=') && nextCookies) {
+                    return await auth_step3(nextUrl, nextCookies);
+                }
+            } catch (err) {
+                console.log('auth_step2 | Error: ' + err.message);
+                return that.FPW.textMap().errorMessages.authFailed;
+            }
+        }
+
+        async function auth_step3(url, cookies) {
+            let nextUrl;
+            let nextCookies;
+            let request = new Request(url);
+            request.method = 'POST';
+            request.headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                ...that.defaultHeaders(),
+                cookie: cookies,
+            };
+            request.onRedirect = function (req) {
+                nextUrl = req.url;
+                // return null;
+            };
+
+            request.body = `operation=verify&login-form-type=pwd&username=${username}&password=${password}`;
+            try {
+                await request.load();
+                const resp = await request.response;
+                // console.log(`statusCode3: ${resp.statusCode}`);
+                // console.log(`resp: ${JSON.stringify(resp, null, 2)}`);
+                nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
+                // console.log(`nextUrl3: ${nextUrl}`);
+                // console.log('cookies3: ' + JSON.stringify(nextCookies));
+                if (nextUrl && nextUrl.includes('https://sso.ci.ford.com/oidc/endpoint/default/authorize?qsId=') && nextCookies) {
+                    return await auth_step4(nextUrl, nextCookies);
+                }
+                return that.FPW.textMap().errorMessages.authFailed;
+            } catch (err) {
+                console.log('auth_step3 | Error: ' + err.message);
+                await that.FPW.logInfo(`auth_step3() Error: ${err.message}`, true);
+                return that.FPW.textMap().errorMessages.authFailed;
+            }
+        }
+
+        async function auth_step4(url, cookies) {
+            let nextUrl;
+            let nextCookies;
+            let request = new Request(url);
+            request.method = 'GET';
+            request.headers = {
+                ...that.defaultHeaders(),
+                cookie: cookies,
+            };
+            request.onRedirect = function (req) {
+                nextUrl = req.url;
+                // return null;
+            };
+
+            try {
+                await request.load();
+                const resp = await request.response;
+                // console.log(`statusCode4: ${resp.statusCode}`);
+                // console.log(`resp: ${JSON.stringify(resp, null, 2)}`);
+                nextUrl = resp.headers['Location'];
+                // console.log(`nextUrl4: ${nextUrl}`);
+                const params = that.getUrlParams(nextUrl.split('?')[1]);
+                // console.log('params: ' + JSON.stringify(params));
+                const code = params['code'];
+                const grantId = params['grant_id'];
+                if (code) {
+                    return await auth_step5(code, grantId);
+                }
+                return that.FPW.textMap().errorMessages.authFailed;
+            } catch (err) {
+                console.log('auth_step4 | Error: ' + err.message);
+                await that.FPW.logInfo(`auth_step4() Error: ${err.message}`, true);
+                return that.FPW.textMap().errorMessages.authFailed;
+            }
+        }
+
+        async function auth_step5(code, grantId) {
+            // console.log('auth_step5');
+            let request = new Request('https://sso.ci.ford.com/oidc/endpoint/default/token');
+            request.method = 'POST';
+            request.headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                ...that.defaultHeaders(),
+            };
+            request.body = `grant_type=authorization_code&code=${code}&grant_id=${grantId}&code_verifier=${code_verifier}&scope=openid&redirect_uri=${redirect_uri}&client_id=${client_id}&resource=`;
+
+            try {
+                let data = await request.loadJSON();
+                // console.log(`auth_step5 data: ${JSON.stringify(data, null, 2)}`);
+                const resp = await request.response;
+                // console.log(`statusCode5: ${resp.statusCode}`);
+                // console.log(`resp: ${JSON.stringify(resp, null, 2)}`);
+                if (resp.statusCode === 200 && data.access_token) {
+                    // console.log(`access_token: ${data.access_token}`);
+                    return data.access_token;
+                }
+                return that.FPW.textMap().errorMessages.authFailed;
+            } catch (err) {
+                await that.FPW.logInfo(`auth_step5() Error: ${err.message}`, true);
+                return that.FPW.textMap().errorMessages.authFailed;
+            }
+        }
+
+        const result = await auth_step1();
+        this.isFetchingToken = false;
+        return result;
+    }
+
     async fetchToken() {
         // console.log('Fetching Token...');
+        if (this.tokenRetryCnt > 2) {
+            this.tokenRetryCnt = 0;
+            log('fetchToken() | Too many retries');
+            return 'Error: Too many token retries';
+        }
+        this.tokenRetryCnt++;
         let username = await this.FPW.getSettingVal('fpUser');
         if (!username) {
             return this.FPW.textMap().errorMessages.noCredentials;
@@ -84,85 +344,73 @@ module.exports = class FPW_FordAPIs {
         if (!password) {
             return this.FPW.textMap().errorMessages.noCredentials;
         }
-        let headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Accept: '*/*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
-            'Accept-Encoding': 'gzip, deflate, br',
-            authorization: 'Basic ZWFpLWNsaWVudDo=',
-        };
+        const jwtToken = await this.fetchJwtToken('fetchToken');
+        // console.log(`jwt_token: ${jwtToken}`);
 
-        try {
-            let req1 = new Request('https://sso.ci.ford.com/oidc/endpoint/default/token');
-            req1.headers = headers;
-            req1.method = 'POST';
-            req1.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=password&username=${username}&password=${encodeURIComponent(password)}`;
-            req1.timeoutInterval = 15;
+        if (jwtToken) {
+            try {
+                let req = new Request(`https://api.mps.ford.com/api/token/v2/cat-with-ci-access-token`);
+                req.headers = {
+                    'Content-Type': 'application/json',
+                    Accept: '*/*',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    authorization: 'Basic ZWFpLWNsaWVudDo=',
+                    'application-id': await this.getAppID(),
+                };
+                req.method = 'POST';
+                req.body = JSON.stringify({ ciToken: jwtToken });
+                req.timeoutInterval = 15;
 
-            let token1 = await req1.loadJSON();
-            let resp1 = req1.response;
-            if (this.widgetConfig.debugAuthMode) {
-                console.log(`Token1 Req | Status: ${resp1.statusCode}) | Resp: ${JSON.stringify(token1)}`);
-            }
-            if (token1.error && token1.error == 'invalid_grant') {
-                if (this.widgetConfig.debugMode) {
-                    console.log('Debug: Error while receiving token1 data');
-                    console.log(token1);
-                }
-                return this.FPW.textMap().errorMessages.invalidGrant;
-            }
-            if (resp1.statusCode === 200) {
-                let req2 = new Request(`https://api.mps.ford.com/api/token/v2/cat-with-ci-access-token`);
-                headers['content-type'] = 'application/json';
-                headers['application-id'] = await this.getAppID();
-                req2.headers = headers;
-                req2.method = 'POST';
-                req2.body = JSON.stringify({ ciToken: token1.access_token });
-                req2.timeoutInterval = 15;
-
-                let token2 = await req2.loadJSON();
-                let resp2 = req2.response;
+                const token = await req.loadJSON();
+                const resp = req.response;
                 if (this.widgetConfig.debugAuthMode) {
-                    console.log(`Token2 Req | Status: ${resp2.statusCode}) | Resp: ${JSON.stringify(token2)}`);
+                    console.log(`Token Req | Status: ${resp.statusCode}) | Resp: ${JSON.stringify(token, null, 2)}`);
                 }
-                if (token2.error && token2.error == 'invalid_grant') {
+                if (token.error && token.error == 'invalid_grant') {
                     if (this.widgetConfig.debugMode) {
                         console.log('Debug: Error while receiving token2 data');
-                        console.log(token2);
+                        console.log(token);
                     }
                     return this.FPW.textMap().errorMessages.invalidGrant;
                 }
-                if (resp2.statusCode === 200) {
-                    await this.FPW.setSettingVal('fpToken', token2.access_token);
-                    await this.FPW.setSettingVal('fpRefreshToken', token2.refresh_token);
-                    await this.FPW.setSettingVal('fpFordConsumerId', token2.ford_consumer_id);
-                    await this.FPW.setSettingVal('fpTokenExpiresAt', (Date.now() + token2.expires_in).toString());
+                if (resp.statusCode === 200) {
+                    await this.FPW.setSettingVal('fpToken', token.access_token);
+                    await this.FPW.setSettingVal('fpRefreshToken', token.refresh_token);
+                    await this.FPW.setSettingVal('fpFordConsumerId', token.ford_consumer_id);
+                    await this.FPW.setSettingVal('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
                     // let token = await this.FPW.getSettingVal('fpToken');
                     // console.log(`------- New Token Set: ${token} -------`);
                     // let expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
                     // console.log(`expiresAt: ${expiresAt}`);
                     return;
                 }
+            } catch (e) {
+                await this.FPW.logInfo(`fetchToken() Error: ${e}`, true);
+                if (e.error && e.error == 'invalid_grant') {
+                    return this.FPW.textMap().errorMessages.invalidGrant;
+                }
+                throw e;
             }
-        } catch (e) {
-            await this.FPW.logInfo(`fetchToken() Error: ${e}`, true);
-            if (e.error && e.error == 'invalid_grant') {
-                return this.FPW.textMap().errorMessages.invalidGrant;
-            }
-            throw e;
         }
     }
 
     async refreshToken() {
         // console.log('Refreshing Token...');
+        if (this.tokenRetryCnt > 2) {
+            this.tokenRetryCnt = 0;
+            log('refreshToken() | Too many retries');
+            return 'Error: Too many token retries';
+        }
+        this.tokenRetryCnt++;
         try {
             const refreshToken = await this.FPW.getSettingVal('fpRefreshToken');
             let req = new Request(`https://api.mps.ford.com/api/token/v2/cat-with-refresh-token`);
             req.headers = {
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'User-Agent': this.fpUserAgent,
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
                 'Application-Id': await this.getAppID(),
@@ -191,7 +439,7 @@ module.exports = class FPW_FordAPIs {
                 // console.log(`expiresAt: ${expiresAt}`);
                 return;
             } else if (resp.statusCode === 401) {
-                await this.fetchToken();
+                await this.fetchToken('refreshToken(401)');
             }
         } catch (e) {
             await this.FPW.logInfo(`refreshToken() Error: ${e}`, true);
@@ -214,7 +462,7 @@ module.exports = class FPW_FordAPIs {
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
-        return await this.makeFordRequest('getVehicleStatus', `https://usapi.cv.ford.com/api/vehicles/v5/${vin}/status`, 'GET', false);
+        return await this.makeFordRequest('getVehicleStatus', `https://usapi.cv.ford.com/api/vehicles/v5/${vin}/status?lrdt=01-01-1970%2000:00:00`, 'GET', false);
     }
 
     async getVehicleInfo() {
@@ -276,16 +524,18 @@ module.exports = class FPW_FordAPIs {
             'getVehicleAlerts',
             `https://api.mps.ford.com/api/expvehiclealerts/v2/details`,
             'POST',
-            false, {
+            false,
+            {
                 'Content-Type': 'application/json',
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'User-Agent': this.fpUserAgent,
                 'Application-Id': await this.getAppID(),
                 'auth-token': `${token}`,
                 countryCode: country,
                 locale: lang,
-            }, {
+            },
+            {
                 VIN: vin,
                 userAuthorization: 'AUTHORIZED',
                 hmiPreferredLanguage: '',
@@ -312,58 +562,66 @@ module.exports = class FPW_FordAPIs {
             'getAllVehicleDetails',
             `https://api.mps.ford.com/api/expdashboard/v1/details`,
             'POST',
-            false, {
+            false,
+            {
                 'Content-Type': 'application/json',
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'User-Agent': this.fpUserAgent,
                 locale: lang,
                 countryCode: country,
                 'application-id': await this.getAppID(),
                 'auth-token': token,
-            }, {
+            },
+            {
                 dashboardRefreshRequest: 'All',
                 smsWakeUpVIN: vin,
             },
         );
 
-        // console.log(JSON.stringify(data, null, 2));
-        if (data && Object.keys(data).length > 0) {
-            if (tcuSupportOnly) {
-                // console.log(`vehicles: ${JSON.stringify(data.userVehicles.vehicleDetails, null, 2)}`);
-                return data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.filter((v) => v.tcuEnabled === true).map((v) => v.VIN) : [];
-            } else {
-                const vehicle = data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.find((v) => v.VIN === vin) : undefined;
-                const profile = data.vehicleProfile && data.vehicleProfile.length > 0 ? data.vehicleProfile.find((v) => v.VIN === vin) : undefined;
-                let caps = data.vehicleCapabilities && data.vehicleCapabilities.length ? data.vehicleCapabilities.find((v) => v.VIN === vin) : undefined;
-                let capsArr = [];
-                if (caps && Object.keys(caps).length > 0) {
-                    let nCaps = {};
-                    for (let key in caps) {
-                        if (caps[key] === 'NoDisplay') {
-                            nCaps[key] = false;
-                        } else if (caps[key] === 'Display') {
-                            nCaps[key] = true;
-                            capsArr.push(key);
-                        } else {
-                            if (nCaps[key] === 'On') {
+        try {
+            // console.log(JSON.stringify(data, null, 2));
+            if (data && Object.keys(data).length > 0) {
+                if (tcuSupportOnly) {
+                    // console.log(`vehicles: ${JSON.stringify(data.userVehicles.vehicleDetails, null, 2)}`);
+                    return data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.filter((v) => v.tcuEnabled === true).map((v) => v.VIN) : [];
+                } else {
+                    const vehicle = data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.find((v) => v.VIN === vin) : undefined;
+                    const profile = data.vehicleProfile && data.vehicleProfile.length > 0 ? data.vehicleProfile.find((v) => v.VIN === vin) : undefined;
+                    let caps = data.vehicleCapabilities && data.vehicleCapabilities.length ? data.vehicleCapabilities.find((v) => v.VIN === vin) : undefined;
+                    let capsArr = [];
+                    if (caps && Object.keys(caps).length > 0) {
+                        let nCaps = {};
+                        for (let key in caps) {
+                            if (caps[key] === 'NoDisplay') {
+                                nCaps[key] = false;
+                            } else if (caps[key] === 'Display' || caps[key] === 'On' || caps[key] === true || caps[key] === 'Available') {
+                                nCaps[key] = true;
                                 capsArr.push(key);
+                            } else {
+                                nCaps[key] = caps[key];
                             }
-                            nCaps[key] = caps[key];
                         }
+                        caps = nCaps;
                     }
-                    caps = nCaps;
+                    let out = {
+                        nickName: vehicle && vehicle.nickName ? vehicle.nickName : undefined,
+                        tcuEnabled: vehicle && vehicle.tcuEnabled ? vehicle.tcuEnabled : false,
+                        profile: profile,
+                        caps: caps,
+                        capsArr: capsArr.sort(),
+                    };
+                    ['profile', 'caps'].forEach((key) => {
+                        if (out[key] && out[key].status) {
+                            delete out[key].status;
+                        }
+                    });
+                    // console.log(`output: ${JSON.stringify(out, null, 2)}`);
+                    return out;
                 }
-                const out = {
-                    nickName: vehicle && vehicle.nickName ? vehicle.nickName : undefined,
-                    tcuEnabled: vehicle && vehicle.tcuEnabled ? vehicle.tcuEnabled : false,
-                    profile: profile,
-                    caps: caps,
-                    capsArr: capsArr.sort(),
-                };
-                // console.log(`output: ${JSON.stringify(out, null, 2)}`);
-                return out;
             }
+        } catch (e) {
+            console.log(`getAllVehicleDetails: ${e.message}`);
         }
         return undefined;
     }
@@ -380,7 +638,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'User-Agent': this.fpUserAgent,
             'Application-Id': await this.getAppID(),
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
@@ -409,10 +667,10 @@ module.exports = class FPW_FordAPIs {
     }
 
     async getVehicleManual() {
-        let vin = await this.FPW.getSettingVal('fpVin');
-        let token = await this.FPW.getSettingVal('fpToken');
+        const vin = await this.FPW.getSettingVal('fpVin');
+        const token = await this.FPW.getSettingVal('fpToken');
         const country = await this.FPW.getSettingVal('fpCountry');
-        let lang = await this.FPW.getSettingVal('fpLanguage');
+        const lang = await this.FPW.getSettingVal('fpLanguage');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
@@ -420,13 +678,61 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'User-Agent': this.fpUserAgent,
             'Application-Id': await this.getAppID(),
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
             Referer: 'https://ford.com',
             Origin: 'https://ford.com',
         });
+    }
+
+    async getServiceHistory() {
+        // NOT WORKING REQUIRES A JWT TOKEN
+        const vin = await this.FPW.getSettingVal('fpVin');
+        const token = await this.FPW.getSettingVal('fpToken');
+        const country = await this.FPW.getSettingVal('fpCountry');
+        const lang = await this.FPW.getSettingVal('fpLanguage');
+        if (!vin) {
+            return this.FPW.textMap().errorMessages.noVin;
+        }
+        return await this.makeFordRequest('getServiceHistory', `https://www.digitalservices.ford.com/owner/api/v2/global/service-history?vin=${vin}&countryCode=${country}&languageCode=${lang}`, 'GET', false, {
+            'Content-Type': 'application/json',
+            Accept: '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
+            // 'Application-Id': await this.getAppID(),
+            'auth-token': `${token}`,
+            'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
+            Referer: 'https://ford.com',
+            Origin: 'https://ford.com',
+        });
+    }
+
+    async getWifiHotspotCmdId() {
+        const vin = await this.FPW.getSettingVal('fpVin');
+        if (!vin) {
+            return this.FPW.textMap().errorMessages.noVin;
+        }
+        const data = await this.makeFordRequest('getWifiHotspotData_id', `https://usapi.cv.ford.com/api/vehicles/v1/${vin}/getwifisettings`, 'GET', false);
+        return data && data.commandId ? data.commandId : undefined;
+    }
+
+    async getWifiHotspotData() {
+        const vin = await this.FPW.getSettingVal('fpVin');
+        const token = await this.FPW.getSettingVal('fpToken');
+        if (!vin) {
+            return this.FPW.textMap().errorMessages.noVin;
+        }
+
+        const resp1 = await this.makeFordRequest('getWifiHotspotData_id', `https://usapi.cv.ford.com/api/vehicles/v1/${vin}/getwifisettings`, 'GET', false);
+        if (resp1 && resp1.commandId) {
+            await this.FPW.delayExec(2000);
+            const data = await this.makeFordRequest('getWifiHotspotData', `https://usapi.cv.ford.com/api/vehicles/v1/${vin}/getwifisettings/${resp1.commandId}`, 'GET', false);
+            // console.log(`data: ${JSON.stringify(data, null, 2)}`);
+            return data;
+        }
+        return undefined;
     }
 
     async getVehicleRecalls() {
@@ -472,7 +778,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'User-Agent': this.fpUserAgent,
             'Application-Id': await this.getAppID(),
             'auth-token': `${token}`,
             vin: vin,
@@ -505,7 +811,8 @@ module.exports = class FPW_FordAPIs {
             'getVehicleSubscriptions',
             'https://api.mps.ford.com/api/subscription-orchestration/v2/getSubscriptionSummaryByVin',
             'POST',
-            true, {
+            true,
+            {
                 accept: 'application/json',
                 'accept-encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
@@ -514,7 +821,8 @@ module.exports = class FPW_FordAPIs {
                 Referer: 'https://www.subscriptions.ford.com',
                 Origin: 'https://www.subscriptions.ford.com',
                 //'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
-            }, { classification: 'FordPass', geoFilter: { countryCode: 'USA', state: 'MI', city: 'Ypsilanti', zipCode: '48197' }, language: 'en-US', vin: '1FTFW1E80MFA24380' },
+            },
+            { classification: 'FordPass', geoFilter: { countryCode: 'USA', state: 'MI', city: 'Ypsilanti', zipCode: '48197' }, language: 'en-US', vin: '1FTFW1E80MFA24380' },
         );
 
         console.log(data);
@@ -643,7 +951,7 @@ module.exports = class FPW_FordAPIs {
                 'Content-Type': 'application/json',
                 Accept: '*/*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'User-Agent': this.fpUserAgent,
                 'Application-Id': await this.getAppID(),
                 'auth-token': `${token}`,
                 Referer: 'https://ford.com',
@@ -663,15 +971,10 @@ module.exports = class FPW_FordAPIs {
             if (this.widgetConfig.debugMode) {
                 console.log(`makeFordRequest(${desc}) | Status: ${resp.statusCode}) | Resp: ${data}`);
             }
-            // switch (desc) {
-            //     case 'getVehiclesForUser':
-            //     case 'getAllVehicleDetails':
-            //         console.log(`makeFordRequest(${desc}) | Status: ${resp.statusCode}) | Resp: ${data}`);
-            //         break;
-            // }
+
             if (data == this.FPW.textMap().errorMessages.accessDenied) {
-                console.log(`makeFordRequest(${desc}): Auth Token Expired. Fetching New Token and Requesting Data Again!`);
-                let result = await this.fetchToken();
+                console.log(`makeFordRequest(${desc}): Access Denied. Fetching New Token and Requesting Data Again!`);
+                const result = await this.fetchToken('makeFordRequest(AccessDenied)');
                 if (result && result == this.FPW.textMap().errorMessages.invalidGrant) {
                     return result;
                 }
@@ -742,6 +1045,7 @@ module.exports = class FPW_FordAPIs {
 
         vehicleData.details = vehicleDetails;
         vehicleData.capabilities = vehicleDetails.capsArr;
+        delete vehicleData.details.capsArr;
         if (this.widgetConfig.logVehicleData) {
             console.log(`Capabilities: ${JSON.stringify(vehicleData.capabilities, null, 2)}`);
         }
@@ -804,6 +1108,12 @@ module.exports = class FPW_FordAPIs {
         if (vehicleData.capabilities.includes('trailerLightCheck')) {
             vehicleData.trailerLightCheckStatus = vehicleStatus.trailerLightCheck && vehicleStatus.trailerLightCheck.trailerLightCheckStatus && vehicleStatus.trailerLightCheck.trailerLightCheckStatus.value ? (vehicleStatus.trailerLightCheck.trailerLightCheckStatus.value === 'LIGHT_CHECK_STOPPED' ? 'Off' : 'On') : undefined;
         }
+
+        // wifiHotspot data (if available)
+        // if (vehicleData.capabilities.includes('wifiHotspot')) {
+        //     vehicleData.wifiHotspotDetails = await this.getWifiHotspotData();
+        //     console.log(`wifiHotspotDetails: ${JSON.stringify(vehicleData.wifiHotspotDetails, null, 2)}`);
+        // }
 
         // Remote Start status
         vehicleData.remoteStartStatus = {
@@ -914,80 +1224,110 @@ module.exports = class FPW_FordAPIs {
         let cmds = {
             lock: {
                 desc: 'Lock Doors',
-                cmds: [{
-                    uri: `${baseUrl}/vehicles/v5/${vin}/doors/lock`,
-                    method: 'PUT',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${baseUrl}/vehicles/v5/${vin}/doors/lock`,
+                        method: 'PUT',
+                    },
+                ],
             },
             unlock: {
                 desc: 'Unlock Doors',
-                cmds: [{
-                    uri: `${baseUrl}/vehicles/v5/${vin}/doors/lock`,
-                    method: 'DELETE',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${baseUrl}/vehicles/v5/${vin}/doors/lock`,
+                        method: 'DELETE',
+                    },
+                ],
             },
             start: {
                 desc: 'Remote Start',
-                cmds: [{
-                    uri: `${baseUrl}/vehicles/v5/${vin}/engine/start`,
-                    method: 'PUT',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${baseUrl}/vehicles/v5/${vin}/engine/start`,
+                        method: 'PUT',
+                    },
+                ],
             },
             stop: {
                 desc: 'Remote Stop',
-                cmds: [{
-                    uri: `${baseUrl}/vehicles/v5/${vin}/engine/start`,
-                    method: 'DELETE',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${baseUrl}/vehicles/v5/${vin}/engine/start`,
+                        method: 'DELETE',
+                    },
+                ],
             },
             horn_and_lights: {
                 desc: 'Horn & Lights On',
-                cmds: [{
-                    uri: `${baseUrl}/vehicles/v5/${vin}/panic/5`,
-                    method: 'PUT',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${baseUrl}/vehicles/v5/${vin}/panic/5`,
+                        method: 'PUT',
+                    },
+                ],
             },
             guard_mode_on: {
                 desc: 'Enable SecuriAlert',
-                cmds: [{
-                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                    method: 'PUT',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                        method: 'PUT',
+                    },
+                ],
             },
             guard_mode_off: {
                 desc: 'Disable SecuriAlert',
-                cmds: [{
-                    uri: `${guardUrl}/guardmode/v1/${vin}/session`,
-                    method: 'DELETE',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${guardUrl}/guardmode/v1/${vin}/session`,
+                        method: 'DELETE',
+                    },
+                ],
             },
             trailer_light_check_on: {
                 desc: 'Trailer Light Check ON',
-                cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
-                    method: 'PUT',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
+                        method: 'PUT',
+                    },
+                ],
             },
             trailer_light_check_off: {
                 desc: 'Trailer Light Check OFF',
-                cmds: [{
-                    uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
-                    method: 'DELETE',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${baseUrl}/vehicles/${vin}/trailerlightcheckactivation`,
+                        method: 'DELETE',
+                    },
+                ],
             },
             status: {
                 desc: 'Refresh Vehicle Status',
-                cmds: [{
-                    uri: `${baseUrl}/vehicles/v5/${vin}/status`,
-                    method: 'PUT',
-                }, ],
+                cmds: [
+                    {
+                        uri: `${baseUrl}/vehicles/v5/${vin}/status`,
+                        method: 'PUT',
+                    },
+                ],
+            },
+            wakeup: {
+                desc: 'Wakeup Vehicle',
+                cmds: [
+                    {
+                        uri: `${baseUrl}/api/dashboard/v1/users/vehicles?language=EN&wakeupVin=${vin}&skipRecall=true&country=USA&region=US`,
+                        method: 'GET',
+                    },
+                ],
             },
         };
         ['all:0', 'front:1', 'rear:3', 'left:4', 'right:2'].forEach((zone) => {
             let [zoneName, zoneNum] = zone.split(':');
             cmds[`zone_lights_${zoneName}_on`] = {
                 desc: `Turn On Zone Lighting (${zoneName.charAt(0).toUpperCase() + zoneName.slice(1)})`,
-                cmds: [{
+                cmds: [
+                    {
                         uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                         method: 'PUT',
                     },
@@ -999,7 +1339,8 @@ module.exports = class FPW_FordAPIs {
             };
             cmds[`zone_lights_${zoneName}_off`] = {
                 desc: `Turn Off Zone Lighting (${zoneName.charAt(0).toUpperCase() + zoneName.slice(1)})`,
-                cmds: [{
+                cmds: [
+                    {
                         uri: `${baseUrl}/vehicles/${vin}/zonelightingactivation`,
                         method: 'DELETE',
                     },
@@ -1038,7 +1379,7 @@ module.exports = class FPW_FordAPIs {
             req.headers = {
                 Accept: '*/*',
                 'Accept-Language': 'en-us',
-                'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+                'User-Agent': this.fpUserAgent,
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Content-Type': 'application/json',
                 'Application-Id': await this.getAppID(),
@@ -1053,7 +1394,7 @@ module.exports = class FPW_FordAPIs {
                 // console.log(data);
                 if (data == 'Access Denied') {
                     console.log('sendVehicleCmd: Auth Token Expired. Fetching new token and fetch raw data again');
-                    let result = await this.FPW.FordAPI.fetchToken();
+                    let result = await this.fetchToken('sendVehicleCmd(AccessDenied)'); //await this.FPW.FordAPI.fetchToken();
                     if (result && result == this.FPW.textMap().errorMessages.invalidGrant) {
                         console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
                         return result;
@@ -1106,5 +1447,205 @@ module.exports = class FPW_FordAPIs {
             }
         }
         return;
+    }
+
+    /**
+     * Secure Hash Algorithm (SHA256)
+     * http://www.webtoolkit.info/
+     * Original code by Angel Marin, Paul Johnston
+     **/
+
+    SHA256(s) {
+        var chrsz = 8;
+        var hexcase = 0;
+
+        function safe_add(x, y) {
+            var lsw = (x & 0xffff) + (y & 0xffff);
+            var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+            return (msw << 16) | (lsw & 0xffff);
+        }
+
+        function S(X, n) {
+            return (X >>> n) | (X << (32 - n));
+        }
+        function R(X, n) {
+            return X >>> n;
+        }
+        function Ch(x, y, z) {
+            return (x & y) ^ (~x & z);
+        }
+        function Maj(x, y, z) {
+            return (x & y) ^ (x & z) ^ (y & z);
+        }
+        function Sigma0256(x) {
+            return S(x, 2) ^ S(x, 13) ^ S(x, 22);
+        }
+        function Sigma1256(x) {
+            return S(x, 6) ^ S(x, 11) ^ S(x, 25);
+        }
+        function Gamma0256(x) {
+            return S(x, 7) ^ S(x, 18) ^ R(x, 3);
+        }
+        function Gamma1256(x) {
+            return S(x, 17) ^ S(x, 19) ^ R(x, 10);
+        }
+
+        function core_sha256(m, l) {
+            var K = new Array(
+                0x428a2f98,
+                0x71374491,
+                0xb5c0fbcf,
+                0xe9b5dba5,
+                0x3956c25b,
+                0x59f111f1,
+                0x923f82a4,
+                0xab1c5ed5,
+                0xd807aa98,
+                0x12835b01,
+                0x243185be,
+                0x550c7dc3,
+                0x72be5d74,
+                0x80deb1fe,
+                0x9bdc06a7,
+                0xc19bf174,
+                0xe49b69c1,
+                0xefbe4786,
+                0xfc19dc6,
+                0x240ca1cc,
+                0x2de92c6f,
+                0x4a7484aa,
+                0x5cb0a9dc,
+                0x76f988da,
+                0x983e5152,
+                0xa831c66d,
+                0xb00327c8,
+                0xbf597fc7,
+                0xc6e00bf3,
+                0xd5a79147,
+                0x6ca6351,
+                0x14292967,
+                0x27b70a85,
+                0x2e1b2138,
+                0x4d2c6dfc,
+                0x53380d13,
+                0x650a7354,
+                0x766a0abb,
+                0x81c2c92e,
+                0x92722c85,
+                0xa2bfe8a1,
+                0xa81a664b,
+                0xc24b8b70,
+                0xc76c51a3,
+                0xd192e819,
+                0xd6990624,
+                0xf40e3585,
+                0x106aa070,
+                0x19a4c116,
+                0x1e376c08,
+                0x2748774c,
+                0x34b0bcb5,
+                0x391c0cb3,
+                0x4ed8aa4a,
+                0x5b9cca4f,
+                0x682e6ff3,
+                0x748f82ee,
+                0x78a5636f,
+                0x84c87814,
+                0x8cc70208,
+                0x90befffa,
+                0xa4506ceb,
+                0xbef9a3f7,
+                0xc67178f2,
+            );
+            var HASH = new Array(0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19);
+            var W = new Array(64);
+            var a, b, c, d, e, f, g, h, i, j;
+            var T1, T2;
+
+            m[l >> 5] |= 0x80 << (24 - (l % 32));
+            m[(((l + 64) >> 9) << 4) + 15] = l;
+
+            for (var i = 0; i < m.length; i += 16) {
+                a = HASH[0];
+                b = HASH[1];
+                c = HASH[2];
+                d = HASH[3];
+                e = HASH[4];
+                f = HASH[5];
+                g = HASH[6];
+                h = HASH[7];
+
+                for (var j = 0; j < 64; j++) {
+                    if (j < 16) W[j] = m[j + i];
+                    else W[j] = safe_add(safe_add(safe_add(Gamma1256(W[j - 2]), W[j - 7]), Gamma0256(W[j - 15])), W[j - 16]);
+
+                    T1 = safe_add(safe_add(safe_add(safe_add(h, Sigma1256(e)), Ch(e, f, g)), K[j]), W[j]);
+                    T2 = safe_add(Sigma0256(a), Maj(a, b, c));
+
+                    h = g;
+                    g = f;
+                    f = e;
+                    e = safe_add(d, T1);
+                    d = c;
+                    c = b;
+                    b = a;
+                    a = safe_add(T1, T2);
+                }
+
+                HASH[0] = safe_add(a, HASH[0]);
+                HASH[1] = safe_add(b, HASH[1]);
+                HASH[2] = safe_add(c, HASH[2]);
+                HASH[3] = safe_add(d, HASH[3]);
+                HASH[4] = safe_add(e, HASH[4]);
+                HASH[5] = safe_add(f, HASH[5]);
+                HASH[6] = safe_add(g, HASH[6]);
+                HASH[7] = safe_add(h, HASH[7]);
+            }
+            return HASH;
+        }
+
+        function str2binb(str) {
+            var bin = Array();
+            var mask = (1 << chrsz) - 1;
+            for (var i = 0; i < str.length * chrsz; i += chrsz) {
+                bin[i >> 5] |= (str.charCodeAt(i / chrsz) & mask) << (24 - (i % 32));
+            }
+            return bin;
+        }
+
+        function Utf8Encode(string) {
+            string = string.replace(/\r\n/g, '\n');
+            var utftext = '';
+
+            for (var n = 0; n < string.length; n++) {
+                var c = string.charCodeAt(n);
+
+                if (c < 128) {
+                    utftext += String.fromCharCode(c);
+                } else if (c > 127 && c < 2048) {
+                    utftext += String.fromCharCode((c >> 6) | 192);
+                    utftext += String.fromCharCode((c & 63) | 128);
+                } else {
+                    utftext += String.fromCharCode((c >> 12) | 224);
+                    utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+                    utftext += String.fromCharCode((c & 63) | 128);
+                }
+            }
+
+            return utftext;
+        }
+
+        function binb2hex(binarray) {
+            var hex_tab = hexcase ? '0123456789ABCDEF' : '0123456789abcdef';
+            var str = '';
+            for (var i = 0; i < binarray.length * 4; i++) {
+                str += hex_tab.charAt((binarray[i >> 2] >> ((3 - (i % 4)) * 8 + 4)) & 0xf) + hex_tab.charAt((binarray[i >> 2] >> ((3 - (i % 4)) * 8)) & 0xf);
+            }
+            return str;
+        }
+
+        s = Utf8Encode(s);
+        // return core_sha256(str2binb(s), s.length * chrsz);
+        return binb2hex(core_sha256(str2binb(s), s.length * chrsz));
     }
 };
