@@ -6,7 +6,7 @@ module.exports = class FPW_Files {
     }
 
     getModuleVer() {
-        return '2022.05.12.0';
+        return '2022.07.04.0';
     }
 
     async loadImage(imgUrl) {
@@ -118,7 +118,7 @@ module.exports = class FPW_Files {
         try {
             let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
-            fm.listContents(dir).forEach(async(file) => {
+            fm.listContents(dir).forEach(async (file) => {
                 const fp = fm.joinPath(dir, file);
                 if ((await fm.fileExtension(fp)) === 'png') {
                     console.log(`FileManager: Removing Image File: ${file}`);
@@ -135,7 +135,7 @@ module.exports = class FPW_Files {
         try {
             let fm = this.widgetConfig.saveFilesToIcloud ? FileManager.iCloud() : FileManager.local();
             let dir = fm.documentsDirectory();
-            fm.listContents(dir).forEach(async(file) => {
+            fm.listContents(dir).forEach(async (file) => {
                 await this.removeFile(file);
             });
         } catch (e) {
@@ -148,7 +148,7 @@ module.exports = class FPW_Files {
         try {
             const fm = FileManager.local();
             const dir = fm.joinPath(fm.documentsDirectory(), 'FPWModules');
-            fm.listContents(dir).forEach(async(file) => {
+            fm.listContents(dir).forEach(async (file) => {
                 const fp = fm.joinPath(dir, file);
                 if ((await fm.fileExtension(fp)) === 'js') {
                     console.log(`FileManager: Removing Module File: ${file}`);

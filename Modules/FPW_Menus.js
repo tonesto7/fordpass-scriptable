@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.05.25.0';
+        return '2022.07.04.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -112,7 +112,7 @@ module.exports = class FPW_Menus {
                         console.log('(Required Prefs Menu) Done was pressed');
                         await this.FPW.setSettingVal('fpMapProvider', mapProvider);
                         return true;
-                        // break;
+                    // break;
                     case 6:
                         return false;
                 }
@@ -192,9 +192,10 @@ module.exports = class FPW_Menus {
                 case 'main':
                     title = `Widget Menu`;
                     message = `Widget Version: (${this.FPW.SCRIPT_VERSION})`.trim();
-                    items = [{
+                    items = [
+                        {
                             title: 'View Widget',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) View Widget was pressed`);
                                 this.menuBuilderByType('widgetView');
                             },
@@ -203,7 +204,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Request Refresh',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Refresh was pressed`);
                                 if (await this.FPW.Alerts.showYesNoPrompt('Vehicle Data Refresh', "Are you sure you want to send a wake request to the vehicle to refresh it's data?\n\nThis is not an instant thing and sometimes takes minutes to wake the vehicle...")) {
                                     await this.FPW.FordAPI.sendVehicleCmd('status');
@@ -214,7 +215,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Widget Settings',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Widget Appearance was pressed`);
                                 this.menuBuilderByType('widget_settings');
                             },
@@ -223,7 +224,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Notifications',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Notifications was pressed`);
                                 this.menuBuilderByType('notifications');
                             },
@@ -232,7 +233,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Settings',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Settings was pressed`);
                                 this.menuBuilderByType('settings');
                             },
@@ -241,7 +242,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Help & Info',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Help & Info was pressed`);
                                 await this.menuBuilderByType('helpInfo');
                             },
@@ -250,7 +251,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Close',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Close was pressed`);
                             },
                             destructive: false,
@@ -264,9 +265,10 @@ module.exports = class FPW_Menus {
                     // console.log(vehicleData.info.modelYear);
                     // console.log(`VIN Guide URL: ${vinGuideUrl}`);
                     title = `Help & About`;
-                    items = [{
+                    items = [
+                        {
                             title: 'Recent Changes',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) About was pressed`);
                                 await this.FPW.App.createRecentChangesPage();
                                 this.menuBuilderByType('helpInfo');
@@ -276,7 +278,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'View Documentation',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Small Widget was pressed`);
                                 await Safari.openInApp(this.FPW.textMap().about.documentationUrl);
                                 this.menuBuilderByType('helpInfo');
@@ -286,7 +288,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Report Issues',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Report Issues was pressed`);
                                 await Safari.openInApp(this.FPW.textMap().about.issuesUrl);
                                 this.menuBuilderByType('helpInfo');
@@ -296,7 +298,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Donate',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Donate was pressed`);
                                 await Safari.open(this.FPW.textMap().about.donationUrl);
                                 this.menuBuilderByType('helpInfo');
@@ -306,7 +308,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Diagnostics',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Diagnostics was pressed`);
                                 await this.menuBuilderByType('diagnostics');
                             },
@@ -315,7 +317,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `${vehicleData.info && vehicleData.info.modelYear ? vehicleData.info.modelYear : ''} VIN Guide`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) VIN Guide was pressed`);
                                 await Safari.openInApp(vinGuideUrl);
                                 this.menuBuilderByType('helpInfo');
@@ -325,7 +327,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Update Widget Tool to Latest`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Update Widget Tool pressed`);
                                 await this.FPW.downloadLatestWidgetTool();
                                 await this.FPW.Alerts.showAlert('WidgetTool Updater', 'WidgetTool has been updated to the latest version.');
@@ -336,7 +338,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Update Widget to Latest Code`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Update Widget pressed`);
                                 await this.FPW.updateThisScript();
                                 await this.FPW.Alerts.showAlert('Widget Updater', 'Widget Code has been updated to the latest version.');
@@ -347,7 +349,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Back',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
                                 this.menuBuilderByType('main');
                             },
@@ -359,9 +361,10 @@ module.exports = class FPW_Menus {
                     break;
                 case 'widgetView':
                     title = 'View Widget';
-                    items = [{
+                    items = [
+                        {
                             title: 'Small (Light)',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Small Light Widget was pressed`);
                                 const w = await this.FPW.generateWidget('smallLight', vehicleData);
                                 await w.presentSmall();
@@ -371,7 +374,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Small (Dark)',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Small Dark Widget was pressed`);
                                 const w = await this.FPW.generateWidget('smallDark', vehicleData);
                                 await w.presentSmall();
@@ -382,7 +385,7 @@ module.exports = class FPW_Menus {
 
                         {
                             title: 'Medium (Light)',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Medium Light Widget was pressed`);
                                 const w = await this.FPW.generateWidget('mediumLight', vehicleData);
                                 await w.presentMedium();
@@ -392,7 +395,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Medium (Dark)',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Medium Dark Widget was pressed`);
                                 const w = await this.FPW.generateWidget('mediumDark', vehicleData);
                                 await w.presentMedium();
@@ -402,7 +405,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Large (Light)',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Large Widget was pressed`);
                                 const w = await this.FPW.generateWidget('largeLight', vehicleData);
                                 await w.presentLarge();
@@ -412,7 +415,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Large (Dark)',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Large Dark Widget was pressed`);
                                 const w = await this.FPW.generateWidget('largeDark', vehicleData);
                                 await w.presentLarge();
@@ -422,7 +425,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Extra-Large',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Extra-Large Widget was pressed`);
                                 const w = await this.FPW.generateWidget('extraLarge', vehicleData);
                                 await w.presentExtraLarge();
@@ -432,7 +435,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Back',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
                                 this.menuBuilderByType('main');
                             },
@@ -444,9 +447,10 @@ module.exports = class FPW_Menus {
 
                 case 'diagnostics':
                     title = 'Diagnostics Menu';
-                    items = [{
+                    items = [
+                        {
                             title: 'Copy All Data to Clipboard',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Copy Data was pressed`);
                                 const data = await this.FPW.FordAPI.collectAllData(true);
                                 await Pasteboard.copyString(JSON.stringify(data, null, 4));
@@ -458,12 +462,13 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Send OTA Data to Developer',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Send OTA Data was pressed`);
                                 const data = await this.FPW.FordAPI.getVehicleOtaInfo();
                                 if (data) {
                                     await this.FPW.createDataEmail(
-                                        data, {
+                                        data,
+                                        {
                                             title: 'Over-the-Air (OTA) Data',
                                             fileName: 'OTA_Data.json',
                                             fileNamePost: '_OTA_Data',
@@ -479,12 +484,13 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Send All Data to Developer',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Email Vehicle Data was pressed`);
                                 const data = await this.FPW.FordAPI.collectAllData(true);
                                 if (data) {
                                     await this.FPW.createDataEmail(
-                                        data, {
+                                        data,
+                                        {
                                             title: 'Vehicle Data',
                                             fileName: 'vehicleDataExport.json',
                                             fileNamePost: '_export',
@@ -500,7 +506,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Send Widget Logs to Developer',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Email Logs was pressed`);
                                 await this.FPW.createLogEmail();
                                 this.menuBuilderByType('diagnostics');
@@ -510,7 +516,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Back',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
                                 // this.menuBuilderByType('main');
                             },
@@ -522,9 +528,10 @@ module.exports = class FPW_Menus {
 
                 case 'reset':
                     title = 'Reset Data Menu';
-                    items = [{
+                    items = [
+                        {
                             title: 'Clear Cached Images',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Clear Images was pressed`);
                                 await this.FPW.Files.clearImageCache();
                                 await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Images Cleared\n\nPlease run the script again to reload them all.');
@@ -535,7 +542,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Clear Cached Files/Images',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Clear Files/Images was pressed`);
                                 await this.FPW.Files.clearFileManager();
                                 await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Files and Images Cleared\n\nPlease run the script again to reload them all.');
@@ -546,7 +553,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Clear Login Info',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Clear Login Info was pressed`);
                                 if (await this.FPW.Alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
                                     await this.FPW.clearSettings();
@@ -561,7 +568,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Reset Everything',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Reset Everything was pressed`);
                                 if (await this.FPW.Alerts.showYesNoPrompt('Reset Everything', "Are you sure you want to reset the widget?\n\nThis will reset the widget back to it's default state?")) {
                                     await this.FPW.clearSettings();
@@ -577,7 +584,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Back',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
                                 this.menuBuilderByType('main');
                             },
@@ -589,9 +596,10 @@ module.exports = class FPW_Menus {
 
                 case 'color_mode':
                     title = 'Widget Color Mode';
-                    items = [{
+                    items = [
+                        {
                             title: `System`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Dark Mode pressed`);
                                 await this.FPW.setUIColorMode('system');
                                 if (!prefsMenu) {
@@ -603,7 +611,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Light`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Dark Mode pressed`);
                                 await this.FPW.setUIColorMode('light');
                                 if (!prefsMenu) {
@@ -615,7 +623,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Dark`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Dark Mode pressed`);
                                 await this.FPW.setUIColorMode('dark');
                                 if (!prefsMenu) {
@@ -627,7 +635,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Back`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Back pressed`);
                                 if (!prefsMenu) {
                                     this.menuBuilderByType('widget_settings');
@@ -641,9 +649,10 @@ module.exports = class FPW_Menus {
 
                 case 'region':
                     title = 'Set Region';
-                    items = [{
+                    items = [
+                        {
                             title: `North America`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) NA pressed`);
                                 await this.FPW.setRegion('NA');
                                 // if (!prefsMenu) {
@@ -655,7 +664,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `UK & Europe`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) UK_Europe pressed`);
                                 await this.FPW.setRegion('UK_Europe');
                                 // if (!prefsMenu) {
@@ -667,7 +676,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Australia`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Australia pressed`);
                                 await this.FPW.setRegion('Australia');
                                 // if (!prefsMenu) {
@@ -679,7 +688,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Back`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Back pressed`);
                                 // if (!prefsMenu) {
                                 //     this.menuBuilderByType('widget_settings');
@@ -693,18 +702,20 @@ module.exports = class FPW_Menus {
 
                 case 'export_images':
                     title = 'Widget Settings';
-                    items = [{
-                        title: `Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
-                        action: async() => {
-                            console.log(`(${typeDesc} Menu) Style pressed`);
-                            await this.FPW.App.createWidgetStylePage();
-                            if (!prefsMenu) {
-                                this.menuBuilderByType('widget_settings');
-                            }
+                    items = [
+                        {
+                            title: `Style: ${this.FPW.capitalizeStr(widgetStyle)}`,
+                            action: async () => {
+                                console.log(`(${typeDesc} Menu) Style pressed`);
+                                await this.FPW.App.createWidgetStylePage();
+                                if (!prefsMenu) {
+                                    this.menuBuilderByType('widget_settings');
+                                }
+                            },
+                            destructive: false,
+                            show: true,
                         },
-                        destructive: false,
-                        show: true,
-                    }, ];
+                    ];
                     break;
 
                 case 'widget_settings':
@@ -713,9 +724,10 @@ module.exports = class FPW_Menus {
                     // const showNickname = (await this.FPW.getBooleanSettingValue('fpShowNickname')) === true;
                     // console.log(`showNickname: ${showNickname}`);
                     title = 'Widget Settings';
-                    items = [{
+                    items = [
+                        {
                             title: `Style: [${this.FPW.capitalizeStr(widgetStyle)}]`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Style pressed`);
                                 await this.FPW.App.createWidgetStylePage();
                                 if (!prefsMenu) {
@@ -727,7 +739,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Color Mode: [${this.FPW.capitalizeStr(colorMode)}]`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Color Mode pressed`);
                                 await this.menuBuilderByType('color_mode');
                                 // this.menuBuilderByType('widget_settings');
@@ -737,7 +749,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Show Nickname: [${(await this.FPW.getBooleanSettingValue('fpShowNickname')) === true ? 'On' : 'Off'}]`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Show Nickname Toggle pressed`);
                                 await this.FPW.toggleBoolSettingValue('fpShowNickname');
                                 this.menuBuilderByType('widget_settings');
@@ -747,7 +759,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'Back',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Close was pressed`);
                                 if (!prefsMenu) {
                                     this.menuBuilderByType('main');
@@ -761,9 +773,10 @@ module.exports = class FPW_Menus {
                 case 'notifications':
                     title = 'Notification Settings';
                     message = 'Update Notifications: Once every 24H.\nDeepSleep: Once every 6H\nOTA Updates: Once every 24H';
-                    items = [{
+                    items = [
+                        {
                             title: `Script Updates: ${(await this.FPW.getShowNotificationType('scriptUpdate')) === false ? 'Off' : 'On'}`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Update Notification Toggle pressed`);
                                 await this.FPW.toggleNotificationType('scriptUpdate');
                                 this.menuBuilderByType('notifications');
@@ -773,7 +786,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `OTA Updates: ${(await this.FPW.getShowNotificationType('otaUpdate')) === false ? 'Off' : 'On'}`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) OTA Update Toggle pressed`);
                                 await this.FPW.toggleNotificationType('otaUpdate');
                                 this.menuBuilderByType('notifications');
@@ -783,7 +796,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Deep Sleep: ${(await this.FPW.getShowNotificationType('deepSleep')) === false ? 'Off' : 'On'}`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Deep Sleep Toggle pressed`);
                                 await this.FPW.toggleNotificationType('deepSleep');
                                 this.menuBuilderByType('notifications');
@@ -793,7 +806,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Low Tires: ${(await this.FPW.getShowNotificationType('tireLow')) === false ? 'Off' : 'On'}`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Low Tire Toggle pressed`);
                                 await this.FPW.toggleNotificationType('tireLow');
                                 this.menuBuilderByType('notifications');
@@ -803,7 +816,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `EV Charging Paused: ${(await this.FPW.getShowNotificationType('evChargingPaused')) === false ? 'Off' : 'On'}`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) EV Charging Paused Toggle pressed`);
                                 await this.FPW.toggleNotificationType('evChargingPaused');
                                 this.menuBuilderByType('notifications');
@@ -823,7 +836,7 @@ module.exports = class FPW_Menus {
                         // },
                         {
                             title: `12V Battery Low: ${(await this.FPW.getShowNotificationType('lvBatteryLow')) === false ? 'Off' : 'On'}`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) 12V Battery Low Toggle pressed`);
                                 await this.FPW.toggleNotificationType('lvBatteryLow');
                                 this.menuBuilderByType('notifications');
@@ -833,7 +846,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Back`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
                                 this.menuBuilderByType('main');
                             },
@@ -846,9 +859,10 @@ module.exports = class FPW_Menus {
                     let mapProvider = await this.FPW.getMapProvider();
                     let storageLocation = await this.FPW.getStorageLocation();
                     title = 'Widget Settings';
-                    items = [{
+                    items = [
+                        {
                             title: `Map Provider: ${mapProvider === 'apple' ? 'Apple' : 'Google'}`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Map Provider pressed`);
                                 await this.FPW.toggleMapProvider();
                                 this.menuBuilderByType('settings');
@@ -859,7 +873,7 @@ module.exports = class FPW_Menus {
 
                         {
                             title: `Move Widget & Modules to: ${storageLocation === 'local' ? 'iCloud' : 'Local'}`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Storage Location pressed`);
                                 await this.FPW.moveStorageLocation();
                                 this.menuBuilderByType('settings');
@@ -870,7 +884,7 @@ module.exports = class FPW_Menus {
 
                         {
                             title: 'Reset Login/File Options',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Clear All Data was pressed`);
                                 this.menuBuilderByType('reset');
                                 // menuBuilderByType('settings');
@@ -880,7 +894,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: 'View Scriptable Settings',
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) View Scriptable Settings was pressed`);
                                 await Safari.open(URLScheme.forOpeningScriptSettings());
                             },
@@ -889,7 +903,7 @@ module.exports = class FPW_Menus {
                         },
                         {
                             title: `Back`,
-                            action: async() => {
+                            action: async () => {
                                 console.log(`(${typeDesc} Menu) Back was pressed`);
                                 this.menuBuilderByType('main');
                             },
