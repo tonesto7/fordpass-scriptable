@@ -44,7 +44,7 @@
     
 **************/
 const changelogs = {
-    '2022.07.03.0': {
+    '2022.07.04.0': {
         added: [],
         fixed: [],
         removed: [],
@@ -123,7 +123,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.07.03.0';
+const SCRIPT_VERSION = '2022.07.04.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
