@@ -40,9 +40,7 @@ The widget has been tested on many many ford models, and should work on any vehi
   - View all data pulled into the widget using various ford endpoints.
   
 ## Screenshots
- <img src="images/menu_example_v2.png" alt="Widget example" width="300" />
-  <img src="images/dashboard_menu_example_2.png" alt="Widget example" width="300" />
-  <img src="images/main_menu_example.png" alt="Menu example" width="300" /> <img src="images/advanced_control_menu.png" alt="Advanced Control example" width="300" /> <img src="images/setting_menu.png" alt="Menu example" width="300" /> <img src="images/debug_menu.png" alt="Debug Menu example" width="300" />
+ <img src="https://github.com/tonesto7/fordpass-scriptable/raw/main/images/dashboard_menu_example_1.png" alt="Dashboard Example 1" width="300" /><img src="https://github.com/tonesto7/fordpass-scriptable/raw/main/images/advanced_info_page.png" alt="Advanced Info Page" width="300" /><img src="https://github.com/tonesto7/fordpass-scriptable/raw/main/images/menu_example_v2.png" alt="Menu example" width="300" /><img src="https://github.com/tonesto7/fordpass-scriptable/raw/main/images/vehicle_images.png" alt="Vehicle Images" width="300" /><img src="https://github.com/tonesto7/fordpass-scriptable/raw/main/images/module_data_page.png" alt="Module Info Page" width="300" /><img src="https://github.com/tonesto7/fordpass-scriptable/raw/main/images/ota_example_page_1.png" alt="OTA Info Page 1" width="300" /><img src="https://github.com/tonesto7/fordpass-scriptable/raw/main/images/ota_example_page_2.png" alt="OTA Info Page 2" width="300" /><img src="https://github.com/tonesto7/fordpass-scriptable/raw/main/images/debug_menu.png" alt="Debug Menu example" width="300" />
 
 ## Known Issues & Limitations
 
