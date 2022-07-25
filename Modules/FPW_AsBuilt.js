@@ -137,7 +137,7 @@ module.exports = class FPW_AsBuilt {
     }
 
     getModuleVer() {
-        return '2022.07.04.0';
+        return '2022.07.25.0';
     }
 
     moduleInfo(addr) {
@@ -276,17 +276,16 @@ module.exports = class FPW_AsBuilt {
                 console.log(`Captcha Code Entered: ${code}`);
                 if (code) {
                     this.FPW.Alerts.showAlert('Please wait...', 'This process may take many seconds.  You will receive another prompt when the data is downloaded and saved.');
-                    let js3 = await wv.evaluateJavaScript(`
+                    await wv.evaluateJavaScript(`
                         function setVinAndCaptcha() {
-                            document.querySelector('#VIN').value = '${vin}';
-                            console.log(document.querySelector('#VIN').value);
-                            document.querySelector('#CaptchaInputText').value = '${code}';
-                            console.log(document.querySelector('#CaptchaInputText').value);
-                            document.forms[0].submit();
+                            document.querySelector("input[name='VIN']").value = '${vin}';
+                            // console.log('VIN: ' + document.querySelector("input[name='VIN']").value);
+                            document.querySelector("input[name='CaptchaInputText']").value = '${code}';
+                            // console.log('Code: ' + document.querySelector("input[name='CaptchaInputText']").value);
+                            document.forms[1].submit();
                         }
                          setVinAndCaptcha();
                     `);
-                    // console.log(js3);
                     await wv.waitForLoad();
                     let html2 = await wv.getHTML();
                     // console.log(html2);
