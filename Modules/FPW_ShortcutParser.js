@@ -10,14 +10,14 @@ module.exports = class FPW_ShortcutParser {
     }
 
     getModuleVer() {
-        return '2022.07.04.0';
+        return '2022.10.12.0';
     }
 
     // [
     // ]
 
     async getAvailableRequests() {
-        const vData = await this.FPW.FordAPI.fetchVehicleData(true);
+        const vData = await this.FPW.FordAPI.fetchVehicleData(true, 'getAvailableRequests');
         const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
         let cmds = [];
         let reqs = [];

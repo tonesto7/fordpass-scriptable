@@ -30,7 +30,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.07.04.0';
+        return '2022.10.12.0';
     }
 
     async getTable(tableName) {
@@ -575,7 +575,7 @@ module.exports = class FPW_App {
 
     async createMainPage(update = false, widgetCmd = undefined) {
         try {
-            const vData = await this.FPW.FordAPI.fetchVehicleData(true);
+            const vData = await this.FPW.FordAPI.fetchVehicleData(true, 'createMainPage');
             let tableRows = [];
             if (vData && Object.keys(vData).length > 0) {
                 const caps = vData && vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
@@ -2432,28 +2432,28 @@ module.exports = class FPW_App {
                         },
                     ),
 
-                    await this.createTableRow(
-                        [
-                            await this.createImageCell(await this.FPW.Files.getImage(`ota_info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
-                            await this.createTextCell(`View OTA Update Info`, 'Tap to view', {
-                                align: 'left',
-                                widthWeight: 93,
-                                titleColor: this.FPW.colorMap.normalText,
-                                titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
-                                subtitleColor: this.FPW.colorMap.normalText,
-                                subtitleFont: Font.regularSystemFont(11),
-                            }),
-                        ],
-                        {
-                            height: 60,
-                            dismissOnSelect: false,
-                            onSelect: async () => {
-                                console.log('(Advanced Info) OTA Info was pressed');
-                                let data = await this.FPW.FordAPI.getVehicleOtaInfo();
-                                await this.showDataWebView('Over-the-Air Details', 'Raw Data', data, 'OTA');
-                            },
-                        },
-                    ),
+                    // await this.createTableRow(
+                    //     [
+                    //         await this.createImageCell(await this.FPW.Files.getImage(`ota_info_${darkMode ? 'dark' : 'light'}.png`), { align: 'center', widthWeight: 7 }),
+                    //         await this.createTextCell(`View OTA Update Info`, 'Tap to view', {
+                    //             align: 'left',
+                    //             widthWeight: 93,
+                    //             titleColor: this.FPW.colorMap.normalText,
+                    //             titleFont: Font.semiboldSystemFont(fontSizes.subheadline),
+                    //             subtitleColor: this.FPW.colorMap.normalText,
+                    //             subtitleFont: Font.regularSystemFont(11),
+                    //         }),
+                    //     ],
+                    //     {
+                    //         height: 60,
+                    //         dismissOnSelect: false,
+                    //         onSelect: async () => {
+                    //             console.log('(Advanced Info) OTA Info was pressed');
+                    //             let data = await this.FPW.FordAPI.getVehicleOtaInfo();
+                    //             await this.showDataWebView('Over-the-Air Details', 'Raw Data', data, 'OTA');
+                    //         },
+                    //     },
+                    // ),
 
                     await this.createTableRow(
                         [

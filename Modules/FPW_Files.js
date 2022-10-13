@@ -6,7 +6,7 @@ module.exports = class FPW_Files {
     }
 
     getModuleVer() {
-        return '2022.07.04.0';
+        return '2022.10.12.0';
     }
 
     async loadImage(imgUrl) {
@@ -304,17 +304,19 @@ module.exports = class FPW_Files {
             }
         } else {
             const vin = await this.FPW.getSettingVal('fpVin');
-            const token = await this.FPW.getSettingVal('fpToken2');
+            const token = await this.FPW.getSettingVal('fpPubToken');
             const country = await this.FPW.getSettingVal('fpCountry');
             console.log(`vehicleImage | VIN: ${vin} | country: ${country}`);
-            let req = new Request(`https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/full?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`);
+            const oldUrl = `https://www.digitalservices.ford.com/fs/api/v2/vehicles/image/thumbnail?vin=${vin}&year=${modelYear}&countryCode=${country}&angle=${angle}`;
+            const newUrl = `https://api.mps.ford.com/api/imageservice/data?key=${vin}-4-thumbnail`;
+            let req = new Request(oldUrl);
             req.headers = {
                 'Content-Type': 'application/json',
                 Accept: 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
+                // 'User-Agent': 'FordPass/5 CFNetwork/1327.0.4 Darwin/21.2.0',
                 'Accept-Encoding': 'gzip, deflate, br',
-                'auth-token': `${token}`,
+                // 'auth-token': `${token}`,
                 Origin: 'https://www.ford.com',
                 Referer: 'https://www.ford.com',
             };

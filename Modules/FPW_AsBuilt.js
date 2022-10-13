@@ -122,6 +122,7 @@ module.exports = class FPW_AsBuilt {
         F1DC: 'ECU Calibration Data #7 Number',
         F1E0: 'PARSED Data eXchange (PDX) Part Number',
         F1F3: 'ECU software number',
+        FD02: 'SYNC Software Version',
         FD12: 'CCPU Software Version',
         FD13: 'CCPU Bootloader Version',
         FD14: 'VMCU Software Version',
@@ -137,7 +138,7 @@ module.exports = class FPW_AsBuilt {
     }
 
     getModuleVer() {
-        return '2022.07.25.0';
+        return '2022.10.12.0';
     }
 
     moduleInfo(addr) {
@@ -150,13 +151,24 @@ module.exports = class FPW_AsBuilt {
             792: { acronym: 'ATCM', desc: 'All Terrain Control Module', group: 'Four-Wheel Drive Systems', moidref: 'G1614115', updatable: true },
             726: { acronym: 'BCM', desc: 'Body Control Module', group: 'Multifunction Modules', moidref: 'G1376668', updatable: true },
             '6F0': { acronym: 'BCMC', desc: 'Body Control Module C [battery junction box]', group: 'Multifunction Modules', moidref: 'G2044439', updatable: true },
+            '7E4': { acronym: 'BECM', desc: 'Battery Energy Control Module', group: 'Battery and Charging System', updatable: false },
+            723: { acronym: 'BECMB', desc: 'Battery Energy Control Module B', group: 'Electrified Drivetrain - High Voltage Battery', updatable: true },
             764: { acronym: 'CCM', desc: 'Cruise Control Module', group: 'Cruise Control', moidref: 'G1420074', updatable: true },
+            710: { acronym: 'CHCM', desc: 'Chasis Control Module', group: 'Multifunction Modules', updatable: true },
             '7C1': { acronym: 'CMR', desc: 'Camera Module - Rear [Driver Status Camera Module]', group: 'Interior Camera System', moidref: 'G2164559', updatable: true },
+            '7D5': { acronym: 'DACMC', desc: 'Digital Audio Control Module C', group: 'Information and Entertainment Systems', updatable: true },
             '6F1': { acronym: 'DCACA', desc: 'Direct Current/Alternating Current Converter Module A', group: 'Voltage Converter/Inverter', moidref: 'G2160771', updatable: true },
             746: { acronym: 'DCDC', desc: 'Direct Current/Direct Current Converter Control Module', group: 'Voltage Converter/Inverter', moidref: 'G1585827', updatable: false },
+            '7A2': { acronym: 'DCME', desc: 'Door Control Module E', group: 'Multifunction Modules', updatable: true },
+            762: { acronym: 'DCMF', desc: 'Door Control Module F', group: 'Multifunction Modules', updatable: true },
+            '7B3': { acronym: 'DCMG', desc: 'Door Control Module G', group: 'Multifunction Modules', updatable: true },
+            '7B4': { acronym: 'DCMH', desc: 'Door Control Module H', group: 'Multifunction Modules', updatable: true },
+            795: { acronym: 'DCMR', desc: 'Differential Control Module Rear', group: 'Four-Wheel Drive Systems', updatable: true },
             740: { acronym: 'DDM', desc: 'Driver Door Module', group: 'Multifunction Modules', moidref: 'G1268121', updatable: true },
             744: { acronym: 'DSM/RBM', desc: 'Driver Front Seat Module / Running Board Control Module', group: 'Front Seats', moidref: 'G1593640', updatable: true },
             783: { acronym: 'DSP', desc: 'Audio Digital Signal Processing Module', group: 'Information and Entertainment Systems', moidref: 'G1490339', updatable: true },
+            '7A7': { acronym: 'FCIM', desc: 'Front Control Interface Module', group: 'Heating, Ventillation and Air Conditioning Module', updatable: true },
+            '7A0': { acronym: 'FCIMB', desc: 'Front Control Interface Module B', group: 'Heating, Ventillation and Air Conditioning Module', updatable: true },
             '6E3': { acronym: 'FHCM', desc: 'Front Hatch Control Module', group: 'Body Closures', moidref: 'G2303138', updatable: true },
             '7A1': { acronym: 'GFM', desc: 'Generic Function Module', group: 'High Voltage Battery Charging System', moidref: 'G1585818', updatable: false },
             '7D2': { acronym: 'GFM2', desc: 'Generic Function Module 2', group: 'Fuel System', moidref: 'G1817236', updatable: false },
@@ -164,42 +176,70 @@ module.exports = class FPW_AsBuilt {
             732: { acronym: 'GSM', desc: 'Gear Shift Module', group: 'Automatic Transmission', moidref: 'G1892092', updatable: false },
             716: { acronym: 'GWM', desc: 'Gateway Module A', group: 'Module Communications Network', moidref: 'G1523364', updatable: true },
             734: { acronym: 'HCM', desc: 'Headlamp Control Module', group: 'Exterior Lighting', moidref: 'G1298819', updatable: true },
+            714: { acronym: 'HSWM', desc: 'Heated Steering Wheel Module', group: 'Steering Wheel and Column Electrical Components', updatable: true },
             733: { acronym: 'HVAC', desc: 'Heating, Ventillation and Air Conditioning Module', group: 'Climate Control System', moidref: 'G1489699', updatable: true },
+            '7B2': { acronym: 'HUD', desc: 'Heads Up Display Module', group: 'Information and Entertainment Systems', updatable: true },
+            784: { acronym: 'ICM', desc: 'Information Center Module', group: 'Instrument and Entertainment System', updatable: true },
             720: { acronym: 'IPC', desc: 'Instrument Panel Cluster', group: 'Instrumentation and Warning Systems', moidref: 'G1523442', updatable: true },
             706: { acronym: 'IPMA', desc: 'Image Processing Module A', group: 'Lane Keeping System', moidref: 'G1477138', updatable: true },
+            '7B1': { acronym: 'IPMB', desc: 'Image Processing Module B', group: 'Camera Vision System', updatable: true },
             '6F6': { acronym: 'LDCMA', desc: 'Lighting Driver Control Module A', group: 'Exterior Lighting', moidref: 'G2274992', updatable: false },
             '6F7': { acronym: 'LDCMB', desc: 'Lighting Driver Control Module B', group: 'Exterior Lighting', moidref: 'G2274993', updatable: false },
+            790: { acronym: 'MRCMA', desc: 'Movable Roof Control Module A', group: 'Multifunction Modules', updatable: true },
+            '7B0': { acronym: 'MRCMB', desc: 'Movable Roof Control Module B', group: 'Multifunction Modules', updatable: true },
             '6F5': { acronym: 'OBCC', desc: 'Off-Board Charger Controller', group: 'High Voltage Battery Charging System', moidref: 'G2164538', updatable: true },
             765: { acronym: 'OCSM', desc: 'Occupant Classification System Module', group: 'Supplemental Restraint System', moidref: 'G1476397', updatable: false },
             750: { acronym: 'PACM', desc: 'Pedestrian Alert Control Module', group: 'Pedestrian Alert System', moidref: 'G2044345', updatable: false },
+            736: { acronym: 'PAM', desc: 'Parking Assist Control Module', group: 'Parking Assistance System', updatable: true },
             741: { acronym: 'PDM', desc: 'Passenger Door Module', group: 'Multifunction Modules', moidref: 'G1268128', updatable: true },
-            730: { acronym: 'PSCM', desc: 'Power Steering Control Module', group: 'Power Steering', moidref: 'G1268441', updatable: true },
+            730: { acronym: 'PSCM', desc: 'Power Steering Control Module', group: 'Power Steering', updatable: true },
+            774: { acronym: 'RACM', desc: 'Rear Audio Control Module', group: 'Information and Entertainment Systems', updatable: true },
+            766: { acronym: 'RBM', desc: 'Running Board Control Module', group: 'Running Board', updatable: true },
             737: { acronym: 'RCM', desc: 'Restraints Control Module', group: 'Supplemental Restraint System', moidref: 'G1265343', updatable: true },
             731: { acronym: 'RFA', desc: 'Remote Function Actuator Module', group: 'Multifunction Modules', moidref: 'G1523438', updatable: false },
             775: { acronym: 'RGTM', desc: 'Rear Gate Trunk Module', group: 'Body Closures', moidref: 'G1357598', updatable: false },
+            785: { acronym: 'RHVAC', desc: 'Rear Heating, Ventillation and Air Conditioning Module', group: 'Climate Control System', updatable: true },
             751: { acronym: 'RTM', desc: 'Radio Transceiver Module', group: 'Multifunction Modules', moidref: 'G1696268', updatable: true },
             797: { acronym: 'SASM', desc: 'Steering Angle Sensor Module', group: 'Steering Wheel and Column Electrical Components', moidref: 'G1523972', updatable: true },
             724: { acronym: 'SCCM', desc: 'Steering Column Control Module', group: 'Steering Wheel and Column Electrical Components', moidref: 'G1469330', updatable: true },
-            712: { acronym: 'SCMG', desc: 'Driver Multi-Contour Seat Module', group: 'Front Seats', moidref: 'G1675455', updatable: true },
-            713: { acronym: 'SCMH', desc: 'Passenger Multi-Contour Seat Module', group: 'Front Seats', moidref: 'G1675459', updatable: true },
+            '7A3': { acronym: 'SCMB', desc: 'Passenger Front Seat Module', group: 'Front Seats', updatable: true },
+            702: { acronym: 'SCMC', desc: 'Rear LH Multi-Contour Seat Module', group: 'Rear Seats', updatable: true },
+            763: { acronym: 'SCMD', desc: 'Rear RH Multi-Contour Seat Module', group: 'Rear Seats', updatable: true },
+            776: { acronym: 'SCME', desc: 'Front Seat Climate Control Module', group: 'Front Seats', updatable: true },
+            777: { acronym: 'SCMF', desc: 'Rear Seat Climate Control Module', group: 'Rear Seats', updatable: true },
+            712: { acronym: 'SCMG', desc: 'Driver Multi-Contour Seat Module', group: 'Front Seats', updatable: true },
+            713: { acronym: 'SCMH', desc: 'Passenger Multi-Contour Seat Module', group: 'Front Seats', updatable: true },
+            787: { acronym: 'SCMJ', desc: 'Power Fold Seat Module', group: 'Rear Seats', updatable: true },
+            '7C5': { acronym: 'SECM', desc: 'Steering Effort Control Module', group: 'Power Steering', updatable: true },
+            770: { acronym: 'SIMA', desc: 'Switch Input Module A', group: 'Multifunction Modules', updatable: true },
             '7C5': { acronym: 'SECM', desc: 'Steering Effort Control Module', group: 'Power Steering', moidref: 'G1795675', updatable: true },
+            '7E2': { acronym: 'SOBDMA', desc: 'Secondary On-Board Diagnostic Control Module A', group: 'High Voltage Battery Charging System', updatable: true },
+            '7E7': { acronym: 'SOBDMB', desc: 'Secondary On-Board Diagnostic Control Module B', group: 'Rear Electric Drive Assembly', updatable: true },
+            '7E6': { acronym: 'SOBDMC', desc: 'Secondary On-Board Diagnostic Control Module C', group: 'Electronic Engine Controls', updatable: true },
             '6F2': { acronym: 'SODCMC', desc: 'Side Obstacle Detection Control Module C', group: 'Side and Rear Vision', moidref: 'G2164515', updatable: true },
             '6F3': { acronym: 'SODCMD', desc: 'Side Obstacle Detection Control Module D', group: 'Side and Rear Vision', moidref: 'G2164526', updatable: true },
             '7C4': { acronym: 'SODL', desc: 'Side Obstacle Detection Control Module LH', group: 'Side and Rear Vision', moidref: 'G1478298', updatable: true },
             '7C6': { acronym: 'SODR', desc: 'Side Obstacle Detection Control Module RH', group: 'Side and Rear Vision', moidref: 'G1478301', updatable: true },
+            '7D3': { acronym: 'SUMA', desc: 'Suspension Control Module A', group: 'Suspension Control System', updatable: true },
             757: { acronym: 'TBM', desc: 'Trailer Brake Control Module', group: 'Auxiliary Brake System', moidref: 'G1525563', updatable: true },
             761: { acronym: 'TCCM', desc: 'Transfer Case Control Module', group: 'Four-Wheel Drive Systems', moidref: 'G1268451', updatable: false },
+            '7E1': { acronym: 'TCM', desc: 'Transmission Control Module', group: 'Automatic Transmission', updatable: true },
+            '7E9': { acronym: 'TCM', desc: 'Transmission Control Module', group: 'Automatic Transmission', updatable: true },
             754: { acronym: 'TCU', desc: 'Telematics Control Unit Module', group: 'Information and Entertainment Systems', moidref: 'G1629014', updatable: true },
             791: { acronym: 'TRM', desc: 'Trailer Module', group: 'Exterior Lighting', moidref: 'G1312635', updatable: true },
             721: { acronym: 'VDM', desc: 'Vehicle Dynamics Control Module', group: 'Vehicle Dynamic Suspension', moidref: 'G1576230', updatable: true },
             725: { acronym: 'WACM', desc: 'Wireless Accessory Charging Module', group: 'Information and Entertainment Systems', moidref: 'G1926890', updatable: true },
         };
-        if (['7E0', '7E1', '7E2', '7E4', '7E7', '7E6', '7E9'].includes(addr.toString())) {
+        if (['6E0', '6E3', '7E0', '7E1', '7E2', '7E4', '7E6', '7E7', '7E9'].includes(addr.toString())) {
             switch (addr.toString()) {
+                case '6E0':
+                    return { acronym: 'ACCMB', desc: 'Air Conditioning Compressor Control Module B', group: 'Electrified Drivetrain Cooling - High Voltage Battery Refrigerant Cooling', moidref: 'G2303114', updatable: false };
+                case '6E3':
+                    return { acronym: 'FHCM', desc: 'Front Hatch Control Module', group: 'Body Closures', updatable: true };
                 case '7E0':
                     return { acronym: 'PCM', desc: 'Powertrain Control Module', group: 'Electronic Engine Controls', moidref: 'G1265309', updatable: true };
                 case '7E1':
-                    return { acronym: 'TCM', desc: 'Transmission Control Module', Group: 'Automatic Transmission', updatable: true };
+                    return { acronym: 'TCM', desc: 'Transmission Control Module', group: 'Automatic Transmission', updatable: true };
                 case '7E2':
                     return { acronym: 'SOBDMA', desc: 'Secondary On-Board Diagnostic Control Module A', group: 'High Voltage Battery Charging System', moidref: 'G1585822', updatable: true };
                 case '7E4':
