@@ -1,5 +1,11 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: magic;
+// This script was downloaded using FordWidgetTool.
+hash: 153670521706;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -44,6 +50,13 @@
     
 **************/
 const changelogs = {
+    '2022.10.13.3': {
+        added: ['Added a 5 minute wait to ford data refresh to prevent overloading the ford servers and hopefully speed up widget content refreshes. This only applies to the Widgets themselves.  The app will still refresh every 30 seconds when in dashboard view.'],
+        fixed: [],
+        removed: [],
+        updated: [],
+        clearFlags: ['tokens'],
+    },
     '2022.10.13.2': {
         added: [],
         fixed: ['Needed to force a token clear after updating'],
@@ -145,7 +158,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.10.13.2';
+const SCRIPT_VERSION = '2022.10.13.3';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -158,6 +171,7 @@ const widgetConfig = {
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
     screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
     showFetchDataLog: false, // Shows the time it took to fetch the vehicle data in the logs.
+    vehDataRefreshWait: 300, // How often to refresh the vehicle data in seconds (default is 5 minutes).
     notifications: {
         scriptUpdate: {
             rate: 86400, // How often to allow available update notifications (in seconds - 86400 = 1 day)
@@ -415,7 +429,7 @@ class Widget {
             // Starts the widget load process
             // console.log(`Device Models From ViewPort: ${await this.viewPortSizes.devices}`);
             // console.log(`widgetSize(run): ${JSON.stringify(await this.viewPortSizes)}`);
-
+            // this.removeSettingVal('fpLastFetchTs');
             const fordData = await this.prepWidget(config.runsInWidget, widgetConfig.loadCacheOnly || config.runsInApp || config.runsFromHomeScreen);
             if (fordData === null) return;
             if (config.runsInWidget) {
@@ -2004,6 +2018,7 @@ class Widget {
             'fpToken',
             'fpToken2',
             'fpUsername',
+            'fpLastFetchTs',
             'fpUser',
             'fpPass',
             'fpPassword',
@@ -2057,7 +2072,7 @@ class Widget {
 
     async clearAuthToken() {
         this.logInfo('Info: Clearing Authentication Token from Keychain');
-        const keys = ['fpToken', 'fpToken2', 'fpFordConsumerId', 'fpTokenExpiresAt', 'fpLastPrefsQueryTs'];
+        const keys = ['fpToken', 'fpToken2', 'fpFordConsumerId', 'fpTokenExpiresAt', 'fpLastPrefsQueryTs', 'fpLastFetchTs'];
         for (const key in keys) {
             await this.removeSettingVal(keys[key]);
         }
@@ -3630,7 +3645,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||208754347252', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||-134381345381', 'FPW_FordAPIs.js||98865356633', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
+const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||208754347252', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||153799678153', 'FPW_FordAPIs.js||-378913212655', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

@@ -11,7 +11,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     getModuleVer() {
-        return '2022.10.13.0';
+        return '2022.10.13.3';
     }
 
     appIDs() {
@@ -1042,11 +1042,33 @@ module.exports = class FPW_FordAPIs {
         }
     }
 
-    //from local store if last fetch is < x minutes, otherwise fetch from server
+    async checkFetchLocalDataOk() {
+        try {
+            const now = Date.now();
+            const lastTs = await this.FPW.getSettingVal('fpLastFetchTs');
+            // console.log(`checkFetchLocalDataOk() | Last Fetch: ${lastTs} | Now: ${now}`);
+            if (!lastTs) {
+                return true;
+            } else {
+                const secElap = (now - parseInt(lastTs)) / 1000;
+                const reqWait = this.widgetConfig.vehDataRefreshWait ? this.widgetConfig.vehDataRefreshWait : 300;
+                console.log(`fetchVehicleData() | RequiredWait: ${reqWait} seconds | Last Fetch: ${secElap} seconds`);
+                return secElap > reqWait ? false : true;
+            }
+        } catch (e) {
+            // console.log(`checkFetchLocalDataOk() Error: ${e}`);
+            return true;
+        }
+    }
+
     async fetchVehicleData(loadLocal = false, src = null) {
-        //Fetch data from local store
-        // if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
         const fetchStart = Date.now();
+        if (!loadLocal) {
+            const tooSoon = await this.checkFetchLocalDataOk();
+            console.log(`fetchVehicleData() | OkToUseLocalData:: ${tooSoon}`);
+            loadLocal = tooSoon;
+        }
+
         if (loadLocal) {
             let ld = await this.FPW.Files.readJsonFile('Vehicle Data');
             if (ld !== undefined || ld.info !== undefined || Object.keys(ld.info).length > 0) {
@@ -1270,6 +1292,7 @@ module.exports = class FPW_FordAPIs {
         this.FPW.Files.saveJsonFile('Vehicle Data', vehicleData);
         // console.log(JSON.stringify(vehicleData));
         const fetchEnd = Date.now();
+        this.FPW.setSettingVal('fpLastFetchTs', `${fetchEnd}`);
         if (this.widgetConfig.showFetchDataLog) console.log(`Fetch Vehicle Data | Src: ${src} | Process Time: ${(fetchEnd - fetchStart) / 1000}sec`);
         return vehicleData;
     }

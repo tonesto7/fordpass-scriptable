@@ -104,14 +104,15 @@ module.exports = class FPW_Files {
         }
     }
 
-    async isLocalDataFreshEnough() {
-        let localData = await this.readLocalData();
-        if (localData && Date.now() - localData.fetchTime < 60000 * this.widgetConfig.refreshInterval) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+    // async isLocalDataFreshEnough() {
+    //     const localData = await this.readLocalData();
+    //     console.log('')
+    //     if (localData && Date.now() - localData.fetchTime < 60000 * this.widgetConfig.refreshInterval) {
+    //         return true;
+    //     } else {
+    //         return false;
+    //     }
+    // }
 
     async clearImageCache() {
         console.log('FileManager: Clearing All Image Files from Local Cache...');
