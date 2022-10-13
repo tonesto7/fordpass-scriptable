@@ -6,7 +6,7 @@ module.exports = class FPW_Files {
     }
 
     getModuleVer() {
-        return '2022.10.12.0';
+        return '2022.10.13.0';
     }
 
     async loadImage(imgUrl) {

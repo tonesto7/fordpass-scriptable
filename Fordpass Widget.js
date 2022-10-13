@@ -150,7 +150,7 @@ const widgetConfig = {
     debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use this if you have problems logging in with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
     screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
-    showFetchDataLog: false, // Shows the time it took to fetch the data in the widget.
+    showFetchDataLog: false, // Shows the time it took to fetch the vehicle data in the logs.
     notifications: {
         scriptUpdate: {
             rate: 86400, // How often to allow available update notifications (in seconds - 86400 = 1 day)
@@ -3590,7 +3590,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-984133028', 'FPW_App.js||-255999079700', 'FPW_AsBuilt.js||-388435714635', 'FPW_Files.js||233772759426', 'FPW_FordAPIs.js||-226707151403', 'FPW_Menus.js||22091920821', 'FPW_Notifications.js||91913032662', 'FPW_ShortcutParser.js||4079300033', 'FPW_Timers.js||-41110768774'];
+const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||136383265140', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||-134381345381', 'FPW_FordAPIs.js||-61106157011', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
