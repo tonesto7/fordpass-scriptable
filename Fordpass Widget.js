@@ -1,5 +1,11 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
+// icon-color: blue; icon-glyph: magic;
+// This script was downloaded using FordWidgetTool.
+hash: 531219651063;
+
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -44,12 +50,19 @@
     
 **************/
 const changelogs = {
+    '2022.10.13.1': {
+        added: [],
+        fixed: ['Needed to force a token clear after updating'],
+        removed: [],
+        updated: [],
+        clearFlags: ['tokens'],
+    },
     '2022.10.13.0': {
         added: [],
         fixed: ['Authentication fixes', "Lot's of bugfixes and optimizations", 'Fixed vehicle setup menu loop when trying to cancel.'],
         removed: ['Removed support for OTA Info', 'Remove SYNC Version Info'],
         updated: ['Updated the module data to include new modules and much more detailed DiD info.'],
-        clearFlags: [],
+        clearFlags: ['tokens'],
     },
 
     '2022.07.25.0': {
@@ -138,7 +151,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.10.13.0';
+const SCRIPT_VERSION = '2022.10.13.1';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -3590,7 +3603,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||136383265140', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||-134381345381', 'FPW_FordAPIs.js||-61106157011', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
+const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||136383265140', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||-134381345381', 'FPW_FordAPIs.js||98865356633', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

@@ -24,12 +24,11 @@ module.exports = class FPW_FordAPIs {
     }
 
     getClientId = () => {
-        return '9fb503e0-715b-47e8-adfd-ad4b7770f73b'; // '2b4c214c-1376-4eb2-9e62-533047cc34bf';
+        return '9fb503e0-715b-47e8-adfd-ad4b7770f73b';
     };
 
     getRedirecUrl() {
-        return 'fordapp://userauthorized'; //'https://www.ford.com/support/vehicle-dashboard';
-        // 'https://sso.ci.ford.com/oidc/endpoint/default/authorize?redirect_uri=https%3A%2F%2Fwww.account.ford.com%2Fetc%2Ffd%2Ffma%2Fsso.html&response_type=code&state=&client_id=880cf418-6345-4e3b-81cd-7b623309b571&scope=openid&code_challenge=T3AsfHOI7_RhtGArj8uxZpklPL_j0ma66pUmBXWBJaQ&code_challenge_method=S256&prompt=none';
+        return 'fordapp://userauthorized';
     }
 
     defaultHeaders = () => {
@@ -49,22 +48,6 @@ module.exports = class FPW_FordAPIs {
         };
         const data = await request.loadJSON();
         return { code_challenge: data.code_challenge, code_verifier: data.code_verifier };
-    }
-
-    async pkceCodeGenerator() {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        function generateString(length) {
-            let result = ' ';
-            const charactersLength = characters.length;
-            for (let i = 0; i < length; i++) {
-                result += characters.charAt(Math.floor(Math.random() * charactersLength));
-            }
-            return result;
-        }
-        console.log();
-        const code = generateString(32);
-        console.log(`pkceCodeGenerator() | Code: ${code} | Length: ${code.length} | SHA: ${this.SHA256(code)}`);
-        return { code_challenge: code, code_verifier: this.SHA256(code) };
     }
 
     getUrlParams(q) {
@@ -92,7 +75,7 @@ module.exports = class FPW_FordAPIs {
             }
             body += key + '=' + params[key];
         }
-        console.log(`paramBodyBuilder() | Body: ${body}`);
+        // console.log(`paramBodyBuilder() | Body: ${body}`);
         return body;
     }
 
@@ -279,7 +262,7 @@ module.exports = class FPW_FordAPIs {
                 }
                 throw new Error('Could not find auth URL');
             } else if (statusCode === 302) {
-                console.log(`302 Redirect URL | ${newUrl}`);
+                // console.log(`302 Redirect URL | ${newUrl}`);
                 if (newUrl && newUrl.includes('code=') && newUrl.includes('grant_id=')) {
                     // console.log('initializeWebSession | found code and grant_id in authURL');
                     const params = this.getUrlParams(newUrl.split('?')[1]);
@@ -656,8 +639,6 @@ module.exports = class FPW_FordAPIs {
             Accept: 'application/json, text/plain, */*',
             'Consumer-Key': 'Z28tbmEtZm9yZA==',
             'Auth-Token': `${token}`,
-            // 'Auth-Token':
-            //     'eyJ0eXAiOiJKV1QiLCJ0b2tlbl90eXBlIjoiQSIsImFsZyI6IlJTMjU2Iiwia2lkIjoiY3NkbmtleTEifQ.eyJzdWIiOiIxMzZhNjYyYi04N2M2LWM4YzYtNTIxMC00Nzk4NTIxMDQ3OTgiLCJhdWQiOiI0ZjVlZWJiZC05N2JhLTRjYTYtYTJkMy0xZDJkN2JmZTVhMWEiLCJpc3MiOiI1RDQ3MjAyNi1FMjZBLTQ0NzItODVGMS03QkJDRDUzMEU3OEMiLCJ0eXBlIjoic3NvIiwiZXhwIjoxNjY0NDk0Mzk2LCJpYXQiOjE2NjQ0OTI1OTYsImp0aSI6IjEzNmE2NjJiLTg3YzYtYzhjNi01MjEwLTQ3OTg1MjEwNDc5OHwxNjY0NDkyNTk2NzU4OTcyMDAwfGEiLCJ1c2VybmFtZSI6InRvbmVzdG83QGdtYWlsLmNvbSJ9.a2OtW7-mh-JoJbBHrwqrCCIPL60IdDIj-Puot1UxfDOMlcbj1AhBKMMc19LgIrYZV56VQK3DM09s7ppbUe48yo3WRdzjrzlKFhnpFS3cxpv6t6EBIuCcq_ptwbNcXvnUCK1FK0Ojvcq9EScyZ-2Tbawa-iVJQpTbPscqoP0Wx6cnKqRL6LF5quCU9Kig2BeeS_I-oZSn2G26xZ0szPgeEqzgGSN4o0S3tNY2CAMqegVD43T-BvdvdPwTjSzOu0W283qIAlqytVW48ozdZR_C28MS9kqbsAdO0uFqxY-0LlyjyWw4DKmus6e7PJEKFrOTA7PEcl0YldaICN40Qp17Tw',
             Origin: 'https://www.ford.com',
             Referer: 'https://www.ford.com/',
             'Accept-Encoding': 'gzip, deflate, br',
