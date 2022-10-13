@@ -44,6 +44,14 @@
     
 **************/
 const changelogs = {
+    '2022.10.12.0': {
+        added: [],
+        fixed: ['Authentication fixes', "Lot's of bugfixes and optimizations", 'Fixed vehicle setup menu loop when trying to cancel.'],
+        removed: ['Removed support for OTA Info', 'Remove SYNC Version Info'],
+        updated: ['Updated the module data to include new modules and much more detailed DiD info.'],
+        clearFlags: [],
+    },
+
     '2022.07.25.0': {
         added: [],
         fixed: ['Fixed Module Data downloads after ford made a minor change to the motorcraftservice site for SSO.'],
@@ -130,7 +138,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.07.25.0';
+const SCRIPT_VERSION = '2022.10.12.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -138,10 +146,11 @@ const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of t
 //******************************************************************
 
 const widgetConfig = {
-    debugMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
-    debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use it if you have problems with the widget!
+    debugMode: false, // ENABLES MORE LOGGING... ONLY Use this if you have problems with the widget!
+    debugAuthMode: false, // ENABLES MORE LOGGING... ONLY Use this if you have problems logging in with the widget!
     logVehicleData: false, // Logs the vehicle data to the console (Used to help end users easily debug their vehicle data and share with develop)
     screenShotMode: false, // Places a dummy address in the widget for anonymous screenshots.
+    showFetchDataLog: false, // Shows the time it took to fetch the vehicle data in the logs.
     notifications: {
         scriptUpdate: {
             rate: 86400, // How often to allow available update notifications (in seconds - 86400 = 1 day)
@@ -319,6 +328,7 @@ class Widget {
             this.SCRIPT_NAME = 'Fordpass Widget';
             this.SCRIPT_ID = SCRIPT_ID;
             this.SCRIPT_VERSION = SCRIPT_VERSION;
+            // this.removeSettingVal('fpPubToken');
             this.isDevMode = isDevMode;
             this.stateStore = {};
             this.moduleMap = {};
@@ -491,12 +501,11 @@ class Widget {
             // const devCreds = await this.Files.loadLocalDevCredentials();
             // console.log(JSON.stringify(devCreds));
             let frcPrefs = false;
-            let reqOk = await this.requiredPrefsOk(this.prefKeys().core);
+            const reqOk = await this.requiredPrefsOk(this.prefKeys().core);
             // console.log(`reqOk: ${reqOk}`);
             if (!reqOk) {
-                let prompt = await this.Menus.requiredPrefsMenu();
-
-                // console.log(`(prepWidget) Prefs Menu Prompt Result: ${prompt}`);
+                const prompt = await this.Menus.requiredPrefsMenu();
+                console.log(`(prepWidget) Prefs Menu Prompt Result: ${prompt}`);
                 if (prompt === undefined) {
                     await this.prepWidget(isWidget);
                 } else if (prompt === false) {
@@ -511,13 +520,13 @@ class Widget {
             const cAuth = await this.FordAPI.checkAuth('prepWidget');
             // console.log(`(prepWidget) CheckAuth Result: ${cAuth}`);
 
-            // console.log(`(prepWidget) Checking User Prefs | Force: (${frcPrefs})`);
+            console.log(`(prepWidget) Checking User Prefs | Force: (${frcPrefs})`);
             const fPrefs = await this.FordAPI.queryFordPassPrefs(frcPrefs);
             // console.log(`(prepWidget) User Prefs Result: ${fPrefs}`);
 
             // console.log('(prepWidget) Fetching Vehicle Data...');
             console.log(`(prepWidget) Fetching Vehicle Data | Local: (${loadLocal})`);
-            const vData = await this.FordAPI.fetchVehicleData(loadLocal);
+            const vData = await this.FordAPI.fetchVehicleData(loadLocal, 'prepWidget');
             return isWidget ? await this.leanOutDataForWidget(vData) : vData;
         } catch (err) {
             this.logError(`prepWidget() Error: ${err}`, true);
@@ -1966,6 +1975,7 @@ class Widget {
             'fpFordConsumerId',
             'fpCat1Token',
             'fpTokenExpiresAt',
+            'fpLastPrefsQueryTs',
             'fpCountry',
             'fpDeviceLanguage',
             'fpLanguage',
@@ -2000,6 +2010,14 @@ class Widget {
             'fpLastEvChargingPausedNotificationDt',
             'fpLastOtaStatusUpdDt',
         ];
+        for (const key in keys) {
+            await this.removeSettingVal(keys[key]);
+        }
+    }
+
+    async clearAuthToken() {
+        this.logInfo('Info: Clearing Authentication Token from Keychain');
+        const keys = ['fpToken', 'fpToken2', 'fpFordConsumerId', 'fpTokenExpiresAt', 'fpLastPrefsQueryTs'];
         for (const key in keys) {
             await this.removeSettingVal(keys[key]);
         }
@@ -3572,7 +3590,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||-984133028', 'FPW_App.js||-255999079700', 'FPW_AsBuilt.js||-388435714635', 'FPW_Files.js||233772759426', 'FPW_FordAPIs.js||-226707151403', 'FPW_Menus.js||22091920821', 'FPW_Notifications.js||91913032662', 'FPW_ShortcutParser.js||4079300033', 'FPW_Timers.js||-41110768774'];
+const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||136383265140', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||-134381345381', 'FPW_FordAPIs.js||-61106157011', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();

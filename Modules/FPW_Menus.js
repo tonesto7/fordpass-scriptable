@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.07.04.0';
+        return '2022.10.13.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -22,8 +22,8 @@ module.exports = class FPW_Menus {
                 prefsMenu.addTextField('Ford Email', user || '');
                 prefsMenu.addSecureTextField('Ford Password', pass || '');
                 prefsMenu.addAction(`Region: ${this.FPW.capitalizeStr(region)}`); //0
-                prefsMenu.addAction('Get Vehicles'); //5
-                prefsMenu.addCancelAction('Cancel'); //6
+                prefsMenu.addAction('Get Vehicles'); //1
+                prefsMenu.addAction('Cancel'); //2
 
                 const devCreds = await this.FPW.Files.loadLocalDevCredentials();
 
@@ -47,6 +47,7 @@ module.exports = class FPW_Menus {
                             await this.FPW.setSettingVal('fpUser', user);
                             await this.FPW.setSettingVal('fpPass', pass);
                             const selectResp = await this.availableVehiclesMenu();
+
                             console.log(`Select Response: ${selectResp}`);
 
                             vin = await this.FPW.getSettingVal('fpVin');
@@ -67,8 +68,8 @@ module.exports = class FPW_Menus {
                             return undefined;
                         }
                         break;
-                    case 1:
-                        console.log('(Required Prefs Menu) Cancel was pressed');
+                    case 2:
+                        console.log('(Required Prefs Menu 1) Cancel was pressed');
                         return false;
                 }
             } else {
@@ -84,7 +85,7 @@ module.exports = class FPW_Menus {
                 prefsMenu.addAction('Watch Setup Video'); //4
 
                 prefsMenu.addAction('Save'); //5
-                prefsMenu.addCancelAction('Cancel'); //6
+                prefsMenu.addAction('Cancel'); //6
 
                 let respInd = await prefsMenu.presentAlert();
                 switch (respInd) {
@@ -114,6 +115,7 @@ module.exports = class FPW_Menus {
                         return true;
                     // break;
                     case 6:
+                        console.log('(Required Prefs Menu 2) Cancel was pressed');
                         return false;
                 }
             }
@@ -139,11 +141,12 @@ module.exports = class FPW_Menus {
                 let vin = await this.FPW.getSettingVal('fpVin');
                 menu.addTextField('Vehicle VIN Number', vin || '');
                 menuItems.push('No Vehicles Found - Tap to save VIN');
+                // menuItems.push('Try to Load them Again');
             }
             menuItems.push('Cancel');
             for (const [i, item] of menuItems.entries()) {
                 if (item === 'Cancel') {
-                    menu.addCancelAction(item);
+                    menu.addAction(item);
                 } else {
                     menu.addAction(item);
                 }
@@ -152,22 +155,24 @@ module.exports = class FPW_Menus {
             let respInd = await menu.presentAlert();
             let manVin = menu.textFieldValue(0);
             if (respInd !== null) {
-                if (menuItems[respInd] === 'Cancel') {
-                    return false;
-                } else if (menuItems[respInd] === 'No Vehicles Found - Tap to save VIN') {
-                    console.log(`(availableVehiclesMenu) No Vehicles Found - Manual Vin Entry Displayed`);
-                    if (manVin && manVin.length > 0) {
-                        await this.FPW.setSettingVal('fpVin', manVin);
-                        return manVin;
-                    }
-                    return undefined;
-                } else {
-                    const vin = vehicles[respInd] && vehicles[respInd].vin ? vehicles[respInd].vin : undefined;
-                    if (vin && vin.length > 0) {
-                        await this.FPW.setSettingVal('fpVin', vin);
-                    }
-                    console.log(`(availableVehiclesMenu) Selected Vin: ${vin}`);
-                    return vin;
+                switch (menuItems[respInd]) {
+                    case 'Cancel':
+                        console.log('(Available Vehicles Menu) Cancel was pressed');
+                        return false;
+                    case 'No Vehicles Found - Tap to save VIN':
+                        console.log(`(availableVehiclesMenu) No Vehicles Found - Manual Vin Entry Displayed`);
+                        if (manVin && manVin.length > 0) {
+                            await this.FPW.setSettingVal('fpVin', manVin);
+                            return manVin;
+                        }
+                        return undefined;
+                    default:
+                        const vin = vehicles[respInd] && vehicles[respInd].vin ? vehicles[respInd].vin : undefined;
+                        if (vin && vin.length > 0) {
+                            await this.FPW.setSettingVal('fpVin', vin);
+                        }
+                        console.log(`(availableVehiclesMenu) Selected Vin: ${vin}`);
+                        return vin;
                 }
             }
             return undefined;
@@ -180,7 +185,7 @@ module.exports = class FPW_Menus {
     async menuBuilderByType(type, prefsMenu = false) {
         try {
             console.log(`(menuBuilderByType) Type: ${type}`);
-            const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true);
+            const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true, 'menuBuilderByType');
             const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
 
             const typeDesc = this.FPW.capitalizeStr(type);
@@ -558,6 +563,21 @@ module.exports = class FPW_Menus {
                                 if (await this.FPW.Alerts.showYesNoPrompt('Clear Login & Settings', 'Are you sure you want to reset your login details and settings?\n\nThis will require you to enter your login info again?')) {
                                     await this.FPW.clearSettings();
                                     await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Saved Settings Cleared\n\nPlease close out the menus and restart the script again to re-initialize the widget.');
+                                    this.menuBuilderByType('main');
+                                } else {
+                                    this.menuBuilderByType('reset');
+                                }
+                            },
+                            destructive: true,
+                            show: true,
+                        },
+                        {
+                            title: 'Clear Token Info',
+                            action: async () => {
+                                console.log(`(${typeDesc} Menu) Clear Token Info was pressed`);
+                                if (await this.FPW.Alerts.showYesNoPrompt('Clear Login Tokens', 'Are you sure you want to clear the authentication token?\n\nThis will require you to enter your login info again?')) {
+                                    await this.FPW.clearAuthToken();
+                                    await this.FPW.Alerts.showAlert('Widget Reset Menu', 'Authentication Tokens Cleared\n\nPlease close out the menus and restart the script again to re-initialize the widget.');
                                     this.menuBuilderByType('main');
                                 } else {
                                     this.menuBuilderByType('reset');

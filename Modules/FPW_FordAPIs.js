@@ -5,12 +5,13 @@ module.exports = class FPW_FordAPIs {
         this.SCRIPT_VERSION = FPW.SCRIPT_VERSION;
         this.widgetConfig = FPW.widgetConfig;
         this.fpUserAgent = 'FordPass/5 CFNetwork/1378.1 Darwin/22.0.0';
+        this.fpPubUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/';
         this.tokenRetryCnt = 0;
         this.isFetchingToken = false;
     }
 
     getModuleVer() {
-        return '2022.07.04.0';
+        return '2022.10.13.0';
     }
 
     appIDs() {
@@ -22,8 +23,18 @@ module.exports = class FPW_FordAPIs {
         };
     }
 
+    getClientId = () => {
+        return '9fb503e0-715b-47e8-adfd-ad4b7770f73b'; // '2b4c214c-1376-4eb2-9e62-533047cc34bf';
+    };
+
+    getRedirecUrl() {
+        return 'fordapp://userauthorized'; //'https://www.ford.com/support/vehicle-dashboard';
+        // 'https://sso.ci.ford.com/oidc/endpoint/default/authorize?redirect_uri=https%3A%2F%2Fwww.account.ford.com%2Fetc%2Ffd%2Ffma%2Fsso.html&response_type=code&state=&client_id=880cf418-6345-4e3b-81cd-7b623309b571&scope=openid&code_challenge=T3AsfHOI7_RhtGArj8uxZpklPL_j0ma66pUmBXWBJaQ&code_challenge_method=S256&prompt=none';
+    }
+
     defaultHeaders = () => {
         return {
+            Accept: '*/*',
             'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -31,13 +42,29 @@ module.exports = class FPW_FordAPIs {
     };
 
     async getCodeChallenge() {
-        let request = new Request('https://fpw-pkce-svc.herokuapp.com/getchallenge');
+        let request = new Request('https://fpw-pkce-svc-2.herokuapp.com/getchallenge');
         request.method = 'POST';
         request.headers = {
             'Content-Type': 'application/json',
         };
         const data = await request.loadJSON();
-        return data;
+        return { code_challenge: data.code_challenge, code_verifier: data.code_verifier };
+    }
+
+    async pkceCodeGenerator() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        function generateString(length) {
+            let result = ' ';
+            const charactersLength = characters.length;
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+            return result;
+        }
+        console.log();
+        const code = generateString(32);
+        console.log(`pkceCodeGenerator() | Code: ${code} | Length: ${code.length} | SHA: ${this.SHA256(code)}`);
+        return { code_challenge: code, code_verifier: this.SHA256(code) };
     }
 
     getUrlParams(q) {
@@ -57,6 +84,18 @@ module.exports = class FPW_FordAPIs {
         return undefined;
     }
 
+    async paramBodyBuilder(params) {
+        let body = '';
+        for (const key in params) {
+            if (body.length) {
+                body += '&';
+            }
+            body += key + '=' + params[key];
+        }
+        console.log(`paramBodyBuilder() | Body: ${body}`);
+        return body;
+    }
+
     async getAppID() {
         const appIds = this.appIDs();
         const region = await this.FPW.getRegion();
@@ -65,9 +104,8 @@ module.exports = class FPW_FordAPIs {
         return id;
     }
 
-    async checkAuth(src = undefined) {
-        // log('checkAuth() | src: ' + src);
-
+    async checkAuth(src) {
+        // log('checkAuth() | src: ' + src, !fpToken ? ' | PUBLIC' : '');
         const noValue = (val) => {
             return val === null || val === undefined || val === '';
         };
@@ -76,6 +114,7 @@ module.exports = class FPW_FordAPIs {
         const expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
         const expired = noValue(expiresAt) === false ? Date.now() >= Date.parse(expiresAt) : false;
         const legacyToken = await this.FPW.getSettingVal('fpToken2');
+        // console.log(`checkAuth | Token: ${token}`);
         if (this.widgetConfig.debugMode) {
             console.log(`chechAuth(${src})`);
             console.log(`checkAuth | Token: ${token}`);
@@ -93,7 +132,13 @@ module.exports = class FPW_FordAPIs {
                 await this.clearTokenCache();
                 await this.FPW.Files.removeFile('fp_vehicleData.json');
             } else {
-                console.log('Token, RefreshToken, or Expiration State is Missing... Fetching NEW Token...');
+                if (noValue(token)) {
+                    console.log('No Token found... Forcing Token Fetch...');
+                } else if (noValue(expiresAt)) {
+                    console.log('No Token Expiration found... Forcing Token Fetch...');
+                } else if (noValue(refreshToken)) {
+                    console.log('No RefreshToken found... Forcing Token Fetch...');
+                }
             }
             tok = await this.fetchToken('checkAuth()');
         }
@@ -105,8 +150,8 @@ module.exports = class FPW_FordAPIs {
     }
 
     async collectAllData(scrub = false) {
-        let data = await this.fetchVehicleData(true);
-        data.otaInfo = await this.getVehicleOtaInfo();
+        let data = await this.fetchVehicleData(true, 'collectAllData()');
+        // data.otaInfo = await this.getVehicleOtaInfo();
         data.userPrefs = {
             country: await this.FPW.getSettingVal('fpCountry'),
             timeZone: await this.FPW.getSettingVal('fpTz'),
@@ -118,20 +163,43 @@ module.exports = class FPW_FordAPIs {
         return scrub ? this.FPW.scrubPersonalData(data) : data;
     }
 
-    async fetchJwtToken(src = undefined) {
-        // console.log(`fetchJwtToken(${src})`);
+    // async clearCookies() {
+    //     console.log('Clearing Session Cookies()');
+    //     const wv = new WebView();
+    //     // wv.present();
+    //     await wv.loadURL(`https://www.ford.com/#$userSignOut`);
+    //     await wv.waitForLoad();
+    //     await wv.evaluateJavaScript(`
+    //         (
+    //             function(){
+    //                 document.cookie.split(";").forEach((c) => {
+    //                         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;domain=." + location.host.split('.').slice(-2).join(".") +";path=/");
+    //                         // console.log('Clearing Cookie: ' + c);
+    //                 });
+    //                 localStorage.clear()
+    //                 sessionStorage.clear()
+    //                 console.log('cookies: ' + document.cookie);
+    //             }
+    //         )();`);
+    //     // console.log('clearCookies() | Success');
+    //     return true;
+    // }
+
+    async fetchToken(src = null) {
+        console.log('Fetching Token...', src);
+
+        if (this.tokenRetryCnt > 2) {
+            this.tokenRetryCnt = 0;
+            log(`fetchToken(${src}) | Too many retries`);
+            return 'Error: Too many token retries';
+        }
+        this.tokenRetryCnt++;
+
         if (this.isFetchingToken) {
-            console.log('fetchJwtToken() | Already fetching token...');
+            console.log(`fetchToken(${src}) | Already fetching token...`);
             return;
         }
         this.isFetchingToken = true;
-        const that = this;
-        const { code_challenge, code_verifier } = await this.getCodeChallenge();
-        const redirect_uri = 'fordapp://userauthorized';
-        const client_id = '9fb503e0-715b-47e8-adfd-ad4b7770f73b';
-        // console.log(`fetchToken | code_challenge: ${code_challenge}`);
-        // console.log(`fetchToken | code_verifier: ${code_verifier}`);
-
         const username = await this.FPW.getSettingVal('fpUser');
         if (!username) {
             return this.FPW.textMap().errorMessages.noCredentials;
@@ -141,258 +209,209 @@ module.exports = class FPW_FordAPIs {
             return this.FPW.textMap().errorMessages.noCredentials;
         }
 
-        async function clearCookies() {
-            console.log('Clearing Session Cookies()');
-            const wv = new WebView();
-            // wv.present();
-            await wv.loadURL(`https://www.ford.com/#$userSignOut`);
-            await wv.waitForLoad();
-            await wv.evaluateJavaScript(`(function(){document.cookie.split(";").forEach(function(c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";domain=." + location.host.split('.').slice(-2).join(".") +";path=/"); }); })();`);
-            // console.log('clearCookies() | Success');
-            return true;
-        }
-
-        async function auth_step1() {
-            let nextUrl;
-            let nextCookies;
-            console.log('clearCookies: ' + (await clearCookies()));
-            let request = new Request(`https://sso.ci.ford.com/v1.0/endpoint/default/authorize?redirect_uri=${redirect_uri}&client_id=${client_id}&response_type=code&state=&scope=openid&login_hint=%7B%22realm%22%20%3A%20%22cloudIdentityRealm%22%7D&code_challenge=${code_challenge}&code_challenge_method=S256`);
-            request.method = 'GET';
-            request.headers = {
-                ...that.defaultHeaders(),
-            };
-            request.onRedirect = (req) => {
-                // console.log(`fetchToken | Step 1 | Redirect: ${req.url}`);
-                nextUrl = req.url;
-            };
-            try {
-                const data = await request.load();
-                const resp = request.response;
-                // console.log(`statusCode1: ${resp.statusCode}`);
-                // console.log('redireCnt1: ' + redirectCnt);
-                // console.log(`resp1: ${JSON.stringify(resp, null, 2)}`);
-                nextUrl = resp.headers['Location'];
-                nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
-                // console.log(`nextUrl1: ${nextUrl}`);
-                // console.log('cookies1: ' + JSON.stringify(nextCookies));
-                if (nextUrl && nextCookies) {
-                    if (nextUrl.includes('code=') && nextUrl.includes('grant_id=')) {
-                        const params = that.getUrlParams(nextUrl.split('?')[1]);
-                        // console.log('params: ' + JSON.stringify(params));
-                        const code = params['code'];
-                        if (code) {
-                            return await auth_step5(code, nextCookies);
-                        }
-                    }
-                    if (nextUrl.includes('https://sso.ci.ford.com/idaas/mtfim/sps/idaas/login?client_id=')) {
-                        return await auth_step2(nextUrl, nextCookies);
-                    }
+        const pkce = await this.getCodeChallenge();
+        const startUrl = `https://sso.ci.ford.com/v1.0/endpoint/default/authorize?redirect_uri=${this.getRedirecUrl()}&response_type=code&scope=openid&max_age=3600&client_id=${this.getClientId()}&code_challenge=${pkce.code_challenge}%3D&code_challenge_method=S256`;
+        const authSession = await this.initializeWebSession(startUrl)
+            .then(async (authSession) => {
+                console.log(`Web Session Initialized...`);
+                if (authSession && authSession.code && authSession.grantId) {
+                    console.log(`Web Session Signed In Send Code and GrantId...`);
+                    return authSession;
+                } else {
+                    return await this.attemptLogin(authSession.url, username, password, authSession.cookies).then(async (loginSession) => {
+                        return await this.fetchAuthorizationCode(loginSession.url, loginSession.cookies).then((authCodeSession) => {
+                            return authCodeSession;
+                        });
+                    });
                 }
-                return that.FPW.textMap().errorMessages.authFailed;
-            } catch (err) {
-                console.log('auth_step1 | Error: ' + err.message);
-                return that.FPW.textMap().errorMessages.authFailed;
-            }
+            })
+            .catch((err) => {
+                throw err;
+            });
+        if (authSession && authSession.code && authSession.grantId) {
+            // console.log(`authCodeSession: ${JSON.stringify(authSession)}`);
+            await this.requestAccessToken(`grant_type=authorization_code&code=${authSession.code}&grant_id=${authSession.grantId}&code_verifier=${pkce.code_verifier}&scope=openid&redirect_uri=${this.getRedirecUrl()}&client_id=${this.getClientId()}`)
+                .then(async (token) => {
+                    this.isFetchingToken = false;
+                    return token;
+                })
+                .catch((err) => {
+                    this.isFetchingToken = false;
+                    throw err;
+                });
+        } else {
+            this.isFetchingToken = false;
+            throw new Error('No Auth Code or Grant ID');
         }
-
-        async function auth_step2(url, cookies) {
-            let nextUrl;
-            let nextCookies;
-            let request = new Request(url);
-            request.method = 'GET';
-            request.headers = {
-                ...that.defaultHeaders(),
-                cookie: cookies,
-            };
-            request.onRedirect = function (req) {
-                nextUrl = req.url;
-            };
-            try {
-                const data = await request.load();
-                const resp = await request.response;
-                // console.log(`statusCode2: ${resp.statusCode}`);
-                // console.log(`resp2: ${JSON.stringify(resp, null, 2)}`);
-                nextUrl = resp.headers['Location'];
-                nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
-                // console.log(`nextUrl2: ${nextUrl}`);
-                // console.log('cookies2: ' + JSON.stringify(nextCookies));
-                if (nextUrl && nextUrl.includes('https://sso.ci.ford.com/authsvc/mtfim/sps/authsvc?PolicyId=urn:ibm:security:authentication:asf:basicldapuser&identity_source_id=') && nextCookies) {
-                    return await auth_step3(nextUrl, nextCookies);
-                }
-            } catch (err) {
-                console.log('auth_step2 | Error: ' + err.message);
-                return that.FPW.textMap().errorMessages.authFailed;
-            }
-        }
-
-        async function auth_step3(url, cookies) {
-            let nextUrl;
-            let nextCookies;
-            let request = new Request(url);
-            request.method = 'POST';
-            request.headers = {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                ...that.defaultHeaders(),
-                cookie: cookies,
-            };
-            request.onRedirect = function (req) {
-                nextUrl = req.url;
-                // return null;
-            };
-
-            request.body = `operation=verify&login-form-type=pwd&username=${username}&password=${password}`;
-            try {
-                await request.load();
-                const resp = await request.response;
-                // console.log(`statusCode3: ${resp.statusCode}`);
-                // console.log(`resp: ${JSON.stringify(resp, null, 2)}`);
-                nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
-                // console.log(`nextUrl3: ${nextUrl}`);
-                // console.log('cookies3: ' + JSON.stringify(nextCookies));
-                if (nextUrl && nextUrl.includes('https://sso.ci.ford.com/oidc/endpoint/default/authorize?qsId=') && nextCookies) {
-                    return await auth_step4(nextUrl, nextCookies);
-                }
-                return that.FPW.textMap().errorMessages.authFailed;
-            } catch (err) {
-                console.log('auth_step3 | Error: ' + err.message);
-                await that.FPW.logInfo(`auth_step3() Error: ${err.message}`, true);
-                return that.FPW.textMap().errorMessages.authFailed;
-            }
-        }
-
-        async function auth_step4(url, cookies) {
-            let nextUrl;
-            let nextCookies;
-            let request = new Request(url);
-            request.method = 'GET';
-            request.headers = {
-                ...that.defaultHeaders(),
-                cookie: cookies,
-            };
-            request.onRedirect = function (req) {
-                nextUrl = req.url;
-                // return null;
-            };
-
-            try {
-                await request.load();
-                const resp = await request.response;
-                // console.log(`statusCode4: ${resp.statusCode}`);
-                // console.log(`resp: ${JSON.stringify(resp, null, 2)}`);
-                nextUrl = resp.headers['Location'];
-                // console.log(`nextUrl4: ${nextUrl}`);
-                const params = that.getUrlParams(nextUrl.split('?')[1]);
-                // console.log('params: ' + JSON.stringify(params));
-                const code = params['code'];
-                const grantId = params['grant_id'];
-                if (code) {
-                    return await auth_step5(code, grantId);
-                }
-                return that.FPW.textMap().errorMessages.authFailed;
-            } catch (err) {
-                console.log('auth_step4 | Error: ' + err.message);
-                await that.FPW.logInfo(`auth_step4() Error: ${err.message}`, true);
-                return that.FPW.textMap().errorMessages.authFailed;
-            }
-        }
-
-        async function auth_step5(code, grantId) {
-            // console.log('auth_step5');
-            let request = new Request('https://sso.ci.ford.com/oidc/endpoint/default/token');
-            request.method = 'POST';
-            request.headers = {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                ...that.defaultHeaders(),
-            };
-            request.body = `grant_type=authorization_code&code=${code}&grant_id=${grantId}&code_verifier=${code_verifier}&scope=openid&redirect_uri=${redirect_uri}&client_id=${client_id}&resource=`;
-
-            try {
-                let data = await request.loadJSON();
-                // console.log(`auth_step5 data: ${JSON.stringify(data, null, 2)}`);
-                const resp = await request.response;
-                // console.log(`statusCode5: ${resp.statusCode}`);
-                // console.log(`resp: ${JSON.stringify(resp, null, 2)}`);
-                if (resp.statusCode === 200 && data.access_token) {
-                    // console.log(`access_token: ${data.access_token}`);
-                    return data.access_token;
-                }
-                return that.FPW.textMap().errorMessages.authFailed;
-            } catch (err) {
-                await that.FPW.logInfo(`auth_step5() Error: ${err.message}`, true);
-                return that.FPW.textMap().errorMessages.authFailed;
-            }
-        }
-
-        const result = await auth_step1();
-        this.isFetchingToken = false;
-        return result;
     }
 
-    async fetchToken() {
-        // console.log('Fetching Token...');
-        if (this.tokenRetryCnt > 2) {
-            this.tokenRetryCnt = 0;
-            log('fetchToken() | Too many retries');
-            return 'Error: Too many token retries';
-        }
-        this.tokenRetryCnt++;
-        let username = await this.FPW.getSettingVal('fpUser');
-        if (!username) {
-            return this.FPW.textMap().errorMessages.noCredentials;
-        }
-        let password = await this.FPW.getSettingVal('fpPass');
-        if (!password) {
-            return this.FPW.textMap().errorMessages.noCredentials;
-        }
-        const jwtToken = await this.fetchJwtToken('fetchToken');
-        // console.log(`jwt_token: ${jwtToken}`);
-
-        if (jwtToken) {
-            try {
-                let req = new Request(`https://api.mps.ford.com/api/token/v2/cat-with-ci-access-token`);
-                req.headers = {
-                    'Content-Type': 'application/json',
-                    Accept: '*/*',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
-                    'Accept-Encoding': 'gzip, deflate, br',
-                    authorization: 'Basic ZWFpLWNsaWVudDo=',
-                    'application-id': await this.getAppID(),
-                };
-                req.method = 'POST';
-                req.body = JSON.stringify({ ciToken: jwtToken });
-                req.timeoutInterval = 15;
-
-                const token = await req.loadJSON();
-                const resp = req.response;
-                if (this.widgetConfig.debugAuthMode) {
-                    console.log(`Token Req | Status: ${resp.statusCode}) | Resp: ${JSON.stringify(token, null, 2)}`);
-                }
-                if (token.error && token.error == 'invalid_grant') {
-                    if (this.widgetConfig.debugMode) {
-                        console.log('Debug: Error while receiving token2 data');
-                        console.log(token);
-                    }
-                    return this.FPW.textMap().errorMessages.invalidGrant;
-                }
-                if (resp.statusCode === 200) {
-                    await this.FPW.setSettingVal('fpToken', token.access_token);
-                    await this.FPW.setSettingVal('fpRefreshToken', token.refresh_token);
-                    await this.FPW.setSettingVal('fpFordConsumerId', token.ford_consumer_id);
-                    await this.FPW.setSettingVal('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
-                    // let token = await this.FPW.getSettingVal('fpToken');
-                    // console.log(`------- New Token Set: ${token} -------`);
-                    // let expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
-                    // console.log(`expiresAt: ${expiresAt}`);
-                    return;
-                }
-            } catch (e) {
-                await this.FPW.logInfo(`fetchToken() Error: ${e}`, true);
-                if (e.error && e.error == 'invalid_grant') {
-                    return this.FPW.textMap().errorMessages.invalidGrant;
-                }
-                throw e;
+    async initializeWebSession(startUrl) {
+        // console.log(`initializeWebSession() | ${startUrl}`);
+        const request = new Request(startUrl);
+        let newUrl;
+        request.method = 'GET';
+        request.headers = {
+            ...this.defaultHeaders(),
+            Accept: 'text/html; charset=utf-8',
+        };
+        request.onRedirect = (req) => {
+            // console.log(req.url);
+            newUrl = req.url;
+            if (req.url.startsWith('https://sso.ci.ford.com/authsvc/mtfim/sps/authsvc') || req.url.startsWith('fordapp://userauthorized')) {
+                return null;
+            } else {
+                return req;
             }
+        };
+
+        try {
+            const data = await request.loadString();
+            // console.log(`initializeWebSession: ${data.toString()}`);
+            const resp = await request.response;
+            const statusCode = resp.statusCode;
+            const nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
+            console.log(`initializeWebSession status: ${statusCode}`);
+            if (statusCode === 200) {
+                const fndUrl = this.findRegexMatch(/data-ibm-login-url="(.*)" /gm, data);
+                newUrl = fndUrl ? 'https://sso.ci.ford.com' + fndUrl : '';
+                if (newUrl && newUrl.length >= 30) {
+                    return { url: newUrl, cookies: nextCookies };
+                }
+                throw new Error('Could not find auth URL');
+            } else if (statusCode === 302) {
+                console.log(`302 Redirect URL | ${newUrl}`);
+                if (newUrl && newUrl.includes('code=') && newUrl.includes('grant_id=')) {
+                    // console.log('initializeWebSession | found code and grant_id in authURL');
+                    const params = this.getUrlParams(newUrl.split('?')[1]);
+                    // console.log('params: ' + JSON.stringify(params));
+                    return { url: newUrl, code: params.code, grantId: params.grant_id };
+                } else {
+                    // console.log('initializeWebSession | did not find code and grant_id in authURL');
+                    return { url: newUrl, cookies: nextCookies };
+                }
+            }
+            throw new Error('Initialize WebSession: Unhandled success status code');
+        } catch (err) {
+            console.log(`initializeWebSession error: ${err.message}`, err);
+            throw err;
+        }
+    }
+
+    async attemptLogin(url, username, password, cookies) {
+        // console.log(`Attempting Login... ${url}`);
+        const request = new Request(url);
+        request.method = 'POST';
+        request.headers = {
+            ...this.defaultHeaders(),
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Cookie: cookies,
+        };
+        request.body = `operation=verify&login-form-type=pwd&username=${username}&password=${password}`;
+        // console.log(`attemptLogin() | Request Body: ${request.body}`);
+        request.onRedirect = (req) => {
+            // console.log(req);
+        };
+        try {
+            const data = await request.load();
+            // console.log(`attemptLogin data: ${JSON.stringify(data)}`);
+            const resp = await request.response;
+            console.log(`attemptLogin status: ${resp.statusCode}`);
+            if (resp.statusCode === 302 && resp.headers['Location']) {
+                const nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
+                return { url: resp.headers['Location'], cookies: nextCookies };
+            }
+            throw new Error('Attempt Login: Unhandled success status code');
+        } catch (err) {
+            // console.log('attemptLogin error: ' + err.message);
+            throw new Error('Attempt Login: Unhandled Error Code');
+        }
+    }
+
+    async fetchAuthorizationCode(url, client, cookies) {
+        // console.log(`Fetching Authorization Code... ${url}`);
+        const request = new Request(url);
+        request.method = 'GET';
+        request.headers = {
+            ...this.defaultHeaders(),
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Cookie: cookies,
+        };
+        request.onRedirect = (req) => {
+            // return req.url;
+        };
+        try {
+            const data = await request.loadString();
+            // console.log('fetchAuthorizationCode:', data.toString());
+            const resp = await request.response;
+            console.log(`fetchAuthorizationCode status: ${resp.statusCode}`);
+            if (resp.statusCode === 302 && resp.headers['Location']) {
+                // console.log(`fetchAuthorizationCode nextUrl | ${resp.headers['Location']}`);
+                const code = this.findRegexMatch(/code=(.*)&/gm, resp.headers['Location']);
+                const grantId = this.findRegexMatch(/&grant_id=(.*)/gm, resp.headers['Location']);
+                // console.log(`code: ${code}`);
+                // console.log(`grantId: ${grantId}`);
+                if (code && grantId) return { code, grantId };
+                throw new Error('Fetch Authorization Code: Missing Code or Grant ID');
+            }
+            throw new Error('Fetch Authorization Code: Unhandled Error Code');
+        } catch (err) {
+            console.log('fetchAuthorizationCode error: ', err);
+            throw new Error('Fetch Authorization Code: Unhandled Error Code');
+        }
+    }
+
+    async requestAccessToken(data) {
+        // console.log(`Requesting Access Token...`);
+        const req1 = new Request(`https://sso.ci.ford.com/v1.0/endpoint/default/token`);
+        req1.method = 'POST';
+        req1.headers = {
+            ...this.defaultHeaders(),
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        };
+        req1.body = data;
+        req1.timeoutInterval = 15;
+        // console.log(`requestAccessToken() | Request Body: ${JSON.stringify(req1.body)}`);
+        try {
+            const token1 = await req1.loadJSON();
+            // console.log(`accessToken1 data: ${JSON.stringify(token1)}`);
+            const resp1 = await req1.response;
+            // console.log(`accessToken1 status: ${resp1.statusCode}`);
+
+            if (resp1.statusCode === 200 && token1 && token1.access_token) {
+                // console.log('accestToken1: ', JSON.stringify(token1.access_token));
+                const req2 = new Request('https://api.mps.ford.com/api/token/v2/cat-with-ci-access-token');
+                req2.method = 'POST';
+                req2.headers = {
+                    ...this.defaultHeaders(),
+                    'Content-Type': 'application/json',
+                    'Application-Id': this.appIDs().NA,
+                };
+                req2.body = JSON.stringify({ ciToken: token1.access_token });
+                req2.timeoutInterval = 15;
+                try {
+                    const data2 = await req2.loadJSON();
+                    // console.log(`accestToken2 data: ${JSON.stringify(data2)}`);
+                    const resp2 = await req2.response;
+                    // console.log(`accessToken2 status: ${resp2.statusCode}`);
+                    if (resp2.statusCode === 200 && data2 && data2.access_token) {
+                        await this.FPW.setSettingVal('fpToken', data2.access_token);
+                        await this.FPW.setSettingVal('fpRefreshToken', data2.refresh_token);
+                        await this.FPW.setSettingVal('fpFordConsumerId', data2.ford_consumer_id);
+                        await this.FPW.setSettingVal('fpTokenExpiresAt', (Date.now() + data2.expires_in).toString());
+                        console.log('Successfully retrieved access token');
+                        return data2.access_token;
+                    } else {
+                        throw new Error('Request Access Token 2: Unhandled Error Code');
+                    }
+                } catch (err) {
+                    throw new Error('Request Access Token 2: Unhandled Error Code | ' + err.message);
+                }
+            } else {
+                throw new Error('Access Token was not returned');
+            }
+        } catch (err) {
+            throw new Error(`requestAccessToken ${err.message}`);
         }
     }
 
@@ -483,17 +502,18 @@ module.exports = class FPW_FordAPIs {
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
-        const token = await this.FPW.getSettingVal('fpToken');
+        // const token = await this.FPW.getSettingVal('fpPubToken');
         const lang = await this.FPW.getSettingVal('fpLanguage');
         const data = await this.makeFordRequest('getSyncVersion', `https://www.digitalservices.ford.com/owner/api/v2/sync/firmware-update?vin=${vin}&locale=${lang}&brand=${brand}`, 'POST', false, {
-            'Content-Type': 'application/json',
+            'sec-ch-ua': '"Microsoft Edge";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
             Accept: 'application/json, text/plain, */*',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 Edg/105.0.1343.53',
+            Origin: 'https://www.ford.com',
+            Referer: 'https://www.ford.com/',
+            'Accept-Encoding': 'gzip, deflate, br',
             'Accept-Language': 'en-US,en;q=0.9',
-            'auth-token': `${token}`,
-            Referer: 'https://ford.com',
-            Origin: 'https://ford.com',
         });
-        // console.log(`getSyncVersion: ${JSON.stringify(data)}`);
+        console.log(`getSyncVersion: ${JSON.stringify(data)}`);
         return data && data.sync && Object.keys(data.sync).length > 0 ? { syncVersion: data.sync.currentSyncVersion || undefined, lastUpdatedDate: data.sync.latestUpdateDate } : undefined;
     }
 
@@ -522,6 +542,7 @@ module.exports = class FPW_FordAPIs {
         }
         let data = await this.makeFordRequest(
             'getVehicleAlerts',
+
             `https://api.mps.ford.com/api/expvehiclealerts/v2/details`,
             'POST',
             false,
@@ -552,8 +573,8 @@ module.exports = class FPW_FordAPIs {
         };
     }
 
-    async getAllVehicleDetails(tcuSupportOnly = false) {
-        // console.log(`getAllVehicleDetails(${tcuSupportOnly})`);
+    async getAllVehicleDetails() {
+        // console.log(`getAllVehicleDetails()`);
         const vin = (await this.FPW.getSettingVal('fpVin')) || '';
         const token = await this.FPW.getSettingVal('fpToken');
         const country = await this.FPW.getSettingVal('fpCountry');
@@ -582,43 +603,38 @@ module.exports = class FPW_FordAPIs {
         try {
             // console.log(JSON.stringify(data, null, 2));
             if (data && Object.keys(data).length > 0) {
-                if (tcuSupportOnly) {
-                    // console.log(`vehicles: ${JSON.stringify(data.userVehicles.vehicleDetails, null, 2)}`);
-                    return data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.filter((v) => v.tcuEnabled === true).map((v) => v.VIN) : [];
-                } else {
-                    const vehicle = data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.find((v) => v.VIN === vin) : undefined;
-                    const profile = data.vehicleProfile && data.vehicleProfile.length > 0 ? data.vehicleProfile.find((v) => v.VIN === vin) : undefined;
-                    let caps = data.vehicleCapabilities && data.vehicleCapabilities.length ? data.vehicleCapabilities.find((v) => v.VIN === vin) : undefined;
-                    let capsArr = [];
-                    if (caps && Object.keys(caps).length > 0) {
-                        let nCaps = {};
-                        for (let key in caps) {
-                            if (caps[key] === 'NoDisplay') {
-                                nCaps[key] = false;
-                            } else if (caps[key] === 'Display' || caps[key] === 'On' || caps[key] === true || caps[key] === 'Available') {
-                                nCaps[key] = true;
-                                capsArr.push(key);
-                            } else {
-                                nCaps[key] = caps[key];
-                            }
+                const vehicle = data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.find((v) => v.VIN === vin) : undefined;
+                const profile = data.vehicleProfile && data.vehicleProfile.length > 0 ? data.vehicleProfile.find((v) => v.VIN === vin) : undefined;
+                let caps = data.vehicleCapabilities && data.vehicleCapabilities.length ? data.vehicleCapabilities.find((v) => v.VIN === vin) : undefined;
+                let capsArr = [];
+                if (caps && Object.keys(caps).length > 0) {
+                    let nCaps = {};
+                    for (let key in caps) {
+                        if (caps[key] === 'NoDisplay') {
+                            nCaps[key] = false;
+                        } else if (caps[key] === 'Display' || caps[key] === 'On' || caps[key] === true || caps[key] === 'Available') {
+                            nCaps[key] = true;
+                            capsArr.push(key);
+                        } else {
+                            nCaps[key] = caps[key];
                         }
-                        caps = nCaps;
                     }
-                    let out = {
-                        nickName: vehicle && vehicle.nickName ? vehicle.nickName : undefined,
-                        tcuEnabled: vehicle && vehicle.tcuEnabled ? vehicle.tcuEnabled : false,
-                        profile: profile,
-                        caps: caps,
-                        capsArr: capsArr.sort(),
-                    };
-                    ['profile', 'caps'].forEach((key) => {
-                        if (out[key] && out[key].status) {
-                            delete out[key].status;
-                        }
-                    });
-                    // console.log(`output: ${JSON.stringify(out, null, 2)}`);
-                    return out;
+                    caps = nCaps;
                 }
+                let out = {
+                    nickName: vehicle && vehicle.nickName ? vehicle.nickName : undefined,
+                    tcuEnabled: vehicle && vehicle.tcuEnabled ? vehicle.tcuEnabled : false,
+                    profile: profile,
+                    caps: caps,
+                    capsArr: capsArr.sort(),
+                };
+                ['profile', 'caps'].forEach((key) => {
+                    if (out[key] && out[key].status) {
+                        delete out[key].status;
+                    }
+                });
+                // console.log(`output: ${JSON.stringify(out, null, 2)}`);
+                return out;
             }
         } catch (e) {
             console.log(`getAllVehicleDetails: ${e.message}`);
@@ -628,22 +644,24 @@ module.exports = class FPW_FordAPIs {
 
     async getVehicleOtaInfo() {
         const vin = await this.FPW.getSettingVal('fpVin');
-        const token = await this.FPW.getSettingVal('fpToken');
+        const token = await this.FPW.getSettingVal('fpPubToken');
+        // console.log(token);
         const country = await this.FPW.getSettingVal('fpCountry');
         if (!vin) {
             return this.FPW.textMap().errorMessages.noVin;
         }
 
         return await this.makeFordRequest('getVehicleOtaInfo', `https://www.digitalservices.ford.com/owner/api/v2/ota/status?country=${country.toLowerCase()}&vin=${vin}`, 'GET', false, {
-            'Content-Type': 'application/json',
-            Accept: '*/*',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 Edg/105.0.1343.53',
+            Accept: 'application/json, text/plain, */*',
+            'Consumer-Key': 'Z28tbmEtZm9yZA==',
+            'Auth-Token': `${token}`,
+            // 'Auth-Token':
+            //     'eyJ0eXAiOiJKV1QiLCJ0b2tlbl90eXBlIjoiQSIsImFsZyI6IlJTMjU2Iiwia2lkIjoiY3NkbmtleTEifQ.eyJzdWIiOiIxMzZhNjYyYi04N2M2LWM4YzYtNTIxMC00Nzk4NTIxMDQ3OTgiLCJhdWQiOiI0ZjVlZWJiZC05N2JhLTRjYTYtYTJkMy0xZDJkN2JmZTVhMWEiLCJpc3MiOiI1RDQ3MjAyNi1FMjZBLTQ0NzItODVGMS03QkJDRDUzMEU3OEMiLCJ0eXBlIjoic3NvIiwiZXhwIjoxNjY0NDk0Mzk2LCJpYXQiOjE2NjQ0OTI1OTYsImp0aSI6IjEzNmE2NjJiLTg3YzYtYzhjNi01MjEwLTQ3OTg1MjEwNDc5OHwxNjY0NDkyNTk2NzU4OTcyMDAwfGEiLCJ1c2VybmFtZSI6InRvbmVzdG83QGdtYWlsLmNvbSJ9.a2OtW7-mh-JoJbBHrwqrCCIPL60IdDIj-Puot1UxfDOMlcbj1AhBKMMc19LgIrYZV56VQK3DM09s7ppbUe48yo3WRdzjrzlKFhnpFS3cxpv6t6EBIuCcq_ptwbNcXvnUCK1FK0Ojvcq9EScyZ-2Tbawa-iVJQpTbPscqoP0Wx6cnKqRL6LF5quCU9Kig2BeeS_I-oZSn2G26xZ0szPgeEqzgGSN4o0S3tNY2CAMqegVD43T-BvdvdPwTjSzOu0W283qIAlqytVW48ozdZR_C28MS9kqbsAdO0uFqxY-0LlyjyWw4DKmus6e7PJEKFrOTA7PEcl0YldaICN40Qp17Tw',
+            Origin: 'https://www.ford.com',
+            Referer: 'https://www.ford.com/',
+            'Accept-Encoding': 'gzip, deflate, br',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': this.fpUserAgent,
-            'Application-Id': await this.getAppID(),
-            'auth-token': `${token}`,
-            'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
-            Referer: 'https://ford.com',
-            Origin: 'https://ford.com',
         });
     }
 
@@ -653,16 +671,59 @@ module.exports = class FPW_FordAPIs {
             if (authMsg) {
                 return authMsg;
             }
+            const prefs = await this.queryFordPassPrefs(true);
+            if (!prefs) {
+                throw new Error('No prefs found');
+            }
+            const token = await this.FPW.getSettingVal('fpToken');
+            const country = await this.FPW.getSettingVal('fpCountry');
+            const lang = await this.FPW.getSettingVal('fpLanguage');
+            // console.log(`getVehiclesForUser() | token | ${token}`);
+            // console.log(`getVehiclesForUser() | country | ${country}`);
+            // console.log(`getVehiclesForUser() | lang | ${lang}`);
+            const data = await this.makeFordRequest(
+                'getVehiclesForUser',
+                `https://api.mps.ford.com/api/expdashboard/v1/details`,
+                'POST',
+                false,
+                {
+                    'Content-Type': 'application/json',
+                    Accept: '*/*',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'User-Agent': this.fpUserAgent,
+                    locale: lang,
+                    countryCode: country,
+                    'Application-Id': '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
+                    'auth-token': token,
+                },
+                {
+                    dashboardRefreshRequest: 'All',
+                    smsWakeUpVIN: '',
+                },
+            );
+            // console.log(`getVehiclesForUser: ${JSON.stringify(data, null, 2)}`);
+            let vehicles = [];
+            if (data && data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length > 0) {
+                const supportedVins = data.userVehicles && data.userVehicles.vehicleDetails && data.userVehicles.vehicleDetails.length ? data.userVehicles.vehicleDetails.filter((v) => v.tcuEnabled === true) : [];
+                for (const [i, v] of supportedVins.entries()) {
+                    const fnd = data.vehicleProfile.find((vp) => vp.VIN === v.VIN);
+                    if (fnd) {
+                        vehicles.push({
+                            vin: v.VIN,
+                            nickName: v.nickName,
+                            modelName: fnd.make + ' ' + fnd.model,
+                            modelYear: fnd.year,
+                        });
+                    }
+                }
+            }
 
-            await this.queryFordPassPrefs(true);
-            // const token = await this.FPW.getSettingVal('fpToken');
-            const data = await this.makeFordRequest('getVehiclesForUser', `https://www.digitalservices.ford.com/fs/api/v2/profile`, 'GET', false, undefined);
-            console.log(`userVehicles Count: (${data.value.vehicles.length})`);
-            const supportedVehicles = await this.getAllVehicleDetails(true);
-            console.log(`supportedVehicles: ${JSON.stringify(supportedVehicles, null, 2)}`);
-            return data && data.value && data.value.vehicles && data.value.vehicles.length ? data.value.vehicles.filter((v) => supportedVehicles.includes(v.vin)) : [];
+            // console.log(`getVehiclesForUser: ${JSON.stringify(vehicles, null, 2)}`);
+            console.log(`userVehicles Count: (${vehicles.length})`);
+            return vehicles;
         } catch (e) {
             console.log(`getVehiclesForUser: ${e}`);
+            return [];
         }
     }
 
@@ -690,7 +751,7 @@ module.exports = class FPW_FordAPIs {
     async getServiceHistory() {
         // NOT WORKING REQUIRES A JWT TOKEN
         const vin = await this.FPW.getSettingVal('fpVin');
-        const token = await this.FPW.getSettingVal('fpToken');
+        const token = await this.FPW.getSettingVal('fpPubToken');
         const country = await this.FPW.getSettingVal('fpCountry');
         const lang = await this.FPW.getSettingVal('fpLanguage');
         if (!vin) {
@@ -700,7 +761,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
+            'User-Agent': this.fpPubUserAgent,
             // 'Application-Id': await this.getAppID(),
             'auth-token': `${token}`,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
@@ -809,6 +870,7 @@ module.exports = class FPW_FordAPIs {
         }
         const data = await this.makeFordRequest(
             'getVehicleSubscriptions',
+
             'https://api.mps.ford.com/api/subscription-orchestration/v2/getSubscriptionSummaryByVin',
             'POST',
             true,
@@ -840,7 +902,7 @@ module.exports = class FPW_FordAPIs {
             Accept: 'application/json, text/plain, */*',
             'Accept-Encoding': 'gzip, deflate, br',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
+            'User-Agent': this.fpPubUserAgent,
             'Consumer-Key': `Z28tbmEtZm9yZA==`, // Base64 encoded version of "go-na-ford"
             Referer: 'https://ford.com',
             Origin: 'https://ford.com',
@@ -863,13 +925,15 @@ module.exports = class FPW_FordAPIs {
         try {
             const dtNow = Date.now();
             const lastDt = await this.FPW.getSettingVal('fpLastPrefsQueryTs');
+            // const settingTest = ['fpLanguage', 'fpCountry', 'fpCity', 'fpState', 'fpZipCode', 'fpDistanceUnits', 'fpPressureUnits'];
+            // const settingMissing = settingTest.find((s) => !(await this.FPW.getSettingVal(s)));
             const ok2Upd = lastDt && dtNow - Number(lastDt) > 1000 * 60 * 5;
             // console.log(`Last prefs query: ${lastDt} | Now: ${dtNow} | Diff: ${dtNow - Number(lastDt)} | Ok2Upd: ${ok2Upd}`);
             if (ok2Upd || lastDt === null || force) {
                 await this.FPW.setSettingVal('fpLastPrefsQueryTs', dtNow.toString());
                 console.log(ok2Upd ? `UserPrefs Expired - Refreshing from Ford API` : `UserPrefs Requested or Missing - Refreshing from Ford API`);
 
-                let data = await this.makeFordRequest('queryFordPassPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
+                const data = await this.makeFordRequest('queryFordPassPrefs', `https://api.mps.ford.com/api/users`, 'GET', false);
                 // console.log('user data: ' + JSON.stringify(data));
                 if (data && data.status === 200 && data.profile) {
                     try {
@@ -918,7 +982,7 @@ module.exports = class FPW_FordAPIs {
             'Content-Type': 'application/json',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.48 Safari/537.36 Edg/98.0.1108.23',
+            'User-Agent': this.fpPubUserAgent,
             'Application-Id': '515d7c8a-8f55-49e9-991c-1800f5c20983',
             // Origin: 'https://www.earlyaccess.ford.com/',
             // Referer: 'https://www.earlyaccess.ford.com/',
@@ -940,23 +1004,26 @@ module.exports = class FPW_FordAPIs {
         return undefined;
     }
 
-    async makeFordRequest(desc, url, method, json = false, headerOverride = undefined, body = undefined) {
+    async makeFordRequest(desc, url, method, json = false, customHeaders = undefined, body = undefined) {
+        const funcDesc = `makeFordRequest(${desc})`;
         try {
-            const authMsg = await this.checkAuth(`makeFordRequest(${desc})`);
+            const authMsg = await this.checkAuth(`${funcDesc}`);
             if (authMsg) {
                 return authMsg;
             }
             const token = await this.FPW.getSettingVal('fpToken');
-            const headers = headerOverride || {
-                'Content-Type': 'application/json',
-                Accept: '*/*',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': this.fpUserAgent,
-                'Application-Id': await this.getAppID(),
-                'auth-token': `${token}`,
-                Referer: 'https://ford.com',
-                Origin: 'https://ford.com',
-            };
+            const headers = customHeaders
+                ? customHeaders
+                : {
+                      'Content-Type': 'application/json',
+                      Accept: '*/*',
+                      'Accept-Language': 'en-US,en;q=0.9',
+                      'User-Agent': this.fpUserAgent,
+                      'Application-Id': await this.getAppID(),
+                      'auth-token': `${token}`,
+                      Referer: 'https://ford.com',
+                      Origin: 'https://ford.com',
+                  };
 
             let request = new Request(url);
             request.headers = headers;
@@ -969,37 +1036,41 @@ module.exports = class FPW_FordAPIs {
             let data = json ? await request.loadJSON() : await request.loadString();
             let resp = request.response;
             if (this.widgetConfig.debugMode) {
-                console.log(`makeFordRequest(${desc}) | Status: ${resp.statusCode}) | Resp: ${data}`);
+                console.log(`${funcDesc} | Status: ${resp.statusCode}) | Resp: ${data}`);
             }
 
             if (data == this.FPW.textMap().errorMessages.accessDenied) {
-                console.log(`makeFordRequest(${desc}): Access Denied. Fetching New Token and Requesting Data Again!`);
-                const result = await this.fetchToken('makeFordRequest(AccessDenied)');
+                console.log(`${funcDesc}: Access Denied. Fetching New Token and Requesting Data Again!`);
+                const result = await this.fetchToken(`${funcDesc}(AccessDenied)`);
                 if (result && result == this.FPW.textMap().errorMessages.invalidGrant) {
                     return result;
                 }
-                data = await this.makeFordRequest(desc, url, method, json, headerOverride, body);
+                data = await this.makeFordRequest(desc, url, method, json, customHeaders, body);
             } else {
                 data = json ? data : JSON.parse(data);
             }
             if (data.statusCode && (data.statusCode !== 200 || data.statusCode !== 207)) {
+                console.log(`${funcDesc} | Status: (${resp.statusCode}) | Resp: ${JSON.stringify(data)}`);
                 return this.FPW.textMap().errorMessages.connectionErrorOrVin;
             }
             return data;
         } catch (e) {
-            console.log(`makeFordRequest Error: ${e.message}`);
-            await this.FPW.logInfo(`makeFordRequest(${desc}) Error: ${e}`, true);
+            console.log(`${funcDesc} Error: ${e.message}`);
+            await this.FPW.logInfo(`${funcDesc} Error: ${e}`, true);
             return this.FPW.textMap().errorMessages.unknownError;
         }
     }
 
     //from local store if last fetch is < x minutes, otherwise fetch from server
-    async fetchVehicleData(loadLocal = false) {
+    async fetchVehicleData(loadLocal = false, src = null) {
         //Fetch data from local store
         // if ((!this.widgetConfig.alwaysFetch && (await this.FPW.Files.isLocalDataFreshEnough())) || loadLocal) {
+        const fetchStart = Date.now();
         if (loadLocal) {
             let ld = await this.FPW.Files.readJsonFile('Vehicle Data');
             if (ld !== undefined || ld.info !== undefined || Object.keys(ld.info).length > 0) {
+                const fetchEnd = Date.now();
+                if (this.widgetConfig.showFetchDataLog) console.log(`Fetch Vehicle Data | Src: ${src} | Load Local | Process Time: ${(fetchEnd - fetchStart) / 1000}sec`);
                 return ld;
             }
         }
@@ -1024,6 +1095,8 @@ module.exports = class FPW_FordAPIs {
                 // await this.FPW.Files.removeLocalData();
             }
             vehicleData.error = statusData;
+            const fetchEnd = Date.now();
+            if (this.widgetConfig.showFetchDataLog) console.log(`Fetch Vehicle Data | Src: ${src} | Auth Error Load Local | Process Time: ${(fetchEnd - fetchStart) / 1000}sec`);
             return vehicleData;
         }
         vehicleData.rawStatus = statusData.vehicleStatus;
@@ -1196,7 +1269,7 @@ module.exports = class FPW_FordAPIs {
 
         vehicleData.fordpassRewardsInfo = await this.getFordpassRewardsInfo();
         // console.log(`Fordpass Rewards Info: ${JSON.stringify(vehicleData.fordpassRewardsInfo)}`);
-        vehicleData.syncInfo = await this.getSyncVersion(vehicleData.info.brandCode);
+        // vehicleData.syncInfo = await this.getSyncVersion(vehicleData.info.brandCode);
         // console.log(`Sync Info: ${JSON.stringify(vehicleData.syncInfo)}`);
 
         // vehicleData.earlyAccessProgramInfo = await this.getEarlyAccessInfo();
@@ -1215,6 +1288,8 @@ module.exports = class FPW_FordAPIs {
         //save data to local store
         this.FPW.Files.saveJsonFile('Vehicle Data', vehicleData);
         // console.log(JSON.stringify(vehicleData));
+        const fetchEnd = Date.now();
+        if (this.widgetConfig.showFetchDataLog) console.log(`Fetch Vehicle Data | Src: ${src} | Process Time: ${(fetchEnd - fetchStart) / 1000}sec`);
         return vehicleData;
     }
 
@@ -1356,7 +1431,7 @@ module.exports = class FPW_FordAPIs {
     };
 
     async sendVehicleCmd(cmd_type = '', mainMenuRefresh = true) {
-        let authMsg = await this.checkAuth('sendVehicleCmd(' + cmd_type + ')');
+        const authMsg = await this.checkAuth('sendVehicleCmd(' + cmd_type + ')');
         if (authMsg) {
             console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
             return;
@@ -1394,7 +1469,7 @@ module.exports = class FPW_FordAPIs {
                 // console.log(data);
                 if (data == 'Access Denied') {
                     console.log('sendVehicleCmd: Auth Token Expired. Fetching new token and fetch raw data again');
-                    let result = await this.fetchToken('sendVehicleCmd(AccessDenied)'); //await this.FPW.FordAPI.fetchToken();
+                    let result = await this.fetchToken(true, 'sendVehicleCmd(AccessDenied)'); //await this.FPW.FordAPI.fetchToken();
                     if (result && result == this.FPW.textMap().errorMessages.invalidGrant) {
                         console.log(`sendVehicleCmd(${cmd_type}): ${result}`);
                         return result;
@@ -1447,205 +1522,5 @@ module.exports = class FPW_FordAPIs {
             }
         }
         return;
-    }
-
-    /**
-     * Secure Hash Algorithm (SHA256)
-     * http://www.webtoolkit.info/
-     * Original code by Angel Marin, Paul Johnston
-     **/
-
-    SHA256(s) {
-        var chrsz = 8;
-        var hexcase = 0;
-
-        function safe_add(x, y) {
-            var lsw = (x & 0xffff) + (y & 0xffff);
-            var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
-            return (msw << 16) | (lsw & 0xffff);
-        }
-
-        function S(X, n) {
-            return (X >>> n) | (X << (32 - n));
-        }
-        function R(X, n) {
-            return X >>> n;
-        }
-        function Ch(x, y, z) {
-            return (x & y) ^ (~x & z);
-        }
-        function Maj(x, y, z) {
-            return (x & y) ^ (x & z) ^ (y & z);
-        }
-        function Sigma0256(x) {
-            return S(x, 2) ^ S(x, 13) ^ S(x, 22);
-        }
-        function Sigma1256(x) {
-            return S(x, 6) ^ S(x, 11) ^ S(x, 25);
-        }
-        function Gamma0256(x) {
-            return S(x, 7) ^ S(x, 18) ^ R(x, 3);
-        }
-        function Gamma1256(x) {
-            return S(x, 17) ^ S(x, 19) ^ R(x, 10);
-        }
-
-        function core_sha256(m, l) {
-            var K = new Array(
-                0x428a2f98,
-                0x71374491,
-                0xb5c0fbcf,
-                0xe9b5dba5,
-                0x3956c25b,
-                0x59f111f1,
-                0x923f82a4,
-                0xab1c5ed5,
-                0xd807aa98,
-                0x12835b01,
-                0x243185be,
-                0x550c7dc3,
-                0x72be5d74,
-                0x80deb1fe,
-                0x9bdc06a7,
-                0xc19bf174,
-                0xe49b69c1,
-                0xefbe4786,
-                0xfc19dc6,
-                0x240ca1cc,
-                0x2de92c6f,
-                0x4a7484aa,
-                0x5cb0a9dc,
-                0x76f988da,
-                0x983e5152,
-                0xa831c66d,
-                0xb00327c8,
-                0xbf597fc7,
-                0xc6e00bf3,
-                0xd5a79147,
-                0x6ca6351,
-                0x14292967,
-                0x27b70a85,
-                0x2e1b2138,
-                0x4d2c6dfc,
-                0x53380d13,
-                0x650a7354,
-                0x766a0abb,
-                0x81c2c92e,
-                0x92722c85,
-                0xa2bfe8a1,
-                0xa81a664b,
-                0xc24b8b70,
-                0xc76c51a3,
-                0xd192e819,
-                0xd6990624,
-                0xf40e3585,
-                0x106aa070,
-                0x19a4c116,
-                0x1e376c08,
-                0x2748774c,
-                0x34b0bcb5,
-                0x391c0cb3,
-                0x4ed8aa4a,
-                0x5b9cca4f,
-                0x682e6ff3,
-                0x748f82ee,
-                0x78a5636f,
-                0x84c87814,
-                0x8cc70208,
-                0x90befffa,
-                0xa4506ceb,
-                0xbef9a3f7,
-                0xc67178f2,
-            );
-            var HASH = new Array(0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19);
-            var W = new Array(64);
-            var a, b, c, d, e, f, g, h, i, j;
-            var T1, T2;
-
-            m[l >> 5] |= 0x80 << (24 - (l % 32));
-            m[(((l + 64) >> 9) << 4) + 15] = l;
-
-            for (var i = 0; i < m.length; i += 16) {
-                a = HASH[0];
-                b = HASH[1];
-                c = HASH[2];
-                d = HASH[3];
-                e = HASH[4];
-                f = HASH[5];
-                g = HASH[6];
-                h = HASH[7];
-
-                for (var j = 0; j < 64; j++) {
-                    if (j < 16) W[j] = m[j + i];
-                    else W[j] = safe_add(safe_add(safe_add(Gamma1256(W[j - 2]), W[j - 7]), Gamma0256(W[j - 15])), W[j - 16]);
-
-                    T1 = safe_add(safe_add(safe_add(safe_add(h, Sigma1256(e)), Ch(e, f, g)), K[j]), W[j]);
-                    T2 = safe_add(Sigma0256(a), Maj(a, b, c));
-
-                    h = g;
-                    g = f;
-                    f = e;
-                    e = safe_add(d, T1);
-                    d = c;
-                    c = b;
-                    b = a;
-                    a = safe_add(T1, T2);
-                }
-
-                HASH[0] = safe_add(a, HASH[0]);
-                HASH[1] = safe_add(b, HASH[1]);
-                HASH[2] = safe_add(c, HASH[2]);
-                HASH[3] = safe_add(d, HASH[3]);
-                HASH[4] = safe_add(e, HASH[4]);
-                HASH[5] = safe_add(f, HASH[5]);
-                HASH[6] = safe_add(g, HASH[6]);
-                HASH[7] = safe_add(h, HASH[7]);
-            }
-            return HASH;
-        }
-
-        function str2binb(str) {
-            var bin = Array();
-            var mask = (1 << chrsz) - 1;
-            for (var i = 0; i < str.length * chrsz; i += chrsz) {
-                bin[i >> 5] |= (str.charCodeAt(i / chrsz) & mask) << (24 - (i % 32));
-            }
-            return bin;
-        }
-
-        function Utf8Encode(string) {
-            string = string.replace(/\r\n/g, '\n');
-            var utftext = '';
-
-            for (var n = 0; n < string.length; n++) {
-                var c = string.charCodeAt(n);
-
-                if (c < 128) {
-                    utftext += String.fromCharCode(c);
-                } else if (c > 127 && c < 2048) {
-                    utftext += String.fromCharCode((c >> 6) | 192);
-                    utftext += String.fromCharCode((c & 63) | 128);
-                } else {
-                    utftext += String.fromCharCode((c >> 12) | 224);
-                    utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-                    utftext += String.fromCharCode((c & 63) | 128);
-                }
-            }
-
-            return utftext;
-        }
-
-        function binb2hex(binarray) {
-            var hex_tab = hexcase ? '0123456789ABCDEF' : '0123456789abcdef';
-            var str = '';
-            for (var i = 0; i < binarray.length * 4; i++) {
-                str += hex_tab.charAt((binarray[i >> 2] >> ((3 - (i % 4)) * 8 + 4)) & 0xf) + hex_tab.charAt((binarray[i >> 2] >> ((3 - (i % 4)) * 8)) & 0xf);
-            }
-            return str;
-        }
-
-        s = Utf8Encode(s);
-        // return core_sha256(str2binb(s), s.length * chrsz);
-        return binb2hex(core_sha256(str2binb(s), s.length * chrsz));
     }
 };

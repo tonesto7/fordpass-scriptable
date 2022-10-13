@@ -6,7 +6,7 @@ module.exports = class FPW_Notifications {
     }
 
     getModuleVer() {
-        return '2022.07.04.0';
+        return '2022.10.13.0';
     }
 
     async createNotification(title, subtitle, body, options = {}) {
