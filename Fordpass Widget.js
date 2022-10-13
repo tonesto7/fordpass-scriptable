@@ -44,7 +44,7 @@
     
 **************/
 const changelogs = {
-    '2022.10.12.0': {
+    '2022.10.13.0': {
         added: [],
         fixed: ['Authentication fixes', "Lot's of bugfixes and optimizations", 'Fixed vehicle setup menu loop when trying to cancel.'],
         removed: ['Removed support for OTA Info', 'Remove SYNC Version Info'],
@@ -138,7 +138,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.10.12.0';
+const SCRIPT_VERSION = '2022.10.13.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -408,7 +408,7 @@ class Widget {
             // Starts the widget load process
             // console.log(`Device Models From ViewPort: ${await this.viewPortSizes.devices}`);
             // console.log(`widgetSize(run): ${JSON.stringify(await this.viewPortSizes)}`);
-            let fordData = await this.prepWidget(config.runsInWidget, widgetConfig.loadCacheOnly || config.runsInApp || config.runsFromHomeScreen);
+            const fordData = await this.prepWidget(config.runsInWidget, widgetConfig.loadCacheOnly || config.runsInApp || config.runsFromHomeScreen);
             if (fordData === null) return;
             if (config.runsInWidget) {
                 if (args.widgetParameter) {
