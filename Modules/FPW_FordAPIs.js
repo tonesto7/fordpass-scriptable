@@ -112,7 +112,7 @@ module.exports = class FPW_FordAPIs {
         } else if (legacyToken || noValue(token) || noValue(expiresAt) || noValue(refreshToken)) {
             if (legacyToken) {
                 console.log('Legacy Token found... Clearing and Forcing Fetch...');
-                await this.clearTokenCache();
+                await this.FPW.clearAuthToken();
                 await this.FPW.Files.removeFile('fp_vehicleData.json');
             } else {
                 if (noValue(token)) {

@@ -1480,16 +1480,11 @@ module.exports = class FPW_App {
             }
 
             if (!update) {
-                let lastVersion = await this.FPW.getSettingVal('fpScriptVersion');
-                let reqOk = await this.FPW.requiredPrefsOk(this.FPW.prefKeys().core);
-                // console.log(`(Dashboard) Last Version: ${lastVersion}`);
-                if (reqOk && lastVersion !== this.FPW.SCRIPT_VERSION) {
-                    let chgFlags = this.FPW.getChangeFlags();
-                    if (chgFlags && chgFlags.length) {
-                        await this.processClearFlags(chgFlags);
-                    }
+                const showChangePage = await this.FPW.getBooleanSettingValue('fpShowChangePage');
+                // console.log(`(Dashboard) showChangePage: ${showChangePage}`);
+                if (showChangePage) {
+                    await this.FPW.removeSettingVal('fpShowChangePage');
                     this.createRecentChangesPage();
-                    await this.FPW.setSettingVal('fpScriptVersion', this.FPW.SCRIPT_VERSION);
                 }
             }
             if (widgetCmd) {
@@ -1508,26 +1503,6 @@ module.exports = class FPW_App {
             await this.generateTableMenu('main', tableRows, false, fullscreen, update);
         } catch (err) {
             await this.FPW.logError(`createMainPage() Error: ${err}`);
-        }
-    }
-
-    async processClearFlags(flags) {
-        if (flags.length) {
-            for (let i = 0; i < flags.length; i++) {
-                switch (flags[i]) {
-                    case 'img':
-                        await this.FPW.Files.clearImageCache();
-                        break;
-                    case 'mod':
-                        await this.FPW.Files.clearModuleCache();
-                        break;
-                    case 'tokens':
-                        await this.FPW.FordAPI.clearTokenCache();
-                        break;
-                    case 'data_cache':
-                        await this.FPW.Files.removeFile('fp_vehicleData.json');
-                }
-            }
         }
     }
 

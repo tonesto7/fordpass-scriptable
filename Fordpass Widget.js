@@ -1,11 +1,5 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: magic;
-// This script was downloaded using FordWidgetTool.
-hash: 531219651063;
-
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -50,11 +44,11 @@ hash: 531219651063;
     
 **************/
 const changelogs = {
-    '2022.10.13.1': {
+    '2022.10.13.2': {
         added: [],
         fixed: ['Needed to force a token clear after updating'],
         removed: [],
-        updated: [],
+        updated: ['Modified the update flag process to allow clearing of tokens and other tasks.'],
         clearFlags: ['tokens'],
     },
     '2022.10.13.0': {
@@ -151,7 +145,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.10.13.1';
+const SCRIPT_VERSION = '2022.10.13.2';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -421,6 +415,7 @@ class Widget {
             // Starts the widget load process
             // console.log(`Device Models From ViewPort: ${await this.viewPortSizes.devices}`);
             // console.log(`widgetSize(run): ${JSON.stringify(await this.viewPortSizes)}`);
+
             const fordData = await this.prepWidget(config.runsInWidget, widgetConfig.loadCacheOnly || config.runsInApp || config.runsFromHomeScreen);
             if (fordData === null) return;
             if (config.runsInWidget) {
@@ -515,6 +510,7 @@ class Widget {
             // console.log(JSON.stringify(devCreds));
             let frcPrefs = false;
             const reqOk = await this.requiredPrefsOk(this.prefKeys().core);
+
             // console.log(`reqOk: ${reqOk}`);
             if (!reqOk) {
                 const prompt = await this.Menus.requiredPrefsMenu();
@@ -528,6 +524,8 @@ class Widget {
                     frcPrefs = true;
                 }
                 loadLocal = false;
+            } else {
+                await this.checkForUpdFlags();
             }
             // console.log('(prepWidget) Checking for token...');
             const cAuth = await this.FordAPI.checkAuth('prepWidget');
@@ -558,6 +556,35 @@ class Widget {
         }
         // delete vData.otaInfo
         return vData;
+    }
+
+    async checkForUpdFlags() {
+        const lastVersion = await this.getSettingVal('fpScriptVersion');
+        // console.log(`(Dashboard) Last Version: ${lastVersion}`);
+        if (lastVersion !== this.SCRIPT_VERSION) {
+            const chgFlags = await this.getChangeFlags();
+            // console.log(`(Dashboard) Change Flags: ${chgFlags}`);
+            if (chgFlags && chgFlags.length) {
+                for (const [i, flag] of chgFlags.entries()) {
+                    switch (flag) {
+                        case 'img':
+                            await this.Files.clearImageCache();
+                            break;
+                        case 'mod':
+                            await this.Files.clearModuleCache();
+                            break;
+                        case 'tokens':
+                            await this.clearAuthToken();
+                            break;
+                        case 'data_cache':
+                            await this.Files.removeFile('fp_vehicleData.json');
+                    }
+                }
+            }
+            this.setSettingVal('fpShowChangePage', 'true');
+            this.setSettingVal('fpScriptVersion', this.SCRIPT_VERSION);
+        }
+        return true;
     }
 
     /**
@@ -838,7 +865,7 @@ class Widget {
      */
     async readLogFile(logType) {
         try {
-            let fm = !widgetConfig.saveLogsToIcloud ? FileManager.local() : FileManager.iCloud();
+            const fm = !widgetConfig.saveLogsToIcloud ? FileManager.local() : FileManager.iCloud();
             const logDir = fm.joinPath(fm.documentsDirectory(), 'Logs');
             const devName = Device.name()
                 .replace(/[^a-zA-Z\s]/g, '')
@@ -857,8 +884,8 @@ class Widget {
     }
 
     async getChangeFlags() {
-        let changes = this.FPW.changelogs[this.SCRIPT_VERSION];
-        return changes && changes.clearFlags && changes.clearFlags.length ? changes.clearFlags : [];
+        const changes = this.changelogs[this.SCRIPT_VERSION];
+        return changes && changes.clearFlags && changes.clearFlags.length > 0 ? changes.clearFlags : [];
     }
 
     /**
@@ -3603,7 +3630,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||136383265140', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||-134381345381', 'FPW_FordAPIs.js||98865356633', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
+const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||208754347252', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||-134381345381', 'FPW_FordAPIs.js||98865356633', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
