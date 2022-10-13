@@ -50,6 +50,13 @@ hash: 153670521706;
     
 **************/
 const changelogs = {
+    '2022.10.13.4': {
+        added: [],
+        fixed: ['Fixes from the last release.'],
+        removed: [],
+        updated: [],
+        clearFlags: ['tokens'],
+    },
     '2022.10.13.3': {
         added: ['Added a 5 minute wait to ford data refresh to prevent overloading the ford servers and hopefully speed up widget content refreshes. This only applies to the Widgets themselves.  The app will still refresh every 30 seconds when in dashboard view.'],
         fixed: [],
@@ -158,7 +165,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.10.13.3';
+const SCRIPT_VERSION = '2022.10.13.4';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************

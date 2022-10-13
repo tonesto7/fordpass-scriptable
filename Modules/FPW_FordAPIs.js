@@ -1048,7 +1048,8 @@ module.exports = class FPW_FordAPIs {
             const lastTs = await this.FPW.getSettingVal('fpLastFetchTs');
             // console.log(`checkFetchLocalDataOk() | Last Fetch: ${lastTs} | Now: ${now}`);
             if (!lastTs) {
-                return true;
+                console.log(`fetchVehicleData() | Missing Fetch Timestamp | Fetching Data Now!`);
+                return false;
             } else {
                 const secElap = (now - parseInt(lastTs)) / 1000;
                 const reqWait = this.widgetConfig.vehDataRefreshWait ? this.widgetConfig.vehDataRefreshWait : 300;
