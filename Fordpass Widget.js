@@ -44,7 +44,7 @@
     
 **************/
 const changelogs = {
-    '2022.10.13.5': {
+    '2022.10.14.0': {
         added: [],
         fixed: ['Reworked the vehicle data refresh logic to be more efficient and actually update with the latest data after opening the App Dashboard.'],
         removed: [],
