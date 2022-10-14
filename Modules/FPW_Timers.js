@@ -7,7 +7,7 @@ module.exports = class FPW_Timers {
     }
 
     getModuleVer() {
-        return '2022.10.13.0';
+        return '2022.10.14.0';
     }
 
     async getTimer(timerName) {
@@ -62,7 +62,7 @@ module.exports = class FPW_Timers {
             timer.repeat = repeat;
             return timer.schedule(async () => {
                 console.log(`(${timerName}) Refresh Timer Fired`);
-                await this.FPW.FordAPI.fetchVehicleData(false, 'scheduleMainPageRefresh');
+                await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.force, 'scheduleMainPageRefresh');
                 await this.FPW.App.createMainPage(true);
             });
         }

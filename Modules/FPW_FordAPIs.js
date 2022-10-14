@@ -11,7 +11,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     getModuleVer() {
-        return '2022.10.13.3';
+        return '2022.10.14.0';
     }
 
     appIDs() {
@@ -133,7 +133,7 @@ module.exports = class FPW_FordAPIs {
     }
 
     async collectAllData(scrub = false) {
-        let data = await this.fetchVehicleData(true, 'collectAllData()');
+        let data = await this.fetchVehicleData(this.FPW.fetchTypes.decide, 'collectAllData()');
         // data.otaInfo = await this.getVehicleOtaInfo();
         data.userPrefs = {
             country: await this.FPW.getSettingVal('fpCountry'),
@@ -1048,12 +1048,12 @@ module.exports = class FPW_FordAPIs {
             const lastTs = await this.FPW.getSettingVal('fpLastFetchTs');
             // console.log(`checkFetchLocalDataOk() | Last Fetch: ${lastTs} | Now: ${now}`);
             if (!lastTs) {
-                console.log(`fetchVehicleData() | Missing Fetch Timestamp | Fetching Data Now!`);
+                console.log(`checkFetchLocalDataOk() | Missing Fetch Timestamp | Fetching Data Now!`);
                 return false;
             } else {
                 const secElap = (now - parseInt(lastTs)) / 1000;
                 const reqWait = this.widgetConfig.vehDataRefreshWait ? this.widgetConfig.vehDataRefreshWait : 300;
-                console.log(`fetchVehicleData() | RequiredWait: ${reqWait} seconds | Last Fetch: ${secElap} seconds`);
+                console.log(`checkFetchLocalDataOk() | RequiredWait: ${reqWait} seconds | Last Fetch: ${secElap} seconds`);
                 return secElap > reqWait ? false : true;
             }
         } catch (e) {
@@ -1062,15 +1062,17 @@ module.exports = class FPW_FordAPIs {
         }
     }
 
-    async fetchVehicleData(loadLocal = false, src = null) {
+    async fetchVehicleData(loadType = this.FPW.fetchTypes.decide, src = null) {
         const fetchStart = Date.now();
-        if (!loadLocal) {
+        console.log(`fetchVehicleData(${loadType}) | Source: ${src}`);
+
+        if (loadType == 'decide') {
             const tooSoon = await this.checkFetchLocalDataOk();
             console.log(`fetchVehicleData() | OkToUseLocalData:: ${tooSoon}`);
-            loadLocal = tooSoon;
+            loadType = tooSoon ? 'local' : 'force';
         }
 
-        if (loadLocal) {
+        if (loadType == 'local') {
             let ld = await this.FPW.Files.readJsonFile('Vehicle Data');
             if (ld !== undefined || ld.info !== undefined || Object.keys(ld.info).length > 0) {
                 const fetchEnd = Date.now();

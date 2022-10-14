@@ -6,7 +6,7 @@ module.exports = class FPW_Menus {
     }
 
     getModuleVer() {
-        return '2022.10.13.0';
+        return '2022.10.14.0';
     }
 
     async requiredPrefsMenu(user = null, pass = null, vin = null) {
@@ -185,7 +185,7 @@ module.exports = class FPW_Menus {
     async menuBuilderByType(type, prefsMenu = false) {
         try {
             console.log(`(menuBuilderByType) Type: ${type}`);
-            const vehicleData = await this.FPW.FordAPI.fetchVehicleData(true, 'menuBuilderByType');
+            const vehicleData = await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.local, `menuBuilderByType(${type})`);
             const caps = vehicleData.capabilities && vehicleData.capabilities.length ? vehicleData.capabilities : undefined;
 
             const typeDesc = this.FPW.capitalizeStr(type);

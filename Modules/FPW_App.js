@@ -30,7 +30,7 @@ module.exports = class FPW_App {
     }
 
     getModuleVer() {
-        return '2022.10.13.0';
+        return '2022.10.14.0';
     }
 
     async getTable(tableName) {
@@ -575,7 +575,7 @@ module.exports = class FPW_App {
 
     async createMainPage(update = false, widgetCmd = undefined) {
         try {
-            const vData = await this.FPW.FordAPI.fetchVehicleData(true, 'createMainPage');
+            const vData = await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.local, 'createMainPage');
             let tableRows = [];
             if (vData && Object.keys(vData).length > 0) {
                 const caps = vData && vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
@@ -1625,7 +1625,7 @@ module.exports = class FPW_App {
                                                     if (await this.FPW.FordAPI.markMultipleUserMessagesRead(msgIds)) {
                                                         console.log(`(Messages Table) Marked (${msgIds.length}) Messages as Read Successfully`);
                                                         this.FPW.Alerts.showAlert('Marked Messages as Read Successfully', 'Message List will reload after data is refeshed');
-                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);
+                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.force, 'createMessagesPage'), unreadOnly, true);
                                                         this.createMainPage(true);
                                                     }
                                                 }
@@ -1643,7 +1643,7 @@ module.exports = class FPW_App {
                                                     if (await this.FPW.FordAPI.deleteUserMessages(msgIds)) {
                                                         console.log(`(Messages Table) Deleted (${msgIds.length}) Messages Successfully`);
                                                         this.FPW.Alerts.showAlert('Deleted Messages Successfully', 'Message List will reload after data is refeshed');
-                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);
+                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.force, 'createMessagesPage'), unreadOnly, true);
                                                         this.createMainPage(true);
                                                     }
                                                 }
@@ -1694,7 +1694,7 @@ module.exports = class FPW_App {
                                                     if (await this.FPW.FordAPI.markMultipleUserMessagesRead([msg.messageId])) {
                                                         console.log(`(Messages Table) Message (${msg.messageId}) marked read successfully`);
                                                         this.FPW.Alerts.showAlert('Message marked read successfully', 'Message List will reload after data is refeshed');
-                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);
+                                                        await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.force, 'createMessagesPage'), unreadOnly, true);
                                                         this.createMainPage(true);
                                                     }
                                                 },
@@ -1711,7 +1711,7 @@ module.exports = class FPW_App {
                                                         if (await this.FPW.FordAPI.deleteUserMessages([msg.messageId])) {
                                                             console.log(`(Messages Table) Message ${msg.messageId} deleted successfully`);
                                                             this.FPW.Alerts.showAlert('Message deleted successfully', 'Message List will reload after data is refeshed');
-                                                            await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(false), unreadOnly, true);
+                                                            await this.createMessagesPage(await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.force, 'createMessagesPage'), unreadOnly, true);
                                                             this.createMainPage(true);
                                                             up;
                                                         } else {
@@ -2233,7 +2233,7 @@ module.exports = class FPW_App {
 
     async createVehicleImagesPage() {
         try {
-            const vData = await this.FPW.FordAPI.fetchVehicleData(true);
+            const vData = await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.local, 'createVehicleImagesPage');
             // console.log(`(Widget Style Selector) Current widget style: ${widgetStyle} | Size: ${size}`);
             let tableRows = [];
             tableRows.push(
@@ -2285,7 +2285,7 @@ module.exports = class FPW_App {
     async createAdvancedInfoPage() {
         try {
             let tableRows = [];
-            const vData = await this.FPW.FordAPI.fetchVehicleData(true);
+            const vData = await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.local, 'createAdvancedInfoPage');
             const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
             tableRows.push(
                 await this.createTableRow(
@@ -2820,7 +2820,7 @@ module.exports = class FPW_App {
 
     async createVehicleInfoPage(update = false) {
         try {
-            const vData = await this.FPW.FordAPI.fetchVehicleData(true);
+            const vData = await this.FPW.FordAPI.fetchVehicleData(this.FPW.fetchTypes.local, 'createVehicleInfoPage');
             const caps = vData.capabilities && vData.capabilities.length ? vData.capabilities : undefined;
             const vInfo = vData && vData.info ? vData.info : undefined;
             const rawData = vData && vData.rawStatus ? vData.rawStatus : undefined;

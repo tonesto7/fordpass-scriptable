@@ -1,11 +1,5 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: magic;
-// This script was downloaded using FordWidgetTool.
-hash: 153670521706;
-
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: car;
 
 /**************
@@ -50,6 +44,13 @@ hash: 153670521706;
     
 **************/
 const changelogs = {
+    '2022.10.13.5': {
+        added: [],
+        fixed: ['Reworked the vehicle data refresh logic to be more efficient and actually update with the latest data after opening the App Dashboard.'],
+        removed: [],
+        updated: [],
+        clearFlags: [],
+    },
     '2022.10.13.4': {
         added: [],
         fixed: ['Fixes from the last release.'],
@@ -165,7 +166,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.10.13.4';
+const SCRIPT_VERSION = '2022.10.13.5';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
@@ -349,6 +350,12 @@ class Widget {
                 h: 12,
             },
         },
+    };
+
+    fetchTypes = {
+        decide: 'decide',
+        local: 'local',
+        force: 'force',
     };
 
     constructor() {
@@ -558,7 +565,7 @@ class Widget {
 
             // console.log('(prepWidget) Fetching Vehicle Data...');
             console.log(`(prepWidget) Fetching Vehicle Data | Local: (${loadLocal})`);
-            const vData = await this.FordAPI.fetchVehicleData(loadLocal, 'prepWidget');
+            const vData = await this.FordAPI.fetchVehicleData(loadLocal ? this.fetchTypes.local : this.fetchTypes.force, 'prepWidget');
             return isWidget ? await this.leanOutDataForWidget(vData) : vData;
         } catch (err) {
             this.logError(`prepWidget() Error: ${err}`, true);
@@ -3652,7 +3659,7 @@ async function clearModuleCache() {
  * @description This makes sure all modules are loaded and/or the correct version before running the script.
  * @return
  */
-const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||208754347252', 'FPW_AsBuilt.js||-297083974548', 'FPW_Files.js||153799678153', 'FPW_FordAPIs.js||-378913212655', 'FPW_Menus.js||418059972770', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-94607892118', 'FPW_Timers.js||-60553091732'];
+const moduleFiles = ['FPW_Alerts.js||7795191958', 'FPW_App.js||302297629368', 'FPW_AsBuilt.js||150519627275', 'FPW_Files.js||153799678153', 'FPW_FordAPIs.js||113413802371', 'FPW_Menus.js||-131670157255', 'FPW_Notifications.js||-68618579696', 'FPW_ShortcutParser.js||-111111800346', 'FPW_Timers.js||112615932225'];
 
 async function validateModules() {
     const fm = isDevMode ? FileManager.iCloud() : FileManager.local();
