@@ -166,7 +166,7 @@ const changelogs = {
     },
 };
 
-const SCRIPT_VERSION = '2022.10.13.5';
+const SCRIPT_VERSION = '2022.10.14.0';
 const SCRIPT_ID = 0; // Edit this is you want to use more than one instance of the widget. Any value will work as long as it is a number and  unique.
 
 //******************************************************************
