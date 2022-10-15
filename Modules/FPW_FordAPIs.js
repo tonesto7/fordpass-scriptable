@@ -4,14 +4,14 @@ module.exports = class FPW_FordAPIs {
         this.SCRIPT_ID = FPW.SCRIPT_ID;
         this.SCRIPT_VERSION = FPW.SCRIPT_VERSION;
         this.widgetConfig = FPW.widgetConfig;
-        this.fpUserAgent = 'FordPass/5 CFNetwork/1378.1 Darwin/22.0.0';
+        this.fpUserAgent = 'FordPass/24 CFNetwork/1399 Darwin/22.1.0';
         this.fpPubUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/';
         this.tokenRetryCnt = 0;
         this.isFetchingToken = false;
     }
 
     getModuleVer() {
-        return '2022.10.14.0';
+        return '2022.10.15.1';
     }
 
     appIDs() {
@@ -34,7 +34,7 @@ module.exports = class FPW_FordAPIs {
     defaultHeaders = () => {
         return {
             Accept: '*/*',
-            'User-Agent': 'FordPass/5 CFNetwork/1333.0.4 Darwin/21.5.0',
+            'User-Agent': this.fpUserAgent,
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
         };
@@ -412,11 +412,11 @@ module.exports = class FPW_FordAPIs {
         }
     }
 
-    async refreshToken() {
+    async fetchTokenFromRefreshToken() {
         // console.log('Refreshing Token...');
         if (this.tokenRetryCnt > 2) {
             this.tokenRetryCnt = 0;
-            log('refreshToken() | Too many retries');
+            log('fetchTokenFromRefreshToken() | Too many retries');
             return 'Error: Too many token retries';
         }
         this.tokenRetryCnt++;
@@ -432,7 +432,7 @@ module.exports = class FPW_FordAPIs {
                 'Application-Id': await this.getAppID(),
             };
             req.timeoutInterval = 15;
-            req.method = 'PUT';
+            req.method = 'POST';
             req.body = JSON.stringify({ refresh_token: refreshToken });
 
             let token = await req.loadJSON();
@@ -455,10 +455,10 @@ module.exports = class FPW_FordAPIs {
                 // console.log(`expiresAt: ${expiresAt}`);
                 return;
             } else if (resp.statusCode === 401) {
-                await this.fetchToken('refreshToken(401)');
+                await this.fetchToken('fetchTokenFromRefreshToken(401)');
             }
         } catch (e) {
-            await this.FPW.logInfo(`refreshToken() Error: ${e}`, true);
+            await this.FPW.logInfo(`fetchTokenFromRefreshToken() Error: ${e}`, true);
             if (e.error && e.error == 'invalid_grant') {
                 return this.FPW.textMap().errorMessages.invalidGrant;
             }
