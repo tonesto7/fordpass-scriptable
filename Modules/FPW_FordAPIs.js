@@ -95,7 +95,7 @@ module.exports = class FPW_FordAPIs {
         const token = await this.FPW.getSettingVal('fpToken');
         const refreshToken = await this.FPW.getSettingVal('fpRefreshToken');
         const expiresAt = await this.FPW.getSettingVal('fpTokenExpiresAt');
-        const expired = noValue(expiresAt) === false ? Date.now() >= Date.parse(expiresAt) : false;
+        const expired = await this.tokenExpired(expiresAt);
         const legacyToken = await this.FPW.getSettingVal('fpToken2');
         // console.log(`checkAuth | Token: ${token}`);
         if (this.widgetConfig.debugMode) {
@@ -167,6 +167,20 @@ module.exports = class FPW_FordAPIs {
     //     // console.log('clearCookies() | Success');
     //     return true;
     // }
+
+    async getExpiresAtTs(expiresAt) {
+        const date = new Date();
+        date.setSeconds(date.getSeconds() + expiresAt);
+        return date.getTime();
+    }
+
+    async tokenExpired(ts) {
+        try {
+            return ts ? new Date() >= Date.parse(ts) : false;
+        } catch (err) {
+            return true;
+        }
+    }
 
     async fetchToken(src = null) {
         console.log('Fetching Token...', src);
@@ -381,7 +395,7 @@ module.exports = class FPW_FordAPIs {
                         await this.FPW.setSettingVal('fpToken', data2.access_token);
                         await this.FPW.setSettingVal('fpRefreshToken', data2.refresh_token);
                         await this.FPW.setSettingVal('fpFordConsumerId', data2.ford_consumer_id);
-                        await this.FPW.setSettingVal('fpTokenExpiresAt', (Date.now() + data2.expires_in).toString());
+                        await this.FPW.setSettingVal('fpTokenExpiresAt', await this.getExpiresAtTs(data2.expires_in));
                         console.log('Successfully retrieved access token');
                         return data2.access_token;
                     } else {
@@ -437,7 +451,7 @@ module.exports = class FPW_FordAPIs {
                 await this.FPW.setSettingVal('fpToken', token.access_token);
                 await this.FPW.setSettingVal('fpRefreshToken', token.refresh_token);
                 await this.FPW.setSettingVal('fpFordConsumerId', token.ford_consumer_id);
-                await this.FPW.setSettingVal('fpTokenExpiresAt', (Date.now() + token.expires_in).toString());
+                await this.FPW.setSettingVal('fpTokenExpiresAt', await this.getExpiresAtTs(token.expires_in));
                 // console.log(`expiresAt: ${expiresAt}`);
                 return;
             } else if (resp.statusCode === 401) {
