@@ -6,6 +6,7 @@ module.exports = class FPW_FordAPIs {
         this.widgetConfig = FPW.widgetConfig;
         this.fpUserAgent = 'FordPass/24 CFNetwork/1399 Darwin/22.1.0';
         this.fpPubUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/';
+        this.fpNewUserAgent = 'Mozilla/5.0 (Linux; Android 12; SM-S906U Build/SP1A.210812.016; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/107.0.5304.54 Mobile Safari/537.36';
         this.tokenRetryCnt = 0;
         this.isFetchingToken = false;
     }
@@ -20,6 +21,8 @@ module.exports = class FPW_FordAPIs {
             Australia: '5C80A6BB-CF0D-4A30-BDBF-FC804B5C1A98',
             NA: '71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592',
             Web: 'b08429de-8440-478d-a323-7a1e05cc9844',
+            NA2: '667D773E-1BDC-4139-8AD0-2B16474E8DC7',
+            DYNA: 'MT_3_30_2352378557_3-0_' + UUID() + '_0_789_87',
         };
     }
 
@@ -206,93 +209,219 @@ module.exports = class FPW_FordAPIs {
             return this.FPW.textMap().errorMessages.noCredentials;
         }
 
-        const pkce = await this.getCodeChallenge();
-        const startUrl = `https://sso.ci.ford.com/v1.0/endpoint/default/authorize?redirect_uri=${this.getRedirecUrl()}&response_type=code&scope=openid&max_age=3600&client_id=${this.getClientId()}&code_challenge=${pkce.code_challenge}%3D&code_challenge_method=S256`;
-        const authSession = await this.initializeWebSession(startUrl)
-            .then(async (authSession) => {
-                console.log(`Web Session Initialized...`);
-                if (authSession && authSession.code && authSession.grantId) {
-                    console.log(`Web Session Signed In Send Code and GrantId...`);
-                    return authSession;
-                } else {
-                    return await this.attemptLogin(authSession.url, username, password, authSession.cookies).then(async (loginSession) => {
-                        return await this.fetchAuthorizationCode(loginSession.url, loginSession.cookies).then((authCodeSession) => {
-                            return authCodeSession;
-                        });
-                    });
-                }
-            })
-            .catch((err) => {
-                throw err;
-            });
-        if (authSession && authSession.code && authSession.grantId) {
-            // console.log(`authCodeSession: ${JSON.stringify(authSession)}`);
-            await this.requestAccessToken(`grant_type=authorization_code&code=${authSession.code}&grant_id=${authSession.grantId}&code_verifier=${pkce.code_verifier}&scope=openid&redirect_uri=${this.getRedirecUrl()}&client_id=${this.getClientId()}`)
-                .then(async (token) => {
-                    this.isFetchingToken = false;
-                    return token;
-                })
-                .catch((err) => {
-                    this.isFetchingToken = false;
-                    throw err;
-                });
-        } else {
-            this.isFetchingToken = false;
-            throw new Error('No Auth Code or Grant ID');
+        const { code_challenge, code_verifier } = await this.getCodeChallenge();
+        console.log('code_challenge: ' + code_challenge);
+        console.log('code_verifier: ' + code_verifier);
+
+        async function fetchFormUrl() {
+            console.log('Fetching Form URL...');
+            try {
+                const formUrlRequest = new Request(
+                    `https://sso.ci.ford.com/v1.0/endpoint/default/authorize?redirect_uri=fordapp%3A%2F%2Fuserauthorized&response_type=code&scope=openid&max_age=3600&login_hint=eyJyZWFsbSI6ICJjbG91ZElkZW50aXR5UmVhbG0ifQ%3D%3D&code_challenge=${code_challenge}&code_challenge_method=S256&client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b`,
+                );
+                formUrlRequest.headers = {
+                    'User-Agent': this.fpNewUserAgent,
+                    accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                    'accept-language': 'de-DE,de;q=0.9,en-DE;q=0.8,en-US;q=0.7,en;q=0.6',
+                    'x-requested-with': 'com.ford.fordpass',
+                };
+                const formUrlData = await formUrlRequest.loadString();
+                console.log('formUrlData: ' + JSON.stringify(formUrlData, null, 2));
+                return formUrlData.split('data-ibm-login-url="')[1].split('"')[0];
+            } catch (error) {
+                this.isFetchingToken = false;
+                console.error(error);
+            }
         }
+
+        async function performLogin(formUrl) {
+            try {
+                const loginRequest = new Request(`https://sso.ci.ford.com${formUrl}`);
+                loginRequest.method = 'POST';
+                loginRequest.headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Host: 'sso.ci.ford.com',
+                    'User-Agent': this.fpNewUserAgent,
+                    accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                    'accept-language': 'de-DE,de;q=0.9,en-DE;q=0.8,en-US;q=0.7,en;q=0.6',
+                    'x-requested-with': 'com.ford.fordpass',
+                };
+                loginRequest.body = `operation=verify&login-form-type=pwd&username=${username}&password=${password}`;
+                const loginData = await loginRequest.loadString();
+                // Add your logic to handle loginData here
+                if (loginData.includes('data-ibm-login-error-text')) {
+                    console.error('Login failed');
+                    console.error(loginData.split('data-ibm-login-error-text="')[1].split('"')[0]);
+                    if (loginData.includes('CSIAH0320E')) {
+                        console.error('Account blocked by Ford because of third party app usage. Please use contact ford to unblock your account and create a dummy account and share your car with this account. E.g. yourmail+ford1@gmail.com');
+                    }
+
+                    console.error(JSON.stringify(loginData));
+                    throw new Error(JSON.stringify(loginData));
+                }
+                console.log('loginData: ' + JSON.stringify(loginData, null, 2));
+                return loginData;
+            } catch (error) {
+                this.isFetchingToken = false;
+                console.error(error);
+            }
+        }
+
+        async function fetchMidToken(responseCode) {
+            const midTokenRequest = new Request('https://sso.ci.ford.com/oidc/endpoint/default/token');
+            midTokenRequest.method = 'POST';
+            midTokenRequest.headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Host: 'sso.ci.ford.com',
+                'x-dynatrace': this.appIDs().DYNA,
+                'User-Agent': 'okhttp/4.9.2',
+            };
+            midTokenRequest.body = `client_id=9fb503e0-715b-47e8-adfd-ad4b7770f73b&grant_type=authorization_code&code_verifier=${code_verifier}&code=${responseCode}&redirect_uri=fordapp://userauthorized&scope=openid&resource=`;
+            const midTokenData = await midTokenRequest.loadJSON();
+            return midTokenData;
+        }
+
+        async function fetchFinalToken(midToken) {
+            const finalTokenRequest = new Request('https://api.mps.ford.com/api/token/v2/cat-with-ci-access-token');
+            finalTokenRequest.method = 'POST';
+            finalTokenRequest.headers = {
+                'Content-Type': 'application/json',
+                Accept: '*/*',
+                'Application-Id': this.appIDs().NA2,
+                'User-Agent': 'okhttp/4.9.2',
+                'Accept-Language': 'en-US,en;q=0.9',
+            };
+            finalTokenRequest.body = JSON.stringify({ ciToken: midToken.access_token });
+            const finalTokenData = await finalTokenRequest.loadJSON();
+            return finalTokenData;
+        }
+
+        // try {
+        const formUrl = await fetchFormUrl();
+        console.log('formUrl: ' + formUrl);
+        const loginData = await performLogin(formUrl);
+        console.log('loginData: ' + JSON.stringify(loginData, null, 2));
+        // Extract the response code from loginData (you'll need to add this logic)
+        const responseCode = ''; // Replace with actual code
+        const midToken = await fetchMidToken(responseCode);
+        const finalToken = await fetchFinalToken(midToken);
+        // Add your logic to handle finalToken here
+        // } catch (error) {
+        //     console.error(error);
+        // }
     }
 
-    async initializeWebSession(startUrl) {
-        // console.log(`initializeWebSession() | ${startUrl}`);
-        const request = new Request(startUrl);
-        let newUrl;
-        request.method = 'GET';
-        request.headers = {
-            ...this.defaultHeaders(),
-            Accept: 'text/html; charset=utf-8',
-        };
-        request.onRedirect = (req) => {
-            // console.log(req.url);
-            newUrl = req.url;
-            if (req.url.startsWith('https://sso.ci.ford.com/authsvc/mtfim/sps/authsvc') || req.url.startsWith('fordapp://userauthorized')) {
-                return null;
-            } else {
-                return req;
-            }
-        };
+    // async fetchToken(src = null) {
+    //     console.log('Fetching Token...', src);
 
-        try {
-            const data = await request.loadString();
-            // console.log(`initializeWebSession: ${data.toString()}`);
-            const resp = await request.response;
-            const statusCode = resp.statusCode;
-            const nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
-            console.log(`initializeWebSession status: ${statusCode}`);
-            if (statusCode === 200) {
-                const fndUrl = this.findRegexMatch(/data-ibm-login-url="(.*)" /gm, data);
-                newUrl = fndUrl ? 'https://sso.ci.ford.com' + fndUrl : '';
-                if (newUrl && newUrl.length >= 30) {
-                    return { url: newUrl, cookies: nextCookies };
-                }
-                throw new Error('Could not find auth URL');
-            } else if (statusCode === 302) {
-                // console.log(`302 Redirect URL | ${newUrl}`);
-                if (newUrl && newUrl.includes('code=') && newUrl.includes('grant_id=')) {
-                    // console.log('initializeWebSession | found code and grant_id in authURL');
-                    const params = this.getUrlParams(newUrl.split('?')[1]);
-                    // console.log('params: ' + JSON.stringify(params));
-                    return { url: newUrl, code: params.code, grantId: params.grant_id };
-                } else {
-                    // console.log('initializeWebSession | did not find code and grant_id in authURL');
-                    return { url: newUrl, cookies: nextCookies };
-                }
-            }
-            throw new Error('Initialize WebSession: Unhandled success status code');
-        } catch (err) {
-            console.log(`initializeWebSession error: ${err.message}`, err);
-            throw err;
-        }
-    }
+    //     if (this.tokenRetryCnt > 2) {
+    //         this.tokenRetryCnt = 0;
+    //         log(`fetchToken(${src}) | Too many retries`);
+    //         return 'Error: Too many token retries';
+    //     }
+    //     this.tokenRetryCnt++;
+
+    //     if (this.isFetchingToken) {
+    //         console.log(`fetchToken(${src}) | Already fetching token...`);
+    //         return;
+    //     }
+    //     this.isFetchingToken = true;
+    //     const username = await this.FPW.getSettingVal('fpUser');
+    //     if (!username) {
+    //         return this.FPW.textMap().errorMessages.noCredentials;
+    //     }
+    //     const password = await this.FPW.getSettingVal('fpPass');
+    //     if (!password) {
+    //         return this.FPW.textMap().errorMessages.noCredentials;
+    //     }
+
+    //     const pkce = await this.getCodeChallenge();
+    //     const startUrl = `https://sso.ci.ford.com/v1.0/endpoint/default/authorize?redirect_uri=${this.getRedirecUrl()}&response_type=code&scope=openid&max_age=3600&client_id=${this.getClientId()}&code_challenge=${pkce.code_challenge}%3D&code_challenge_method=S256`;
+    //     const authSession = await this.initializeWebSession(startUrl)
+    //         .then(async (authSession) => {
+    //             console.log(`Web Session Initialized...`);
+    //             if (authSession && authSession.code && authSession.grantId) {
+    //                 console.log(`Web Session Signed In Send Code and GrantId...`);
+    //                 return authSession;
+    //             } else {
+    //                 return await this.attemptLogin(authSession.url, username, password, authSession.cookies).then(async (loginSession) => {
+    //                     return await this.fetchAuthorizationCode(loginSession.url, loginSession.cookies).then((authCodeSession) => {
+    //                         return authCodeSession;
+    //                     });
+    //                 });
+    //             }
+    //         })
+    //         .catch((err) => {
+    //             throw err;
+    //         });
+    //     if (authSession && authSession.code && authSession.grantId) {
+    //         // console.log(`authCodeSession: ${JSON.stringify(authSession)}`);
+    //         await this.requestAccessToken(`grant_type=authorization_code&code=${authSession.code}&grant_id=${authSession.grantId}&code_verifier=${pkce.code_verifier}&scope=openid&redirect_uri=${this.getRedirecUrl()}&client_id=${this.getClientId()}`)
+    //             .then(async (token) => {
+    //                 this.isFetchingToken = false;
+    //                 return token;
+    //             })
+    //             .catch((err) => {
+    //                 this.isFetchingToken = false;
+    //                 throw err;
+    //             });
+    //     } else {
+    //         this.isFetchingToken = false;
+    //         throw new Error('No Auth Code or Grant ID');
+    //     }
+    // }
+
+    // async initializeWebSession(startUrl) {
+    //     // console.log(`initializeWebSession() | ${startUrl}`);
+    //     const request = new Request(startUrl);
+    //     let newUrl;
+    //     request.method = 'GET';
+    //     request.headers = {
+    //         ...this.defaultHeaders(),
+    //         Accept: 'text/html; charset=utf-8',
+    //     };
+    //     request.onRedirect = (req) => {
+    //         // console.log(req.url);
+    //         newUrl = req.url;
+    //         if (req.url.startsWith('https://sso.ci.ford.com/authsvc/mtfim/sps/authsvc') || req.url.startsWith('fordapp://userauthorized')) {
+    //             return null;
+    //         } else {
+    //             return req;
+    //         }
+    //     };
+
+    //     try {
+    //         const data = await request.loadString();
+    //         // console.log(`initializeWebSession: ${data.toString()}`);
+    //         const resp = await request.response;
+    //         const statusCode = resp.statusCode;
+    //         const nextCookies = resp.headers['Set-Cookie'] ? resp.headers['Set-Cookie'] : resp.cookies;
+    //         console.log(`initializeWebSession status: ${statusCode}`);
+    //         if (statusCode === 200) {
+    //             const fndUrl = this.findRegexMatch(/data-ibm-login-url="(.*)" /gm, data);
+    //             newUrl = fndUrl ? 'https://sso.ci.ford.com' + fndUrl : '';
+    //             if (newUrl && newUrl.length >= 30) {
+    //                 return { url: newUrl, cookies: nextCookies };
+    //             }
+    //             throw new Error('Could not find auth URL');
+    //         } else if (statusCode === 302) {
+    //             // console.log(`302 Redirect URL | ${newUrl}`);
+    //             if (newUrl && newUrl.includes('code=') && newUrl.includes('grant_id=')) {
+    //                 // console.log('initializeWebSession | found code and grant_id in authURL');
+    //                 const params = this.getUrlParams(newUrl.split('?')[1]);
+    //                 // console.log('params: ' + JSON.stringify(params));
+    //                 return { url: newUrl, code: params.code, grantId: params.grant_id };
+    //             } else {
+    //                 // console.log('initializeWebSession | did not find code and grant_id in authURL');
+    //                 return { url: newUrl, cookies: nextCookies };
+    //             }
+    //         }
+    //         throw new Error('Initialize WebSession: Unhandled success status code');
+    //     } catch (err) {
+    //         console.log(`initializeWebSession error: ${err.message}`, err);
+    //         throw err;
+    //     }
+    // }
 
     async attemptLogin(url, username, password, cookies) {
         // console.log(`Attempting Login... ${url}`);

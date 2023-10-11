@@ -39,7 +39,7 @@ module.exports = class FPW_Menus {
                         console.log('(Required Prefs Menu) Done was pressed');
                         user = devCreds && devCreds.user ? devCreds.user : prefsMenu.textFieldValue(0);
                         pass = devCreds && devCreds.password ? devCreds.password : prefsMenu.textFieldValue(1);
-                        // vin = devCreds && devCreds.vin ? devCreds.vin : prefsMenu.textFieldValue(2);
+                        vin = devCreds && devCreds.vin ? devCreds.vin : prefsMenu.textFieldValue(2);
                         // console.log(`${user} ${pass} ${vin}`);
 
                         if (this.FPW.inputTest(user) && this.FPW.inputTest(pass)) {
